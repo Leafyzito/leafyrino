@@ -50,7 +50,7 @@ const QMap<QString, Type> MESSAGE_TYPING_CONTEXT{
     {"reward.cost", Type::Int},
     {"reward.id", Type::String},
     {"flags.webchat_detected", Type::Bool},
-    {"technorino.client_detection", Type::String},
+    {"leafyrino.client_detection", Type::String},
 };
 
 ContextMap buildContextMap(const MessagePtr &m, chatterino::Channel *channel)
@@ -102,7 +102,7 @@ ContextMap buildContextMap(const MessagePtr &m, chatterino::Channel *channel)
      */
 
     /*
-     * Technorino identifiers:
+     * Leafyrino identifiers:
      * 
      * flags.webchat_detected
      * 
@@ -171,7 +171,7 @@ ContextMap buildContextMap(const MessagePtr &m, chatterino::Channel *channel)
         {"message.length", m->messageText.length()},
         {"flags.webchat_detected",
          m->clientDetection == Message::ClientDetectionStatus::Webchat},
-        {"technorino.client_detection",
+        {"leafyrino.client_detection",
          qmagicenum::enumName(m->clientDetection).toString()},
     };
     {

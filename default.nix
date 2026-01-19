@@ -12,7 +12,7 @@ in
 }).overrideAttrs
   (
     finalAttrs: prev: {
-      pname = "technorino";
+      pname = "leafyrino";
       version = "unstable";
 
       buildInputs = prev.buildInputs ++ [
