@@ -1128,6 +1128,10 @@ void GeneralPage::initLayout(GeneralPageView &layout)
     SettingWidget::checkbox("BetterTTV", s.showBadgesBttv)
         ->addKeywords({"bttv"})
         ->addTo(layout);
+    SettingWidget::checkbox("Homies", s.showBadgesHomies)
+        ->addKeywords({"homies"})
+        ->setTooltip("Homies supporter badges and custom badges")
+        ->addTo(layout);
     layout.addSeparator();
     SettingWidget::checkbox("Use custom FrankerFaceZ moderator badges",
                             s.useCustomFfzModeratorBadges)

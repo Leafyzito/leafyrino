@@ -29,6 +29,7 @@
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/homies/HomiesBadges.hpp"
 #include "providers/recentmessages/Api.hpp"
 #include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvAPI.hpp"
@@ -432,6 +433,12 @@ void TwitchChannel::refreshFFZChannelEmotes(bool manualRefresh)
             }
         },
         manualRefresh, cacheHit);
+}
+
+void TwitchChannel::refreshBadgesProviders()
+{
+    getApp()->getHomiesBadges()->loadHomiesBadges();
+    this->addSystemMessage("Homies badges reloaded.");
 }
 
 void TwitchChannel::refreshSevenTVChannelEmotes(bool manualRefresh)

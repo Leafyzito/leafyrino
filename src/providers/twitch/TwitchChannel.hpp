@@ -230,6 +230,7 @@ public:
     void refreshBTTVChannelEmotes(bool manualRefresh);
     void refreshFFZChannelEmotes(bool manualRefresh);
     void refreshSevenTVChannelEmotes(bool manualRefresh);
+    void refreshBadgesProviders();
 
     void setBttvEmotes(std::shared_ptr<const EmoteMap> &&map);
     void setFfzEmotes(std::shared_ptr<const EmoteMap> &&map);
