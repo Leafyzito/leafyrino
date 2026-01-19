@@ -6,10 +6,10 @@
 
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
-#include "messages/Emote.hpp"
-#include "messages/Image.hpp"
 #include "common/Outcome.hpp"
 #include "common/QLogging.hpp"
+#include "messages/Emote.hpp"
+#include "messages/Image.hpp"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -77,7 +77,9 @@ void HomiesBadges::loadHomiesBadges()
 
             if (!jsonRoot.contains("badges"))
             {
-                qCWarning(chatterinoNetwork) << "[HomiesBadges] Response missing 'badges' field from" << url.toString();
+                qCWarning(chatterinoNetwork)
+                    << "[HomiesBadges] Response missing 'badges' field from"
+                    << url.toString();
                 return Failure;
             }
 
