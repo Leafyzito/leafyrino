@@ -120,7 +120,6 @@ void HomiesBadges::loadHomiesBadges()
             std::unique_lock lock(this->mutex_);
 
             int index = 0;
-            int totalUsers = 0;
             for (const auto &jsonBadge_ : jsonRoot.value("badges").toArray())
             {
                 auto jsonBadge = jsonBadge_.toObject();
@@ -138,7 +137,6 @@ void HomiesBadges::loadHomiesBadges()
                 {
                     auto userId = user.toString();
                     this->badgeMap2[userId] = index;
-                    ++totalUsers;
                 }
                 ++index;
             }
@@ -156,7 +154,6 @@ void HomiesBadges::loadHomiesBadges()
             std::unique_lock lock(this->mutex_);
 
             int index = 0;
-            int totalUsers = 0;
             for (const auto &jsonBadge_ : jsonRoot.value("badges").toArray())
             {
                 auto jsonBadge = jsonBadge_.toObject();
@@ -174,7 +171,6 @@ void HomiesBadges::loadHomiesBadges()
                 {
                     auto userId = user.toString();
                     this->badgeMap3[userId] = index;
-                    ++totalUsers;
                 }
                 ++index;
             }

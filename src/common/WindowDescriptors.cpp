@@ -140,6 +140,13 @@ TabDescriptor TabDescriptor::loadFromJSON(const QJsonObject &tabObj)
         tab.customTitle_ = titleVal.toString();
     }
 
+    // Load tab custom color
+    QJsonValue colorVal = tabObj.value("tabColor");
+    if (colorVal.isString())
+    {
+        tab.customTabColor_ = colorVal.toString();
+    }
+
     // Load tab selected state
     tab.selected_ = tabObj.value("selected").toBool(false);
 

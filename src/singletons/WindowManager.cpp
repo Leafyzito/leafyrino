@@ -656,6 +656,13 @@ void WindowManager::encodeTab(SplitContainer *tab, bool isSelected,
         obj.insert("title", tab->getTab()->getCustomTitle());
     }
 
+    // custom tab color
+    if (tab->getTab()->hasCustomTabColor())
+    {
+        obj.insert("tabColor",
+                   tab->getTab()->getCustomTabColor().name(QColor::HexArgb));
+    }
+
     // selected
     if (isSelected)
     {
@@ -939,6 +946,16 @@ void WindowManager::applyWindowLayout(const WindowLayout &layout)
             if (!tab.customTitle_.isEmpty())
             {
                 page->getTab()->setCustomTitle(tab.customTitle_);
+            }
+
+            // set custom tab color
+            if (!tab.customTabColor_.isEmpty())
+            {
+                QColor color(tab.customTabColor_);
+                if (color.isValid())
+                {
+                    page->getTab()->setCustomTabColor(color);
+                }
             }
 
             // selected

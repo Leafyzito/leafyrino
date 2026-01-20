@@ -22,6 +22,7 @@
 #include "mocks/UserData.hpp"
 #include "providers/bttv/BttvBadges.hpp"
 #include "providers/ffz/FfzBadges.hpp"
+#include "providers/homies/HomiesBadges.hpp"
 #include "providers/seventv/SeventvBadges.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 #include "providers/twitch/api/Helix.hpp"
@@ -118,6 +119,11 @@ public:
         return &this->seventvBadges;
     }
 
+    HomiesBadges *getHomiesBadges() override
+    {
+        return &this->homiesBadges;
+    }
+
     HighlightController *getHighlights() override
     {
         return &this->highlights;
@@ -172,6 +178,7 @@ public:
     FfzBadges ffzBadges;
     BttvBadges bttvBadges;
     SeventvBadges seventvBadges;
+    HomiesBadges homiesBadges;
     HighlightController highlights;
     SeventvPersonalEmotes personalEmotes;
     BttvEmotes bttvEmotes;

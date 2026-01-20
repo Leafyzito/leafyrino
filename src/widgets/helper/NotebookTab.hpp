@@ -39,6 +39,11 @@ public:
     const QString &getDefaultTitle() const;
     const QString &getTitle() const;
 
+    void setCustomTabColor(const QColor &color);
+    void resetCustomTabColor();
+    bool hasCustomTabColor() const;
+    const QColor &getCustomTabColor() const;
+
     bool isSelected() const;
     void setSelected(bool value);
 
@@ -126,6 +131,7 @@ private:
     bool shouldDrawXButton() const;
     QRect getXRect() const;
     void titleUpdated();
+    void tabColorUpdated();
 
     int normalTabWidthForHeight(int height) const;
 
@@ -148,6 +154,8 @@ private:
 
     QString customTitle_;
     QString defaultTitle_;
+
+    QColor customTabColor_;
 
     bool selected_{};
     bool mouseOver_{};

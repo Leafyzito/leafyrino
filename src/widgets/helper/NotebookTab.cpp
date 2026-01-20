@@ -15,6 +15,7 @@
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
 #include "util/Helpers.hpp"
+#include "widgets/dialogs/ColorPickerDialog.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
 #include "widgets/Notebook.hpp"
 #include "widgets/splits/DraggedSplit.hpp"
@@ -166,6 +167,59 @@ NotebookTab::NotebookTab(Notebook *notebook)
     this->menu_.addSeparator();
 
     this->notebook_->addNotebookActionsToMenu(&this->menu_);
+
+    // Tab Color submenu
+    auto *tabColorMenu_ = new QMenu("Tab Color", this);
+
+    // Color presets (with 50% opacity)
+    tabColorMenu_->addAction("Blue", [this]() {
+        this->setCustomTabColor(QColor(66, 133, 244, 128));
+    });
+    tabColorMenu_->addAction("Red", [this]() {
+        this->setCustomTabColor(QColor(234, 67, 53, 128));
+    });
+    tabColorMenu_->addAction("Yellow", [this]() {
+        this->setCustomTabColor(QColor(251, 188, 4, 128));
+    });
+    tabColorMenu_->addAction("Orange", [this]() {
+        this->setCustomTabColor(QColor(255, 152, 0, 128));
+    });
+    tabColorMenu_->addAction("Purple", [this]() {
+        this->setCustomTabColor(QColor(156, 39, 176, 128));
+    });
+    tabColorMenu_->addAction("Green", [this]() {
+        this->setCustomTabColor(QColor(52, 168, 83, 128));
+    });
+    tabColorMenu_->addAction("Pink", [this]() {
+        this->setCustomTabColor(QColor(233, 30, 99, 128));
+    });
+    tabColorMenu_->addAction("Cyan", [this]() {
+        this->setCustomTabColor(QColor(0, 188, 212, 128));
+    });
+
+    tabColorMenu_->addSeparator();
+
+    // Custom Color option
+    tabColorMenu_->addAction("Custom Color...", [this]() {
+        auto *dialog = new ColorPickerDialog(
+            this->hasCustomTabColor() ? this->getCustomTabColor() : QColor(),
+            this);
+        QObject::connect(dialog, &ColorPickerDialog::colorConfirmed, this,
+                         [this](const QColor &color) {
+                             if (color.isValid())
+                             {
+                                 this->setCustomTabColor(color);
+                             }
+                         });
+        dialog->show();
+    });
+
+    // Reset Color option
+    tabColorMenu_->addAction("Reset to Default", [this]() {
+        this->resetCustomTabColor();
+    });
+
+    this->menu_.addMenu(tabColorMenu_);
 }
 
 void NotebookTab::recreateCloseMultipleTabsMenu(
@@ -511,6 +565,37 @@ const QString &NotebookTab::getTitle() const
 {
     return this->customTitle_.isEmpty() ? this->defaultTitle_
                                         : this->customTitle_;
+}
+
+void NotebookTab::setCustomTabColor(const QColor &color)
+{
+    if (this->customTabColor_ != color)
+    {
+        this->customTabColor_ = color;
+        this->tabColorUpdated();
+    }
+}
+
+void NotebookTab::resetCustomTabColor()
+{
+    this->setCustomTabColor(QColor());
+}
+
+bool NotebookTab::hasCustomTabColor() const
+{
+    return this->customTabColor_.isValid();
+}
+
+const QColor &NotebookTab::getCustomTabColor() const
+{
+    return this->customTabColor_;
+}
+
+void NotebookTab::tabColorUpdated()
+{
+    // Queue up save because: Tab color changed
+    getApp()->getWindows()->queueSave();
+    this->update();
 }
 
 void NotebookTab::titleUpdated()
@@ -893,10 +978,26 @@ void NotebookTab::paintEvent(QPaintEvent *)
 
     bool windowFocused = this->window() == QApplication::activeWindow();
 
-    QBrush tabBackground = /*this->mouseOver_ ? colors.backgrounds.hover
-                                 :*/
-        (windowFocused ? colors.backgrounds.regular
-                       : colors.backgrounds.unfocused);
+    QBrush tabBackground;
+    if (this->hasCustomTabColor())
+    {
+        // Use custom tab color if set
+        QColor customColor = this->getCustomTabColor();
+        // Apply slight dimming when window is unfocused
+        if (!windowFocused)
+        {
+            customColor = customColor.darker(110);
+        }
+        tabBackground = customColor;
+    }
+    else
+    {
+        // Use theme colors when no custom color is set
+        tabBackground = /*this->mouseOver_ ? colors.backgrounds.hover
+                                     :*/
+            (windowFocused ? colors.backgrounds.regular
+                           : colors.backgrounds.unfocused);
+    }
 
     auto selectionOffset = ceil((this->selected_ ? 0.f : 1.f) * scale);
 
