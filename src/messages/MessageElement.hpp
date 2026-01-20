@@ -127,9 +127,16 @@ enum class MessageElementFlag : int64_t {
     // - Homies custom badge
     BadgeHomies = (1LL << 61),
 
+    // Slot 9: Folhinha
+    // - FolhinhaBot Plus
+    // - FolhinhaBot Plus (Founder)
+    // - FolhinhaBot Supporter
+    BadgeFolhinha = (1LL << 62),
+
     Badges = BadgeGlobalAuthority | BadgePredictions | BadgeChannelAuthority |
              BadgeSubscription | BadgeVanity | BadgeChatterino | BadgeSevenTV |
-             BadgeFfz | BadgeSharedChannel | BadgeBttv | BadgeHomies,
+             BadgeFfz | BadgeSharedChannel | BadgeBttv | BadgeHomies |
+             BadgeFolhinha,
 
     ChannelName = (1LL << 20),
 

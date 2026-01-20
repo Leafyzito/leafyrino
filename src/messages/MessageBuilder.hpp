@@ -342,6 +342,7 @@ private:
     void appendBttvBadges(const QString &userID);
     void appendSeventvBadges(const QString &userID);
     void appendHomiesBadges(const QString &userID);
+    void appendFolhinhaBadges(const QString &userID);
 
     [[nodiscard]] static bool isIgnored(const QString &originalMessage,
                                         const QString &userID,

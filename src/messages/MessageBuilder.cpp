@@ -29,6 +29,7 @@
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/folhinha/FolhinhaBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/links/LinkResolver.hpp"
 #include "providers/seventv/SeventvBadges.hpp"
@@ -1788,6 +1789,7 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
     builder.appendBttvBadges(userID);
     builder.appendSeventvBadges(userID);
     builder.appendHomiesBadges(userID);
+    builder.appendFolhinhaBadges(userID);
 
     builder.appendUsername(tags, args);
 
@@ -2816,6 +2818,14 @@ void MessageBuilder::appendHomiesBadges(const QString &userID)
     if (auto badge = getApp()->getHomiesBadges()->getBadge3({userID}))
     {
         this->emplace<BadgeElement>(*badge, MessageElementFlag::BadgeHomies);
+    }
+}
+
+void MessageBuilder::appendFolhinhaBadges(const QString &userID)
+{
+    if (auto badge = getApp()->getFolhinhaBadges()->getBadge({userID}))
+    {
+        this->emplace<BadgeElement>(*badge, MessageElementFlag::BadgeFolhinha);
     }
 }
 

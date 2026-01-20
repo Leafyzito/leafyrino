@@ -1132,6 +1132,10 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->addKeywords({"homies"})
         ->setTooltip("Homies supporter badges and custom badges")
         ->addTo(layout);
+    SettingWidget::checkbox("Folhinha", s.showBadgesFolhinha)
+        ->addKeywords({"folhinha"})
+        ->setTooltip("FolhinhaBot Plus and Founder badges")
+        ->addTo(layout);
     layout.addSeparator();
     SettingWidget::checkbox("Use custom FrankerFaceZ moderator badges",
                             s.useCustomFfzModeratorBadges)

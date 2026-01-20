@@ -22,6 +22,7 @@
 #include "mocks/UserData.hpp"
 #include "providers/bttv/BttvBadges.hpp"
 #include "providers/ffz/FfzBadges.hpp"
+#include "providers/folhinha/FolhinhaBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/seventv/SeventvBadges.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
@@ -119,6 +120,11 @@ public:
         return &this->seventvBadges;
     }
 
+    FolhinhaBadges *getFolhinhaBadges() override
+    {
+        return &this->folhinhaBadges;
+    }
+    
     HomiesBadges *getHomiesBadges() override
     {
         return &this->homiesBadges;
@@ -178,6 +184,7 @@ public:
     FfzBadges ffzBadges;
     BttvBadges bttvBadges;
     SeventvBadges seventvBadges;
+    FolhinhaBadges folhinhaBadges;
     HomiesBadges homiesBadges;
     HighlightController highlights;
     SeventvPersonalEmotes personalEmotes;

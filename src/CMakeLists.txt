@@ -387,6 +387,9 @@ set(SOURCE_FILES
         providers/homies/HomiesBadges.cpp
         providers/homies/HomiesBadges.hpp
 
+        providers/folhinha/FolhinhaBadges.cpp
+        providers/folhinha/FolhinhaBadges.hpp
+
         providers/colors/ColorProvider.cpp
         providers/colors/ColorProvider.hpp
 
