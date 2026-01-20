@@ -1159,6 +1159,10 @@ void Split::openInBrowser()
         QDesktopServices::openUrl("https://www.twitch.tv/" +
                                   twitchChannel->getName());
     }
+    else if (auto *kc = dynamic_cast<KickChannel *>(channel.get()))
+    {
+        QDesktopServices::openUrl("https://kick.com/" + kc->slug());
+    }
 }
 
 void Split::openWhispersInBrowser()
@@ -1182,10 +1186,21 @@ void Split::openModViewInBrowser()
         QDesktopServices::openUrl("https://www.twitch.tv/moderator/" +
                                   twitchChannel->getName());
     }
+    else if (auto *kc = dynamic_cast<KickChannel *>(channel.get()))
+    {
+        QDesktopServices::openUrl("https://dashboard.kick.com/moderator/" +
+                                  kc->slug());
+    }
 }
 
 void Split::openInStreamlink()
 {
+    auto *kc = dynamic_cast<KickChannel *>(this->getChannel().get());
+    if (kc)
+    {
+        openStreamlinkForChannel(kc->slug(), u"kick.com/");
+        return;
+    }
     this->openChannelInStreamlink(this->getChannel()->getName());
 }
 
@@ -1195,6 +1210,10 @@ void Split::openWithCustomScheme()
     if (auto *const twitchChannel = dynamic_cast<TwitchChannel *>(channel))
     {
         this->openChannelInCustomPlayer(twitchChannel->getName());
+    }
+    else if (auto *kc = dynamic_cast<KickChannel *>(channel))
+    {
+        openInCustomPlayer(kc->slug(), u"https://kick.com/");
     }
 }
 
