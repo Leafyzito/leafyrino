@@ -3,7 +3,7 @@ name: "nix"
 on:
   push:
     branches:
-      - technorino
+      - leafyrino
 
 concurrency:
   group: nix-${{ github.ref }}
@@ -41,7 +41,7 @@ jobs:
         run: nix profile install --inputs-from https://github.com/NixOS/nixpkgs/archive/$NIX_PKGS_REF.tar.gz nixpkgs#cachix
 
       - name: Use Cachix Cache
-        run: cachix use technorino
+        run: cachix use leafyrino
 
       - name: Build
         run: nix build .#package -L

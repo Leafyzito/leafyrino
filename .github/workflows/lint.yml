@@ -4,7 +4,7 @@ name: Lint
 on:
   push:
     branches:
-      - technorino
+      - leafyrino
   pull_request:
   merge_group:
 
