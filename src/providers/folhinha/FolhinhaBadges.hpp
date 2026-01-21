@@ -39,8 +39,9 @@ public:
      */
     std::optional<EmotePtr> getBadge(const UserId &id);
 
-private:
     void loadFolhinhaBadges();
+
+private:
     void applyBadgeJson(const QJsonObject &jsonRoot);
 
     std::shared_mutex mutex_;
