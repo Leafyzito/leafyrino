@@ -124,7 +124,7 @@ public:
     {
         return &this->folhinhaBadges;
     }
-    
+
     HomiesBadges *getHomiesBadges() override
     {
         return &this->homiesBadges;

@@ -18,6 +18,7 @@
 #include "providers/chatterino/ChatterinoBadges.hpp"
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/folhinha/FolhinhaBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/recentmessages/Impl.hpp"
 #include "providers/seventv/SeventvBadges.hpp"
@@ -93,6 +94,11 @@ public:
         return &this->homiesBadges;
     }
 
+    FolhinhaBadges *getFolhinhaBadges() override
+    {
+        return &this->folhinhaBadges;
+    }
+
     HighlightController *getHighlights() override
     {
         return &this->highlights;
@@ -149,6 +155,7 @@ public:
     BttvBadges bttvBadges;
     SeventvBadges seventvBadges;
     HomiesBadges homiesBadges;
+    FolhinhaBadges folhinhaBadges;
     HighlightController highlights;
     TwitchBadges twitchBadges;
     BttvEmotes bttvEmotes;

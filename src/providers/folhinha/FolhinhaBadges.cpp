@@ -12,11 +12,70 @@
 #include "messages/Image.hpp"
 
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QUrl>
 
+#include <cstdint>
+
 namespace chatterino {
+
+namespace {
+
+using namespace Qt::Literals;
+
+enum class FolhinhaBadgePriority : std::uint8_t {
+    Plus = 0,
+    PlusFounder = 1,
+    Admin = 2,
+    Dev = 3,
+};
+
+struct BuiltBadge {
+    EmotePtr emote;
+    int priority = 0;
+};
+
+EmotePtr makeFolhinhaBadge(const QString &tooltip, const QString &badgePrefix)
+{
+    auto emote = Emote{
+        .name = EmoteName{u"folhinha:" % tooltip},
+        .images =
+            ImageSet{
+                Image::fromUrl(
+                    Url{"http://folhinhabot.com/badges/" % badgePrefix % "1"},
+                    1.0, QSize(18, 18)),
+                Image::fromUrl(
+                    Url{"http://folhinhabot.com/badges/" % badgePrefix % "2"},
+                    0.5, QSize(36, 36)),
+                Image::fromUrl(
+                    Url{"http://folhinhabot.com/badges/" % badgePrefix % "3"},
+                    0.25, QSize(72, 72)),
+            },
+        .tooltip = Tooltip{tooltip},
+        .homePage = Url{},
+    };
+
+    return std::make_shared<const Emote>(std::move(emote));
+}
+
+void tryInsert(std::unordered_map<QString, BuiltBadge> &out,
+               const QString &userId, BuiltBadge badge)
+{
+    if (userId.isEmpty() || !badge.emote)
+    {
+        return;
+    }
+
+    auto it = out.find(userId);
+    if (it == out.end() || it->second.priority < badge.priority)
+    {
+        out[userId] = std::move(badge);
+    }
+}
+
+}  // namespace
 
 FolhinhaBadges::FolhinhaBadges()
 {
@@ -37,8 +96,6 @@ std::optional<EmotePtr> FolhinhaBadges::getBadge(const UserId &id)
 
 void FolhinhaBadges::loadFolhinhaBadges()
 {
-    this->badgeMap.clear();
-
     static QUrl url("https://api.folhinhabot.com/plus");
 
     NetworkRequest(url)
@@ -46,69 +103,7 @@ void FolhinhaBadges::loadFolhinhaBadges()
         .onSuccess([this](auto result) -> Outcome {
             auto jsonRoot = result.parseJson();
 
-            if (!jsonRoot.contains("plus"))
-            {
-                qCWarning(chatterinoNetwork)
-                    << "[FolhinhaBadges] Response missing 'plus' field from"
-                    << url.toString();
-                return Failure;
-            }
-
-            std::unique_lock lock(this->mutex_);
-
-            // Process plus users
-            if (jsonRoot.contains("plus"))
-            {
-                auto plusArray = jsonRoot.value("plus").toArray();
-                for (const auto &userValue : plusArray)
-                {
-                    auto userObj = userValue.toObject();
-                    auto userId = userObj.value("userid").toString();
-
-                    if (userId.isEmpty())
-                    {
-                        continue;
-                    }
-
-                    bool isFounder = userObj.value("isFounder").toBool();
-                    QString tooltip;
-                    QString badgePrefix;
-                    if (isFounder)
-                    {
-                        tooltip = "FolhinhaBot Plus (Founder)";
-                        badgePrefix = "founder";
-                    }
-                    else
-                    {
-                        tooltip = "FolhinhaBot Plus";
-                        badgePrefix = "sub";
-                    }
-
-                    auto emote = Emote{
-                        .name = EmoteName{u"folhinha:" % tooltip},
-                        .images =
-                            ImageSet{
-                                Image::fromUrl(
-                                    Url{"http://folhinhabot.com/badges/" %
-                                        badgePrefix % "1"},
-                                    1.0, QSize(18, 18)),
-                                Image::fromUrl(
-                                    Url{"http://folhinhabot.com/badges/" %
-                                        badgePrefix % "2"},
-                                    0.5, QSize(36, 36)),
-                                Image::fromUrl(
-                                    Url{"http://folhinhabot.com/badges/" %
-                                        badgePrefix % "3"},
-                                    0.25, QSize(72, 72)),
-                            },
-                        .tooltip = Tooltip{tooltip},
-                        .homePage = Url{},
-                    };
-
-                    this->badgeMap[userId] =
-                        std::make_shared<const Emote>(std::move(emote));
-                }
-            }
+            this->applyBadgeJson(jsonRoot);
 
             // Process supporters
             // TODO: Re-enable supporter badges when ready
@@ -164,6 +159,104 @@ void FolhinhaBadges::loadFolhinhaBadges()
             return Success;
         })
         .execute();
+}
+
+void FolhinhaBadges::applyBadgeJson(const QJsonObject &jsonRoot)
+{
+    std::unordered_map<QString, BuiltBadge> built;
+    built.reserve(256);
+
+    // Priority: dev > admin > plus founder > plus
+    if (jsonRoot.contains("dev"))
+    {
+        const auto devArray = jsonRoot.value("dev").toArray();
+        for (const auto &userValue : devArray)
+        {
+            const auto userObj = userValue.toObject();
+            const auto userId = userObj.value("userid").toString();
+            tryInsert(
+                built, userId,
+                BuiltBadge{
+                    .emote =
+                        makeFolhinhaBadge(u"FolhinhaBot Developer"_s, u"dev"_s),
+                    .priority = static_cast<int>(FolhinhaBadgePriority::Dev),
+                });
+        }
+    }
+
+    if (jsonRoot.contains("admins"))
+    {
+        const auto adminsArray = jsonRoot.value("admins").toArray();
+        for (const auto &userValue : adminsArray)
+        {
+            const auto userObj = userValue.toObject();
+            const auto userId = userObj.value("userid").toString();
+            tryInsert(
+                built, userId,
+                BuiltBadge{
+                    .emote =
+                        makeFolhinhaBadge(u"FolhinhaBot Admin"_s, u"admin"_s),
+                    .priority = static_cast<int>(FolhinhaBadgePriority::Admin),
+                });
+        }
+    }
+
+    if (jsonRoot.contains("plus"))
+    {
+        const auto plusArray = jsonRoot.value("plus").toArray();
+        for (const auto &userValue : plusArray)
+        {
+            const auto userObj = userValue.toObject();
+            const auto userId = userObj.value("userid").toString();
+            if (userId.isEmpty())
+            {
+                continue;
+            }
+
+            const bool isFounder = userObj.value("isFounder").toBool();
+            if (isFounder)
+            {
+                tryInsert(
+                    built, userId,
+                    BuiltBadge{
+                        .emote = makeFolhinhaBadge(
+                            u"FolhinhaBot Plus (Founder)"_s, u"founder"_s),
+                        .priority = static_cast<int>(
+                            FolhinhaBadgePriority::PlusFounder),
+                    });
+            }
+            else
+            {
+                tryInsert(built, userId,
+                          BuiltBadge{
+                              .emote = makeFolhinhaBadge(u"FolhinhaBot Plus"_s,
+                                                         u"sub"_s),
+                              .priority =
+                                  static_cast<int>(FolhinhaBadgePriority::Plus),
+                          });
+            }
+        }
+    }
+
+    if (built.empty() && !jsonRoot.contains("dev") &&
+        !jsonRoot.contains("admins") && !jsonRoot.contains("plus"))
+    {
+        qCWarning(chatterinoNetwork) << "[FolhinhaBadges] Response missing "
+                                        "expected fields from Folhinha "
+                                        "API";
+    }
+
+    std::unique_lock lock(this->mutex_);
+    this->badgeMap.clear();
+    this->badgePriority.clear();
+    this->badgeMap.reserve(built.size());
+    this->badgePriority.reserve(built.size());
+
+    for (auto &[userId, badge] : built)
+    {
+        this->badgeMap.emplace(userId, badge.emote);
+        this->badgePriority.emplace(userId, badge.priority);
+    }
 }
 
 }  // namespace chatterino

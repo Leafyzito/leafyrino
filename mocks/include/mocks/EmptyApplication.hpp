@@ -182,6 +182,12 @@ public:
         return nullptr;
     }
 
+    FolhinhaBadges *getFolhinhaBadges() override
+    {
+        assert(!"getFolhinhaBadges was called without being initialized");
+        return nullptr;
+    }
+
     IUserDataController *getUserData() override
     {
         assert(false && "EmptyApplication::getUserData was called without "

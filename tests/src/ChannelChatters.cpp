@@ -7,6 +7,7 @@
 #include "mocks/BaseApplication.hpp"
 #include "mocks/Channel.hpp"
 #include "mocks/Logging.hpp"
+#include "providers/folhinha/FolhinhaBadges.hpp"
 #include "Test.hpp"
 
 #include <QColor>
@@ -27,7 +28,13 @@ public:
         return &this->logging;
     }
 
+    FolhinhaBadges *getFolhinhaBadges() override
+    {
+        return &this->folhinhaBadges;
+    }
+
     mock::EmptyLogging logging;
+    FolhinhaBadges folhinhaBadges;
 };
 
 }  // namespace

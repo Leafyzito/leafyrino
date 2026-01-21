@@ -439,6 +439,8 @@ void TwitchChannel::refreshBadgesProviders()
 {
     getApp()->getHomiesBadges()->loadHomiesBadges();
     this->addSystemMessage("Homies badges reloaded.");
+    getApp()->getFolhinhaBadges()->loadFolhinhaBadges();
+    this->addSystemMessage("FolhinhaBot badges reloaded.");
 }
 
 void TwitchChannel::refreshSevenTVChannelEmotes(bool manualRefresh)

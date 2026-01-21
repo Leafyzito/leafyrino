@@ -6,10 +6,20 @@
 
 #include "common/Aliases.hpp"
 
+#include <QJsonObject>
+
 #include <memory>
 #include <optional>
 #include <shared_mutex>
 #include <unordered_map>
+
+#if __has_include(<gtest/gtest_prod.h>)
+#    include <gtest/gtest_prod.h>
+#endif
+
+#ifdef FRIEND_TEST
+class FolhinhaBadges_PriorityResolution_Test;
+#endif
 
 namespace chatterino {
 
@@ -31,6 +41,7 @@ public:
 
 private:
     void loadFolhinhaBadges();
+    void applyBadgeJson(const QJsonObject &jsonRoot);
 
     std::shared_mutex mutex_;
 
@@ -39,6 +50,17 @@ private:
      * Guarded by mutex_
      */
     std::unordered_map<QString, EmotePtr> badgeMap;
+
+    /**
+     * Maps Twitch user IDs to their badge priority
+     * Guarded by mutex_
+     */
+    std::unordered_map<QString, int> badgePriority;
+
+#ifdef FRIEND_TEST
+    FRIEND_TEST(FolhinhaBadges, PriorityResolution);
+    friend class ::FolhinhaBadges_PriorityResolution_Test;
+#endif
 };
 
 }  // namespace chatterino

@@ -5,6 +5,7 @@
 #include "providers/homies/HomiesBadges.hpp"
 
 #include "common/Aliases.hpp"
+#include "common/Literals.hpp"
 #include "Test.hpp"
 
 #include <QString>
