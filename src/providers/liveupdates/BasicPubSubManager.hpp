@@ -164,7 +164,7 @@ private:
             {
                 qCDebug(chatterinoLiveupdates)
                     << "Failed to subscribe to" << last << "on new client.";
-                // TODO: should we try to add a new client here?
+                this->pendingSubscriptions_.emplace_back(std::move(last));
                 break;
             }
             DebugCount::decrease("LiveUpdates subscription backlog");
@@ -173,6 +173,9 @@ private:
 
         if (!this->pendingSubscriptions_.empty())
         {
+            qCDebug(chatterinoLiveupdates)
+                << "Adding another client for "
+                << this->pendingSubscriptions_.size() << "subs";
             this->addClient();
         }
     }
@@ -216,10 +219,14 @@ private:
         {
             qCWarning(chatterinoLiveupdates)
                 << "Retrying after" << id << "failed";
+            auto nSubs = subs.size();
+            DebugCount::increase("LiveUpdates subscription backlog",
+                                 static_cast<int64_t>(nSubs));
             this->pendingSubscriptions_.insert(
                 this->pendingSubscriptions_.end(),
                 std::make_move_iterator(subs.begin()),
                 std::make_move_iterator(subs.end()));
+
             QTimer::singleShot(this->connectBackoff_.next(), this, [this] {
                 this->addClient();
             });

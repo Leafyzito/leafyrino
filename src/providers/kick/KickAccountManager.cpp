@@ -29,6 +29,7 @@ KickAccountManager::KickAccountManager()
     QObject::connect(&this->refreshTimer, &QTimer::timeout, [this] {
         this->refreshAccounts();
     });
+    this->refreshTimer.start();
 }
 
 std::shared_ptr<KickAccount> KickAccountManager::current()
