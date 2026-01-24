@@ -2,6 +2,7 @@
 
 ## Unversioned
 
+- Minor: Added Homies and FolhinhaBot badges.
 - Minor: Added color tab customization.
 - Minor: Moved "Logs" button from pfp menu to user info popup
 - Minor: Add a separate highlight option for watchstreak notifications. (#6571, #6581)
