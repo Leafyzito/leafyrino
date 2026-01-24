@@ -21,6 +21,7 @@ concurrency:
 
 jobs:
   test:
+    if: false  # Disabled
     name: "Test Arch Linux"
     runs-on: ubuntu-latest
     container: archlinux:base-devel

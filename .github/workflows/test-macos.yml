@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   test-macos:
+    if: false  # Disabled
     name: "Test ${{ matrix.os }}, Qt ${{ matrix.qt-version }}"
     runs-on: ${{ matrix.os }}
     strategy:

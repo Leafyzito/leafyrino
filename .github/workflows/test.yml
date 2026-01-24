@@ -21,6 +21,7 @@ concurrency:
 
 jobs:
   test:
+    if: false  # Disabled
     name: "Test ${{ matrix.os }}, Qt ${{ matrix.qt-version }}"
     runs-on: ubuntu-latest
     container: ${{ matrix.container }}

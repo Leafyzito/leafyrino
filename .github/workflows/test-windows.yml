@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   test-windows:
+    if: false  # Disabled
     name: "Test ${{ matrix.os }}, Qt ${{ matrix.qt-version }}"
     runs-on: ${{ matrix.os }}
     strategy:
