@@ -1,9 +1,8 @@
-just a fork of features i like from other forks + my own features :)
+just a fork of features i like from other forks + [my own features](https://leafyrino.leafyzito.dev/) :)
 
 Features taken from:
 
-- https://github.com/MrAuro/chatterino2
-- https://github.com/Mm2PL/dankerino
+- https://github.com/itzAlex/chatterino7
 
 ![chatterinoLogo](https://user-images.githubusercontent.com/41973452/272541622-52457e89-5f16-4c83-93e7-91866c25b606.png)
 Chatterino7 [![GitHub Actions Build (Windows, Ubuntu, MacOS)](https://github.com/seventv/chatterino7/actions/workflows/build.yml/badge.svg?branch=chatterino7)](https://github.com/SevenTV/chatterino7/actions?query=workflow%3ABuild+branch%3Achatterino7) [![Chocolatey Package](https://img.shields.io/chocolatey/v/chatterino7?include_prereleases)](https://chocolatey.org/packages/chatterino7)
