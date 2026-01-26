@@ -351,13 +351,12 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                                     QUrl("https://chatvau.lt/channel/twitch/" +
                                          username));
                             });
-                        
+
                         // Channel logs
                         menu->addAction(
                             "Open channel logs in browser", [username] {
-                                QDesktopServices::openUrl(
-                                    QUrl("https://tv.supa.sh/logs?c=" +
-                                         username));
+                                QDesktopServices::openUrl(QUrl(
+                                    "https://tv.supa.sh/logs?c=" + username));
                             });
 
                         // we need to assign login name for msvc compilation
