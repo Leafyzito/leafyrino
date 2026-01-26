@@ -2,6 +2,7 @@ just a fork of features i like from other forks + [my own features](https://leaf
 
 Features taken from:
 
+- https://github.com/2547techno/technorino/
 - https://github.com/itzAlex/chatterino7
 
 ![chatterinoLogo](https://user-images.githubusercontent.com/41973452/272541622-52457e89-5f16-4c83-93e7-91866c25b606.png)
