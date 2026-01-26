@@ -107,6 +107,8 @@ public:
 protected:
     void unsubscribe(const Subscription &subscription)
     {
+        assertInGuiThread();
+
         for (auto &client : this->clients_)
         {
             if (client.second->unsubscribe(subscription))
@@ -118,6 +120,8 @@ protected:
 
     void subscribe(const Subscription &subscription)
     {
+        assertInGuiThread();
+
         if (this->trySubscribe(subscription))
         {
             return;
@@ -141,6 +145,8 @@ private:
 
     void onConnectionOpen(size_t id)
     {
+        assertInGuiThread();
+
         DebugCount::increase("LiveUpdates connections");
         this->addingClient_ = false;
         this->diag.connectionsOpened.fetch_add(1, std::memory_order_acq_rel);
@@ -182,6 +188,8 @@ private:
 
     void onConnectionClose(size_t id)
     {
+        assertInGuiThread();
+
         this->addingClient_ = false;
 
         auto it = this->clients_.find(id);
@@ -241,6 +249,8 @@ private:
 
     void addClient()
     {
+        assertInGuiThread();
+
         if (this->addingClient_ || !this->pool_)
         {
             return;

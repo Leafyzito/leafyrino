@@ -197,6 +197,8 @@ TEST(BasicPubSub, SubLimits)
     ASSERT_EQ(manager.diag.connectionsFailed, 0);
     ASSERT_EQ(manager.messagesReceived, 5);
 
+    // The messages come from multiple connections, so they're not necessarily
+    // in order.
     std::vector<QString> messages;
     for (size_t i = 0; i < 5; i++)
     {
