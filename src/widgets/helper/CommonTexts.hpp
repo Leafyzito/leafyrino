@@ -8,7 +8,8 @@
 
 namespace chatterino {
 
-inline const QString OPEN_IN_BROWSER = QStringLiteral("Open &stream in browser");
+inline const QString OPEN_IN_BROWSER =
+    QStringLiteral("Open &stream in browser");
 inline const QString OPEN_PLAYER_IN_BROWSER =
     QStringLiteral("Open &player in browser");
 inline const QString OPEN_MOD_VIEW_IN_BROWSER =
