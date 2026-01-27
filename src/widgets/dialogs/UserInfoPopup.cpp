@@ -336,17 +336,17 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                         auto username = this->userName_;
 
                         // add context menu actions
-                        menu->addAction("Open avatar in browser", [avatarUrl] {
+                        menu->addAction("Open &avatar in browser", [avatarUrl] {
                             QDesktopServices::openUrl(QUrl(avatarUrl));
                         });
 
-                        menu->addAction("Copy avatar link", [avatarUrl] {
+                        menu->addAction("Copy a&vatar link", [avatarUrl] {
                             crossPlatformCopy(avatarUrl);
                         });
 
                         //Chat Vault profile
                         menu->addAction(
-                            "Open Chat Vault profile in browser", [username] {
+                            "Open &Chat Vault profile in browser", [username] {
                                 QDesktopServices::openUrl(
                                     QUrl("https://chatvau.lt/channel/twitch/" +
                                          username));
@@ -354,7 +354,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
 
                         // Channel logs
                         menu->addAction(
-                            "Open channel logs in browser", [username] {
+                            "Open channel &logs in browser", [username] {
                                 QDesktopServices::openUrl(QUrl(
                                     "https://tv.supa.sh/logs?c=" + username));
                             });
@@ -362,7 +362,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                         // we need to assign login name for msvc compilation
                         auto loginName = this->userName_.toLower();
                         menu->addAction(
-                            "Open channel in a new popup window", this,
+                            "Open channel in a new &popup window", this,
                             [loginName] {
                                 auto *app = getApp();
                                 auto &window = app->getWindows()->createWindow(
@@ -376,7 +376,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                             });
 
                         menu->addAction(
-                            "Open channel in a new tab", this, [loginName] {
+                            "Open channel in a new &tab", this, [loginName] {
                                 ChannelPtr channel =
                                     getApp()->getTwitch()->getOrAddChannel(
                                         loginName);
