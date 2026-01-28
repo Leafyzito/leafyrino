@@ -130,7 +130,6 @@ private:
         Label *noMessagesLabel = nullptr;
         ChannelView *latestMessages = nullptr;
 
-        LabelButton *stvUser = nullptr;
         LabelButton *usercardLabel = nullptr;
         LabelButton *switchAvatars = nullptr;
         LabelButton *userlogsLabel = nullptr;

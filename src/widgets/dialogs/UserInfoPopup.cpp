@@ -352,6 +352,17 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                                          username));
                             });
 
+                        // 7TV user page
+                        if (!this->stvUserId_.isEmpty())
+                        {
+                            auto stvUserId = this->stvUserId_;
+                            menu->addAction(
+                                "Open &7TV user page in browser", [stvUserId] {
+                                    QDesktopServices::openUrl(QUrl(
+                                        "https://7tv.app/users/" + stvUserId));
+                                });
+                        }
+
                         // Channel logs
                         menu->addAction(
                             "Open channel &logs in browser", [username] {
@@ -505,10 +516,6 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
         auto userlogs = user.emplace<LabelButton>("Logs", this)
                             .assign(&this->ui_.userlogsLabel);
 
-        auto stvUser = user.emplace<LabelButton>("7tv User Page", this)
-                           .assign(&this->ui_.stvUser);
-
-        stvUser->setVisible(false);
         userlogs->setVisible(false);
 
         auto mod = user.emplace<PixmapButton>(this);
@@ -536,11 +543,6 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
             QDesktopServices::openUrl("https://tv.supa.sh/logs?c=" +
                                       this->underlyingChannel_->getName() +
                                       "&u=" + this->userName_);
-        });
-
-        QObject::connect(stvUser.getElement(), &Button::leftClicked, [this] {
-            QDesktopServices::openUrl("https://7tv.app/users/" +
-                                      this->stvUserId_);
         });
 
         QObject::connect(mod.getElement(), &Button::leftClicked, [this] {
@@ -1385,7 +1387,6 @@ void UserInfoPopup::loadSevenTVAvatar(const QString &userID, bool isKick)
             if (!stvUserId.isEmpty())
             {
                 this->stvUserId_ = stvUserId;
-                this->ui_.stvUser->setVisible(true);
             }
 
             if (url.isEmpty())
