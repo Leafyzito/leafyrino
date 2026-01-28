@@ -337,6 +337,10 @@ public:
         "/behaviour/search/engineName",
         "",
     };
+    BoolSetting searchIncognito = {
+        "/behaviour/search/incognito",
+        false,
+    };
 
     EnumSetting<UsernameRightClickBehavior> usernameRightClickBehavior = {
         "/behaviour/usernameRightClickBehavior",

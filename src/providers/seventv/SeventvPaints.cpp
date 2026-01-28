@@ -176,7 +176,7 @@ void SeventvPaints::addPaint(const QJsonObject &paintJson)
         return;
     }
 
-    DebugCount::increase(u"7TV Paints"_s);
+    DebugCount::increase(DebugObject::SeventvPaints);
     this->knownPaints_[paintID] = *paint;
 }
 
@@ -220,7 +220,7 @@ void SeventvPaints::assignPaintToUser(const QString &paintID,
 
     if (nAdded > 0)
     {
-        DebugCount::increase(u"7TV Paint Assignments"_s, nAdded);
+        DebugCount::increase(DebugObject::SeventvPaintAssignments, nAdded);
     }
 
     if (changed)
@@ -259,7 +259,7 @@ void SeventvPaints::clearPaintFromUser(const QString &paintID,
 
     if (nRemoved > 0)
     {
-        DebugCount::decrease(u"7TV Paint Assignments"_s, nRemoved);
+        DebugCount::decrease(DebugObject::SeventvPaintAssignments, nRemoved);
         postToThread([] {
             getApp()->getWindows()->invalidateChannelViewBuffers();
         });

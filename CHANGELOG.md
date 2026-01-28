@@ -5,7 +5,7 @@
 - Minor: Added Homies and FolhinhaBot badges.
 - Minor: Added color tab customization.
 - Minor: Moved "Logs" button from pfp menu to user info popup
-- Minor: Add search engine selection for context menu search action. (#6743)
+- Minor: Add search engine selection for context menu search action. (#6743, #6770)
 - Minor: Add a separate highlight option for watchstreak notifications. (#6571, #6581)
 - Minor: Badges now link to their home page like emotes in the context menu. (#6437)
 - Minor: Fixed usercard resizing improperly without recent messages. (#6496)
@@ -34,6 +34,8 @@
 - Minor: Added message read/update methods to the `Channel` plugin API. (#6650)
 - Minor: Added action to reset `/watching`. (#6759)
 - Minor: Removed messaging about running flatpak. This is already apparent in the newer Flatpak runtimes. (#6768)
+- Minor: Add `/(un)monitor` and `/(un)restrict` commands for moderators. (#6750)
+- Bugfix: Fixed context menu hotkeys not working on macOS. (#6778)
 - Bugfix: Moderation checks now include the lead moderator badge. (#6642)
 - Bugfix: Fixed lead moderator badges not being filtered by the `Channel` badge setting. (#6665)
 - Bugfix: Expose the "Extra extension IDs" setting on non-Windows systems too. (#6509)
@@ -104,6 +106,7 @@
 - Dev: Updated prettier version to 3.8.1 and migrated away from using an unmaintained GH Action, instead relying on `npx`. (#6769)
 - Dev: Updated `miniaudio` to 0.11.24. (#6754)
 - Dev: Remove unused `reloadChannelAndSubscriberEmotes`. (#6756)
+- Dev: Refactored `DebugCount`. (#6753)
 - Dev: Moved `PluginMeta` to its own file. (#6757)
 
 ## 2.5.4
