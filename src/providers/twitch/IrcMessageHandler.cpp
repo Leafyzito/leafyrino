@@ -1067,14 +1067,16 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
 
         bool isBlocked = false;
         const auto twitchUserID = tags.value("user-id").toString();
-        const auto currentAccount = getApp()->getAccounts()->twitch.getCurrent();
+        const auto currentAccount =
+            getApp()->getAccounts()->twitch.getCurrent();
         if (!twitchUserID.isEmpty())
         {
             isBlocked = currentAccount->blockedUserIds().contains(twitchUserID);
         }
         else if (!senderLogin.isEmpty())
         {
-            isBlocked = currentAccount->blockedUserLogins().contains(senderLogin);
+            isBlocked =
+                currentAccount->blockedUserLogins().contains(senderLogin);
         }
 
         if (isBlocked)
@@ -1089,11 +1091,13 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
             builder.message().flags.set(MessageFlag::System);
             builder.message().flags.set(MessageFlag::DoNotTriggerNotification);
 
-            builder.message().messageText = placeholderText % u" "_s % showUserText;
+            builder.message().messageText =
+                placeholderText % u" "_s % showUserText;
             builder.message().searchText = builder.message().messageText;
 
             builder.emplace<TimestampElement>(time.time());
-            builder.emplace<TextElement>(placeholderText, MessageElementFlag::Text,
+            builder.emplace<TextElement>(placeholderText,
+                                         MessageElementFlag::Text,
                                          MessageColor::System);
             builder
                 .emplace<TextElement>(showUserText, MessageElementFlag::Text,

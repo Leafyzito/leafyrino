@@ -761,8 +761,8 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
             // see if the text fits in the current line
             if (container.fitsInLine(width))
             {
-                container.addElementNoLineBreak(getTextLayoutElement(
-                    word, width, hasTrailingSpace));
+                container.addElementNoLineBreak(
+                    getTextLayoutElement(word, width, hasTrailingSpace));
                 continue;
             }
 
@@ -773,8 +773,8 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
 
                 if (container.fitsInLine(width))
                 {
-                    container.addElementNoLineBreak(getTextLayoutElement(
-                        word, width, hasTrailingSpace));
+                    container.addElementNoLineBreak(
+                        getTextLayoutElement(word, width, hasTrailingSpace));
                     continue;
                 }
             }

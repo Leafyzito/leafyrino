@@ -13,7 +13,12 @@ namespace chatterino {
 class IgnorePhrase;
 struct TwitchEmoteOccurrence;
 
-enum class ShowIgnoredUsersMessages { Never, IfModerator, IfBroadcaster, Placeholder };
+enum class ShowIgnoredUsersMessages {
+    Never,
+    IfModerator,
+    IfBroadcaster,
+    Placeholder
+};
 
 struct IgnoredMessageParameters {
     QString message;
