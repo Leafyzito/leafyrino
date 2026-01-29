@@ -2,6 +2,7 @@
 
 ## Unversioned
 
+- Minor: Added a setting to display placeholder message for messages from blocked users.
 - Minor: Added Homies and FolhinhaBot badges.
 - Minor: Added color tab customization.
 - Minor: Moved "Logs" button from pfp menu to user info popup

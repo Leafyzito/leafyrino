@@ -1054,6 +1054,57 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
     args.isAction = isAction;
 
     const auto &tags = message->tags();
+
+    if (!isSub && getSettings()->enableTwitchBlockedUsers &&
+        getSettings()->showBlockedUsersMessages.getValue() ==
+            static_cast<int>(ShowIgnoredUsersMessages::Placeholder))
+    {
+        auto senderLogin = message->nick();
+        if (senderLogin.isEmpty())
+        {
+            senderLogin = tags.value("login").toString();
+        }
+
+        bool isBlocked = false;
+        const auto twitchUserID = tags.value("user-id").toString();
+        const auto currentAccount = getApp()->getAccounts()->twitch.getCurrent();
+        if (!twitchUserID.isEmpty())
+        {
+            isBlocked = currentAccount->blockedUserIds().contains(twitchUserID);
+        }
+        else if (!senderLogin.isEmpty())
+        {
+            isBlocked = currentAccount->blockedUserLogins().contains(senderLogin);
+        }
+
+        if (isBlocked)
+        {
+            const auto time = calculateMessageTime(message);
+            const auto placeholderText = u"Message from blocked user"_s;
+            const auto showUserText = u"(show user)"_s;
+
+            MessageBuilder builder;
+            builder.message().channelName = chan->getName();
+            builder.message().serverReceivedTime = time;
+            builder.message().flags.set(MessageFlag::System);
+            builder.message().flags.set(MessageFlag::DoNotTriggerNotification);
+
+            builder.message().messageText = placeholderText % u" "_s % showUserText;
+            builder.message().searchText = builder.message().messageText;
+
+            builder.emplace<TimestampElement>(time.time());
+            builder.emplace<TextElement>(placeholderText, MessageElementFlag::Text,
+                                         MessageColor::System);
+            builder
+                .emplace<TextElement>(showUserText, MessageElementFlag::Text,
+                                      MessageColor::Link)
+                ->setLink({Link::UserInfo, senderLogin})
+                ->setTrailingSpace(false);
+
+            sink.addMessage(builder.release(), MessageContext::Original);
+            return;
+        }
+    }
     QString rewardId;
     if (const auto it = tags.find("custom-reward-id"); it != tags.end())
     {

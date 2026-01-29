@@ -93,7 +93,8 @@ void addUsersTab(IgnoresPage &page, LayoutCreator<QVBoxLayout> users,
 
         auto *combo = anyways.emplace<QComboBox>().getElement();
         combo->addItems(
-            {"Never", "If you are Moderator", "If you are Broadcaster"});
+            {"Never", "If you are Moderator", "If you are Broadcaster",
+             "Placeholder (no content)"});
 
         auto &setting = getSettings()->showBlockedUsersMessages;
 

@@ -733,9 +733,12 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
         auto metrics =
             app->getFonts()->getFontMetrics(this->style_, container.getScale());
 
-        for (const auto &word : this->words_)
+        for (qsizetype i = 0; i < this->words_.size(); i++)
         {
+            const auto &word = this->words_.at(i);
             auto wordId = container.nextWordId();
+            const bool hasTrailingSpace =
+                (i + 1 < this->words_.size()) ? true : this->hasTrailingSpace();
 
             auto getTextLayoutElement = [&](QString text, qreal width,
                                             bool hasTrailingSpace) {
@@ -759,7 +762,7 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
             if (container.fitsInLine(width))
             {
                 container.addElementNoLineBreak(getTextLayoutElement(
-                    word, width, this->hasTrailingSpace()));
+                    word, width, hasTrailingSpace));
                 continue;
             }
 
@@ -771,7 +774,7 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
                 if (container.fitsInLine(width))
                 {
                     container.addElementNoLineBreak(getTextLayoutElement(
-                        word, width, this->hasTrailingSpace()));
+                        word, width, hasTrailingSpace));
                     continue;
                 }
             }
@@ -897,7 +900,7 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
             }
             //add the final piece of wrapped text
             container.addElementNoLineBreak(getTextLayoutElement(
-                word.mid(wordStart), width, this->hasTrailingSpace()));
+                word.mid(wordStart), width, hasTrailingSpace));
 #endif
         }
     }

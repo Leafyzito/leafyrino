@@ -192,6 +192,7 @@ bool isIgnoredMessage(IgnoredMessageParameters &&params)
                     }
                     break;
                 case ShowIgnoredUsersMessages::Never:
+                case ShowIgnoredUsersMessages::Placeholder:
                     break;
             }
 
