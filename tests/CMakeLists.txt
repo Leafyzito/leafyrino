@@ -62,6 +62,7 @@ set(test_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/FunctionRef.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/FolhinhaBadges.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/HomiesBadges.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/InputHighlighter.cpp
 
     ${CMAKE_CURRENT_LIST_DIR}/src/lib/Snapshot.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/lib/Snapshot.hpp

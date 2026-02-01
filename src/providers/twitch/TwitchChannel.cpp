@@ -49,6 +49,7 @@
 #include "singletons/StreamerMode.hpp"
 #include "singletons/Toasts.hpp"
 #include "singletons/WindowManager.hpp"
+#include "util/FormatTime.hpp"
 #include "util/Helpers.hpp"
 #include "util/PostToThread.hpp"
 #include "util/QStringHash.hpp"
@@ -70,6 +71,7 @@
 namespace chatterino {
 
 using namespace literals;
+using namespace std::chrono_literals;
 
 namespace detail {
 
@@ -217,6 +219,11 @@ TwitchChannel::TwitchChannel(const QString &name, bool isWatching)
             }
         });
 
+    QObject::connect(&this->sendWaitTimer_, &QTimer::timeout,
+                     &this->lifetimeGuard_, [this] {
+                         this->syncSendWaitTimer();
+                     });
+
     // debugging
 #if 0
     for (int i = 0; i < 1000; i++) {
@@ -245,6 +252,8 @@ TwitchChannel::~TwitchChannel()
         getApp()->getSeventvEventAPI()->unsubscribeTwitchChannel(
             this->roomId());
     }
+
+    this->destroyed.invoke();
 }
 
 void TwitchChannel::initialize()
@@ -848,7 +857,7 @@ void TwitchChannel::sendMessage(const QString &message)
     }
 
     bool messageSent = false;
-    this->sendMessageSignal.invoke(this->getName(), parsedMessage, messageSent);
+    this->sendMessageSignal.invoke(parsedMessage, messageSent);
     this->updateBttvActivity();
     this->updateSevenTVActivity();
 
@@ -890,8 +899,7 @@ void TwitchChannel::sendReply(const QString &message, const QString &replyId)
     }
 
     bool messageSent = false;
-    this->sendReplySignal.invoke(this->getName(), parsedMessage, replyId,
-                                 messageSent);
+    this->sendReplySignal.invoke(parsedMessage, replyId, messageSent);
 
     if (messageSent)
     {
@@ -1009,6 +1017,12 @@ SharedAccessGuard<const TwitchChannel::RoomModes>
 void TwitchChannel::setRoomModes(const RoomModes &newRoomModes)
 {
     this->roomModes = newRoomModes;
+
+    // Clear send wait timer when slow mode is disabled
+    if (newRoomModes.slowMode == 0)
+    {
+        this->setSendWait(newRoomModes.slowMode);
+    }
 
     this->roomModesChanged.invoke();
 }
@@ -2353,6 +2367,50 @@ void TwitchChannel::listenSevenTVCosmetics() const
     {
         getApp()->getSeventvEventAPI()->subscribeTwitchChannel(this->roomId());
     }
+}
+
+void TwitchChannel::syncSendWaitTimer()
+{
+    auto now = std::chrono::steady_clock::now();
+    const auto remaining =
+        this->sendWaitEnd_.has_value()
+            ? std::chrono::duration_cast<std::chrono::seconds>(
+                  this->sendWaitEnd_.value() - now)
+            : 0s;
+    if (remaining <= 0s)
+    {
+        this->sendWaitTimer_.stop();
+        this->sendWaitUpdate.invoke("");
+    }
+    else
+    {
+        this->sendWaitUpdate.invoke(formatTime(remaining, 2));
+    }
+}
+
+void TwitchChannel::setSendWait(int seconds)
+{
+    if (seconds <= 0)
+    {
+        if (this->sendWaitEnd_.has_value())
+        {
+            this->sendWaitEnd_ = std::nullopt;
+            this->syncSendWaitTimer();
+        }
+        return;
+    }
+    this->sendWaitEnd_ =
+        std::chrono::steady_clock::now() + std::chrono::seconds(seconds);
+    if (!this->sendWaitTimer_.isActive())
+    {
+        this->sendWaitTimer_.start(1s);
+        this->syncSendWaitTimer();
+    }
+}
+
+bool TwitchChannel::isLoadingRecentMessages() const
+{
+    return this->loadingRecentMessages_.test();
 }
 
 }  // namespace chatterino

@@ -17,6 +17,7 @@
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
+#include "singletons/Settings.hpp"
 
 #include <QTextCharFormat>
 #include <QTextDocument>
@@ -25,12 +26,9 @@ namespace {
 
 using namespace chatterino;
 
-bool isIgnoredWord(TwitchChannel *twitch, KickChannel *kick,
-                   const QString &word)
+bool isEmote(TwitchChannel *twitch, KickChannel *kick, const QString &word)
 {
     EmoteName name{word};
-    ChannelChatters *cc =
-        twitch ? static_cast<ChannelChatters *>(twitch) : kick;
     if (twitch)
     {
         if (twitch->bttvEmote(name) || twitch->ffzEmote(name) ||
@@ -58,11 +56,6 @@ bool isIgnoredWord(TwitchChannel *twitch, KickChannel *kick,
         }
     }
 
-    if (cc != nullptr && cc->accessChatters()->contains(word))
-    {
-        return true;
-    }
-
     if (getApp()->getBttvEmotes()->emote(name) ||
         getApp()->getFfzEmotes()->emote(name) ||
         getApp()->getSeventvEmotes()->globalEmote(name))
@@ -79,21 +72,69 @@ bool isIgnoredWord(TwitchChannel *twitch, KickChannel *kick,
         return true;
     }
 
+    return false;
+}
+
+bool isChatter(TwitchChannel *twitch, KickChannel *kick, const QString &word)
+{
+    ChannelChatters *cc =
+        twitch ? static_cast<ChannelChatters *>(twitch) : kick;
+    Channel *c = twitch ? static_cast<Channel *>(twitch) : kick;
+    if (cc)
+    {
+        if (cc->accessChatters()->contains(word) ||
+            (getSettings()->alwaysIncludeBroadcasterInUserCompletions &&
+             word.compare(c->getName(), Qt::CaseInsensitive) == 0))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isLink(const QString &token)
+{
     // TODO: Replace this with a link parser variant that doesn't return the parsed data
-    auto link = linkparser::parse(word);
+    auto link = linkparser::parse(token);
     return link.has_value();
+}
+
+bool isIgnoredWord(TwitchChannel *twitch, KickChannel *kick,
+                   const QString &word)
+{
+    return isEmote(twitch, kick, word) || isChatter(twitch, kick, word);
+}
+
+bool isIgnoredToken(TwitchChannel *twitch, KickChannel *kick,
+                    const QString &token)
+{
+    return isEmote(twitch, kick, token) || isLink(token);
 }
 
 }  // namespace
 
 namespace chatterino {
 
+namespace inputhighlight::detail {
+
+// A word is a string of unicode letters. Words are seperated by whitespace
+// (tokenRegex) or, inside a token, by punctuation characters (except '_')
+QRegularExpression wordRegex()
+{
+    static QRegularExpression regex{
+        R"((?<=^|(?!_)\p{P})\p{L}+(?=$|(?!_)\p{P}))",
+        QRegularExpression::PatternOption::UseUnicodePropertiesOption,
+    };
+    return regex;
+}
+
+}  // namespace inputhighlight::detail
+
 InputHighlighter::InputHighlighter(SpellChecker &spellChecker, QObject *parent)
     : QSyntaxHighlighter(parent)
     , spellChecker(spellChecker)
-    // FIXME: this also matches URLs - this probably needs to be some function like Firefox' mozEnglishWordUtils::FindNextWord
-    , wordRegex(R"(\p{L}(?:\P{Z}+\p{L}+)*)",
-                QRegularExpression::PatternOption::UseUnicodePropertiesOption)
+    , wordRegex(inputhighlight::detail::wordRegex())
+    , tokenRegex(R"(\S+)")
 {
     this->spellFmt.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
     this->spellFmt.setUnderlineColor(Qt::red);
@@ -109,12 +150,36 @@ void InputHighlighter::setChannel(const std::shared_ptr<Channel> &channel)
     this->rehighlight();
 }
 
+std::vector<QString> InputHighlighter::getSpellCheckedWords(const QString &text)
+{
+    std::vector<QString> words;
+    this->visitWords(text, [&](const QString &word, qsizetype /*start*/,
+                               qsizetype /*count*/) {
+        words.emplace_back(word);
+    });
+    return words;
+}
+
 void InputHighlighter::highlightBlock(const QString &text)
 {
     if (!this->spellChecker.isLoaded())
     {
         return;
     }
+    this->visitWords(
+        text, [&](const QString &word, qsizetype start, qsizetype count) {
+            if (!this->spellChecker.check(word))
+            {
+                this->setFormat(static_cast<int>(start),
+                                static_cast<int>(count), this->spellFmt);
+            }
+        });
+}
+
+void InputHighlighter::visitWords(
+    const QString &text,
+    std::invocable<const QString &, qsizetype, qsizetype> auto &&cb)
+{
     auto *channel = this->channel.lock().get();
     auto *kick = this->kickChannel.lock().get();
 
@@ -124,22 +189,32 @@ void InputHighlighter::highlightBlock(const QString &text)
     auto cmdTriggerLen = getApp()->getCommands()->commandTriggerLen(textView);
     textView = textView.sliced(cmdTriggerLen);
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-    auto it = this->wordRegex.globalMatchView(textView);
-#else
-    auto it = this->wordRegex.globalMatch(textView);
-#endif
+    auto tokenIt = this->tokenRegex.globalMatchView(textView);
 
-    while (it.hasNext())
+    // iterate over whitespace-delimited tokens
+    while (tokenIt.hasNext())
     {
-        auto match = it.next();
-        auto text = match.captured();
-        if (!isIgnoredWord(channel, kick, text) &&
-            !this->spellChecker.check(text))
+        auto tokenMatch = tokenIt.next();
+        auto token = tokenMatch.captured();
+        if (isIgnoredToken(channel, kick, token))
         {
-            this->setFormat(
-                static_cast<int>(match.capturedStart() + cmdTriggerLen),
-                static_cast<int>(text.size()), this->spellFmt);
+            continue;
+        }
+
+        auto wordIt = this->wordRegex.globalMatchView(token);
+
+        while (wordIt.hasNext())
+        {
+            auto wordMatch = wordIt.next();
+            auto word = wordMatch.captured();
+
+            if (!isIgnoredWord(channel, kick, word))
+            {
+                cb(word,
+                   static_cast<int>(cmdTriggerLen + tokenMatch.capturedStart() +
+                                    wordMatch.capturedStart()),
+                   static_cast<int>(word.size()));
+            }
         }
     }
 }
