@@ -15,8 +15,11 @@
 #include <QPointer>
 
 #include <chrono>
+#include <functional>
+#include <map>
 
 class QCheckBox;
+class QKeyEvent;
 class QMovie;
 
 namespace chatterino {
@@ -53,7 +56,14 @@ protected:
     void scaleChangedEvent(float scale) override;
     void windowDeactivationEvent() override;
 
+    void keyPressEvent(QKeyEvent *event) override;
+
 private:
+    /// Registers a mnemonic from the button's label (e.g. "&Logs" -> Alt+L).
+    /// When Alt+key is pressed and the button is visible, @a action is invoked.
+    void registerMnemonicButton(LabelButton *button,
+                                 std::function<void()> action);
+
     void installEvents();
     void updateUserData();
     void updateLatestMessages();
@@ -142,6 +152,11 @@ private:
 
     bool isKick_ = false;
     uint64_t kickUserID_ = 0;
+
+    /// Alt+key -> (action, visibility check). Populated from button labels
+    /// containing "&" (e.g. "&Logs"). Same logic as ChannelView menu mnemonics.
+    std::map<int, std::pair<std::function<void()>, std::function<bool()>>>
+        mnemonicActions_;
 
     class TimeoutWidget : public BaseWidget
     {

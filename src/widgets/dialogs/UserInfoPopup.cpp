@@ -53,6 +53,7 @@
 
 #include <QCheckBox>
 #include <QDesktopServices>
+#include <QKeyEvent>
 #include <QFile>
 #include <QMessageBox>
 #include <QMetaEnum>
@@ -508,12 +509,12 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
             .assign(&this->ui_.ignoreHighlights);
         // visibility of this is updated in setData
 
-        user.emplace<LabelButton>("Add notes", this)
+        user.emplace<LabelButton>("Add &notes", this)
             .assign(&this->ui_.notesAdd);
-        auto usercard = user.emplace<LabelButton>("Usercard", this)
+        auto usercard = user.emplace<LabelButton>("&Usercard", this)
                             .assign(&this->ui_.usercardLabel);
 
-        auto userlogs = user.emplace<LabelButton>("Logs", this)
+        auto userlogs = user.emplace<LabelButton>("&Logs", this)
                             .assign(&this->ui_.userlogsLabel);
 
         userlogs->setVisible(false);
@@ -533,17 +534,23 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
 
         user->addStretch(1);
 
-        QObject::connect(usercard.getElement(), &Button::leftClicked, [this] {
+        auto openUsercard = [this] {
             QDesktopServices::openUrl("https://www.twitch.tv/popout/" +
                                       this->underlyingChannel_->getName() +
                                       "/viewercard/" + this->userName_);
-        });
+        };
+        QObject::connect(usercard.getElement(), &Button::leftClicked,
+                        openUsercard);
+        this->registerMnemonicButton(this->ui_.usercardLabel, openUsercard);
 
-        QObject::connect(userlogs.getElement(), &Button::leftClicked, [this] {
+        auto openLogs = [this] {
             QDesktopServices::openUrl("https://tv.supa.sh/logs?c=" +
                                       this->underlyingChannel_->getName() +
                                       "&u=" + this->userName_);
-        });
+        };
+        QObject::connect(userlogs.getElement(), &Button::leftClicked,
+                        openLogs);
+        this->registerMnemonicButton(this->ui_.userlogsLabel, openLogs);
 
         QObject::connect(mod.getElement(), &Button::leftClicked, [this] {
             QString value = "/mod " + this->userName_;
@@ -756,6 +763,45 @@ void UserInfoPopup::windowDeactivationEvent()
     }
 }
 
+void UserInfoPopup::registerMnemonicButton(LabelButton *button,
+                                            std::function<void()> action)
+{
+    if (button == nullptr)
+    {
+        return;
+    }
+    const QString text = button->text();
+    const int idx = text.indexOf(u'&');
+    if (idx < 0 || idx + 1 >= text.length())
+    {
+        return;
+    }
+    const int key = text.at(idx + 1).toUpper().unicode();
+    LabelButton *btn = button;
+    this->mnemonicActions_[key] = {std::move(action), [btn]() {
+                                     return btn->isVisible();
+                                 }};
+}
+
+void UserInfoPopup::keyPressEvent(QKeyEvent *event)
+{
+    {
+        auto it = this->mnemonicActions_.find(event->key());
+        if (it != this->mnemonicActions_.end())
+        {
+            const auto &[action, visibilityCheck] = it->second;
+            if (!visibilityCheck || visibilityCheck())
+            {
+                action();
+                event->accept();
+                return;
+            }
+        }
+    }
+
+    BaseWindow::keyPressEvent(event);
+}
+
 void UserInfoPopup::installEvents()
 {
     std::shared_ptr<bool> ignoreNext = std::make_shared<bool>(false);
@@ -887,26 +933,27 @@ void UserInfoPopup::installEvents()
         });
 
     // user notes
-    QObject::connect(
-        this->ui_.notesAdd, &LabelButton::clicked, [this]() mutable {
-            if (this->editUserNotesDialog_.isNull())
-            {
-                this->editUserNotesDialog_ = new EditUserNotesDialog(this);
-                // ignoring since it the dialog is only used in this instance
-                std::ignore = this->editUserNotesDialog_->onOk.connect(
-                    [userId = this->userId_](const QString &newNotes) {
-                        getApp()->getUserData()->setUserNotes(userId, newNotes);
-                    });
-            }
+    auto openNotes = [this]() mutable {
+        if (this->editUserNotesDialog_.isNull())
+        {
+            this->editUserNotesDialog_ = new EditUserNotesDialog(this);
+            std::ignore = this->editUserNotesDialog_->onOk.connect(
+                [userId = this->userId_](const QString &newNotes) {
+                    getApp()->getUserData()->setUserNotes(userId, newNotes);
+                });
+        }
 
-            auto userData = getApp()->getUserData()->getUser(this->userId_);
-            auto initialNotes =
-                userData.has_value() ? userData->notes : QString();
+        auto userData = getApp()->getUserData()->getUser(this->userId_);
+        auto initialNotes =
+            userData.has_value() ? userData->notes : QString();
 
-            this->editUserNotesDialog_->setNotes(initialNotes);
-            this->editUserNotesDialog_->updateWindowTitle(this->userName_);
-            this->editUserNotesDialog_->show();
-        });
+        this->editUserNotesDialog_->setNotes(initialNotes);
+        this->editUserNotesDialog_->updateWindowTitle(this->userName_);
+        this->editUserNotesDialog_->show();
+    };
+    QObject::connect(this->ui_.notesAdd, &LabelButton::clicked,
+                    [openNotes](Qt::MouseButton) mutable { openNotes(); });
+    this->registerMnemonicButton(this->ui_.notesAdd, openNotes);
 
     // user data updated
     this->userDataUpdatedConnection_ =

@@ -50,10 +50,15 @@ protected:
 
 private:
     void updatePadding();
+    /// Converts mnemonic text ("&X") to rich text with underlined letter.
+    /// "&&" is rendered as literal "&". Returns plain text if no "&" found.
+    static QString mnemonicToDisplayText(const QString &text);
 
     QHBoxLayout layout_;
     QLabel label_;
     QSize padding_;
+    /// Original text (with "&") so text() returns the raw string for mnemonic parsing.
+    QString text_;
 };
 
 }  // namespace chatterino
