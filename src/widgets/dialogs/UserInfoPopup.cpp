@@ -53,8 +53,8 @@
 
 #include <QCheckBox>
 #include <QDesktopServices>
-#include <QKeyEvent>
 #include <QFile>
+#include <QKeyEvent>
 #include <QMessageBox>
 #include <QMetaEnum>
 #include <QMovie>
@@ -540,7 +540,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                                       "/viewercard/" + this->userName_);
         };
         QObject::connect(usercard.getElement(), &Button::leftClicked,
-                        openUsercard);
+                         openUsercard);
         this->registerMnemonicButton(this->ui_.usercardLabel, openUsercard);
 
         auto openLogs = [this] {
@@ -548,8 +548,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                                       this->underlyingChannel_->getName() +
                                       "&u=" + this->userName_);
         };
-        QObject::connect(userlogs.getElement(), &Button::leftClicked,
-                        openLogs);
+        QObject::connect(userlogs.getElement(), &Button::leftClicked, openLogs);
         this->registerMnemonicButton(this->ui_.userlogsLabel, openLogs);
 
         QObject::connect(mod.getElement(), &Button::leftClicked, [this] {
@@ -764,7 +763,7 @@ void UserInfoPopup::windowDeactivationEvent()
 }
 
 void UserInfoPopup::registerMnemonicButton(LabelButton *button,
-                                            std::function<void()> action)
+                                           std::function<void()> action)
 {
     if (button == nullptr)
     {
@@ -779,8 +778,8 @@ void UserInfoPopup::registerMnemonicButton(LabelButton *button,
     const int key = text.at(idx + 1).toUpper().unicode();
     LabelButton *btn = button;
     this->mnemonicActions_[key] = {std::move(action), [btn]() {
-                                     return btn->isVisible();
-                                 }};
+                                       return btn->isVisible();
+                                   }};
 }
 
 void UserInfoPopup::keyPressEvent(QKeyEvent *event)
@@ -944,15 +943,16 @@ void UserInfoPopup::installEvents()
         }
 
         auto userData = getApp()->getUserData()->getUser(this->userId_);
-        auto initialNotes =
-            userData.has_value() ? userData->notes : QString();
+        auto initialNotes = userData.has_value() ? userData->notes : QString();
 
         this->editUserNotesDialog_->setNotes(initialNotes);
         this->editUserNotesDialog_->updateWindowTitle(this->userName_);
         this->editUserNotesDialog_->show();
     };
     QObject::connect(this->ui_.notesAdd, &LabelButton::clicked,
-                    [openNotes](Qt::MouseButton) mutable { openNotes(); });
+                     [openNotes](Qt::MouseButton) mutable {
+                         openNotes();
+                     });
     this->registerMnemonicButton(this->ui_.notesAdd, openNotes);
 
     // user data updated

@@ -24,8 +24,8 @@ QString LabelButton::mnemonicToDisplayText(const QString &text)
             if (i + 1 < text.size())
             {
                 QChar mnemonic = text.at(i + 1);
-                result += QStringLiteral("<u>") + mnemonic +
-                          QStringLiteral("</u>");
+                result +=
+                    QStringLiteral("<u>") + mnemonic + QStringLiteral("</u>");
                 i += 2;
                 continue;
             }

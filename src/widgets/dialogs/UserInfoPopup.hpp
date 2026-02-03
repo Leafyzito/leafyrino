@@ -62,7 +62,7 @@ private:
     /// Registers a mnemonic from the button's label (e.g. "&Logs" -> Alt+L).
     /// When Alt+key is pressed and the button is visible, @a action is invoked.
     void registerMnemonicButton(LabelButton *button,
-                                 std::function<void()> action);
+                                std::function<void()> action);
 
     void installEvents();
     void updateUserData();
