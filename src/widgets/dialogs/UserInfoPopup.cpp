@@ -1315,8 +1315,8 @@ void UserInfoPopup::updateUserData()
 
                 if (userInfo.chatterCount >= 0)
                 {
-                    this->ui_.chattersLabel->setText(
-                        TEXT_CHATTERS.arg(localizeNumbers(userInfo.chatterCount)));
+                    this->ui_.chattersLabel->setText(TEXT_CHATTERS.arg(
+                        localizeNumbers(userInfo.chatterCount)));
                 }
                 else
                 {
@@ -1330,8 +1330,9 @@ void UserInfoPopup::updateUserData()
                         userInfo.lastBroadcastStartedAt.section("T", 0, 0)));
                     this->ui_.lastLiveLabel->setToolTip(
                         formatLongFriendlyDuration(
-                            QDateTime::fromString(userInfo.lastBroadcastStartedAt,
-                                                  Qt::ISODateWithMs),
+                            QDateTime::fromString(
+                                userInfo.lastBroadcastStartedAt,
+                                Qt::ISODateWithMs),
                             QDateTime::currentDateTimeUtc()) +
                         u" ago"_s);
                     this->ui_.lastLiveLabel->setMouseTracking(true);
