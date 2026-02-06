@@ -72,6 +72,8 @@ constexpr QStringView TEXT_UNAVAILABLE = u"(not available)";
 constexpr QStringView TEXT_PRONOUNS = u"Pronouns: %1";
 constexpr QStringView TEXT_UNSPECIFIED = u"(unspecified)";
 constexpr QStringView TEXT_LOADING = u"(loading...)";
+constexpr QStringView TEXT_LAST_LIVE = u"Last Live: %1";
+constexpr QStringView TEXT_CHATTERS = u"Chatters: %1";
 
 constexpr QStringView SEVENTV_TWITCH_USER_API =
     u"https://7tv.io/v3/users/twitch/%1";
@@ -489,8 +491,12 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
             }
             vbox.emplace<Label>(TEXT_FOLLOWERS.arg(""))
                 .assign(&this->ui_.followerCountLabel);
+            vbox.emplace<Label>(TEXT_CHATTERS.arg(""))
+                .assign(&this->ui_.chattersLabel);
             vbox.emplace<Label>(TEXT_CREATED.arg(""))
                 .assign(&this->ui_.createdDateLabel);
+            vbox.emplace<Label>(TEXT_LAST_LIVE.arg(""))
+                .assign(&this->ui_.lastLiveLabel);
             vbox.emplace<Label>("").assign(&this->ui_.followageLabel);
             vbox.emplace<Label>("").assign(&this->ui_.subageLabel);
             vbox.emplace<Label>("").assign(&this->ui_.rolesLabel);
@@ -1086,6 +1092,8 @@ void UserInfoPopup::updateUserData()
         this->ui_.followerCountLabel->setText(
             TEXT_FOLLOWERS.arg(TEXT_UNAVAILABLE));
         this->ui_.createdDateLabel->setText(TEXT_CREATED.arg(TEXT_UNAVAILABLE));
+        this->ui_.lastLiveLabel->setText(TEXT_LAST_LIVE.arg(TEXT_UNAVAILABLE));
+        this->ui_.chattersLabel->setText(TEXT_CHATTERS.arg(TEXT_UNAVAILABLE));
 
         this->ui_.nameLabel->setText(this->userName_);
 
@@ -1140,6 +1148,8 @@ void UserInfoPopup::updateUserData()
                 QDateTime::currentDateTimeUtc()) +
             u" ago"_s);
         this->ui_.createdDateLabel->setMouseTracking(true);
+        this->ui_.lastLiveLabel->setText(TEXT_LAST_LIVE.arg(TEXT_UNAVAILABLE));
+        this->ui_.chattersLabel->setText(TEXT_CHATTERS.arg(TEXT_UNAVAILABLE));
         this->ui_.userIDLabel->setText(TEXT_USER_ID % user.id);
         this->ui_.userIDLabel->setProperty("copy-text", user.id);
 
@@ -1302,6 +1312,35 @@ void UserInfoPopup::updateUserData()
                 }
 
                 this->ui_.rolesLabel->setText((rolesString));
+
+                if (userInfo.chatterCount >= 0)
+                {
+                    this->ui_.chattersLabel->setText(
+                        TEXT_CHATTERS.arg(localizeNumbers(userInfo.chatterCount)));
+                }
+                else
+                {
+                    this->ui_.chattersLabel->setText(
+                        TEXT_CHATTERS.arg(TEXT_UNAVAILABLE));
+                }
+
+                if (!userInfo.lastBroadcastStartedAt.isEmpty())
+                {
+                    this->ui_.lastLiveLabel->setText(TEXT_LAST_LIVE.arg(
+                        userInfo.lastBroadcastStartedAt.section("T", 0, 0)));
+                    this->ui_.lastLiveLabel->setToolTip(
+                        formatLongFriendlyDuration(
+                            QDateTime::fromString(userInfo.lastBroadcastStartedAt,
+                                                  Qt::ISODateWithMs),
+                            QDateTime::currentDateTimeUtc()) +
+                        u" ago"_s);
+                    this->ui_.lastLiveLabel->setMouseTracking(true);
+                }
+                else
+                {
+                    this->ui_.lastLiveLabel->setText(
+                        TEXT_LAST_LIVE.arg(TEXT_UNAVAILABLE));
+                }
             },
             [] {});
 
@@ -1571,6 +1610,8 @@ void UserInfoPopup::updateKickUserData()
         self->ui_.followerCountLabel->setText(
             TEXT_FOLLOWERS.arg(TEXT_UNAVAILABLE));
         self->ui_.createdDateLabel->setText(TEXT_CREATED.arg(TEXT_UNAVAILABLE));
+        self->ui_.lastLiveLabel->setText(TEXT_LAST_LIVE.arg(TEXT_UNAVAILABLE));
+        self->ui_.chattersLabel->setText(TEXT_CHATTERS.arg(TEXT_UNAVAILABLE));
 
         self->ui_.nameLabel->setText(self->userName_);
 
@@ -1611,6 +1652,8 @@ void UserInfoPopup::updateKickUserData()
                                        QDateTime::currentDateTimeUtc()) +
             u" ago"_s);
         self->ui_.createdDateLabel->setMouseTracking(true);
+        self->ui_.lastLiveLabel->setText(TEXT_LAST_LIVE.arg(TEXT_UNAVAILABLE));
+        self->ui_.chattersLabel->setText(TEXT_CHATTERS.arg(TEXT_UNAVAILABLE));
         self->ui_.userIDLabel->setText(TEXT_USER_ID % userIDStr);
         self->ui_.userIDLabel->setProperty("copy-text", userIDStr);
 

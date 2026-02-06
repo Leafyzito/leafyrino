@@ -125,6 +125,8 @@ private:
         Label *pronounsLabel = nullptr;
         Label *followerCountLabel = nullptr;
         Label *createdDateLabel = nullptr;
+        Label *lastLiveLabel = nullptr;
+        Label *chattersLabel = nullptr;
         Label *userIDLabel = nullptr;
         Label *followageLabel = nullptr;
         Label *subageLabel = nullptr;

@@ -41,6 +41,8 @@ struct IvrResolve {
     const bool isBot;
     const bool isStaff;
     const bool isExStaff;
+    const int chatterCount;
+    const QString lastBroadcastStartedAt;
 
     IvrResolve(QJsonArray arr)
         : isPartner(arr.at(0)
@@ -75,6 +77,15 @@ struct IvrResolve {
                          .value("isStaff")
                          .toBool() &&
                     !arr.at(0).isUndefined())
+        , chatterCount(arr.at(0).toObject().value("chatterCount").isNull()
+                           ? -1
+                           : arr.at(0).toObject().value("chatterCount").toInt())
+        , lastBroadcastStartedAt(arr.at(0)
+                                     .toObject()
+                                     .value("lastBroadcast")
+                                     .toObject()
+                                     .value("startedAt")
+                                     .toString())
     {
     }
 };
