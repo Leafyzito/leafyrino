@@ -185,7 +185,7 @@ bool KickAccountManager::removeAccount(KickAccount *account)
     }
 
     auto accountPath = "/kickAccounts/uid" + std::to_string(account->userID());
-    pajlada::Settings::SettingManager::removeSetting(accountPath);
+    pajlada::Settings::SettingManager::gRemoveSetting(accountPath);
 
     if (account->username() == this->currentUsername)
     {

@@ -325,7 +325,7 @@ void Updates::checkForUpdates()
     }
 
     // Disable updates if on nightly
-    if (Modes::instance().isNightly)
+    if (version.isNightly())
     {
         return;
     }

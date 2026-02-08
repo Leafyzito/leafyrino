@@ -4,57 +4,22 @@
 
 #include "common/Version.hpp"
 
-#include "common/Literals.hpp"
-#include "common/Modes.hpp"
-
 #include <QFileInfo>
 #include <QStringBuilder>
 
-#ifdef Q_OS_MACOS
-
-#    include <sys/sysctl.h>
-#    include <sys/types.h>
-
-namespace {
-
-// From https://forums.developer.apple.com/forums/thread/653009
-bool runningInRosetta()
-{
-    int ret = 0;
-    size_t size = sizeof(ret);
-    // Call the sysctl and if successful return the result
-    if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) != -1)
-    {
-        return ret != 0;
-    }
-    // If "sysctl.proc_translated" is not present then must be native
-    if (errno == ENOENT)
-    {
-        return false;
-    }
-
-    return false;
-}
-
-}  // namespace
-
-#endif
-
 namespace chatterino {
 
-using namespace literals;
+using namespace Qt::Literals;
 
 Version::Version()
     : version_(CHATTERINO_VERSION)
     , commitHash_(QStringLiteral(CHATTERINO_GIT_HASH))
     , isModified_(CHATTERINO_GIT_MODIFIED == 1)
     , dateOfBuild_(QStringLiteral(CHATTERINO_CMAKE_GEN_DATE))
-#ifdef Q_OS_MACOS
-    , isRunningInRosetta_(runningInRosetta())
-#endif
+    , isNightly_(CHATTERINO_NIGHTLY_BUILD == 1)
 {
     this->fullVersion_ = "Leafyrino ";
-    if (Modes::instance().isNightly)
+    if (this->isNightly())
     {
         this->fullVersion_ += "Nightly ";
     }
@@ -162,6 +127,11 @@ const QString &Version::extraString() const
     return this->extraString_;
 }
 
+bool Version::isNightly() const
+{
+    return this->isNightly_;
+}
+
 void Version::generateBuildString()
 {
     // e.g. Chatterino 2.3.5 or Chatterino Nightly 2.3.5
@@ -184,7 +154,7 @@ void Version::generateBuildString()
     s += " built";
 
     // If the build is a nightly build (decided with modes atm), include build date information
-    if (Modes::instance().isNightly)
+    if (this->isNightly())
     {
         s += " on " + this->dateOfBuild();
     }
