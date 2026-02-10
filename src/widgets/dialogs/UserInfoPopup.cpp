@@ -55,6 +55,7 @@
 #include <QDesktopServices>
 #include <QFile>
 #include <QKeyEvent>
+#include <QMenu>
 #include <QMessageBox>
 #include <QMetaEnum>
 #include <QMovie>
@@ -282,6 +283,10 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
              this->togglePinned();
              return "";
          }},
+        {"openProfilePictureMenu",
+         [this](std::vector<QString> /*arguments*/) -> QString {
+             return this->showProfilePictureContextMenu();
+         }},
 
         // these actions make no sense in the context of a usercard, so they aren't implemented
         {"reject", nullptr},
@@ -307,110 +312,31 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
             &this->ui_.avatarButton);
         avatar->setScaleIndependentSize(100, 100);
         avatar->setDim(DimButton::Dim::None);
-        QObject::connect(
-            avatar.getElement(), &Button::clicked,
-            [this](Qt::MouseButton button) {
-                if (this->isKick_)
-                {
-                    this->onKickProfilePictureClick(button);
-                    return;
-                }
+        QObject::connect(avatar.getElement(), &Button::clicked,
+                         [this](Qt::MouseButton button) {
+                             if (this->isKick_)
+                             {
+                                 this->onKickProfilePictureClick(button);
+                                 return;
+                             }
 
-                switch (button)
-                {
-                    case Qt::LeftButton: {
-                        QDesktopServices::openUrl(
-                            QUrl("https://www.twitch.tv/" +
-                                 this->userName_.toLower()));
-                    }
-                    break;
+                             switch (button)
+                             {
+                                 case Qt::LeftButton: {
+                                     QDesktopServices::openUrl(
+                                         QUrl("https://www.twitch.tv/" +
+                                              this->userName_.toLower()));
+                                 }
+                                 break;
 
-                    case Qt::RightButton: {
-                        // don't raise open context menu if there's no avatar (probably in cases when invalid user's usercard was opened)
-                        if (this->avatarUrl_.isEmpty())
-                        {
-                            return;
-                        }
+                                 case Qt::RightButton: {
+                                     this->showProfilePictureContextMenu();
+                                 }
+                                 break;
 
-                        auto *menu = new QMenu(this);
-                        menu->setAttribute(Qt::WA_DeleteOnClose);
-
-                        auto avatarUrl = this->avatarUrl_;
-                        auto username = this->userName_;
-
-                        // add context menu actions
-                        menu->addAction("Open &avatar in browser", [avatarUrl] {
-                            QDesktopServices::openUrl(QUrl(avatarUrl));
-                        });
-
-                        menu->addAction("Copy a&vatar link", [avatarUrl] {
-                            crossPlatformCopy(avatarUrl);
-                        });
-
-                        //Chat Vault profile
-                        menu->addAction(
-                            "Open &Chat Vault profile in browser", [username] {
-                                QDesktopServices::openUrl(
-                                    QUrl("https://chatvau.lt/channel/twitch/" +
-                                         username));
-                            });
-
-                        // 7TV user page
-                        if (!this->stvUserId_.isEmpty())
-                        {
-                            auto stvUserId = this->stvUserId_;
-                            menu->addAction(
-                                "Open &7TV user page in browser", [stvUserId] {
-                                    QDesktopServices::openUrl(QUrl(
-                                        "https://7tv.app/users/" + stvUserId));
-                                });
-                        }
-
-                        // Channel logs
-                        menu->addAction(
-                            "Open channel &logs in browser", [username] {
-                                QDesktopServices::openUrl(QUrl(
-                                    "https://tv.supa.sh/logs?c=" + username));
-                            });
-
-                        // we need to assign login name for msvc compilation
-                        auto loginName = this->userName_.toLower();
-                        menu->addAction(
-                            "Open channel in a new &popup window", this,
-                            [loginName] {
-                                auto *app = getApp();
-                                auto &window = app->getWindows()->createWindow(
-                                    WindowType::Popup, true);
-                                auto *split = window.getNotebook()
-                                                  .getOrAddSelectedPage()
-                                                  ->appendNewSplit(false);
-                                split->setChannel(
-                                    app->getTwitch()->getOrAddChannel(
-                                        loginName.toLower()));
-                            });
-
-                        menu->addAction(
-                            "Open channel in a new &tab", this, [loginName] {
-                                ChannelPtr channel =
-                                    getApp()->getTwitch()->getOrAddChannel(
-                                        loginName);
-                                auto &nb = getApp()
-                                               ->getWindows()
-                                               ->getMainWindow()
-                                               .getNotebook();
-                                SplitContainer *container = nb.addPage(true);
-                                Split *split = new Split(container);
-                                split->setChannel(channel);
-                                container->insertSplit(split);
-                            });
-                        menu->popup(QCursor::pos());
-                        menu->raise();
-                    }
-                    break;
-
-                    default:;
-                }
-            });
+                                 default:;
+                             }
+                         });
         auto switchAv =
             avatarBox.emplace<LabelButton>(QString{}, nullptr, QSize{2, 2})
                 .assign(&this->ui_.switchAvatars);
@@ -1753,6 +1679,76 @@ void UserInfoPopup::updateKickUserData()
     bool isMyself = false;  // FIXME: kick account
     this->ui_.block->setVisible(!isMyself);
     this->ui_.ignoreHighlights->setVisible(!isMyself);
+}
+
+QString UserInfoPopup::showProfilePictureContextMenu()
+{
+    if (this->avatarUrl_.isEmpty())
+    {
+        return "No profile picture available";
+    }
+
+    if (this->isKick_)
+    {
+        this->onKickProfilePictureClick(Qt::RightButton);
+        return "";
+    }
+
+    // Twitch: build and show the profile picture context menu
+    auto *menu = new QMenu(this);
+    menu->setAttribute(Qt::WA_DeleteOnClose);
+
+    auto avatarUrl = this->avatarUrl_;
+    auto username = this->userName_;
+
+    menu->addAction("Open &avatar in browser", [avatarUrl] {
+        QDesktopServices::openUrl(QUrl(avatarUrl));
+    });
+
+    menu->addAction("Copy a&vatar link", [avatarUrl] {
+        crossPlatformCopy(avatarUrl);
+    });
+
+    menu->addAction("Open &Chat Vault profile in browser", [username] {
+        QDesktopServices::openUrl(
+            QUrl("https://chatvau.lt/channel/twitch/" + username));
+    });
+
+    if (!this->stvUserId_.isEmpty())
+    {
+        auto stvUserId = this->stvUserId_;
+        menu->addAction("Open &7TV user page in browser", [stvUserId] {
+            QDesktopServices::openUrl(
+                QUrl("https://7tv.app/users/" + stvUserId));
+        });
+    }
+
+    menu->addAction("Open channel &logs in browser", [username] {
+        QDesktopServices::openUrl(
+            QUrl("https://tv.supa.sh/logs?c=" + username));
+    });
+
+    auto loginName = this->userName_.toLower();
+    menu->addAction("Open channel in a new &popup window", this, [loginName] {
+        auto *app = getApp();
+        auto &window = app->getWindows()->createWindow(WindowType::Popup, true);
+        auto *split =
+            window.getNotebook().getOrAddSelectedPage()->appendNewSplit(false);
+        split->setChannel(
+            app->getTwitch()->getOrAddChannel(loginName.toLower()));
+    });
+
+    menu->addAction("Open channel in a new &tab", this, [loginName] {
+        ChannelPtr channel = getApp()->getTwitch()->getOrAddChannel(loginName);
+        auto &nb = getApp()->getWindows()->getMainWindow().getNotebook();
+        SplitContainer *container = nb.addPage(true);
+        Split *split = new Split(container);
+        split->setChannel(channel);
+        container->insertSplit(split);
+    });
+    menu->popup(QCursor::pos());
+    menu->raise();
+    return "";
 }
 
 void UserInfoPopup::onKickProfilePictureClick(Qt::MouseButton button)

@@ -75,6 +75,7 @@ ReplyThreadPopup::ReplyThreadPopup(bool closeAutomatically, Split *split)
 
         // these actions make no sense in the context of a reply thread, so they aren't implemented
         {"execModeratorAction", nullptr},
+        {"openProfilePictureMenu", nullptr},
         {"reject", nullptr},
         {"accept", nullptr},
         {"openTab", nullptr},

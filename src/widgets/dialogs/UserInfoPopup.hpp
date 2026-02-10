@@ -83,6 +83,10 @@ private:
     void updateKickUserData();
     void onKickProfilePictureClick(Qt::MouseButton button);
 
+    /// Shows the profile picture context menu (avatar right-click menu).
+    /// Returns an error message if the menu could not be shown, empty on success.
+    QString showProfilePictureContextMenu();
+
     QStringView platformName() const;
 
     bool isMod_{};

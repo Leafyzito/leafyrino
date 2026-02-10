@@ -370,6 +370,10 @@ void HotkeyController::addDefaults(std::set<QString> &addedHotkeys)
         this->tryAddDefault(addedHotkeys, HotkeyCategory::PopupWindow,
                             QKeySequence("Ctrl+F"), "search",
                             std::vector<QString>(), "popup focus search box");
+        this->tryAddDefault(addedHotkeys, HotkeyCategory::PopupWindow,
+                            QKeySequence("M"), "openProfilePictureMenu",
+                            std::vector<QString>(),
+                            "usercard open profile picture menu");
     }
 
     // split

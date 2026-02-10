@@ -2,6 +2,7 @@
 
 ## Unversioned
 
+- Minor: Usercard profile picture menu can be opened with hotkey M.
 - Minor: Added last live time and chatter count to user info popup.
 - Minor: Added mnemonics to the UserInfoPopup action buttons.
 - Minor: Added a setting to display placeholder message for messages from blocked users.

@@ -90,6 +90,8 @@ inline const std::map<HotkeyCategory, ActionDefinitionMap> actionNames{
               "Usercard: execute moderation action",
               "<ban, unban or number of the timeout button to use>", 1}},
          {"pin", ActionDefinition{"Usercard, reply thread: pin window"}},
+         {"openProfilePictureMenu",
+          ActionDefinition{"Usercard: Open profile picture menu"}},
      }},
     {HotkeyCategory::Split,
      {
