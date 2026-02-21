@@ -1410,6 +1410,14 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->setDescription(
             "This aims to match the appearance of paints in the browser.")
         ->addTo(layout);
+    {
+        auto cb = [] {
+            getApp()->getWindows()->invalidateChannelViewBuffers();
+        };
+        s.displaySevenTVPaints.connect(cb, false);
+        s.displaySevenTVPaintShadows.connect(cb, false);
+        s.largeSevenTVPaintShadows.connect(cb, false);
+    }
 
     SettingWidget::checkbox("Lowercase domains (anti-phishing)",
                             s.lowercaseDomains)
