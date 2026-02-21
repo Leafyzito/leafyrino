@@ -10,7 +10,6 @@
 #include "controllers/commands/CommandContext.hpp"
 #include "controllers/userdata/UserDataController.hpp"
 #include "providers/kick/KickChannel.hpp"
-#include "providers/kick/KickChatServer.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
@@ -460,29 +459,6 @@ QString clearmessages(const CommandContext &ctx)
         split->getChannelView().clearMessages();
     }
 
-    return "";
-}
-
-QString clearSystemMessages(const CommandContext &ctx)
-{
-    if (ctx.channel == nullptr)
-    {
-        return "";
-    }
-    ctx.channel->clearSystemMessages();
-    return "";
-}
-
-QString clearAllSystemMessages(const CommandContext &ctx)
-{
-    (void)ctx;
-    getApp()->getTwitch()->forEachChannelAndSpecialChannels(
-        [](const ChannelPtr &chan) {
-            chan->clearSystemMessages();
-        });
-    getApp()->getKickChatServer()->forEachChannel([](KickChannel &chan) {
-        chan.clearSystemMessages();
-    });
     return "";
 }
 

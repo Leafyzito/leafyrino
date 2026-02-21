@@ -125,9 +125,6 @@ public:
     /// Removes all messages from this channel and invokes #messagesCleared
     void clearMessages();
 
-    /// Removes only system messages (connection notices, errors, etc.) from this channel.
-    void clearSystemMessages();
-
     MessagePtr findMessageByID(QStringView messageID) final;
 
     bool hasMessages() const;

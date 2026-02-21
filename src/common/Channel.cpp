@@ -359,33 +359,6 @@ void Channel::clearMessages()
     this->messagesCleared.invoke();
 }
 
-void Channel::clearSystemMessages()
-{
-    auto snapshot = this->getMessageSnapshot();
-    std::vector<MessagePtr> nonSystem;
-    nonSystem.reserve(snapshot.size());
-    for (const auto &msg : snapshot)
-    {
-        if (!msg->flags.hasAny({MessageFlag::System,
-                                MessageFlag::ConnectedMessage,
-                                MessageFlag::DisconnectedMessage}))
-        {
-            nonSystem.push_back(msg);
-        }
-    }
-    if (nonSystem.size() == snapshot.size())
-    {
-        return;
-    }
-    this->messages_.clear();
-    this->messagesCleared.invoke();
-    auto added = this->messages_.pushFront(nonSystem);
-    if (!added.empty())
-    {
-        this->messagesAddedAtStart.invoke(added);
-    }
-}
-
 MessagePtr Channel::findMessageByID(QStringView messageID)
 {
     MessagePtr res;
