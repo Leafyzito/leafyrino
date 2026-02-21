@@ -476,7 +476,7 @@ QString clearSystemMessages(const CommandContext &ctx)
 QString clearAllSystemMessages(const CommandContext &ctx)
 {
     (void)ctx;
-    getApp()->getTwitch()->forEachChannelAndSpecialC hannels(
+    getApp()->getTwitch()->forEachChannelAndSpecialChannels(
         [](const ChannelPtr &chan) {
             chan->clearSystemMessages();
         });
