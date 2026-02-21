@@ -462,6 +462,16 @@ QString clearmessages(const CommandContext &ctx)
     return "";
 }
 
+QString clearSystemMessages(const CommandContext &ctx)
+{
+    if (ctx.channel == nullptr)
+    {
+        return "";
+    }
+    ctx.channel->clearSystemMessages();
+    return "";
+}
+
 QString openURL(const CommandContext &ctx)
 {
     /**

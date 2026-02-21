@@ -389,6 +389,8 @@ CommandController::CommandController(const Paths &paths)
     this->registerCommand("/popup", &commands::popup);
 
     this->registerCommand("/clearmessages", &commands::clearmessages);
+    this->registerCommand("/clearsystemmessages",
+                          &commands::clearSystemMessages);
 
     this->registerCommand("/settitle", &commands::setTitle);
 
