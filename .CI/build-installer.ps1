@@ -24,6 +24,12 @@ else {
     $installerBaseName = "Chatterino7.Nightly.Installer";
 }
 
+$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
+if ($architecture -eq 'arm64') {
+    $installerBaseName = "Experimental-ARM64-$installerBaseName"
+    $defines = "$defines /DIS_ARM=1"
+}
+
 if ($Env:GITHUB_OUTPUT) {
     # This is used in CI when creating the artifact
     "C2_INSTALLER_BASE_NAME=$installerBaseName" >> "$Env:GITHUB_OUTPUT"
@@ -34,9 +40,9 @@ if ($null -eq $Env:VCToolsRedistDir) {
     Write-Error "VCToolsRedistDir is not set. Forgot to set Visual Studio environment variables?";
     exit 1
 }
-Copy-Item "$Env:VCToolsRedistDir\vc_redist.x64.exe" .;
+Copy-Item "$Env:VCToolsRedistDir\vc_redist.$architecture.exe" .;
 
-$VCRTVersion = (Get-Item "$Env:VCToolsRedistDir\vc_redist.x64.exe").VersionInfo;
+$VCRTVersion = (Get-Item "$Env:VCToolsRedistDir\vc_redist.$architecture.exe").VersionInfo;
 
 # Build the installer
 ISCC `
@@ -44,6 +50,7 @@ ISCC `
     /DINSTALLER_BASE_NAME="$installerBaseName" `
     /DSHIPPED_VCRT_MINOR="$($VCRTVersion.FileMinorPart)" `
     /DSHIPPED_VCRT_VERSION="$($VCRTVersion.FileDescription)" `
+    /DVCRT_ARCH="$architecture" `
     $defines `
     /O. `
     "$PSScriptRoot\chatterino-installer.iss";

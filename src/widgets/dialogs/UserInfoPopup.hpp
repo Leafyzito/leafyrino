@@ -120,6 +120,7 @@ private:
     // Pinned status is tracked in DraggablePopup::isPinned_.
     const bool closeAutomatically_;
 
+    class TimeoutWidget;
     struct {
         PixmapButton *avatarButton = nullptr;
         PixmapButton *localizedNameCopyButton = nullptr;
@@ -149,6 +150,8 @@ private:
         LabelButton *usercardLabel = nullptr;
         LabelButton *switchAvatars = nullptr;
         LabelButton *userlogsLabel = nullptr;
+
+        TimeoutWidget *timeoutWidget = nullptr;
     } ui_;
 
     QMovie *seventvAvatar_ = nullptr;
@@ -173,8 +176,13 @@ private:
 
         pajlada::Signals::Signal<std::pair<Action, int>> buttonClicked;
 
+        void setMinTimeout(int minSecs);
+
     protected:
         void paintEvent(QPaintEvent *event) override;
+
+    private:
+        std::vector<std::pair<QWidget *, int>> timeoutButtons;
     };
 };
 

@@ -192,13 +192,19 @@ jobs:
           # Windows
           - os: windows-latest
             qt-version: 6.9.3
-            force-lto: false
+            force-lto: true
+            skip-artifact: false
+            skip-crashpad: false
+          # Windows on ARM
+          - os: windows-11-arm
+            qt-version: 6.9.3
+            force-lto: true
             skip-artifact: false
             skip-crashpad: false
           # macOS (ARM)
           - os: macos-latest
             qt-version: 6.9.3
-            force-lto: false
+            force-lto: true
             skip-artifact: false
             skip-crashpad: false
 
@@ -206,6 +212,7 @@ jobs:
     env:
       C2_ENABLE_LTO: ${{ matrix.force-lto }}
       C2_ENABLE_CRASHPAD: ${{ matrix.skip-crashpad == false }}
+      C2_ARCH: ${{ case(endsWith(matrix.os, '-arm') || startsWith(matrix.os, 'macos'), 'arm', 'x86-64') }}
 
     steps:
       - uses: actions/checkout@v6
@@ -249,6 +256,8 @@ jobs:
       - name: Enable Developer Command Prompt (Windows)
         if: startsWith(matrix.os, 'windows')
         uses: ilammy/msvc-dev-cmd@v1.13.0
+        with:
+          arch: ${{env.C2_ARCH == 'arm' && 'arm64' || 'x64' }}
 
       - name: Setup sccache (Windows)
         # sccache v0.7.4
@@ -258,15 +267,15 @@ jobs:
           variant: sccache
           # only save on on the default (master) branch
           save: ${{ github.event_name == 'push' }}
-          key: sccache-build-${{ matrix.os }}-${{ matrix.qt-version }}-${{ matrix.skip-crashpad }}
+          key: sccache-build-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.qt-version }}-${{ matrix.skip-crashpad }}
           restore-keys: |
-            sccache-build-${{ matrix.os }}-${{ matrix.qt-version }}
+            sccache-build-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.qt-version }}
 
       - name: Cache conan packages (Windows)
         if: startsWith(matrix.os, 'windows')
         uses: actions/cache@v5
         with:
-          key: ${{ runner.os }}-conan-user-${{ hashFiles('**/conanfile.py') }}-QT6
+          key: ${{ runner.os }}-${{ runner.arch }}-conan-user-${{ hashFiles('**/conanfile.py') }}-QT6
           path: ~/.conan2/
 
       - name: Setup Python (Windows)
@@ -294,6 +303,7 @@ jobs:
               -b missing \
               --output-folder=. \
               -o with_openssl3=True
+          conan cache clean --source --build --download "*"
         shell: bash
 
       - name: Build (Windows)
@@ -302,29 +312,28 @@ jobs:
         run: |
           cd build
           cmake `
-              -G"NMake Makefiles" `
+              -G Ninja `
               -DCMAKE_BUILD_TYPE=RelWithDebInfo `
               -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" `
               -DUSE_PRECOMPILED_HEADERS=ON `
               -DBUILD_WITH_CRASHPAD="$Env:C2_ENABLE_CRASHPAD" `
               -DCHATTERINO_LTO="$Env:C2_ENABLE_LTO" `
+              -DFORCE_JSON_GENERATION=${{ env.C2_ARCH == 'arm' && 'Off' || 'On' }} `
+              -DSKIP_JSON_GENERATION=${{ env.C2_ARCH == 'arm' && 'On' || 'Off' }} `
               -DCHATTERINO_NIGHTLY_BUILD="${{ steps.build-type.outputs.NIGHTLY_BUILD }}" `
-              -DFORCE_JSON_GENERATION=On `
               -DCHATTERINO_SPELLCHECK=On `
               ..
-          set cl=/MP
-          nmake /S /NOLOGO
+          ninja
 
       - name: Build crashpad (Windows)
         if: startsWith(matrix.os, 'windows') && !matrix.skip-crashpad
         shell: pwsh
         run: |
           cd build
-          set cl=/MP
-          nmake /S /NOLOGO chatterino-crash-handler
+          ninja chatterino-crash-handler
           mkdir Chatterino2/crashpad
           cp bin/crashpad/crashpad-handler.exe Chatterino2/crashpad/crashpad-handler.exe
-          7z a bin/chatterino-Qt-${{ matrix.qt-version }}.pdb.7z bin/chatterino.pdb
+          7z a bin/chatterino-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb.7z bin/chatterino.pdb
 
       - name: Prepare build dir (windows)
         if: startsWith(matrix.os, 'windows')
@@ -338,26 +347,21 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         working-directory: build
         run: |
-          7z a chatterino-windows-x86-64-Qt-${{ matrix.qt-version }}.zip Chatterino2/
+          7z a chatterino-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.zip Chatterino2/
 
       - name: Upload artifact (Windows - binary)
         if: startsWith(matrix.os, 'windows') && !matrix.skip-artifact
         uses: actions/upload-artifact@v6
         with:
-          name: chatterino-windows-x86-64-Qt-${{ matrix.qt-version }}.zip
-          path: build/chatterino-windows-x86-64-Qt-${{ matrix.qt-version }}.zip
+          name: chatterino-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.zip
+          path: build/chatterino-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.zip
 
       - name: Upload artifact (Windows - symbols)
         if: startsWith(matrix.os, 'windows') && !matrix.skip-artifact
         uses: actions/upload-artifact@v6
         with:
-          name: chatterino-windows-x86-64-Qt-${{ matrix.qt-version }}-symbols.pdb.7z
-          path: build/bin/chatterino-Qt-${{ matrix.qt-version }}.pdb.7z
-
-      - name: Clean Conan cache
-        if: startsWith(matrix.os, 'windows')
-        run: conan cache clean --source --build --download "*"
-        shell: bash
+          name: chatterino-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}-symbols.pdb.7z
+          path: build/bin/chatterino-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb.7z
 
       # MACOS
       - name: Install dependencies (MacOS)
@@ -462,56 +466,19 @@ jobs:
         with:
           fetch-depth: 0 # allows for tags access
 
-      # Windows
       - uses: actions/download-artifact@v7
-        name: Windows Qt6.9.3
+        name: Download artifacts
         with:
-          name: chatterino-windows-x86-64-Qt-6.9.3.zip
           path: release-artifacts/
-
-      - uses: actions/download-artifact@v7
-        name: Windows Qt6.9.3 symbols
-        with:
-          name: chatterino-windows-x86-64-Qt-6.9.3-symbols.pdb.7z
-          path: release-artifacts/
-
-      # Linux
-      - uses: actions/download-artifact@v7
-        name: Linux AppImage
-        with:
-          name: Chatterino-x86_64-Qt-6.7.2.AppImage
-          path: release-artifacts/
-
-      - uses: actions/download-artifact@v7
-        name: Ubuntu 22.04 deb
-        with:
-          name: Chatterino-ubuntu-22.04-Qt-6.7.2.deb
-          path: release-artifacts/
-
-      - uses: actions/download-artifact@v7
-        name: Ubuntu 24.04 deb
-        with:
-          name: Chatterino-ubuntu-24.04-Qt-6.7.2.deb
-          path: release-artifacts/
-
-      - uses: actions/download-artifact@v7
-        name: Flatpak
-        with:
-          name: chatterino-x86_64.flatpak
-          path: release-artifacts/
-
-      # macOS
-      - uses: actions/download-artifact@v7
-        name: macOS Qt6.9.3 dmg
-        with:
-          name: chatterino-macos-Qt-6.9.3-universal.dmg
-          path: release-artifacts/
+          merge-multiple: true
 
       - name: Rename artifacts
         run: |
           ls -l
           # Rename the macos build to indicate that it's for macOS 13.0 users
           mv chatterino-macos-Qt-6.9.3-universal.dmg Chatterino-macOS-13.0-universal.dmg
+          # Rename Windows ARM64 to indicate that it's not well tested
+          mv chatterino-windows-arm-Qt-6.9.3.zip Experimental-ARM64-chatterino-windows-Qt-6.9.3.zip
         working-directory: release-artifacts
         shell: bash
 

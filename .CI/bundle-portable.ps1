@@ -2,8 +2,8 @@ if (-not (Test-Path -PathType Container Chatterino2)) {
     Write-Error "Couldn't find a folder called 'Chatterino2' in the current directory.";
     exit 1
 }
-if (-not $Env:C2_PORTABLE_INSTALLER_VERSION -or -not $Env:C2_PORTABLE_INSTALLER_SHA256) {
-    Write-Error "C2_PORTABLE_INSTALLER_VERSION or C2_PORTABLE_INSTALLER_SHA256 not defined.";
+if (-not $Env:C2_PORTABLE_INSTALLER_VERSION -or -not $Env:C2_PORTABLE_INSTALLER_SHA256_X64 -or -not $Env:C2_PORTABLE_INSTALLER_SHA256_ARM64) {
+    Write-Error "C2_PORTABLE_INSTALLER_VERSION or C2_PORTABLE_INSTALLER_SHA256_{X64,ARM64} not defined.";
     exit 1
 }
 
@@ -38,6 +38,17 @@ else {
     $bundleBaseName = "Chatterino7.Nightly.Portable";
 }
 
+$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
+if ($architecture -eq 'arm64') {
+    $bundleBaseName = "Experimental-ARM64-$bundleBaseName"
+    $updaterArch = "aarch64"
+    $expectedUpdaterHash = $Env:C2_PORTABLE_INSTALLER_SHA256_ARM64
+}
+else {
+    $updaterArch = "x86_64"
+    $expectedUpdaterHash = $Env:C2_PORTABLE_INSTALLER_SHA256_X64
+}
+
 if ($Env:GITHUB_OUTPUT) {
     # This is used in CI when creating the artifact
     "C2_PORTABLE_BASE_NAME=$bundleBaseName" >> "$Env:GITHUB_OUTPUT"
@@ -46,10 +57,10 @@ if ($Env:GITHUB_OUTPUT) {
 Remove-IfExists "Chatterino2/updater.1";
 New-Item "Chatterino2/updater.1" -ItemType Directory;
 
-Invoke-RestMethod "https://github.com/Nerixyz/c2-portable-updater/releases/download/$($Env:C2_PORTABLE_INSTALLER_VERSION)/c2-portable-updater-x86_64-pc-windows-msvc.zip" -OutFile _portable-installer.zip;
+Invoke-RestMethod "https://github.com/Nerixyz/c2-portable-updater/releases/download/$($Env:C2_PORTABLE_INSTALLER_VERSION)/c2-portable-updater-$updaterArch-pc-windows-msvc.zip" -OutFile _portable-installer.zip;
 $updaterHash = (Get-FileHash _portable-installer.zip).Hash.ToLower();
-if (-not $updaterHash -eq $Env:C2_PORTABLE_INSTALLER_SHA256) {
-    Write-Error "Hash mismatch: expected $($Env:C2_PORTABLE_INSTALLER_SHA256) - got: $updaterHash";
+if (-not $updaterHash -eq $expectedUpdaterHash) {
+    Write-Error "Hash mismatch: expected $expectedUpdaterHash - got: $updaterHash";
     exit 1
 }
 
