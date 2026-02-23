@@ -34,6 +34,7 @@ class Split;
 struct HelixUser;
 class LabelButton;
 class PixmapButton;
+class ColorSwatch;
 class LiveIndicator;
 
 class UserInfoPopup final : public DraggablePopup
@@ -131,6 +132,8 @@ private:
         Label *followerCountLabel = nullptr;
         Label *createdDateLabel = nullptr;
         Label *lastLiveLabel = nullptr;
+        ColorSwatch *colorSwatch = nullptr;
+        Label *colorLabel = nullptr;
         Label *chattersLabel = nullptr;
         Label *userIDLabel = nullptr;
         Label *followageLabel = nullptr;

@@ -40,6 +40,7 @@
 #include "widgets/buttons/PixmapButton.hpp"
 #include "widgets/dialogs/EditUserNotesDialog.hpp"
 #include "widgets/helper/ChannelView.hpp"
+#include "widgets/helper/ColorSwatch.hpp"
 #include "widgets/helper/InvisibleSizeGrip.hpp"
 #include "widgets/helper/Line.hpp"
 #include "widgets/helper/LiveIndicator.hpp"
@@ -74,6 +75,7 @@ constexpr QStringView TEXT_PRONOUNS = u"Pronouns: %1";
 constexpr QStringView TEXT_UNSPECIFIED = u"(unspecified)";
 constexpr QStringView TEXT_LOADING = u"(loading...)";
 constexpr QStringView TEXT_LAST_LIVE = u"Last Live: %1";
+constexpr QStringView TEXT_COLOR = u"Color: %1";
 constexpr QStringView TEXT_CHATTERS = u"Chatters: %1";
 
 constexpr QStringView SEVENTV_TWITCH_USER_API =
@@ -423,6 +425,14 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                 .assign(&this->ui_.createdDateLabel);
             vbox.emplace<Label>(TEXT_LAST_LIVE.arg(""))
                 .assign(&this->ui_.lastLiveLabel);
+            {
+                auto colorRow = vbox.emplace<QHBoxLayout>().withoutMargin();
+                colorRow.emplace<Label>(TEXT_COLOR.arg(""))
+                    .assign(&this->ui_.colorLabel);
+                colorRow.emplace<ColorSwatch>().assign(&this->ui_.colorSwatch);
+                colorRow->addStretch(1);
+                colorRow->setAlignment(this->ui_.colorSwatch, Qt::AlignVCenter);
+            }
             vbox.emplace<Label>("").assign(&this->ui_.followageLabel);
             vbox.emplace<Label>("").assign(&this->ui_.subageLabel);
             vbox.emplace<Label>("").assign(&this->ui_.rolesLabel);
@@ -1024,6 +1034,8 @@ void UserInfoPopup::updateUserData()
             TEXT_FOLLOWERS.arg(TEXT_UNAVAILABLE));
         this->ui_.createdDateLabel->setText(TEXT_CREATED.arg(TEXT_UNAVAILABLE));
         this->ui_.lastLiveLabel->setText(TEXT_LAST_LIVE.arg(TEXT_UNAVAILABLE));
+        this->ui_.colorSwatch->setColor(QColor());
+        this->ui_.colorLabel->setText(TEXT_COLOR.arg(TEXT_UNAVAILABLE));
         this->ui_.chattersLabel->setText(TEXT_CHATTERS.arg(TEXT_UNAVAILABLE));
 
         this->ui_.nameLabel->setText(this->userName_);
@@ -1080,6 +1092,8 @@ void UserInfoPopup::updateUserData()
             u" ago"_s);
         this->ui_.createdDateLabel->setMouseTracking(true);
         this->ui_.lastLiveLabel->setText(TEXT_LAST_LIVE.arg(TEXT_UNAVAILABLE));
+        this->ui_.colorSwatch->setColor(QColor());
+        this->ui_.colorLabel->setText(TEXT_COLOR.arg(TEXT_LOADING));
         this->ui_.chattersLabel->setText(TEXT_CHATTERS.arg(TEXT_UNAVAILABLE));
         this->ui_.userIDLabel->setText(TEXT_USER_ID % user.id);
         this->ui_.userIDLabel->setProperty("copy-text", user.id);
@@ -1272,6 +1286,19 @@ void UserInfoPopup::updateUserData()
                 {
                     this->ui_.lastLiveLabel->setText(
                         TEXT_LAST_LIVE.arg(TEXT_UNAVAILABLE));
+                }
+
+                if (!userInfo.chatColor.isEmpty())
+                {
+                    this->ui_.colorSwatch->setColor(QColor(userInfo.chatColor));
+                    this->ui_.colorLabel->setText(
+                        TEXT_COLOR.arg(userInfo.chatColor));
+                }
+                else
+                {
+                    this->ui_.colorSwatch->setColor(QColor());
+                    this->ui_.colorLabel->setText(
+                        TEXT_COLOR.arg(TEXT_UNAVAILABLE));
                 }
             },
             [] {});
@@ -1543,6 +1570,8 @@ void UserInfoPopup::updateKickUserData()
             TEXT_FOLLOWERS.arg(TEXT_UNAVAILABLE));
         self->ui_.createdDateLabel->setText(TEXT_CREATED.arg(TEXT_UNAVAILABLE));
         self->ui_.lastLiveLabel->setText(TEXT_LAST_LIVE.arg(TEXT_UNAVAILABLE));
+        self->ui_.colorSwatch->setColor(QColor());
+        self->ui_.colorLabel->setText(TEXT_COLOR.arg(TEXT_UNAVAILABLE));
         self->ui_.chattersLabel->setText(TEXT_CHATTERS.arg(TEXT_UNAVAILABLE));
 
         self->ui_.nameLabel->setText(self->userName_);
@@ -1585,6 +1614,8 @@ void UserInfoPopup::updateKickUserData()
             u" ago"_s);
         self->ui_.createdDateLabel->setMouseTracking(true);
         self->ui_.lastLiveLabel->setText(TEXT_LAST_LIVE.arg(TEXT_UNAVAILABLE));
+        self->ui_.colorSwatch->setColor(QColor());
+        self->ui_.colorLabel->setText(TEXT_COLOR.arg(TEXT_UNAVAILABLE));
         self->ui_.chattersLabel->setText(TEXT_CHATTERS.arg(TEXT_UNAVAILABLE));
         self->ui_.userIDLabel->setText(TEXT_USER_ID % userIDStr);
         self->ui_.userIDLabel->setProperty("copy-text", userIDStr);

@@ -43,6 +43,7 @@ struct IvrResolve {
     const bool isExStaff;
     const int chatterCount;
     const QString lastBroadcastStartedAt;
+    const QString chatColor;
 
     IvrResolve(QJsonArray arr)
         : isPartner(arr.at(0)
@@ -86,6 +87,7 @@ struct IvrResolve {
                                      .toObject()
                                      .value("startedAt")
                                      .toString())
+        , chatColor(arr.at(0).toObject().value("chatColor").toString())
     {
     }
 };

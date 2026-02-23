@@ -2,6 +2,7 @@
 
 ## Unversioned
 
+- Minor: Added user color to user info popup.
 - Minor: Usercard profile picture menu can be opened with hotkey M.
 - Minor: Added last live time and chatter count to user info popup.
 - Minor: Added mnemonics to the UserInfoPopup action buttons.
