@@ -2,9 +2,10 @@
 
 ## Unversioned
 
-- Major: Added experimental Kick support (#351, #353, #354, #355, #356, #357, #360, #362, #367, #368, #369, #371, #373, #378, #379, #380, #381, #382, #383, #386, #387, #388, #390, #391)
+- Major: Added experimental Kick support (#351, #353, #354, #355, #356, #357, #360, #362, #367, #368, #369, #371, #373, #378, #379, #380, #381, #382, #383, #386, #387, #388, #390, #391, #395)
 - Minor: Increased radius of drop-shadows in paints to match the browser extension (#339, a4a86c9ca6e1bccf9253dce75bdfe838c15e71fd)
 - Bugfix: Fixed 7TV users with multiple connections to the same platform not having cosmetics applied on all connected accounts (#389)
+- Bugfix: Fixed URL paints on mentions not being scaled correctly in high-dpi settings (57627edf4af49111bf5e0c1bc942ad4db3b85d96)
 - Dev: Bumped Qt to 6.9.3 on Windows and macOS due to CVE-2025-10728 and CVE-2025-10729 (74077350da2d4cfff2ede0ce0ebb11654253b440)
 - Dev: Updated the macOS Homebrew bottles on x86_64 to Sonoma as Ventura was EOL'd 2025-Sep-15 (#336)
 - Dev: Preemptively treat version comparisons between `7.x.x` and `2.y.y` as upgrades (#372)

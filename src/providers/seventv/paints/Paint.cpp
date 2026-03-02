@@ -27,7 +27,7 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
     // NOTE: draw colon separately from the nametag
     // otherwise the paint would extend onto the colon
     bool drawColon = false;
-    QRectF nametagBoundingRect = pixmap.rect();
+    QRectF nametagBoundingRect{QPointF{}, size};
     QString nametagText = text;
     if (nametagText.endsWith(':'))
     {

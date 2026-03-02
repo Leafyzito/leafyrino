@@ -27,7 +27,7 @@ else {
 $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
 if ($architecture -eq 'arm64') {
     $installerBaseName = "Experimental-ARM64-$installerBaseName"
-    $defines = "$defines /DIS_ARM=1"
+    $defines = "$defines /DIS_ARM=1".Trim()
 }
 
 if ($Env:GITHUB_OUTPUT) {
