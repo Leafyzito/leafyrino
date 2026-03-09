@@ -82,6 +82,7 @@ constexpr QStringView SEVENTV_TWITCH_USER_API =
     u"https://7tv.io/v3/users/twitch/%1";
 constexpr QStringView SEVENTV_KICK_USER_API =
     u"https://7tv.io/v3/users/kick/%1";
+constexpr QStringView SEVENTV_USER_PAGE = u"https://7tv.app/users/";
 
 using namespace chatterino;
 
@@ -322,17 +323,24 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                                  return;
                              }
 
+                             QUrl channelURL("https://www.twitch.tv/" +
+                                             this->userName_.toLower());
+
                              switch (button)
                              {
                                  case Qt::LeftButton: {
-                                     QDesktopServices::openUrl(
-                                         QUrl("https://www.twitch.tv/" +
-                                              this->userName_.toLower()));
+                                     QDesktopServices::openUrl(channelURL);
                                  }
                                  break;
 
                                  case Qt::RightButton: {
+                                     // don't show context menu if there's no avatar (e.g. invalid user's usercard)
+                                     if (this->avatarUrl_.isEmpty())
+                                     {
+                                         return;
+                                     }
                                      this->showProfilePictureContextMenu();
+                                     return;
                                  }
                                  break;
 
@@ -1425,14 +1433,10 @@ void UserInfoPopup::loadSevenTVAvatar(const QString &userID, bool isKick)
                 return;
             }
 
-            auto root = result.parseJson();
-            auto url = root["user"].toObject()["avatar_url"].toString();
-            auto stvUserId = root["user"].toObject()["id"].toString();
-
-            if (!stvUserId.isEmpty())
-            {
-                this->stvUserId_ = stvUserId;
-            }
+            const auto root = result.parseJson();
+            const auto userObj = root["user"].toObject();
+            this->seventvUserID_ = userObj["id"].toString();
+            auto url = userObj["avatar_url"].toString();
 
             if (url.isEmpty())
             {
@@ -1750,12 +1754,12 @@ QString UserInfoPopup::showProfilePictureContextMenu()
             QUrl("https://chatvau.lt/channel/twitch/" + username));
     });
 
-    if (!this->stvUserId_.isEmpty())
+    if (!this->seventvUserID_.isEmpty())
     {
-        auto stvUserId = this->stvUserId_;
-        menu->addAction("Open &7TV user page in browser", [stvUserId] {
+        auto seventvUserID = this->seventvUserID_;
+        menu->addAction("Open &7TV user page in browser", [seventvUserID] {
             QDesktopServices::openUrl(
-                QUrl("https://7tv.app/users/" + stvUserId));
+                QUrl("https://7tv.app/users/" + seventvUserID));
         });
     }
 
@@ -1765,6 +1769,10 @@ QString UserInfoPopup::showProfilePictureContextMenu()
     });
 
     auto loginName = this->userName_.toLower();
+    menu->addAction("Open channel in &browser", this, [loginName] {
+        QDesktopServices::openUrl(QUrl("https://www.twitch.tv/" + loginName));
+    });
+
     menu->addAction("Open channel in a new &popup window", this, [loginName] {
         auto *app = getApp();
         auto &window = app->getWindows()->createWindow(WindowType::Popup, true);
@@ -1790,12 +1798,12 @@ QString UserInfoPopup::showProfilePictureContextMenu()
 void UserInfoPopup::onKickProfilePictureClick(Qt::MouseButton button)
 {
     assert(this->isKick_);
+    auto channelURL = QUrl("https://kick.com/" + this->kickUserSlug_);
 
     switch (button)
     {
         case Qt::LeftButton: {
-            QDesktopServices::openUrl(
-                QUrl("https://kick.com/" + this->kickUserSlug_));
+            QDesktopServices::openUrl(channelURL);
         }
         break;
 
@@ -1845,6 +1853,13 @@ void UserInfoPopup::onKickProfilePictureClick(Qt::MouseButton button)
                     getApp()->getKickChatServer()->getOrCreate(username));
                 container->insertSplit(split);
             });
+
+            menu->addAction("Open channel in browser", this, [channelURL] {
+                QDesktopServices::openUrl(channelURL);
+            });
+
+            this->appendCommonProfileActions(menu);
+
             menu->popup(QCursor::pos());
             menu->raise();
         }
@@ -1862,6 +1877,17 @@ QStringView UserInfoPopup::platformName() const
         return u"Kick";
     }
     return u"Twitch";
+}
+
+void UserInfoPopup::appendCommonProfileActions(QMenu *menu)
+{
+    if (!this->seventvUserID_.isEmpty())
+    {
+        menu->addAction(
+            "Open 7TV user in browser", this, [id = this->seventvUserID_] {
+                QDesktopServices::openUrl(QUrl(SEVENTV_USER_PAGE % id));
+            });
+    }
 }
 
 //
