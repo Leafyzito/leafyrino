@@ -610,7 +610,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
     menu->addSeparator();
 
     // sub menu
-    auto *moreMenu = new QMenu("More", this);
+    auto *moreMenu = new QMenu("Mor&e", this);
 
     auto modModeSeq = h->getDisplaySequence(HotkeyCategory::Split,
                                             "setModerationMode", {{"toggle"}});
@@ -622,7 +622,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
         // this makes a full std::optional<> with an empty vector inside
     }
     moreMenu->addAction(
-        "Toggle moderation mode", modModeSeq, this->split_, [this]() {
+        "&Toggle moderation mode", modModeSeq, this->split_, [this]() {
             this->split_->setModerationMode(!this->split_->getModerationMode());
         });
 
@@ -648,19 +648,19 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
         if (twitchChannel->hasModRights())
         {
             moreMenu->addAction(
-                "Show chatter list",
+                "Show chatter &list",
                 h->getDisplaySequence(HotkeyCategory::Split, "openViewerList"),
                 this->split_, &Split::openChatterList);
         }
 
-        moreMenu->addAction("Subscribe",
+        moreMenu->addAction("&Subscribe",
                             h->getDisplaySequence(HotkeyCategory::Split,
                                                   "openSubscriptionPage"),
                             this->split_, &Split::openSubPage);
 
         {
             auto *action = new QAction(this);
-            action->setText("Notify when live");
+            action->setText("&Notify when live");
             action->setCheckable(true);
 
             auto notifySeq = h->getDisplaySequence(
@@ -691,7 +691,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
 
         {
             auto *action = new QAction(this);
-            action->setText("Mute highlight sounds");
+            action->setText("&Mute highlight sounds");
             action->setCheckable(true);
 
             auto notifySeq = h->getDisplaySequence(
@@ -720,7 +720,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
 
     moreMenu->addSeparator();
     moreMenu->addAction(
-        "Clear messages",
+        "&Clear messages",
         h->getDisplaySequence(HotkeyCategory::Split, "clearMessages"),
         this->split_, &Split::clear);
     //    moreMenu->addSeparator();
