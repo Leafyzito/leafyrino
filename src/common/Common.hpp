@@ -5,6 +5,7 @@
 #pragma once
 
 #include <boost/preprocessor.hpp>
+#include <QColor>
 #include <QString>
 #include <QWidget>
 
@@ -27,6 +28,11 @@ enum class HighlightState {
     None,
     Highlighted,
     NewMessage,
+};
+
+struct TabHighlight {
+    HighlightState state = HighlightState::None;
+    std::shared_ptr<QColor> color;
 };
 
 inline constexpr Qt::KeyboardModifiers SHOW_SPLIT_OVERLAY_MODIFIERS =

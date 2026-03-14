@@ -80,7 +80,7 @@ public:
      *
      * Obeys the HighlightsEnabled setting and the highlight state hierarchy and tracks the highlight state update sources
      */
-    void updateHighlightState(HighlightState style,
+    void updateHighlightState(const TabHighlight &highlight,
                               const ChannelView &channelViewSource);
     void copyHighlightStateAndSourcesFrom(const NotebookTab *sourceTab);
     void setHighlightsEnabled(const bool &newVal);
@@ -137,8 +137,13 @@ private:
 
     bool shouldMessageHighlight(const ChannelView &channelViewSource) const;
 
+    struct HighlightSource {
+        HighlightState state = HighlightState::None;
+        std::shared_ptr<QColor> color;
+        size_t sequence = 0;
+    };
     using HighlightSources =
-        std::unordered_map<ChannelView::ChannelViewID, HighlightState>;
+        std::unordered_map<ChannelView::ChannelViewID, HighlightSource>;
     HighlightSources highlightSources_;
 
     void removeHighlightStateChangeSources(const HighlightSources &toRemove);
@@ -167,6 +172,8 @@ private:
     NotebookTabLocation tabLocation_ = NotebookTabLocation::Top;
 
     HighlightState highlightState_ = HighlightState::None;
+    std::shared_ptr<QColor> highlightColor_;
+    size_t lastHighlightSequence_ = 0;
     bool highlightEnabled_ = true;
     QAction *highlightNewMessagesAction_;
 

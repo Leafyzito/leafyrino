@@ -224,11 +224,11 @@ void SplitContainer::addSplit(Split *split)
     auto &&conns = this->connectionsPerSplit_[split];
 
     conns.managedConnect(split->getChannelView().tabHighlightRequested,
-                         [this, split](HighlightState state) {
+                         [this, split](const TabHighlight &highlight) {
                              if (this->tab_ != nullptr)
                              {
                                  this->tab_->updateHighlightState(
-                                     state, split->getChannelView());
+                                     highlight, split->getChannelView());
                              }
                          });
 

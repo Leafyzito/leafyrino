@@ -455,7 +455,8 @@ TEST(Helpers, parseDurationToSeconds)
         {"3d 15 h 13m 54s", 314034},
         {"27s", 27},
         {
-            "9h 36 m 29s", 34589,
+            "9h 36 m 29s",
+            34589,
             7,  // should be unused
         },
         {"1h 59s", 3659},
@@ -481,7 +482,8 @@ TEST(Helpers, parseDurationToSeconds)
         // noUnitMultiplier
         {"0", 0, 60},
         {
-            "60", 3600,
+            "60",
+            3600,
             60,  // minute
         },
         {

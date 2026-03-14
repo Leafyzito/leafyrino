@@ -2,6 +2,7 @@
 
 ## Unversioned
 
+- Minor: Tabs now use the color of the most recent highlight or mention for their indicator bar when available, with an option to always use the theme highlight color.
 - Minor: Added user color to user info popup.
 - Minor: Usercard profile picture menu can be opened with hotkey M.
 - Minor: Added last live time and chatter count to user info popup.

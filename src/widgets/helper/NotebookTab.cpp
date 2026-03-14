@@ -84,6 +84,48 @@ float getCompactReducer(TabStyle tabStyle)
             return 0.0;
     }
 }
+
+bool colorsMatch(const std::shared_ptr<QColor> &lhs,
+                 const std::shared_ptr<QColor> &rhs)
+{
+    if (lhs == rhs)
+    {
+        return true;
+    }
+
+    if (!lhs || !rhs)
+    {
+        return false;
+    }
+
+    return *lhs == *rhs;
+}
+
+QColor makeTabHighlightLineColor(const QColor &color, bool windowFocused)
+{
+    QColor adjusted;
+
+    if (color.hslHue() == -1)
+    {
+        adjusted = color.toRgb().lighter(170);
+    }
+    else
+    {
+        adjusted = color.toHsl();
+        adjusted.setHsl(adjusted.hslHue(),
+                        std::max(adjusted.hslSaturation(), 160),
+                        std::max(adjusted.lightness(), 150), 255);
+    }
+
+    adjusted.setAlpha(255);
+
+    if (!windowFocused)
+    {
+        adjusted = adjusted.darker(110);
+    }
+
+    return adjusted;
+}
 }  // namespace
 
 NotebookTab::NotebookTab(Notebook *notebook)
@@ -109,6 +151,11 @@ NotebookTab::NotebookTab(Notebook *notebook)
         },
         this->managedConnections_);
     getSettings()->showTabLive.connect(
+        [this](auto, auto) {
+            this->update();
+        },
+        this->managedConnections_);
+    getSettings()->tabHighlightsUseThemeColor.connect(
         [this](auto, auto) {
             this->update();
         },
@@ -655,34 +702,41 @@ void NotebookTab::newHighlightSourceAdded(const ChannelView &channelViewSource)
 
 void NotebookTab::updateHighlightStateDueSourcesChange()
 {
-    if (std::ranges::any_of(this->highlightSources_, [](const auto &keyval) {
-            return keyval.second == HighlightState::Highlighted;
-        }))
-    {
-        assert(this->highlightState_ == HighlightState::Highlighted);
-        return;
-    }
+    auto newState = HighlightState::None;
+    std::shared_ptr<QColor> newColor;
+    size_t newestHighlightSequence = 0;
 
-    if (std::ranges::any_of(this->highlightSources_, [](const auto &keyval) {
-            return keyval.second == HighlightState::NewMessage;
-        }))
+    for (const auto &[_, source] : this->highlightSources_)
     {
-        if (this->highlightState_ != HighlightState::NewMessage)
+        if (source.state == HighlightState::Highlighted)
         {
-            this->highlightState_ = HighlightState::NewMessage;
-            this->update();
+            newState = HighlightState::Highlighted;
+
+            if (source.sequence >= newestHighlightSequence)
+            {
+                newestHighlightSequence = source.sequence;
+                newColor = source.color;
+            }
         }
-    }
-    else
-    {
-        if (this->highlightState_ != HighlightState::None)
+        else if (source.state == HighlightState::NewMessage &&
+                 newState != HighlightState::Highlighted)
         {
-            this->highlightState_ = HighlightState::None;
-            this->update();
+            newState = HighlightState::NewMessage;
         }
     }
 
-    assert(this->highlightState_ != HighlightState::Highlighted);
+    if (newState != HighlightState::Highlighted)
+    {
+        newColor.reset();
+    }
+
+    if (this->highlightState_ != newState ||
+        !colorsMatch(this->highlightColor_, newColor))
+    {
+        this->highlightState_ = newState;
+        this->highlightColor_ = std::move(newColor);
+        this->update();
+    }
 }
 
 void NotebookTab::copyHighlightStateAndSourcesFrom(const NotebookTab *sourceTab)
@@ -695,6 +749,8 @@ void NotebookTab::copyHighlightStateAndSourcesFrom(const NotebookTab *sourceTab)
     }
 
     this->highlightSources_ = sourceTab->highlightSources_;
+    this->highlightColor_ = sourceTab->highlightColor_;
+    this->lastHighlightSequence_ = sourceTab->lastHighlightSequence_;
 
     if (!this->highlightEnabled_ &&
         sourceTab->highlightState_ == HighlightState::NewMessage)
@@ -702,8 +758,10 @@ void NotebookTab::copyHighlightStateAndSourcesFrom(const NotebookTab *sourceTab)
         return;
     }
 
-    if (this->highlightState_ == sourceTab->highlightState_ ||
-        this->highlightState_ == HighlightState::Highlighted)
+    if ((this->highlightState_ == sourceTab->highlightState_ &&
+         colorsMatch(this->highlightColor_, sourceTab->highlightColor_)) ||
+        (this->highlightState_ == HighlightState::Highlighted &&
+         sourceTab->highlightState_ != HighlightState::Highlighted))
     {
         return;
     }
@@ -741,6 +799,7 @@ void NotebookTab::setSelected(bool value)
 
     this->highlightSources_.clear();
     this->highlightState_ = HighlightState::None;
+    this->highlightColor_.reset();
 
     this->update();
 }
@@ -806,7 +865,9 @@ void NotebookTab::setHighlightState(HighlightState newHighlightStyle)
         return;
     }
 
+    bool hadHighlightColor = this->highlightColor_ != nullptr;
     this->highlightSources_.clear();
+    this->highlightColor_.reset();
 
     if (!this->highlightEnabled_ &&
         newHighlightStyle == HighlightState::NewMessage)
@@ -814,8 +875,15 @@ void NotebookTab::setHighlightState(HighlightState newHighlightStyle)
         return;
     }
 
-    if (this->highlightState_ == newHighlightStyle ||
-        this->highlightState_ == HighlightState::Highlighted)
+    if (this->highlightState_ == newHighlightStyle &&
+        !(newHighlightStyle == HighlightState::Highlighted &&
+          hadHighlightColor))
+    {
+        return;
+    }
+
+    if (this->highlightState_ == HighlightState::Highlighted &&
+        newHighlightStyle != HighlightState::Highlighted)
     {
         return;
     }
@@ -824,7 +892,7 @@ void NotebookTab::setHighlightState(HighlightState newHighlightStyle)
     this->update();
 }
 
-void NotebookTab::updateHighlightState(HighlightState newHighlightStyle,
+void NotebookTab::updateHighlightState(const TabHighlight &newHighlight,
                                        const ChannelView &channelViewSource)
 {
     if (this->isSelected())
@@ -840,7 +908,7 @@ void NotebookTab::updateHighlightState(HighlightState newHighlightStyle,
     }
 
     if (!this->highlightEnabled_ &&
-        newHighlightStyle == HighlightState::NewMessage)
+        newHighlight.state == HighlightState::NewMessage)
     {
         return;
     }
@@ -849,33 +917,30 @@ void NotebookTab::updateHighlightState(HighlightState newHighlightStyle,
 
     auto channelViewId = channelViewSource.getID();
 
-    switch (newHighlightStyle)
+    switch (newHighlight.state)
     {
         case HighlightState::Highlighted:
-            // override lower states
-            this->highlightSources_.insert_or_assign(channelViewId,
-                                                     newHighlightStyle);
-        case HighlightState::NewMessage: {
-            // only insert if no state already there to avoid overriding
+            this->highlightSources_.insert_or_assign(
+                channelViewId, HighlightSource{
+                                   .state = HighlightState::Highlighted,
+                                   .color = newHighlight.color,
+                                   .sequence = ++this->lastHighlightSequence_,
+                               });
+            break;
+        case HighlightState::NewMessage:
             if (!this->highlightSources_.contains(channelViewId))
             {
-                this->highlightSources_.emplace(channelViewId,
-                                                newHighlightStyle);
+                this->highlightSources_.emplace(
+                    channelViewId, HighlightSource{
+                                       .state = HighlightState::NewMessage,
+                                   });
             }
             break;
-        }
         case HighlightState::None:
             break;
     }
 
-    if (this->highlightState_ == newHighlightStyle ||
-        this->highlightState_ == HighlightState::Highlighted)
-    {
-        return;
-    }
-
-    this->highlightState_ = newHighlightStyle;
-    this->update();
+    this->updateHighlightStateDueSourcesChange();
 }
 
 bool NotebookTab::shouldMessageHighlight(
@@ -1026,6 +1091,14 @@ void NotebookTab::paintEvent(QPaintEvent *)
     auto lineColor = this->mouseOver_ ? colors.line.hover
                                       : (windowFocused ? colors.line.regular
                                                        : colors.line.unfocused);
+
+    if (!getSettings()->tabHighlightsUseThemeColor &&
+        this->highlightState_ == HighlightState::Highlighted &&
+        this->highlightColor_ != nullptr && this->highlightColor_->isValid())
+    {
+        lineColor =
+            makeTabHighlightLineColor(*this->highlightColor_, windowFocused);
+    }
 
     QRect lineRect;
     switch (this->tabLocation_)

@@ -273,6 +273,12 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             removeTabShortcut + ".")
         ->addTo(layout);
 
+    SettingWidget::checkbox("Always use theme color for tab highlights",
+                            s.tabHighlightsUseThemeColor)
+        ->setTooltip("Use the theme's default highlighted tab color instead of "
+                     "per-highlight colors.")
+        ->addTo(layout);
+
     SettingWidget::checkbox("Always on top", s.windowTopMost)
         ->setTooltip("Always keep Chatterino as the top window.")
         ->addTo(layout);

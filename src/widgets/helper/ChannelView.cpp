@@ -1231,11 +1231,14 @@ void ChannelView::messageAppended(MessagePtr &message,
             (this->channel_->getType() == Channel::Type::TwitchAutomod &&
              getSettings()->enableAutomodHighlight))
         {
-            this->tabHighlightRequested.invoke(HighlightState::Highlighted);
+            this->tabHighlightRequested.invoke(
+                {.state = HighlightState::Highlighted,
+                 .color = message->highlightColor});
         }
         else
         {
-            this->tabHighlightRequested.invoke(HighlightState::NewMessage);
+            this->tabHighlightRequested.invoke(
+                {.state = HighlightState::NewMessage});
         }
     }
 

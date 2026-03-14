@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "common/Common.hpp"
 #include "common/FlagsEnum.hpp"
 #include "messages/layouts/MessageLayoutContext.hpp"
 #include "messages/LimitedQueue.hpp"
@@ -226,7 +227,7 @@ public:
 
     pajlada::Signals::Signal<QMouseEvent *> mouseDown;
     pajlada::Signals::NoArgSignal selectionChanged;
-    pajlada::Signals::Signal<HighlightState> tabHighlightRequested;
+    pajlada::Signals::Signal<TabHighlight> tabHighlightRequested;
     pajlada::Signals::NoArgSignal liveStatusChanged;
     pajlada::Signals::Signal<const Link &> linkClicked;
     pajlada::Signals::Signal<QString, FromTwitchLinkOpenChannelIn>
