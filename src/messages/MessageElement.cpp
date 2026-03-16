@@ -562,6 +562,22 @@ EmotePtr BadgeElement::getEmote() const
     return this->emote_;
 }
 
+void BadgeElement::setTwitchBadge(QString slug, QString version)
+{
+    this->twitchBadgeSlug_ = std::move(slug);
+    this->twitchBadgeVersion_ = std::move(version);
+}
+
+std::optional<QString> BadgeElement::twitchBadgeSlug() const
+{
+    return this->twitchBadgeSlug_;
+}
+
+std::optional<QString> BadgeElement::twitchBadgeVersion() const
+{
+    return this->twitchBadgeVersion_;
+}
+
 MessageLayoutElement *BadgeElement::makeImageLayoutElement(
     const ImagePtr &image, QSizeF size)
 {
@@ -574,6 +590,11 @@ std::unique_ptr<MessageElement> BadgeElement::clone() const
 {
     auto el = std::make_unique<BadgeElement>(this->emote_, this->getFlags());
     el->cloneFrom(*this);
+    if (this->twitchBadgeSlug_.has_value())
+    {
+        el->setTwitchBadge(*this->twitchBadgeSlug_,
+                           this->twitchBadgeVersion_.value_or(QString()));
+    }
     return el;
 }
 
@@ -613,6 +634,11 @@ std::unique_ptr<MessageElement> ModBadgeElement::clone() const
 {
     auto el = std::make_unique<ModBadgeElement>(this->emote_, this->getFlags());
     el->cloneFrom(*this);
+    if (this->twitchBadgeSlug_.has_value())
+    {
+        el->setTwitchBadge(*this->twitchBadgeSlug_,
+                           this->twitchBadgeVersion_.value_or(QString()));
+    }
     return el;
 }
 
@@ -648,6 +674,11 @@ std::unique_ptr<MessageElement> VipBadgeElement::clone() const
 {
     auto el = std::make_unique<VipBadgeElement>(this->emote_, this->getFlags());
     el->cloneFrom(*this);
+    if (this->twitchBadgeSlug_.has_value())
+    {
+        el->setTwitchBadge(*this->twitchBadgeSlug_,
+                           this->twitchBadgeVersion_.value_or(QString()));
+    }
     return el;
 }
 

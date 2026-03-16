@@ -353,11 +353,10 @@ void appendBadges(MessageBuilder *builder,
         {
             if (auto customModBadge = twitchChannel->ffzCustomModBadge())
             {
-                builder
-                    ->emplace<ModBadgeElement>(
-                        *customModBadge,
-                        MessageElementFlag::BadgeChannelAuthority)
-                    ->setTooltip((*customModBadge)->tooltip.string);
+                auto *modBadgeEl = builder->emplace<ModBadgeElement>(
+                    *customModBadge, MessageElementFlag::BadgeChannelAuthority);
+                modBadgeEl->setTooltip((*customModBadge)->tooltip.string);
+                modBadgeEl->setTwitchBadge(badge.key_, badge.value_);
                 // early out, since we have to add a custom badge element here
                 continue;
             }
@@ -366,11 +365,10 @@ void appendBadges(MessageBuilder *builder,
         {
             if (auto customVipBadge = twitchChannel->ffzCustomVipBadge())
             {
-                builder
-                    ->emplace<VipBadgeElement>(
-                        *customVipBadge,
-                        MessageElementFlag::BadgeChannelAuthority)
-                    ->setTooltip((*customVipBadge)->tooltip.string);
+                auto *vipBadgeEl = builder->emplace<VipBadgeElement>(
+                    *customVipBadge, MessageElementFlag::BadgeChannelAuthority);
+                vipBadgeEl->setTooltip((*customVipBadge)->tooltip.string);
+                vipBadgeEl->setTwitchBadge(badge.key_, badge.value_);
                 // early out, since we have to add a custom badge element here
                 continue;
             }
@@ -411,8 +409,10 @@ void appendBadges(MessageBuilder *builder,
             }
         }
 
-        builder->emplace<BadgeElement>(*badgeEmote, badge.flag_)
-            ->setTooltip(tooltip);
+        auto *badgeEl =
+            builder->emplace<BadgeElement>(*badgeEmote, badge.flag_);
+        badgeEl->setTooltip(tooltip);
+        badgeEl->setTwitchBadge(badge.key_, badge.value_);
     }
 
     builder->message().twitchBadges = badges;
@@ -443,8 +443,10 @@ std::vector<TwitchBadge> appendSharedChatBadges(
             tooltip = QString("%1 (%2)").arg(tooltip, sharedChannelName);
         }
 
-        builder->emplace<BadgeElement>(*badgeEmote, badge.flag_)
-            ->setTooltip(tooltip);
+        auto *badgeEl =
+            builder->emplace<BadgeElement>(*badgeEmote, badge.flag_);
+        badgeEl->setTooltip(tooltip);
+        badgeEl->setTwitchBadge(badge.key_, badge.value_);
         appendedBadges.push_back(badge);
     }
 

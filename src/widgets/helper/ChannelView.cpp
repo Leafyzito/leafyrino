@@ -86,7 +86,8 @@ using namespace chatterino;
 
 constexpr int SCROLLBAR_PADDING = 8;
 
-void addEmoteContextMenuItems(QMenu *menu, const Emote &emote, QStringView kind)
+QMenu *addEmoteContextMenuItems(QMenu *menu, const Emote &emote,
+                                QStringView kind)
 {
     auto *openAction = menu->addAction("&Open");
     auto *openMenu = new QMenu(menu);
@@ -136,7 +137,8 @@ void addEmoteContextMenuItems(QMenu *menu, const Emote &emote, QStringView kind)
                             [url = emote.homePage] {
                                 QDesktopServices::openUrl(QUrl(url.string));
                             });
-    };
+    }
+    return openMenu;
 }
 
 void addImageContextMenuItems(QMenu *menu,
@@ -156,7 +158,20 @@ void addImageContextMenuItems(QMenu *menu,
         if (const auto *badgeElement =
                 dynamic_cast<const BadgeElement *>(&creator))
         {
-            addEmoteContextMenuItems(menu, *badgeElement->getEmote(), u"badge");
+            auto *openMenu = addEmoteContextMenuItems(
+                menu, *badgeElement->getEmote(), u"badge");
+            if (openMenu && badgeElement->twitchBadgeSlug().has_value())
+            {
+                const auto slug = *badgeElement->twitchBadgeSlug();
+                const auto version =
+                    badgeElement->twitchBadgeVersion().value_or(QString());
+                openMenu->addSeparator();
+                openMenu->addAction("Open in &Chat Vault", [slug, version] {
+                    QDesktopServices::openUrl(
+                        QUrl("https://chatvau.lt/badge/twitch/" + slug + "/" +
+                             version));
+                });
+            }
         }
     }
 
