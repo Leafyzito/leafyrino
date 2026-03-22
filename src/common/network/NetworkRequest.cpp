@@ -82,6 +82,12 @@ NetworkRequest NetworkRequest::finally(NetworkFinallyCallback cb) &&
     return std::move(*this);
 }
 
+NetworkRequest NetworkRequest::hideRequestBody() &&
+{
+    this->data->hideRequestBody = true;
+    return std::move(*this);
+}
+
 NetworkRequest NetworkRequest::header(const char *headerName,
                                       const char *value) &&
 {

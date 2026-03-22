@@ -57,6 +57,8 @@ public:
      */
     void listenToChannelPointRewards(const QString &channelID);
 
+    void reconnect();
+
     struct {
         std::atomic<uint32_t> messagesReceived{0};
         std::atomic<uint32_t> messagesFailedToParse{0};

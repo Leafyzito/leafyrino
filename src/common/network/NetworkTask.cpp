@@ -191,10 +191,22 @@ void NetworkTask::logReply()
     }
     else
     {
+        QUtf8StringView payload = this->data_->payload;
+#ifdef NDEBUG
+        if (this->data_->hideRequestBody)
+#else
+        static bool alwaysShowRequestBodies =
+            qEnvironmentVariableIntegerValue(
+                "CHATTERINO_HTTP_ALWAYS_SHOW_REQUEST_BODY")
+                .value_or(0) != 0;
+        if (this->data_->hideRequestBody && !alwaysShowRequestBodies)
+#endif
+        {
+            payload = "(redacted)";
+        }
         qCDebug(chatterinoHTTP).noquote()
             << this->data_->typeString()
-            << this->data_->request.url().toString() << status
-            << QString(this->data_->payload);
+            << this->data_->request.url().toString() << status << payload;
     }
 }
 

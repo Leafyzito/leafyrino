@@ -51,6 +51,9 @@ public:
     NetworkRequest onSuccess(NetworkSuccessCallback cb) &&;
     NetworkRequest finally(NetworkFinallyCallback cb) &&;
 
+    /// Hide the request body in logs
+    NetworkRequest hideRequestBody() &&;
+
     NetworkRequest payload(const QByteArray &payload) &&;
     NetworkRequest cache() &&;
     /// NetworkRequest makes sure that the `caller` object still exists when the

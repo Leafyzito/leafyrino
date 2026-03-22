@@ -33,6 +33,14 @@ public:
     std::shared_ptr<PubSubClient> makeClient();
     void checkHeartbeats();
 
+    void reconnect()
+    {
+        for (const auto &[id, c] : this->clients())
+        {
+            c->close();
+        }
+    }
+
     std::chrono::milliseconds heartbeatInterval;
     QTimer heartbeatTimer;
 
@@ -100,6 +108,11 @@ void PubSub::listenToChannelPointRewards(const QString &channelID)
 
     qCDebug(chatterinoPubSub) << "Listen to topic" << topic;
     this->private_->subscribe(TopicData{.topic = std::move(topic)});
+}
+
+void PubSub::reconnect()
+{
+    this->private_->reconnect();
 }
 
 }  // namespace chatterino

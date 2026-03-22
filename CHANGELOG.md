@@ -2,6 +2,12 @@
 
 ## Unversioned
 
+- Minor: Update emoji data to Unicode 17.0. (#6471)
+- Minor: Added a setting to disable sound device sleeping. This can help ensure highlight sounds play more reliably when using a wireless sound device. (#6859)
+- Bugfix: Make it possible to filter Watch Streak messages again. Previously, these messages were labeled `sub_messages`. This was fixed in #6571, but we didn't add a new filter to compensate. (#6741)
+- Bugfix: Improve nightly downgrade message. (#6842)
+- Bugfix: Improved blocked user loading on poor internet connections. (#6846)
+- Bugfix: Fixed an issue that could prevent your Twitch subscription emotes from loading. (#6860)
 - Minor: Added "Open in Chat Vault" to the context menu for Twitch badges.
 - Minor: Tabs now use the color of the most recent highlight or mention for their indicator bar when available, with an option to always use the theme highlight color.
 - Minor: Added user color to user info popup.

@@ -15,6 +15,7 @@
 #include "messages/MessageBuilder.hpp"
 #include "messages/MessageElement.hpp"
 #include "providers/twitch/eventsub/Controller.hpp"
+#include "providers/twitch/PubSubManager.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Settings.hpp"
@@ -236,6 +237,10 @@ QString debugTest(const CommandContext &ctx)
         {
             getApp()->getTwitch()->setWatchingChannel(chan);
         }
+    }
+    else if (command == "pubsub-reconnect")
+    {
+        getApp()->getTwitchPubSub()->reconnect();
     }
     else
     {

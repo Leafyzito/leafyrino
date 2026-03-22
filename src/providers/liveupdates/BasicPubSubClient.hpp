@@ -81,6 +81,11 @@ public:
     }
 
 protected:
+    bool isSubscribed(const Subscription &subscription) const
+    {
+        return this->subscriptions_.contains(subscription);
+    }
+
     /**
      * @return true if this client subscribed to this subscription
      *         and the current subscriptions don't exceed the maximum

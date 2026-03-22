@@ -251,6 +251,7 @@ void KickAccount::check(const std::function<void(CheckResult)> &cb)
     NetworkRequest(u"https://id.kick.com/oauth/token/introspect"_s,
                    NetworkRequestType::Post)
         .timeout(10'000)
+        .hideRequestBody()
         .onSuccess([cb, weak](const NetworkResult & /*res*/) {
             auto self = weak.lock();
             if (!self)
@@ -298,6 +299,7 @@ void KickAccount::doRefresh()
     NetworkRequest(u"https://id.kick.com/oauth/token"_s,
                    NetworkRequestType::Post)
         .header("Content-Type", "application/x-www-form-urlencoded")
+        .hideRequestBody()
         .payload(payload.toString(QUrl::FullyEncoded).toUtf8())
         .timeout(20'000)
         .onSuccess([weak](const NetworkResult &res) {

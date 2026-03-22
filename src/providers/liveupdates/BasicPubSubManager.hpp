@@ -165,6 +165,12 @@ private:
         {
             const auto last = std::move(this->pendingSubscriptions_.back());
             this->pendingSubscriptions_.pop_back();
+            if (this->isSubscribed(last))
+            {
+                // we subscribed to this in the meantime
+                continue;
+            }
+
             if (!client->subscribe(last))
             {
                 qCDebug(chatterinoLiveupdates)
@@ -283,6 +289,13 @@ private:
             }
         }
         return false;
+    }
+
+    bool isSubscribed(const Subscription &subscription) const
+    {
+        return std::ranges::any_of(this->clients_, [&](const auto &c) {
+            return c.second->isSubscribed(subscription);
+        });
     }
 
     Client *resolve(size_t id)
