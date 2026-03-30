@@ -337,6 +337,9 @@ public:
 
     pajlada::Signals::NoArgSignal roomModesChanged;
 
+    /// Fires when IRC room-id is first set or changes for this channel.
+    pajlada::Signals::NoArgSignal roomIdAssigned;
+
     pajlada::Signals::NoArgSignal destroyed;
 
     pajlada::Signals::Signal<const QString &> sendWaitUpdate;

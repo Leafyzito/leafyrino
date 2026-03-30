@@ -41,6 +41,7 @@
 #include "widgets/splits/SplitHeader.hpp"
 #include "widgets/splits/SplitInput.hpp"
 #include "widgets/splits/SplitOverlay.hpp"
+#include "widgets/splits/SplitPredictionPanel.hpp"
 #include "widgets/Window.hpp"
 
 #include <QApplication>
@@ -91,6 +92,7 @@ Split::Split(QWidget *parent)
     , channel_(Channel::getEmpty())
     , vbox_(new QVBoxLayout(this))
     , header_(new SplitHeader(this))
+    , predictionPanel_(new SplitPredictionPanel(this))
     , view_(new ChannelView(this, this, ChannelView::Context::None,
                             getSettings()->scrollbackSplitLimit))
     , input_(new SplitInput(this))
@@ -105,6 +107,7 @@ Split::Split(QWidget *parent)
     this->vbox_->setContentsMargins(1, 1, 1, 1);
 
     this->vbox_->addWidget(this->header_);
+    this->vbox_->addWidget(this->predictionPanel_);
     this->vbox_->addWidget(this->view_, 1);
     this->vbox_->addWidget(this->input_);
 
@@ -251,6 +254,9 @@ Split::Split(QWidget *parent)
                                            // Forward textEdit's focused event
                                            this->focused.invoke();
                                        });
+    this->signalHolder_.managedConnect(this->focused, [this] {
+        this->predictionPanel_->refresh();
+    });
     this->signalHolder_.managedConnect(this->input_->ui_.textEdit->focusLost,
                                        [this] {
                                            // Forward textEdit's focusLost event
@@ -901,6 +907,15 @@ void Split::setChannel(IndirectChannel newChannel)
                 this->setChannel(this->channel_);
             });
         });
+
+    if (tc != nullptr)
+    {
+        this->predictionPanel_->setTwitchChannel(tc);
+    }
+    else
+    {
+        this->predictionPanel_->setTwitchChannel(nullptr);
+    }
 
     this->header_->updateIcons();
     this->header_->updateChannelText();

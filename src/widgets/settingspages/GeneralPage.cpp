@@ -1052,6 +1052,14 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->setTooltip("Show the stream title")
         ->addTo(layout);
 
+    layout.addSubtitle("Predictions");
+    SettingWidget::checkbox("Show active prediction panel in splits",
+                            s.showPredictionPanel)
+        ->setTooltip("Polls Twitch for an active or locked channel points "
+                     "prediction and shows it above chat (read-only). Use "
+                     "\"Open on Twitch\" to vote in popout chat.")
+        ->addTo(layout);
+
     layout.addSubtitle("R9K");
     auto toggleLocalr9kSeq = getApp()->getHotkeys()->getDisplaySequence(
         HotkeyCategory::Window, "toggleLocalR9K");

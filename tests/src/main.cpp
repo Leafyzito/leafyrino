@@ -27,6 +27,14 @@ int main(int argc, char **argv)
     ::testing::InitGoogleTest(&argc, argv);
 
 #ifdef SUPPORT_QT_NETWORK_TESTS
+    // CMake gtest_discover_tests invokes this binary with --gtest_list_tests.
+    // That must complete without waiting for the event loop; otherwise discovery
+    // times out and the test target fails to link.
+    if (GTEST_FLAG_GET(list_tests))
+    {
+        return RUN_ALL_TESTS();
+    }
+
     QApplication app(argc, argv);
     // make sure to always debug-log
     QLoggingCategory::setFilterRules("chatterino.*=true");

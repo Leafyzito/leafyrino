@@ -1005,6 +1005,7 @@ void TwitchChannel::setRoomId(const QString &id)
         }
         this->disconnected_ = false;
         this->lastConnectedAt_ = std::chrono::system_clock::now();
+        this->roomIdAssigned.invoke();
     }
 }
 
