@@ -538,6 +538,8 @@ struct HelixPredictionOutcome {
     QString title;
     int users;
     int channelPoints;
+    /// GQL `PredictionOutcomeColor` string, e.g. BLUE, PINK (may be empty).
+    QString color;
 
     explicit HelixPredictionOutcome(const QJsonObject &jsonObject)
         : id(helixPredictionOutcomeIdFromJson(
@@ -545,6 +547,7 @@ struct HelixPredictionOutcome {
         , title(jsonObject.value("title").toString())
         , users(jsonObject.value("users").toInt())
         , channelPoints(jsonObject.value("channel_points").toInt())
+        , color(jsonObject.value(QStringLiteral("color")).toString())
     {
     }
 };
@@ -561,6 +564,10 @@ struct HelixPrediction {
     /// When the event was resolved or canceled (GQL `endedAt`); empty if not ended.
     QString endedAt;
     int predictionWindow{0};
+    /// From GQL `self.prediction.outcome.id` when the logged-in user has a prediction.
+    QString viewerPredictionOutcomeId;
+    /// Channel points the user already spent on this prediction (GQL `self.prediction.points`).
+    int viewerPredictionPoints{0};
 
     explicit HelixPrediction(const QJsonObject &jsonObject)
         : id(jsonObject.value("id").toString())
@@ -574,6 +581,11 @@ struct HelixPrediction {
         , createdAt(jsonObject.value("created_at").toString())
         , endedAt(jsonObject.value(QStringLiteral("ended_at")).toString())
         , predictionWindow(jsonObject.value("prediction_window").toInt())
+        , viewerPredictionOutcomeId(helixPredictionOutcomeIdFromJson(
+              jsonObject.value(QStringLiteral("viewer_prediction_outcome_id"))))
+        , viewerPredictionPoints(
+              jsonObject.value(QStringLiteral("viewer_prediction_points"))
+                  .toInt())
     {
         const auto &data = jsonObject.value("outcomes").toArray();
         this->outcomes.reserve(data.size());
