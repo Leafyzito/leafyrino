@@ -14,6 +14,7 @@
 #include <QDateTime>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QJsonValue>
 #include <QString>
 #include <QStringList>
 #include <QTimeZone>
@@ -519,17 +520,34 @@ struct HelixPolls {
     }
 };
 
+inline QString helixPredictionOutcomeIdFromJson(const QJsonValue &v)
+{
+    if (v.isString())
+    {
+        return v.toString();
+    }
+    if (!v.isUndefined() && !v.isNull())
+    {
+        return v.toVariant().toString();
+    }
+    return {};
+}
+
 struct HelixPredictionOutcome {
     QString id;
     QString title;
     int users;
     int channelPoints;
+    /// GQL `PredictionOutcomeColor` string, e.g. BLUE, PINK (may be empty).
+    QString color;
 
     explicit HelixPredictionOutcome(const QJsonObject &jsonObject)
-        : id(jsonObject.value("id").toString())
+        : id(helixPredictionOutcomeIdFromJson(
+              jsonObject.value(QStringLiteral("id"))))
         , title(jsonObject.value("title").toString())
         , users(jsonObject.value("users").toInt())
         , channelPoints(jsonObject.value("channel_points").toInt())
+        , color(jsonObject.value(QStringLiteral("color")).toString())
     {
     }
 };
@@ -538,14 +556,36 @@ struct HelixPrediction {
     QString id;
     QString title;
     QString winningOutcomeID;
+    /// From GQL `winningOutcome.title` when present; helps match winner if ids differ.
+    QString winningOutcomeTitle;
     QString status;
     std::vector<HelixPredictionOutcome> outcomes;
+    QString createdAt;
+    /// When the event was resolved or canceled (GQL `endedAt`); empty if not ended.
+    QString endedAt;
+    int predictionWindow{0};
+    /// From GQL `self.prediction.outcome.id` when the logged-in user has a prediction.
+    QString viewerPredictionOutcomeId;
+    /// Channel points the user already spent on this prediction (GQL `self.prediction.points`).
+    int viewerPredictionPoints{0};
 
     explicit HelixPrediction(const QJsonObject &jsonObject)
         : id(jsonObject.value("id").toString())
         , title(jsonObject.value("title").toString())
-        , winningOutcomeID(jsonObject.value("winning_outcome_id").toString())
+        , winningOutcomeID(helixPredictionOutcomeIdFromJson(
+              jsonObject.value(QStringLiteral("winning_outcome_id"))))
+        , winningOutcomeTitle(
+              jsonObject.value(QStringLiteral("winning_outcome_title"))
+                  .toString())
         , status(jsonObject.value("status").toString())
+        , createdAt(jsonObject.value("created_at").toString())
+        , endedAt(jsonObject.value(QStringLiteral("ended_at")).toString())
+        , predictionWindow(jsonObject.value("prediction_window").toInt())
+        , viewerPredictionOutcomeId(helixPredictionOutcomeIdFromJson(
+              jsonObject.value(QStringLiteral("viewer_prediction_outcome_id"))))
+        , viewerPredictionPoints(
+              jsonObject.value(QStringLiteral("viewer_prediction_points"))
+                  .toInt())
     {
         const auto &data = jsonObject.value("outcomes").toArray();
         this->outcomes.reserve(data.size());

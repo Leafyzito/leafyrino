@@ -252,6 +252,8 @@ public:
                                      false};
     BoolSetting headerGame = {"/appearance/splitheader/showGame", false};
     BoolSetting headerUptime = {"/appearance/splitheader/showUptime", false};
+    BoolSetting showPredictionPanel = {"/appearance/splits/showPredictionPanel",
+                                       true};
     FloatSetting customThemeMultiplier = {"/appearance/customThemeMultiplier",
                                           -0.5f};
     // BoolSetting useCustomWindowFrame = {"/appearance/useCustomWindowFrame",

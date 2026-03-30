@@ -556,6 +556,8 @@ set(SOURCE_FILES
 
         providers/twitch/api/Helix.cpp
         providers/twitch/api/Helix.hpp
+        providers/twitch/api/TwitchGql.cpp
+        providers/twitch/api/TwitchGql.hpp
 
         singletons/CrashHandler.cpp
         singletons/CrashHandler.hpp
@@ -762,6 +764,8 @@ set(SOURCE_FILES
         widgets/dialogs/LastRunCrashDialog.hpp
         widgets/dialogs/LoginDialog.cpp
         widgets/dialogs/LoginDialog.hpp
+        widgets/dialogs/TwitchDeviceLoginPage.cpp
+        widgets/dialogs/TwitchDeviceLoginPage.hpp
         widgets/dialogs/QualityPopup.cpp
         widgets/dialogs/QualityPopup.hpp
         widgets/dialogs/ReplyThreadPopup.cpp
@@ -920,6 +924,10 @@ set(SOURCE_FILES
         widgets/splits/SplitHeader.hpp
         widgets/splits/SplitInput.cpp
         widgets/splits/SplitInput.hpp
+        widgets/splits/PredictionPoolBar.cpp
+        widgets/splits/PredictionPoolBar.hpp
+        widgets/splits/SplitPredictionPanel.cpp
+        widgets/splits/SplitPredictionPanel.hpp
         widgets/splits/SplitOverlay.cpp
         widgets/splits/SplitOverlay.hpp
         )
