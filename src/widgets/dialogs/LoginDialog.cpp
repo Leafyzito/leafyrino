@@ -95,11 +95,24 @@ BasicLoginWidget::BasicLoginWidget()
             .arg(logInLink));
     this->ui_.unableToOpenBrowserHelper.setOpenExternalLinks(true);
 
+    this->ui_.channelPointsHint.setText(
+        "The Twitch (Device) tab is a newer sign in option that enables "
+        "channel points features (for example predictions). The usual login "
+        "below is enough for chat.");
+    this->ui_.channelPointsHint.setWordWrap(true);
+    this->ui_.channelPointsHint.setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    this->ui_.layout.addWidget(&this->ui_.channelPointsHint);
+
     this->ui_.horizontalLayout.addWidget(&this->ui_.loginButton);
     this->ui_.horizontalLayout.addWidget(&this->ui_.pasteCodeButton);
 
-    this->ui_.layout.addLayout(&this->ui_.horizontalLayout);
+    this->ui_.buttonRowCenter.addStretch(1);
+    this->ui_.buttonRowCenter.addLayout(&this->ui_.horizontalLayout);
+    this->ui_.buttonRowCenter.addStretch(1);
+    this->ui_.layout.addLayout(&this->ui_.buttonRowCenter);
+
     this->ui_.layout.addWidget(&this->ui_.unableToOpenBrowserHelper);
+    this->ui_.layout.addStretch(1);
 
     connect(&this->ui_.loginButton, &QPushButton::clicked, [this, logInLink]() {
         qCDebug(chatterinoWidget) << "open login in browser";
@@ -264,6 +277,7 @@ LoginDialog::LoginDialog(QWidget *parent)
 
     this->ui_.mainLayout.addWidget(&this->ui_.buttonBox);
 
+    this->ui_.tabWidget.addTab(&this->ui_.twitchDevice, "Twitch (Device)");
     this->ui_.tabWidget.addTab(&this->ui_.kick, "Kick");
 }
 

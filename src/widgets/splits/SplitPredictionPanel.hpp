@@ -20,6 +20,7 @@
 
 class QLabel;
 class QPushButton;
+class QSpinBox;
 class QWidget;
 class QVBoxLayout;
 
@@ -30,8 +31,9 @@ class Split;
 class TwitchChannel;
 
 /**
- * Read-only strip showing an ACTIVE or LOCKED channel points prediction for the
- * split's Twitch channel (Twitch GQL, polled).
+ * Strip showing an ACTIVE or LOCKED channel points prediction for the split's
+ * Twitch channel (Twitch GQL, polled). Viewer betting uses undocumented GQL
+ * MakePrediction when the window is open and the layout is binary (two outcomes).
  */
 class SplitPredictionPanel : public BaseWidget
 {
@@ -63,6 +65,9 @@ private:
     void tickPredictionCountdown();
     void onPanelShown();
     void fetchChannelPoints();
+    void syncPredictionBetRow();
+    void refreshBetOutcomeButtonStyles();
+    void placePredictionBet(int outcomeIndex);
 
     Split *const split_;
     TwitchChannel *twitchChannel_{nullptr};
@@ -78,6 +83,8 @@ private:
     bool expanded_{true};
     bool inFlight_{false};
     bool pointsInFlight_{false};
+    bool betInFlight_{false};
+    std::optional<int> lastChannelPointsBalance_;
     QString lastTitleForElide_;
 
     QWidget *expandedWidget_{};
@@ -101,7 +108,12 @@ private:
     PredictionPoolBar *poolBar_{};
     QLabel *yourPointsLabel_{};
     QLabel *yourPointsValue_{};
+    QLabel *betAmountCaption_{};
     QLabel *disclaimerLabel_{};
+    QWidget *betRow_{};
+    QSpinBox *betAmountSpin_{};
+    QPushButton *betButton0_{};
+    QPushButton *betButton1_{};
 
     std::optional<HelixPrediction> lastLivePrediction_;
     QString currentDisplayId_;
