@@ -292,7 +292,7 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
     pointsLay->setSpacing(6);
     this->yourPointsLabel_ =
         new QLabel(QStringLiteral("Your points:"), pointsRow);
-    this->yourPointsValue_ = new QLabel(QStringLiteral("\u2014"), pointsRow);
+    this->yourPointsValue_ = new QLabel(QStringLiteral("-"), pointsRow);
     pointsLay->addWidget(this->yourPointsLabel_, 0);
     pointsLay->addWidget(this->yourPointsValue_, 0);
     pointsLay->addStretch(1);
@@ -599,7 +599,7 @@ void SplitPredictionPanel::fetchChannelPoints()
             }
             if (this->yourPointsValue_ != nullptr)
             {
-                this->yourPointsValue_->setText(QStringLiteral("\u2014"));
+                this->yourPointsValue_->setText(QStringLiteral("-"));
             }
         });
 }
@@ -752,7 +752,7 @@ void SplitPredictionPanel::hidePanel()
     this->pointsInFlight_ = false;
     if (this->yourPointsValue_ != nullptr)
     {
-        this->yourPointsValue_->setText(QStringLiteral("\u2014"));
+        this->yourPointsValue_->setText(QStringLiteral("-"));
     }
 
     this->lingerTimer_.stop();
