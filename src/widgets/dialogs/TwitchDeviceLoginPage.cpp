@@ -188,7 +188,7 @@ QString TwitchDeviceLoginPage::buildScopesString() const
     scopes.reserve(static_cast<int>(AUTH_SCOPES.size()));
     for (const auto &s : AUTH_SCOPES)
     {
-        scopes.append(QString(s));
+        scopes.append(QString(s.data(), s.size()));
     }
     return scopes.join(u' ');
 }
