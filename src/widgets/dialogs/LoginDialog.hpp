@@ -6,7 +6,6 @@
 
 #include "widgets/BaseWidget.hpp"
 #include "widgets/dialogs/KickLoginPage.hpp"
-#include "widgets/dialogs/TwitchDeviceLoginPage.hpp"
 
 #include <QAction>
 #include <QApplication>
@@ -32,8 +31,6 @@ public:
 
     struct {
         QVBoxLayout layout;
-        QLabel channelPointsHint;
-        QHBoxLayout buttonRowCenter;
         QHBoxLayout horizontalLayout;
         QPushButton loginButton;
         QPushButton pasteCodeButton;
@@ -85,8 +82,6 @@ private:
         BasicLoginWidget basic;
 
         AdvancedLoginWidget advanced;
-
-        TwitchDeviceLoginPage twitchDevice;
 
         KickLoginPage kick;
     } ui_;

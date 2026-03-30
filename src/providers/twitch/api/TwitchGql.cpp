@@ -11,11 +11,7 @@
 #include <QDateTime>
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QRandomGenerator>
 #include <QUrl>
-#include <QUuid>
-
-#include <limits>
 
 namespace {
 
@@ -24,51 +20,6 @@ using namespace chatterino;
 // Twilight / twitch.tv web Client-ID. Helix-registered OAuth Client-IDs are often
 // rejected with HTTP 400 on gql.twitch.tv; Bearer token still identifies the user.
 constexpr char TWITCH_WEB_GQL_CLIENT_ID[] = "kimne78kx3ncx6brgo4mv6wki5h1ko";
-
-// Android TV app Client-ID (device-code OAuth); channel-points-miner uses this for GQL.
-constexpr char TWITCH_TV_GQL_CLIENT_ID[] = "ue6666qo983tsx6so1t0vnawi233wa";
-
-// Default `CLIENT_VERSION` in miner constants.py (Twilight build id).
-constexpr char TWITCH_GQL_CLIENT_VERSION[] =
-    "ef928475-9403-42f2-8a34-55784bd08e16";
-
-constexpr char TWITCH_TV_USER_AGENT[] =
-    "Mozilla/5.0 (Linux; Android 7.1; Smart Box C1) AppleWebKit/537.36 (KHTML, "
-    "like Gecko) Chrome/108.0.0.0 Safari/537.36";
-
-QString twitchGqlStaticDeviceId()
-{
-    static QString id;
-    if (!id.isEmpty())
-    {
-        return id;
-    }
-    id.resize(32);
-    static constexpr char charset[] =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    for (qsizetype i = 0; i < 32; ++i)
-    {
-        id[i] = QLatin1Char(charset[QRandomGenerator::global()->bounded(
-            int(sizeof(charset) - 1))]);
-    }
-    return id;
-}
-
-QString twitchGqlStaticSessionId()
-{
-    static QString sid;
-    if (!sid.isEmpty())
-    {
-        return sid;
-    }
-    QByteArray bytes(16, '\0');
-    for (int i = 0; i < 16; ++i)
-    {
-        bytes[i] = char(QRandomGenerator::global()->bounded(256));
-    }
-    sid = QString::fromLatin1(bytes.toHex());
-    return sid;
-}
 
 /// Only surface resolved predictions from GQL if `endedAt` is within this window.
 constexpr int RESOLVED_UI_MAX_AGE_SECS = 30;
@@ -157,14 +108,6 @@ query ChannelPredictions($channelID: ID!) {
         totalUsers
         color
       }
-      self {
-        prediction {
-          points
-          outcome {
-            id
-          }
-        }
-      }
     }
     lockedPredictionEvents {
       id
@@ -183,14 +126,6 @@ query ChannelPredictions($channelID: ID!) {
         totalPoints
         totalUsers
         color
-      }
-      self {
-        prediction {
-          points
-          outcome {
-            id
-          }
-        }
       }
     }
     resolvedPredictionEvents(first: 5) {
@@ -212,14 +147,6 @@ query ChannelPredictions($channelID: ID!) {
             totalPoints
             totalUsers
             color
-          }
-          self {
-            prediction {
-              points
-              outcome {
-                id
-              }
-            }
           }
         }
       }
@@ -249,14 +176,6 @@ query ChannelPredictionsByLogin($login: String!) {
         totalUsers
         color
       }
-      self {
-        prediction {
-          points
-          outcome {
-            id
-          }
-        }
-      }
     }
     lockedPredictionEvents {
       id
@@ -275,14 +194,6 @@ query ChannelPredictionsByLogin($login: String!) {
         totalPoints
         totalUsers
         color
-      }
-      self {
-        prediction {
-          points
-          outcome {
-            id
-          }
-        }
       }
     }
     resolvedPredictionEvents(first: 5) {
@@ -305,14 +216,6 @@ query ChannelPredictionsByLogin($login: String!) {
             totalUsers
             color
           }
-          self {
-            prediction {
-              points
-              outcome {
-                id
-              }
-            }
-          }
         }
       }
     }
@@ -334,8 +237,6 @@ QJsonObject gqlEventToHelixPredictionJson(const QJsonObject &ev)
                   o.value(QStringLiteral("totalUsers")));
         ho.insert(QStringLiteral("channel_points"),
                   o.value(QStringLiteral("totalPoints")));
-        ho.insert(QStringLiteral("color"),
-                  o.value(QStringLiteral("color")).toString());
         outcomes.append(ho);
     }
 
@@ -358,21 +259,6 @@ QJsonObject gqlEventToHelixPredictionJson(const QJsonObject &ev)
              gqlTimeFieldToIsoString(ev.value(QStringLiteral("endedAt"))));
     p.insert(QStringLiteral("prediction_window"),
              ev.value(QStringLiteral("predictionWindowSeconds")).toInt());
-
-    const auto self = ev.value(QStringLiteral("self")).toObject();
-    const auto viewerPred = self.value(QStringLiteral("prediction")).toObject();
-    QString viewerOutcomeId;
-    int viewerPoints = 0;
-    if (!viewerPred.isEmpty())
-    {
-        viewerPoints = viewerPred.value(QStringLiteral("points")).toInt();
-        const auto vo = viewerPred.value(QStringLiteral("outcome")).toObject();
-        viewerOutcomeId =
-            helixPredictionOutcomeIdFromJson(vo.value(QStringLiteral("id")));
-    }
-    p.insert(QStringLiteral("viewer_prediction_outcome_id"), viewerOutcomeId);
-    p.insert(QStringLiteral("viewer_prediction_points"), viewerPoints);
-
     return p;
 }
 
@@ -550,40 +436,6 @@ void fetchIntegrityToken(const QString &oauthToken, const QObject *caller,
         .execute();
 }
 
-/// Integrity token with TV-style headers (matches channel-points-miner).
-void fetchIntegrityTokenTv(const QString &oauthToken, const QObject *caller,
-                           std::function<void(QString)> onDone)
-{
-    auto done =
-        std::make_shared<std::function<void(QString)>>(std::move(onDone));
-    QJsonObject emptyBody;
-    NetworkRequest(QUrl(QStringLiteral("https://gql.twitch.tv/integrity")),
-                   NetworkRequestType::Post)
-        .timeout(10'000)
-        .header("Client-ID", TWITCH_TV_GQL_CLIENT_ID)
-        .header("Authorization", QStringLiteral("OAuth %1").arg(oauthToken))
-        .header("Client-Session-Id", twitchGqlStaticSessionId())
-        .header("Client-Version", TWITCH_GQL_CLIENT_VERSION)
-        .header("User-Agent", TWITCH_TV_USER_AGENT)
-        .header("X-Device-Id", twitchGqlStaticDeviceId())
-        .header("Content-Type", "application/json")
-        .caller(caller)
-        .json(emptyBody)
-        .onSuccess([done](const NetworkResult &res) {
-            const auto root = res.parseJson();
-            QString token = root.value(QStringLiteral("token")).toString();
-            if (token.isEmpty())
-            {
-                token = root.value(QStringLiteral("data")).toString();
-            }
-            (*done)(token);
-        })
-        .onError([done](const NetworkResult &) {
-            (*done)({});
-        })
-        .execute();
-}
-
 }  // namespace
 
 namespace chatterino {
@@ -705,9 +557,7 @@ void fetchPredictionsForChannel(
 }
 
 void fetchChannelPointsBalance(const QString &channelLogin,
-                               const QString &oauthToken,
-                               const QString &gqlClientId,
-                               const QObject *caller,
+                               const QString &oauthToken, const QObject *caller,
                                std::function<void(int)> onSuccess,
                                std::function<void(QString)> onError)
 {
@@ -723,16 +573,11 @@ void fetchChannelPointsBalance(const QString &channelLogin,
         return;
     }
 
-    const bool useTvGqlClient =
-        gqlClientId.compare(QString::fromLatin1(TWITCH_TV_GQL_CLIENT_ID),
-                            Qt::CaseInsensitive) == 0;
-
     auto runGql =
         std::make_shared<std::function<void(const QString &, bool)>>();
 
-    *runGql = [runGql, login, oauthToken, caller, onSuccess, onError,
-               useTvGqlClient](const QString &integrityJwt,
-                               bool afterIntegrityRetry) {
+    *runGql = [runGql, login, oauthToken, caller, onSuccess, onError](
+                  const QString &integrityJwt, bool afterIntegrityRetry) {
         QJsonObject variables;
         variables.insert(QStringLiteral("channelLogin"), login);
 
@@ -751,34 +596,15 @@ void fetchChannelPointsBalance(const QString &channelLogin,
         body.insert(QStringLiteral("variables"), variables);
         body.insert(QStringLiteral("extensions"), extensions);
 
-        NetworkRequest req = [&] {
-            if (useTvGqlClient)
-            {
-                // Match channel-points-miner `post_gql_request` (TV token + TV Client-Id).
-                return NetworkRequest(
-                           QUrl(QStringLiteral("https://gql.twitch.tv/gql")),
+        auto req =
+            NetworkRequest(QUrl(QStringLiteral("https://gql.twitch.tv/gql")),
                            NetworkRequestType::Post)
-                    .timeout(10'000)
-                    .header("Content-Type", "application/json")
-                    .caller(caller)
-                    .header("Client-ID", TWITCH_TV_GQL_CLIENT_ID)
-                    .header("Authorization",
-                            QStringLiteral("OAuth %1").arg(oauthToken))
-                    .header("Client-Session-Id", twitchGqlStaticSessionId())
-                    .header("Client-Version", TWITCH_GQL_CLIENT_VERSION)
-                    .header("User-Agent", TWITCH_TV_USER_AGENT)
-                    .header("X-Device-Id", twitchGqlStaticDeviceId());
-            }
-            return NetworkRequest(
-                       QUrl(QStringLiteral("https://gql.twitch.tv/gql")),
-                       NetworkRequestType::Post)
                 .timeout(10'000)
-                .header("Content-Type", "application/json")
-                .caller(caller)
                 .header("Client-ID", TWITCH_WEB_GQL_CLIENT_ID)
                 .header("Authorization",
-                        QStringLiteral("Bearer %1").arg(oauthToken));
-        }();
+                        QStringLiteral("Bearer %1").arg(oauthToken))
+                .header("Content-Type", "application/json")
+                .caller(caller);
 
         if (!integrityJwt.isEmpty())
         {
@@ -788,8 +614,7 @@ void fetchChannelPointsBalance(const QString &channelLogin,
         std::move(req)
             .json(body)
             .onSuccess([runGql, afterIntegrityRetry, oauthToken, caller,
-                        onError, onSuccess,
-                        useTvGqlClient](const NetworkResult &res) {
+                        onError, onSuccess](const NetworkResult &res) {
                 const auto root = res.parseJson();
                 const auto errs =
                     root.value(QStringLiteral("errors")).toArray();
@@ -797,20 +622,10 @@ void fetchChannelPointsBalance(const QString &channelLogin,
                 if (!errs.isEmpty() && errorsSuggestIntegrity(errs) &&
                     !afterIntegrityRetry)
                 {
-                    if (useTvGqlClient)
-                    {
-                        fetchIntegrityTokenTv(oauthToken, caller,
-                                              [runGql](QString jwt) {
-                                                  (*runGql)(jwt, true);
-                                              });
-                    }
-                    else
-                    {
-                        fetchIntegrityToken(oauthToken, caller,
-                                            [runGql](QString jwt) {
-                                                (*runGql)(jwt, true);
-                                            });
-                    }
+                    fetchIntegrityToken(oauthToken, caller,
+                                        [runGql](QString jwt) {
+                                            (*runGql)(jwt, true);
+                                        });
                     return;
                 }
 
@@ -855,44 +670,25 @@ void fetchChannelPointsBalance(const QString &channelLogin,
                 const auto cp =
                     self.value(QStringLiteral("communityPoints")).toObject();
                 const QJsonValue balVal = cp.value(QStringLiteral("balance"));
-                qint64 balanceLong = 0;
+                int balance = 0;
                 if (balVal.isDouble())
                 {
-                    balanceLong = static_cast<qint64>(balVal.toDouble());
+                    balance = static_cast<int>(balVal.toDouble());
                 }
                 else if (balVal.isString())
                 {
-                    bool convOk = false;
-                    balanceLong = balVal.toString().toLongLong(&convOk);
-                    if (!convOk)
+                    bool ok = false;
+                    balance = balVal.toString().toInt(&ok);
+                    if (!ok)
                     {
                         onError(QStringLiteral("Invalid balance"));
                         return;
                     }
                 }
-                else if (balVal.isUndefined() || balVal.isNull())
+                else
                 {
                     onError(QStringLiteral("Invalid balance"));
                     return;
-                }
-                else
-                {
-                    balanceLong = balVal.toInteger();
-                }
-                int balance = 0;
-                if (balanceLong >
-                    static_cast<qint64>(std::numeric_limits<int>::max()))
-                {
-                    balance = std::numeric_limits<int>::max();
-                }
-                else if (balanceLong <
-                         static_cast<qint64>(std::numeric_limits<int>::min()))
-                {
-                    balance = std::numeric_limits<int>::min();
-                }
-                else
-                {
-                    balance = static_cast<int>(balanceLong);
                 }
 
                 onSuccess(balance);
@@ -903,208 +699,9 @@ void fetchChannelPointsBalance(const QString &channelLogin,
             .execute();
     };
 
-    if (useTvGqlClient)
-    {
-        // Miner does not pre-fetch integrity for GQL; try without first.
-        (*runGql)(QString(), false);
-    }
-    else
-    {
-        fetchIntegrityToken(oauthToken, caller, [runGql](QString jwt) {
-            (*runGql)(jwt, false);
-        });
-    }
-}
-
-void makePrediction(const QString &eventId, const QString &outcomeId,
-                    int points, const QString &oauthToken,
-                    const QString &gqlClientId, const QObject *caller,
-                    std::function<void()> onSuccess,
-                    std::function<void(QString)> onError)
-{
-    if (oauthToken.isEmpty())
-    {
-        onError(QStringLiteral("Missing OAuth token"));
-        return;
-    }
-    if (eventId.isEmpty() || outcomeId.isEmpty())
-    {
-        onError(QStringLiteral("Missing prediction or outcome id"));
-        return;
-    }
-    if (points < 10)
-    {
-        onError(
-            QStringLiteral("Predictions require at least 10 channel points"));
-        return;
-    }
-
-    const bool useTvGqlClient =
-        gqlClientId.compare(QString::fromLatin1(TWITCH_TV_GQL_CLIENT_ID),
-                            Qt::CaseInsensitive) == 0;
-
-    QJsonObject input;
-    input.insert(QStringLiteral("eventID"), eventId);
-    input.insert(QStringLiteral("outcomeID"), outcomeId);
-    input.insert(QStringLiteral("points"), points);
-    const QString txId = QUuid::createUuid()
-                             .toString(QUuid::WithoutBraces)
-                             .remove(QLatin1Char('-'));
-    input.insert(QStringLiteral("transactionID"), txId);
-
-    QJsonObject variables;
-    variables.insert(QStringLiteral("input"), input);
-
-    QJsonObject persisted;
-    persisted.insert(QStringLiteral("version"), 1);
-    persisted.insert(
-        QStringLiteral("sha256Hash"),
-        QStringLiteral("b44682ecc88358817009f20e69d75081b1e58825bb40aa53"
-                       "d5dbadcc17c881d8"));
-
-    QJsonObject extensions;
-    extensions.insert(QStringLiteral("persistedQuery"), persisted);
-
-    QJsonObject body;
-    body.insert(QStringLiteral("operationName"),
-                QStringLiteral("MakePrediction"));
-    body.insert(QStringLiteral("variables"), variables);
-    body.insert(QStringLiteral("extensions"), extensions);
-
-    auto runGql =
-        std::make_shared<std::function<void(const QString &, bool)>>();
-
-    *runGql = [runGql, body, oauthToken, caller, onSuccess, onError,
-               useTvGqlClient](const QString &integrityJwt,
-                               bool afterIntegrityRetry) {
-        NetworkRequest req = [&] {
-            if (useTvGqlClient)
-            {
-                return NetworkRequest(
-                           QUrl(QStringLiteral("https://gql.twitch.tv/gql")),
-                           NetworkRequestType::Post)
-                    .timeout(10'000)
-                    .header("Content-Type", "application/json")
-                    .caller(caller)
-                    .header("Client-ID", TWITCH_TV_GQL_CLIENT_ID)
-                    .header("Authorization",
-                            QStringLiteral("OAuth %1").arg(oauthToken))
-                    .header("Client-Session-Id", twitchGqlStaticSessionId())
-                    .header("Client-Version", TWITCH_GQL_CLIENT_VERSION)
-                    .header("User-Agent", TWITCH_TV_USER_AGENT)
-                    .header("X-Device-Id", twitchGqlStaticDeviceId());
-            }
-            return NetworkRequest(
-                       QUrl(QStringLiteral("https://gql.twitch.tv/gql")),
-                       NetworkRequestType::Post)
-                .timeout(10'000)
-                .header("Content-Type", "application/json")
-                .caller(caller)
-                .header("Client-ID", TWITCH_WEB_GQL_CLIENT_ID)
-                .header("Authorization",
-                        QStringLiteral("Bearer %1").arg(oauthToken));
-        }();
-
-        if (!integrityJwt.isEmpty())
-        {
-            req = std::move(req).header("Client-Integrity", integrityJwt);
-        }
-
-        std::move(req)
-            .json(body)
-            .onSuccess([runGql, afterIntegrityRetry, oauthToken, caller,
-                        onError, onSuccess,
-                        useTvGqlClient](const NetworkResult &res) {
-                const auto root = res.parseJson();
-                const auto errs =
-                    root.value(QStringLiteral("errors")).toArray();
-
-                if (!errs.isEmpty() && errorsSuggestIntegrity(errs) &&
-                    !afterIntegrityRetry)
-                {
-                    if (useTvGqlClient)
-                    {
-                        fetchIntegrityTokenTv(oauthToken, caller,
-                                              [runGql](QString jwt) {
-                                                  (*runGql)(jwt, true);
-                                              });
-                    }
-                    else
-                    {
-                        fetchIntegrityToken(oauthToken, caller,
-                                            [runGql](QString jwt) {
-                                                (*runGql)(jwt, true);
-                                            });
-                    }
-                    return;
-                }
-
-                if (!errs.isEmpty() &&
-                    (root.value(QStringLiteral("data")).isNull() ||
-                     root.value(QStringLiteral("data")).toObject().isEmpty()))
-                {
-                    qCDebug(chatterinoTwitch)
-                        << "Twitch GQL MakePrediction errors:"
-                        << summarizeGraphqlErrors(errs);
-                    onError(summarizeGraphqlErrors(errs));
-                    return;
-                }
-
-                if (!errs.isEmpty())
-                {
-                    qCDebug(chatterinoTwitch)
-                        << "Twitch GQL MakePrediction partial errors:"
-                        << summarizeGraphqlErrors(errs);
-                }
-
-                const auto data = root.value(QStringLiteral("data")).toObject();
-                const auto mpVal = data.value(QStringLiteral("makePrediction"));
-                if (mpVal.isNull() || mpVal.isUndefined())
-                {
-                    onError(QStringLiteral("Unexpected response"));
-                    return;
-                }
-                const auto mpObj = mpVal.toObject();
-                const QJsonValue errVal = mpObj.value(QStringLiteral("error"));
-                if (errVal.isObject())
-                {
-                    const auto errObj = errVal.toObject();
-                    if (!errObj.isEmpty())
-                    {
-                        QString msg =
-                            errObj.value(QStringLiteral("message")).toString();
-                        const QString code =
-                            errObj.value(QStringLiteral("code")).toString();
-                        if (msg.isEmpty())
-                        {
-                            msg = code.isEmpty()
-                                      ? QStringLiteral(
-                                            "Could not place prediction")
-                                      : code;
-                        }
-                        onError(msg);
-                        return;
-                    }
-                }
-
-                onSuccess();
-            })
-            .onError([onError](const NetworkResult &result) {
-                onError(result.formatError());
-            })
-            .execute();
-    };
-
-    if (useTvGqlClient)
-    {
-        (*runGql)(QString(), false);
-    }
-    else
-    {
-        fetchIntegrityToken(oauthToken, caller, [runGql](QString jwt) {
-            (*runGql)(jwt, false);
-        });
-    }
+    fetchIntegrityToken(oauthToken, caller, [runGql](QString jwt) {
+        (*runGql)(jwt, false);
+    });
 }
 
 }  // namespace TwitchGql

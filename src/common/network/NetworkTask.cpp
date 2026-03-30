@@ -196,8 +196,9 @@ void NetworkTask::logReply()
         if (this->data_->hideRequestBody)
 #else
         static bool alwaysShowRequestBodies =
-            qEnvironmentVariableIntValue(
-                "CHATTERINO_HTTP_ALWAYS_SHOW_REQUEST_BODY") != 0;
+            qEnvironmentVariableIntegerValue(
+                "CHATTERINO_HTTP_ALWAYS_SHOW_REQUEST_BODY")
+                .value_or(0) != 0;
         if (this->data_->hideRequestBody && !alwaysShowRequestBodies)
 #endif
         {

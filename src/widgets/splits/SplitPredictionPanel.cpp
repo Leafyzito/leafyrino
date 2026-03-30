@@ -5,7 +5,6 @@
 #include "widgets/splits/SplitPredictionPanel.hpp"
 
 #include "Application.hpp"
-#include "common/QLogging.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/api/TwitchGql.hpp"
@@ -26,12 +25,10 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QResizeEvent>
-#include <QSpinBox>
 #include <QUrl>
 #include <QVBoxLayout>
 
 #include <algorithm>
-#include <initializer_list>
 
 namespace {
 
@@ -157,70 +154,6 @@ QString formatCountdown(qint64 totalSecs)
             .arg(s, 2, 10, QLatin1Char('0'));
     }
     return QStringLiteral("%1:%2").arg(m).arg(s, 2, 10, QLatin1Char('0'));
-}
-
-QColor twitchOutcomeAccentColor(const QString &gqlColor, const QColor &fallback)
-{
-    const QString u = gqlColor.trimmed().toUpper();
-    if (u == QStringLiteral("BLUE"))
-    {
-        return QColor(0x1e, 0x90, 0xff);
-    }
-    if (u == QStringLiteral("PINK"))
-    {
-        return QColor(0xf4, 0x5f, 0x9e);
-    }
-    if (u == QStringLiteral("GREEN"))
-    {
-        return QColor(0x00, 0xc8, 0x53);
-    }
-    if (u == QStringLiteral("ORANGE"))
-    {
-        return QColor(0xff, 0x8c, 0x00);
-    }
-    if (u == QStringLiteral("PURPLE"))
-    {
-        return QColor(0x91, 0x46, 0xff);
-    }
-    if (u == QStringLiteral("GREY") || u == QStringLiteral("GRAY"))
-    {
-        return QColor(0xad, 0xb5, 0xbd);
-    }
-    return fallback;
-}
-
-QString betOutcomeButtonStyleSheet(const QColor &accent,
-                                   const QColor &labelColor, bool enabled)
-{
-    const QString accentCss = accent.name(QColor::HexArgb);
-    const QString labelCss = labelColor.name(QColor::HexArgb);
-    if (!enabled)
-    {
-        const QColor dimText =
-            QColor::fromRgbF(labelColor.redF() * 0.5, labelColor.greenF() * 0.5,
-                             labelColor.blueF() * 0.5, labelColor.alphaF());
-        const QColor dimBorder =
-            QColor::fromRgbF(accent.redF() * 0.45 + dimText.redF() * 0.25,
-                             accent.greenF() * 0.45 + dimText.greenF() * 0.25,
-                             accent.blueF() * 0.45 + dimText.blueF() * 0.25,
-                             std::max(0.35f, accent.alphaF()));
-        return QStringLiteral(
-                   "QPushButton { color: %1; text-decoration: none; "
-                   "border: 2px solid %2; border-radius: 4px; padding: 4px "
-                   "8px; "
-                   "background-color: transparent; font-style: italic; }")
-            .arg(dimText.name(QColor::HexArgb),
-                 dimBorder.name(QColor::HexArgb));
-    }
-    const int r = accent.red(), g = accent.green(), b = accent.blue();
-    const QString bg1 = QColor(r, g, b, 55).name(QColor::HexArgb);
-    const QString bg2 = QColor(r, g, b, 90).name(QColor::HexArgb);
-    return QStringLiteral(
-               "QPushButton { color: %1; text-decoration: none; "
-               "border: 2px solid %2; border-radius: 4px; padding: 4px 8px; "
-               "background-color: %3; font-weight: 600; }"
-               "QPushButton:hover { background-color: %4; }")
-        .arg(labelCss, accentCss, bg1, bg2);
 }
 
 }  // namespace
@@ -365,60 +298,10 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
     pointsLay->addStretch(1);
     this->expandedLayout_->addWidget(pointsRow);
 
-    this->betRow_ = new QWidget(this->expandedWidget_);
-    {
-        auto *betOuter = new QVBoxLayout(this->betRow_);
-        betOuter->setContentsMargins(0, 0, 0, 0);
-        betOuter->setSpacing(4);
-
-        auto *betAmtRow = new QWidget(this->betRow_);
-        auto *betAmtLay = new QHBoxLayout(betAmtRow);
-        betAmtLay->setContentsMargins(0, 0, 0, 0);
-        betAmtLay->setSpacing(6);
-        this->betAmountCaption_ =
-            new QLabel(QStringLiteral("Points to predict:"), betAmtRow);
-        this->betAmountSpin_ = new QSpinBox(betAmtRow);
-        this->betAmountSpin_->setRange(10, 10);
-        this->betAmountSpin_->setSingleStep(10);
-        this->betAmountSpin_->setFocusPolicy(Qt::ClickFocus);
-        betAmtLay->addWidget(this->betAmountCaption_, 0);
-        betAmtLay->addWidget(this->betAmountSpin_, 0);
-        betAmtLay->addStretch(1);
-
-        auto *betBtnRow = new QWidget(this->betRow_);
-        auto *betBtnLay = new QHBoxLayout(betBtnRow);
-        betBtnLay->setContentsMargins(0, 0, 0, 0);
-        betBtnLay->setSpacing(6);
-        this->betButton0_ = new QPushButton(betBtnRow);
-        this->betButton1_ = new QPushButton(betBtnRow);
-        this->betButton0_->setFlat(true);
-        this->betButton1_->setFlat(true);
-        this->betButton0_->setCursor(Qt::PointingHandCursor);
-        this->betButton1_->setCursor(Qt::PointingHandCursor);
-        this->betButton0_->setFocusPolicy(Qt::NoFocus);
-        this->betButton1_->setFocusPolicy(Qt::NoFocus);
-        QObject::connect(this->betButton0_, &QPushButton::clicked, this,
-                         [this] {
-                             this->placePredictionBet(0);
-                         });
-        QObject::connect(this->betButton1_, &QPushButton::clicked, this,
-                         [this] {
-                             this->placePredictionBet(1);
-                         });
-        betBtnLay->addWidget(this->betButton0_, 1);
-        betBtnLay->addWidget(this->betButton1_, 1);
-
-        betOuter->addWidget(betAmtRow);
-        betOuter->addWidget(betBtnRow);
-    }
-    this->betRow_->hide();
-    this->expandedLayout_->addWidget(this->betRow_);
-
     this->expandedLayout_->addSpacing(6);
     this->disclaimerLabel_ = new QLabel(
-        QStringLiteral(
-            "Channel points features are in beta. They may change or stop "
-            "working if Twitch updates their API."),
+        QStringLiteral("Channel points cannot be used in Chatterino yet. For "
+                       "that, press the 'Open on Twitch' button."),
         this->expandedWidget_);
     this->disclaimerLabel_->setWordWrap(true);
     this->disclaimerLabel_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -472,7 +355,6 @@ void SplitPredictionPanel::setTwitchChannel(TwitchChannel *channel)
     this->pointsPollTimer_.stop();
     this->predictionBettingEnds_ = QDateTime();
     this->inFlight_ = false;
-    this->lastChannelPointsBalance_.reset();
     this->hidePanel();
 
     if (channel == nullptr)
@@ -693,7 +575,7 @@ void SplitPredictionPanel::fetchChannelPoints()
     const auto acc = getApp()->getAccounts()->twitch.getCurrent();
 
     TwitchGql::fetchChannelPointsBalance(
-        fetchLogin, acc->getOAuthToken(), acc->getOAuthClient(), this,
+        fetchLogin, acc->getOAuthToken(), this,
         [this, fetchLogin](int balance) {
             this->pointsInFlight_ = false;
             if (!this->isVisible() || this->twitchChannel_ == nullptr ||
@@ -702,12 +584,10 @@ void SplitPredictionPanel::fetchChannelPoints()
             {
                 return;
             }
-            this->lastChannelPointsBalance_ = balance;
             if (this->yourPointsValue_ != nullptr)
             {
                 this->yourPointsValue_->setText(QString::number(balance));
             }
-            this->syncPredictionBetRow();
         },
         [this, fetchLogin](const QString &) {
             this->pointsInFlight_ = false;
@@ -717,12 +597,10 @@ void SplitPredictionPanel::fetchChannelPoints()
             {
                 return;
             }
-            this->lastChannelPointsBalance_.reset();
             if (this->yourPointsValue_ != nullptr)
             {
                 this->yourPointsValue_->setText(QStringLiteral("-"));
             }
-            this->syncPredictionBetRow();
         });
 }
 
@@ -783,7 +661,7 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
                     else
                     {
                         statusText =
-                            QStringLiteral("Active - predictions locked");
+                            QStringLiteral("Active - betting window ended");
                         this->predictionBettingEnds_ = QDateTime();
                     }
                 }
@@ -866,23 +744,15 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
         this->collapsedTitle_->setText(
             elided.isEmpty() ? this->lastTitleForElide_ : elided);
     }
-
-    this->syncPredictionBetRow();
 }
 
 void SplitPredictionPanel::hidePanel()
 {
     this->pointsPollTimer_.stop();
     this->pointsInFlight_ = false;
-    this->betInFlight_ = false;
-    this->lastChannelPointsBalance_.reset();
     if (this->yourPointsValue_ != nullptr)
     {
         this->yourPointsValue_->setText(QStringLiteral("-"));
-    }
-    if (this->betRow_ != nullptr)
-    {
-        this->betRow_->hide();
     }
 
     this->lingerTimer_.stop();
@@ -917,16 +787,14 @@ void SplitPredictionPanel::tickPredictionCountdown()
     if (secs <= 0)
     {
         this->statusLabel_->setText(
-            QStringLiteral("Active - predictions locked"));
+            QStringLiteral("Active - betting window ended"));
         this->countdownTimer_.stop();
         this->predictionBettingEnds_ = QDateTime();
-        this->syncPredictionBetRow();
         return;
     }
 
     this->statusLabel_->setText(
         QStringLiteral("Active - closes in %1").arg(formatCountdown(secs)));
-    this->syncPredictionBetRow();
 }
 
 void SplitPredictionPanel::updateExpandToggle()
@@ -955,8 +823,7 @@ void SplitPredictionPanel::updateStyleSheets()
          {this->collapsedTitle_, this->fullTitle_, this->statusLabel_,
           this->outcomeTitle0_, this->outcomeDash0_, this->outcomePct0_,
           this->outcomeTitle1_, this->outcomeDash1_, this->outcomePct1_,
-          this->yourPointsLabel_, this->yourPointsValue_,
-          this->betAmountCaption_})
+          this->yourPointsLabel_, this->yourPointsValue_})
     {
         if (lab != nullptr)
         {
@@ -995,15 +862,6 @@ void SplitPredictionPanel::updateStyleSheets()
 
     this->expandButton_->setStyleSheet(btnStyle);
     this->openTwitchButton_->setStyleSheet(btnStyle);
-
-    if (this->betAmountSpin_ != nullptr)
-    {
-        this->betAmountSpin_->setStyleSheet(
-            QStringLiteral("QSpinBox { color: %1; padding: 1px 4px; }")
-                .arg(textCss));
-    }
-
-    this->refreshBetOutcomeButtonStyles();
 }
 
 void SplitPredictionPanel::openPopoutChat()
@@ -1039,13 +897,12 @@ void SplitPredictionPanel::scaleChangedEvent(float scale)
     const int fs = static_cast<int>(9 * std::max(1.0f, scale));
     QFont f = this->font();
     f.setPointSize(std::max(8, fs));
-    for (QWidget *w : std::initializer_list<QWidget *>{
-             this->collapsedTitle_, this->fullTitle_, this->statusLabel_,
-             this->outcomeTitle0_, this->outcomeWon0_, this->outcomeDash0_,
-             this->outcomePct0_, this->outcomeTitle1_, this->outcomeWon1_,
-             this->outcomeDash1_, this->outcomePct1_, this->yourPointsLabel_,
-             this->yourPointsValue_, this->betAmountCaption_,
-             this->betAmountSpin_, this->betButton0_, this->betButton1_})
+    for (auto *w :
+         {this->collapsedTitle_, this->fullTitle_, this->statusLabel_,
+          this->outcomeTitle0_, this->outcomeWon0_, this->outcomeDash0_,
+          this->outcomePct0_, this->outcomeTitle1_, this->outcomeWon1_,
+          this->outcomeDash1_, this->outcomePct1_, this->yourPointsLabel_,
+          this->yourPointsValue_})
     {
         if (w != nullptr)
         {
@@ -1106,248 +963,6 @@ void SplitPredictionPanel::resizeEvent(QResizeEvent *event)
                                       std::max(80, this->width() - 160));
     this->collapsedTitle_->setText(elided.isEmpty() ? this->lastTitleForElide_
                                                     : elided);
-}
-
-void SplitPredictionPanel::syncPredictionBetRow()
-{
-    if (this->betRow_ == nullptr)
-    {
-        return;
-    }
-
-    constexpr int kBetMin = 10;
-    constexpr int kBetMaxSite = 250'000;
-
-    if (!this->lastLivePrediction_.has_value())
-    {
-        if (!this->betInFlight_)
-        {
-            this->betRow_->hide();
-        }
-        return;
-    }
-
-    bool baseBetContext = false;
-    if (getSettings()->showPredictionPanel && this->twitchChannel_ != nullptr &&
-        !getApp()->getAccounts()->twitch.getCurrent()->isAnon() &&
-        !this->lingering_)
-    {
-        const auto &pre = *this->lastLivePrediction_;
-        baseBetContext = pre.status.compare(QStringLiteral("ACTIVE"),
-                                            Qt::CaseInsensitive) == 0 &&
-                         this->predictionBettingEnds_.isValid() &&
-                         QDateTime::currentDateTimeUtc().secsTo(
-                             this->predictionBettingEnds_) > 0 &&
-                         pre.outcomes.size() == 2;
-    }
-
-    if (!baseBetContext && !this->betInFlight_)
-    {
-        this->betRow_->hide();
-        return;
-    }
-
-    const auto &pr = *this->lastLivePrediction_;
-    const QString pickId = pr.viewerPredictionOutcomeId.trimmed();
-    const bool hasPick = !pickId.isEmpty();
-    const QString id0 = pr.outcomes[0].id.trimmed();
-    const QString id1 = pr.outcomes[1].id.trimmed();
-    const bool picked0 = hasPick && pickId == id0;
-    const bool picked1 = hasPick && pickId == id1;
-
-    const bool canSpend = this->lastChannelPointsBalance_.has_value() &&
-                          *this->lastChannelPointsBalance_ >= kBetMin;
-
-    const bool showRow =
-        baseBetContext && (canSpend || hasPick || this->betInFlight_);
-
-    if (!showRow)
-    {
-        this->betRow_->hide();
-        return;
-    }
-
-    this->betRow_->show();
-
-    const bool allowInteract =
-        baseBetContext && canSpend && !this->betInFlight_;
-
-    if (canSpend)
-    {
-        const int bal = *this->lastChannelPointsBalance_;
-        const int maxPts = std::min(kBetMaxSite, bal);
-        this->betAmountSpin_->setMinimum(kBetMin);
-        this->betAmountSpin_->setMaximum(maxPts);
-        const int v =
-            std::clamp(this->betAmountSpin_->value(), kBetMin, maxPts);
-        this->betAmountSpin_->setValue(v);
-    }
-    this->betAmountSpin_->setEnabled(allowInteract);
-
-    if (picked0)
-    {
-        this->betButton0_->setText(QStringLiteral("Your pick · %1 (%2 pts)")
-                                       .arg(pr.outcomes[0].title)
-                                       .arg(pr.viewerPredictionPoints));
-    }
-    else
-    {
-        this->betButton0_->setText(
-            QStringLiteral("Predict %1").arg(pr.outcomes[0].title));
-    }
-    if (picked1)
-    {
-        this->betButton1_->setText(QStringLiteral("Your pick · %1 (%2 pts)")
-                                       .arg(pr.outcomes[1].title)
-                                       .arg(pr.viewerPredictionPoints));
-    }
-    else
-    {
-        this->betButton1_->setText(
-            QStringLiteral("Predict %1").arg(pr.outcomes[1].title));
-    }
-
-    if (picked0)
-    {
-        this->betButton1_->setToolTip(
-            QStringLiteral("You already predicted “%1”. Twitch only allows "
-                           "choosing one outcome per prediction.")
-                .arg(pr.outcomes[0].title));
-        this->betButton0_->setToolTip({});
-    }
-    else if (picked1)
-    {
-        this->betButton0_->setToolTip(
-            QStringLiteral("You already predicted “%1”. Twitch only allows "
-                           "choosing one outcome per prediction.")
-                .arg(pr.outcomes[1].title));
-        this->betButton1_->setToolTip({});
-    }
-    else
-    {
-        this->betButton0_->setToolTip({});
-        this->betButton1_->setToolTip({});
-    }
-
-    const bool canBet0 = allowInteract && !picked1;
-    const bool canBet1 = allowInteract && !picked0;
-    this->betButton0_->setEnabled(canBet0);
-    this->betButton1_->setEnabled(canBet1);
-
-    this->refreshBetOutcomeButtonStyles();
-}
-
-void SplitPredictionPanel::refreshBetOutcomeButtonStyles()
-{
-    if (this->theme == nullptr || this->betButton0_ == nullptr ||
-        this->betButton1_ == nullptr)
-    {
-        return;
-    }
-    if (!this->lastLivePrediction_.has_value() ||
-        this->lastLivePrediction_->outcomes.size() < 2)
-    {
-        return;
-    }
-    const auto &pr = *this->lastLivePrediction_;
-    const QColor labelColor = this->theme->splits.header.text;
-    const QColor accent = this->theme->accent;
-
-    const QColor c0 = twitchOutcomeAccentColor(pr.outcomes[0].color, accent);
-    const QColor c1 = twitchOutcomeAccentColor(pr.outcomes[1].color, accent);
-
-    this->betButton0_->setStyleSheet(betOutcomeButtonStyleSheet(
-        c0, labelColor, this->betButton0_->isEnabled()));
-    this->betButton1_->setStyleSheet(betOutcomeButtonStyleSheet(
-        c1, labelColor, this->betButton1_->isEnabled()));
-}
-
-void SplitPredictionPanel::placePredictionBet(int outcomeIndex)
-{
-    if (this->betInFlight_ || !this->lastLivePrediction_.has_value())
-    {
-        return;
-    }
-
-    const auto &pr = *this->lastLivePrediction_;
-    if (outcomeIndex < 0 ||
-        static_cast<size_t>(outcomeIndex) >= pr.outcomes.size())
-    {
-        return;
-    }
-
-    const QString existingPick = pr.viewerPredictionOutcomeId.trimmed();
-    if (!existingPick.isEmpty())
-    {
-        const QString chosenId =
-            pr.outcomes[static_cast<size_t>(outcomeIndex)].id.trimmed();
-        if (existingPick != chosenId)
-        {
-            return;
-        }
-    }
-
-    const auto acc = getApp()->getAccounts()->twitch.getCurrent();
-    if (acc->isAnon())
-    {
-        return;
-    }
-
-    const int points = this->betAmountSpin_->value();
-    if (points < 10)
-    {
-        return;
-    }
-
-    const QString eventId = pr.id;
-    const QString outcomeId = pr.outcomes[static_cast<size_t>(outcomeIndex)].id;
-    if (eventId.isEmpty() || outcomeId.isEmpty())
-    {
-        return;
-    }
-
-    this->betInFlight_ = true;
-    this->syncPredictionBetRow();
-    this->statusLabel_->setText(QStringLiteral("Placing prediction…"));
-
-    const QString fetchRoomId =
-        this->twitchChannel_ ? this->twitchChannel_->roomId() : QString();
-
-    TwitchGql::makePrediction(
-        eventId, outcomeId, points, acc->getOAuthToken(), acc->getOAuthClient(),
-        this,
-        [this, fetchRoomId]() {
-            this->betInFlight_ = false;
-            if (this->twitchChannel_ == nullptr ||
-                (!fetchRoomId.isEmpty() &&
-                 this->twitchChannel_->roomId() != fetchRoomId))
-            {
-                return;
-            }
-            this->statusLabel_->setText(QStringLiteral("Prediction placed"));
-            this->syncPredictionBetRow();
-            this->fetchPredictions();
-            this->fetchChannelPoints();
-        },
-        [this, fetchRoomId](const QString &err) {
-            this->betInFlight_ = false;
-            qCWarning(chatterinoTwitch) << "MakePrediction failed:" << err;
-            if (this->twitchChannel_ == nullptr ||
-                (!fetchRoomId.isEmpty() &&
-                 this->twitchChannel_->roomId() != fetchRoomId))
-            {
-                return;
-            }
-            this->statusLabel_->setText(
-                QStringLiteral("Prediction failed: %1").arg(err));
-            this->syncPredictionBetRow();
-            if (this->predictionBettingEnds_.isValid() &&
-                QDateTime::currentDateTimeUtc().secsTo(
-                    this->predictionBettingEnds_) > 0)
-            {
-                this->tickPredictionCountdown();
-            }
-        });
 }
 
 }  // namespace chatterino

@@ -33,24 +33,10 @@ void fetchPredictionsForChannel(
     std::function<void(QString)> onError);
 
 /// Persisted query ChannelPointsContext: viewer's channel points balance for @a channelLogin.
-/// \a gqlClientId is the Twitch OAuth Client ID stored with the account (e.g. TV device-flow id);
-/// when it matches Twitch's TV app id, requests use the same headers as channel-points-miner
-/// (OAuth scheme, Client-Id, X-Device-Id, etc.). Otherwise the public web Client-ID + Bearer path
-/// is used.
 void fetchChannelPointsBalance(const QString &channelLogin,
-                               const QString &oauthToken,
-                               const QString &gqlClientId,
-                               const QObject *caller,
+                               const QString &oauthToken, const QObject *caller,
                                std::function<void(int)> onSuccess,
                                std::function<void(QString)> onError);
-
-/// Persisted query MakePrediction (same hash as channel-points-miner). Places a
-/// channel-points bet on an ACTIVE prediction; \a gqlClientId selects TV vs web headers.
-void makePrediction(const QString &eventId, const QString &outcomeId,
-                    int points, const QString &oauthToken,
-                    const QString &gqlClientId, const QObject *caller,
-                    std::function<void()> onSuccess,
-                    std::function<void(QString)> onError);
 
 }  // namespace TwitchGql
 
