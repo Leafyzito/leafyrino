@@ -48,6 +48,9 @@ public:
     /// Immediate Helix refresh (e.g. when the split gains focus).
     void refresh();
 
+    /// Clears per-event dismiss state and refetches (split menu).
+    void recoverDismissedPanel();
+
 protected:
     void themeChangedEvent() override;
     void scaleChangedEvent(float scale) override;
@@ -58,10 +61,12 @@ private:
     void startOrStopTimer();
     void fetchPredictions();
     void renderPrediction(const HelixPrediction &prediction, bool liveMode);
+    void resetPredictionUiState();
     void hidePanel();
+    void refreshTopRowText();
     void updateExpandToggle();
     void updateStyleSheets();
-    void openPopoutChat();
+    void updatePredictionIcon();
     void tickPredictionCountdown();
     void onPanelShown();
     void fetchChannelPoints();
@@ -90,11 +95,12 @@ private:
     QWidget *expandedWidget_{};
     QVBoxLayout *expandedLayout_{};
 
+    QLabel *iconLabel_{};
     QLabel *collapsedTitle_{};
+    QPushButton *dismissButton_{};
     QPushButton *expandButton_{};
-    QPushButton *openTwitchButton_{};
 
-    QLabel *fullTitle_{};
+    QLabel *predictionQuestionLabel_{};
     QLabel *statusLabel_{};
     QWidget *outcomeRow_{};
     QLabel *outcomeTitle0_{};
@@ -118,6 +124,7 @@ private:
     std::optional<HelixPrediction> lastLivePrediction_;
     QString currentDisplayId_;
     QString lingerEventId_;
+    QString dismissedForPredictionId_;
     bool lingering_{false};
 };
 

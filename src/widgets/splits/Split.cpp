@@ -41,6 +41,7 @@
 #include "widgets/splits/SplitHeader.hpp"
 #include "widgets/splits/SplitInput.hpp"
 #include "widgets/splits/SplitOverlay.hpp"
+#include "widgets/splits/SplitPinnedMessagePanel.hpp"
 #include "widgets/splits/SplitPredictionPanel.hpp"
 #include "widgets/Window.hpp"
 
@@ -92,6 +93,7 @@ Split::Split(QWidget *parent)
     , channel_(Channel::getEmpty())
     , vbox_(new QVBoxLayout(this))
     , header_(new SplitHeader(this))
+    , pinnedMessagePanel_(new SplitPinnedMessagePanel(this))
     , predictionPanel_(new SplitPredictionPanel(this))
     , view_(new ChannelView(this, this, ChannelView::Context::None,
                             getSettings()->scrollbackSplitLimit))
@@ -107,6 +109,7 @@ Split::Split(QWidget *parent)
     this->vbox_->setContentsMargins(1, 1, 1, 1);
 
     this->vbox_->addWidget(this->header_);
+    this->vbox_->addWidget(this->pinnedMessagePanel_);
     this->vbox_->addWidget(this->predictionPanel_);
     this->vbox_->addWidget(this->view_, 1);
     this->vbox_->addWidget(this->input_);
@@ -255,6 +258,7 @@ Split::Split(QWidget *parent)
                                            this->focused.invoke();
                                        });
     this->signalHolder_.managedConnect(this->focused, [this] {
+        this->pinnedMessagePanel_->refresh();
         this->predictionPanel_->refresh();
     });
     this->signalHolder_.managedConnect(this->input_->ui_.textEdit->focusLost,
@@ -910,10 +914,12 @@ void Split::setChannel(IndirectChannel newChannel)
 
     if (tc != nullptr)
     {
+        this->pinnedMessagePanel_->setTwitchChannel(tc);
         this->predictionPanel_->setTwitchChannel(tc);
     }
     else
     {
+        this->pinnedMessagePanel_->setTwitchChannel(nullptr);
         this->predictionPanel_->setTwitchChannel(nullptr);
     }
 
@@ -1012,6 +1018,12 @@ void Split::showChangeChannelPopup(const char *dialogTitle, bool empty,
 void Split::updateGifEmotes()
 {
     this->view_->queueUpdate();
+}
+
+void Split::recoverDismissedPanels()
+{
+    this->pinnedMessagePanel_->recoverDismissedPanel();
+    this->predictionPanel_->recoverDismissedPanel();
 }
 
 void Split::updateLastReadMessage()

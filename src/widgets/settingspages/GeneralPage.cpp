@@ -1056,8 +1056,14 @@ void GeneralPage::initLayout(GeneralPageView &layout)
     SettingWidget::checkbox("Show active prediction panel in splits",
                             s.showPredictionPanel)
         ->setTooltip("Polls Twitch for an active or locked channel points "
-                     "prediction and shows it above chat (read-only). Use "
-                     "\"Open on Twitch\" to vote in popout chat.")
+                     "prediction and shows it above chat.")
+        ->addTo(layout);
+
+    layout.addSubtitle("Pinned message");
+    SettingWidget::checkbox("Show pinned message panel in splits",
+                            s.showPinnedMessagePanel)
+        ->setTooltip("Polls Twitch for the current moderator-pinned chat "
+                     "message and shows it above chat.")
         ->addTo(layout);
 
     layout.addSubtitle("R9K");

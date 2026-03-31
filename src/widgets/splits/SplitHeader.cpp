@@ -594,6 +594,8 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
             menu->addAction("Reload subscriber emotes",
                             subSeq.isEmpty() ? bothSeq : subSeq, this,
                             &SplitHeader::reloadSubscriberEmotes);
+            menu->addAction("Restore dismissed panels", this->split_,
+                            &Split::recoverDismissedPanels);
         }
     }
 

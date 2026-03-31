@@ -22,6 +22,7 @@ namespace chatterino {
 class ChannelView;
 class SplitHeader;
 class SplitInput;
+class SplitPinnedMessagePanel;
 class SplitPredictionPanel;
 class SplitContainer;
 class SplitOverlay;
@@ -75,6 +76,8 @@ public:
     void showChangeChannelPopup(const char *dialogTitle, bool empty,
                                 std::function<void(bool)> callback);
     void updateGifEmotes();
+    /// Clears dismiss state for pinned-message and prediction strips, then refreshes.
+    void recoverDismissedPanels();
     void updateLastReadMessage();
     void setIsTopRightSplit(bool value);
 
@@ -165,6 +168,7 @@ private:
 
     QVBoxLayout *const vbox_;
     SplitHeader *const header_;
+    SplitPinnedMessagePanel *const pinnedMessagePanel_;
     SplitPredictionPanel *const predictionPanel_;
     ChannelView *const view_;
     SplitInput *const input_;

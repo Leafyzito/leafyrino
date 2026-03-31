@@ -519,6 +519,57 @@ QString summarizeGraphqlErrors(const QJsonArray &errors)
     return out.isEmpty() ? QStringLiteral("GraphQL error") : out;
 }
 
+std::optional<TwitchGql::PinnedChatMessage> tryParsePinnedChat(
+    const QJsonObject &root)
+{
+    const auto data = root.value(QStringLiteral("data")).toObject();
+    const auto channel = data.value(QStringLiteral("channel")).toObject();
+    if (channel.isEmpty())
+    {
+        return std::nullopt;
+    }
+
+    const auto pinnedConn =
+        channel.value(QStringLiteral("pinnedChatMessages")).toObject();
+    const auto edges = pinnedConn.value(QStringLiteral("edges")).toArray();
+    if (edges.isEmpty())
+    {
+        return std::nullopt;
+    }
+    const auto node =
+        edges.at(0).toObject().value(QStringLiteral("node")).toObject();
+    if (node.isEmpty())
+    {
+        return std::nullopt;
+    }
+    const auto pinnedMessage =
+        node.value(QStringLiteral("pinnedMessage")).toObject();
+    if (pinnedMessage.isEmpty())
+    {
+        return std::nullopt;
+    }
+
+    TwitchGql::PinnedChatMessage out;
+    out.id = pinnedMessage.value(QStringLiteral("id")).toString();
+    out.sentAt = pinnedMessage.value(QStringLiteral("sentAt")).toString();
+    out.text = pinnedMessage.value(QStringLiteral("content"))
+                   .toObject()
+                   .value(QStringLiteral("text"))
+                   .toString();
+    const auto sender =
+        pinnedMessage.value(QStringLiteral("sender")).toObject();
+    out.senderDisplayName =
+        sender.value(QStringLiteral("displayName")).toString();
+    out.senderLogin = sender.value(QStringLiteral("login")).toString();
+    out.senderId = sender.value(QStringLiteral("id")).toString();
+    out.senderChatColor = sender.value(QStringLiteral("chatColor")).toString();
+    if (out.id.isEmpty() || out.senderDisplayName.isEmpty())
+    {
+        return std::nullopt;
+    }
+    return out;
+}
+
 /// POST https://gql.twitch.tv/integrity — response shape is undocumented; common
 /// pattern is JSON `token` (JWT). If parsing fails, returns empty (caller omits header).
 void fetchIntegrityToken(const QString &oauthToken, const QObject *caller,
@@ -589,6 +640,158 @@ void fetchIntegrityTokenTv(const QString &oauthToken, const QObject *caller,
 namespace chatterino {
 
 namespace TwitchGql {
+
+void fetchPinnedChatMessage(
+    const QString &channelId, int count, const QString &oauthToken,
+    const QString &gqlClientId, const QObject *caller,
+    std::function<void(std::optional<PinnedChatMessage>)> onSuccess,
+    std::function<void(QString)> onError)
+{
+    if (oauthToken.isEmpty())
+    {
+        onError(QStringLiteral("Missing OAuth token"));
+        return;
+    }
+    const QString cid = channelId.trimmed();
+    if (cid.isEmpty())
+    {
+        onError(QStringLiteral("Missing channel id"));
+        return;
+    }
+
+    if (count <= 0)
+    {
+        count = 1;
+    }
+
+    const bool useTvGqlClient =
+        gqlClientId.compare(QString::fromLatin1(TWITCH_TV_GQL_CLIENT_ID),
+                            Qt::CaseInsensitive) == 0;
+
+    auto runGql =
+        std::make_shared<std::function<void(const QString &, bool)>>();
+
+    *runGql = [runGql, cid, count, oauthToken, caller, onSuccess, onError,
+               useTvGqlClient](const QString &integrityJwt,
+                               bool afterIntegrityRetry) {
+        QJsonObject variables;
+        variables.insert(QStringLiteral("channelID"), cid);
+        variables.insert(QStringLiteral("count"), count);
+
+        QJsonObject persisted;
+        persisted.insert(QStringLiteral("version"), 1);
+        persisted.insert(QStringLiteral("sha256Hash"),
+                         QStringLiteral("2d099d4c9b6af80a07d8440140c4f3dbb04d51"
+                                        "6b35c401aab7ce8f60765308d5"));
+
+        QJsonObject extensions;
+        extensions.insert(QStringLiteral("persistedQuery"), persisted);
+
+        QJsonObject body;
+        body.insert(QStringLiteral("operationName"),
+                    QStringLiteral("GetPinnedChat"));
+        body.insert(QStringLiteral("variables"), variables);
+        body.insert(QStringLiteral("extensions"), extensions);
+
+        NetworkRequest req = [&] {
+            if (useTvGqlClient)
+            {
+                return NetworkRequest(
+                           QUrl(QStringLiteral("https://gql.twitch.tv/gql")),
+                           NetworkRequestType::Post)
+                    .timeout(10'000)
+                    .header("Content-Type", "application/json")
+                    .caller(caller)
+                    .header("Client-ID", TWITCH_TV_GQL_CLIENT_ID)
+                    .header("Authorization",
+                            QStringLiteral("OAuth %1").arg(oauthToken))
+                    .header("Client-Session-Id", twitchGqlStaticSessionId())
+                    .header("Client-Version", TWITCH_GQL_CLIENT_VERSION)
+                    .header("User-Agent", TWITCH_TV_USER_AGENT)
+                    .header("X-Device-Id", twitchGqlStaticDeviceId());
+            }
+            return NetworkRequest(
+                       QUrl(QStringLiteral("https://gql.twitch.tv/gql")),
+                       NetworkRequestType::Post)
+                .timeout(10'000)
+                .header("Content-Type", "application/json")
+                .caller(caller)
+                .header("Client-ID", TWITCH_WEB_GQL_CLIENT_ID)
+                .header("Authorization",
+                        QStringLiteral("Bearer %1").arg(oauthToken));
+        }();
+
+        if (!integrityJwt.isEmpty())
+        {
+            req = std::move(req).header("Client-Integrity", integrityJwt);
+        }
+
+        std::move(req)
+            .json(body)
+            .onSuccess([runGql, afterIntegrityRetry, oauthToken, caller,
+                        onError, onSuccess,
+                        useTvGqlClient](const NetworkResult &res) {
+                const auto root = res.parseJson();
+                const auto errs =
+                    root.value(QStringLiteral("errors")).toArray();
+
+                if (!errs.isEmpty() && errorsSuggestIntegrity(errs) &&
+                    !afterIntegrityRetry)
+                {
+                    if (useTvGqlClient)
+                    {
+                        fetchIntegrityTokenTv(oauthToken, caller,
+                                              [runGql](QString jwt) {
+                                                  (*runGql)(jwt, true);
+                                              });
+                    }
+                    else
+                    {
+                        fetchIntegrityToken(oauthToken, caller,
+                                            [runGql](QString jwt) {
+                                                (*runGql)(jwt, true);
+                                            });
+                    }
+                    return;
+                }
+
+                if (!errs.isEmpty() &&
+                    (root.value(QStringLiteral("data")).isNull() ||
+                     root.value(QStringLiteral("data")).toObject().isEmpty()))
+                {
+                    qCDebug(chatterinoTwitch)
+                        << "Twitch GQL GetPinnedChat errors:"
+                        << summarizeGraphqlErrors(errs);
+                    onError(summarizeGraphqlErrors(errs));
+                    return;
+                }
+
+                if (!errs.isEmpty())
+                {
+                    qCDebug(chatterinoTwitch)
+                        << "Twitch GQL GetPinnedChat partial errors:"
+                        << summarizeGraphqlErrors(errs);
+                }
+
+                onSuccess(tryParsePinnedChat(root));
+            })
+            .onError([onError](const NetworkResult &res) {
+                onError(res.formatError());
+            })
+            .execute();
+    };
+
+    if (useTvGqlClient)
+    {
+        (*runGql)(QString(), false);
+    }
+    else
+    {
+        fetchIntegrityToken(oauthToken, caller, [runGql](QString jwt) {
+            (*runGql)(jwt, false);
+        });
+    }
+}
 
 void fetchPredictionsForChannel(
     const QString &channelId, const QString &channelLogin,

@@ -36,6 +36,10 @@ using EmotePtr = std::shared_ptr<const Emote>;
 class Channel;
 class TwitchChannel;
 class MessageThread;
+
+namespace TwitchGql {
+struct PinnedChatMessage;
+}
 class IgnorePhrase;
 struct HelixVip;
 using HelixModerator = HelixVip;
@@ -269,6 +273,11 @@ public:
     static MessagePtrMut makeClearChatMessage(const QDateTime &now,
                                               const QString &actor,
                                               uint32_t count = 1);
+
+    /// Single-line layout matching normal Twitch chat (channel, timestamp,
+    /// username, parsed body). For preview/history UIs without IRC tags.
+    static MessagePtr makePinnedChatPreviewMessage(
+        TwitchChannel *channel, const TwitchGql::PinnedChatMessage &pinned);
 
 private:
     struct TextState {

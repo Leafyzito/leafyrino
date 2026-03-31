@@ -15,19 +15,19 @@
 #include "singletons/Theme.hpp"
 #include "widgets/splits/PredictionPoolBar.hpp"
 #include "widgets/splits/Split.hpp"
+#include "widgets/splits/SplitCommon.hpp"
 
 #include <pajlada/signals/scoped-connection.hpp>
 #include <QColor>
 #include <QDateTime>
-#include <QDesktopServices>
 #include <QFontMetrics>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QPainter>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QSpinBox>
-#include <QUrl>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -268,10 +268,30 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
     topLayout->setContentsMargins(6, 2, 6, 2);
     topLayout->setSpacing(4);
 
+    this->iconLabel_ = new QLabel(topRow);
+    this->iconLabel_->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    this->iconLabel_->setScaledContents(false);
+
     this->collapsedTitle_ = new QLabel(topRow);
     this->collapsedTitle_->setSizePolicy(QSizePolicy::MinimumExpanding,
                                          QSizePolicy::Preferred);
     this->collapsedTitle_->setWordWrap(false);
+
+    this->dismissButton_ = new QPushButton(topRow);
+    this->dismissButton_->setFlat(true);
+    this->dismissButton_->setCursor(Qt::PointingHandCursor);
+    this->dismissButton_->setFocusPolicy(Qt::NoFocus);
+    this->dismissButton_->setText(QStringLiteral("×"));
+    this->dismissButton_->setToolTip(
+        QStringLiteral("Dismiss for this prediction"));
+    QObject::connect(this->dismissButton_, &QPushButton::clicked, this, [this] {
+        if (this->currentDisplayId_.isEmpty())
+        {
+            return;
+        }
+        this->dismissedForPredictionId_ = this->currentDisplayId_;
+        this->resetPredictionUiState();
+    });
 
     this->expandButton_ = new QPushButton(topRow);
     this->expandButton_->setFlat(true);
@@ -282,27 +302,18 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
         this->updateExpandToggle();
     });
 
-    this->openTwitchButton_ =
-        new QPushButton(QStringLiteral("Open on Twitch"), topRow);
-    this->openTwitchButton_->setFlat(true);
-    this->openTwitchButton_->setCursor(Qt::PointingHandCursor);
-    this->openTwitchButton_->setFocusPolicy(Qt::NoFocus);
-    QObject::connect(this->openTwitchButton_, &QPushButton::clicked, this,
-                     [this] {
-                         this->openPopoutChat();
-                     });
-
+    topLayout->addWidget(this->iconLabel_, 0, Qt::AlignVCenter);
     topLayout->addWidget(this->collapsedTitle_, 1);
     topLayout->addWidget(this->expandButton_, 0, Qt::AlignRight);
-    topLayout->addWidget(this->openTwitchButton_, 0, Qt::AlignRight);
+    topLayout->addWidget(this->dismissButton_, 0, Qt::AlignRight);
 
     this->expandedWidget_ = new QWidget(this);
     this->expandedLayout_ = new QVBoxLayout(this->expandedWidget_);
     this->expandedLayout_->setContentsMargins(8, 0, 8, 6);
     this->expandedLayout_->setSpacing(4);
 
-    this->fullTitle_ = new QLabel(this->expandedWidget_);
-    this->fullTitle_->setWordWrap(true);
+    this->predictionQuestionLabel_ = new QLabel(this->expandedWidget_);
+    this->predictionQuestionLabel_->setWordWrap(true);
 
     this->statusLabel_ = new QLabel(this->expandedWidget_);
 
@@ -346,7 +357,7 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
         hl->addWidget(rightWrap, 0);
     }
 
-    this->expandedLayout_->addWidget(this->fullTitle_);
+    this->expandedLayout_->addWidget(this->predictionQuestionLabel_);
     this->expandedLayout_->addWidget(this->statusLabel_);
     this->expandedLayout_->addWidget(this->outcomeRow_);
 
@@ -496,6 +507,12 @@ void SplitPredictionPanel::refresh()
     this->fetchPredictions();
 }
 
+void SplitPredictionPanel::recoverDismissedPanel()
+{
+    this->dismissedForPredictionId_.clear();
+    this->refresh();
+}
+
 void SplitPredictionPanel::startOrStopTimer()
 {
     this->pollTimer_.stop();
@@ -577,6 +594,12 @@ void SplitPredictionPanel::fetchPredictions()
                 if (this->lastLivePrediction_.has_value() &&
                     !this->lastLivePrediction_->id.isEmpty())
                 {
+                    if (!this->dismissedForPredictionId_.isEmpty() &&
+                        this->lastLivePrediction_->id ==
+                            this->dismissedForPredictionId_)
+                    {
+                        return;
+                    }
                     this->currentDisplayId_ = this->lastLivePrediction_->id;
                     this->lingering_ = true;
                     this->lingerEventId_ = this->lastLivePrediction_->id;
@@ -601,6 +624,12 @@ void SplitPredictionPanel::fetchPredictions()
             if (pr.id.isEmpty())
             {
                 this->hidePanel();
+                return;
+            }
+
+            if (!this->dismissedForPredictionId_.isEmpty() &&
+                pr.id == this->dismissedForPredictionId_)
+            {
                 return;
             }
 
@@ -742,9 +771,10 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
         return;
     }
 
-    const QString collapsedTitled =
-        QStringLiteral("Prediction: %1").arg(prediction.title);
-    this->fullTitle_->setText(prediction.title);
+    if (this->predictionQuestionLabel_ != nullptr)
+    {
+        this->predictionQuestionLabel_->setText(prediction.title);
+    }
 
     this->countdownTimer_.stop();
     this->predictionBettingEnds_ = QDateTime();
@@ -857,20 +887,13 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
         this->poolBar_->setLeftFraction(1.0);
     }
 
-    this->lastTitleForElide_ = collapsedTitled;
-    {
-        const QFontMetrics fm(this->collapsedTitle_->font());
-        const auto elided =
-            fm.elidedText(this->lastTitleForElide_, Qt::ElideRight,
-                          std::max(80, this->width() - 160));
-        this->collapsedTitle_->setText(
-            elided.isEmpty() ? this->lastTitleForElide_ : elided);
-    }
+    this->lastTitleForElide_ = prediction.title;
+    this->refreshTopRowText();
 
     this->syncPredictionBetRow();
 }
 
-void SplitPredictionPanel::hidePanel()
+void SplitPredictionPanel::resetPredictionUiState()
 {
     this->pointsPollTimer_.stop();
     this->pointsInFlight_ = false;
@@ -893,6 +916,10 @@ void SplitPredictionPanel::hidePanel()
     this->countdownTimer_.stop();
     this->predictionBettingEnds_ = QDateTime();
     this->lastTitleForElide_.clear();
+    if (this->predictionQuestionLabel_ != nullptr)
+    {
+        this->predictionQuestionLabel_->clear();
+    }
     if (this->outcomeWon0_ != nullptr)
     {
         this->outcomeWon0_->hide();
@@ -902,6 +929,12 @@ void SplitPredictionPanel::hidePanel()
         this->outcomeWon1_->hide();
     }
     this->hide();
+}
+
+void SplitPredictionPanel::hidePanel()
+{
+    this->dismissedForPredictionId_.clear();
+    this->resetPredictionUiState();
 }
 
 void SplitPredictionPanel::tickPredictionCountdown()
@@ -929,6 +962,26 @@ void SplitPredictionPanel::tickPredictionCountdown()
     this->syncPredictionBetRow();
 }
 
+void SplitPredictionPanel::refreshTopRowText()
+{
+    if (this->collapsedTitle_ == nullptr || this->lastTitleForElide_.isEmpty())
+    {
+        return;
+    }
+
+    if (this->expanded_)
+    {
+        this->collapsedTitle_->setText(QStringLiteral("Prediction"));
+        return;
+    }
+
+    const QFontMetrics fm(this->collapsedTitle_->font());
+    const auto elided = fm.elidedText(this->lastTitleForElide_, Qt::ElideRight,
+                                      std::max(80, this->width() - 216));
+    this->collapsedTitle_->setText(elided.isEmpty() ? this->lastTitleForElide_
+                                                    : elided);
+}
+
 void SplitPredictionPanel::updateExpandToggle()
 {
     this->expandedWidget_->setVisible(this->expanded_);
@@ -936,6 +989,7 @@ void SplitPredictionPanel::updateExpandToggle()
                                                  : QStringLiteral("▶"));
     this->expandButton_->setToolTip(this->expanded_ ? QStringLiteral("Collapse")
                                                     : QStringLiteral("Expand"));
+    this->refreshTopRowText();
 }
 
 void SplitPredictionPanel::updateStyleSheets()
@@ -952,10 +1006,10 @@ void SplitPredictionPanel::updateStyleSheets()
     const QString labelStyle =
         QStringLiteral("QLabel { color: %1; }").arg(textCss);
     for (auto *lab :
-         {this->collapsedTitle_, this->fullTitle_, this->statusLabel_,
-          this->outcomeTitle0_, this->outcomeDash0_, this->outcomePct0_,
-          this->outcomeTitle1_, this->outcomeDash1_, this->outcomePct1_,
-          this->yourPointsLabel_, this->yourPointsValue_,
+         {this->collapsedTitle_, this->predictionQuestionLabel_,
+          this->statusLabel_, this->outcomeTitle0_, this->outcomeDash0_,
+          this->outcomePct0_, this->outcomeTitle1_, this->outcomeDash1_,
+          this->outcomePct1_, this->yourPointsLabel_, this->yourPointsValue_,
           this->betAmountCaption_})
     {
         if (lab != nullptr)
@@ -993,8 +1047,11 @@ void SplitPredictionPanel::updateStyleSheets()
                        "QPushButton:hover { color: %2; }")
             .arg(textCss, textCss);
 
+    if (this->dismissButton_ != nullptr)
+    {
+        this->dismissButton_->setStyleSheet(btnStyle);
+    }
     this->expandButton_->setStyleSheet(btnStyle);
-    this->openTwitchButton_->setStyleSheet(btnStyle);
 
     if (this->betAmountSpin_ != nullptr)
     {
@@ -1006,29 +1063,32 @@ void SplitPredictionPanel::updateStyleSheets()
     this->refreshBetOutcomeButtonStyles();
 }
 
-void SplitPredictionPanel::openPopoutChat()
+void SplitPredictionPanel::updatePredictionIcon()
 {
-    auto *tc = this->twitchChannel_;
-    if (tc == nullptr)
+    if (this->iconLabel_ == nullptr || this->theme == nullptr)
     {
         return;
     }
 
-    const auto login = tc->getName().toLower();
-    if (login.isEmpty() || login.startsWith('/'))
+    const int px = splitHeaderIconColumnWidth(this->scale());
+    const QString iconPath =
+        this->theme->isLightTheme()
+            ? QStringLiteral(":/buttons/prediction-lightMode.svg")
+            : QStringLiteral(":/buttons/prediction-darkMode.svg");
+    const QPixmap pm = QIcon(iconPath).pixmap(px, px);
+    if (!pm.isNull())
     {
-        return;
+        this->iconLabel_->setPixmap(pm);
     }
-
-    QDesktopServices::openUrl(
-        QUrl(QStringLiteral("https://www.twitch.tv/popout/%1/chat?popout=")
-                 .arg(login)));
+    this->iconLabel_->setFixedWidth(px);
+    this->iconLabel_->setToolTip(QStringLiteral("Channel points prediction"));
 }
 
 void SplitPredictionPanel::themeChangedEvent()
 {
     BaseWidget::themeChangedEvent();
     this->updateStyleSheets();
+    this->updatePredictionIcon();
 }
 
 void SplitPredictionPanel::scaleChangedEvent(float scale)
@@ -1040,12 +1100,13 @@ void SplitPredictionPanel::scaleChangedEvent(float scale)
     QFont f = this->font();
     f.setPointSize(std::max(8, fs));
     for (QWidget *w : std::initializer_list<QWidget *>{
-             this->collapsedTitle_, this->fullTitle_, this->statusLabel_,
-             this->outcomeTitle0_, this->outcomeWon0_, this->outcomeDash0_,
-             this->outcomePct0_, this->outcomeTitle1_, this->outcomeWon1_,
-             this->outcomeDash1_, this->outcomePct1_, this->yourPointsLabel_,
-             this->yourPointsValue_, this->betAmountCaption_,
-             this->betAmountSpin_, this->betButton0_, this->betButton1_})
+             this->collapsedTitle_, this->predictionQuestionLabel_,
+             this->statusLabel_, this->outcomeTitle0_, this->outcomeWon0_,
+             this->outcomeDash0_, this->outcomePct0_, this->outcomeTitle1_,
+             this->outcomeWon1_, this->outcomeDash1_, this->outcomePct1_,
+             this->yourPointsLabel_, this->yourPointsValue_,
+             this->betAmountCaption_, this->betAmountSpin_, this->betButton0_,
+             this->betButton1_})
     {
         if (w != nullptr)
         {
@@ -1072,6 +1133,9 @@ void SplitPredictionPanel::scaleChangedEvent(float scale)
     {
         this->expandedLayout_->setContentsMargins(8, pad, 8, pad + 2);
     }
+
+    this->updatePredictionIcon();
+    this->refreshTopRowText();
 }
 
 void SplitPredictionPanel::paintEvent(QPaintEvent * /*event*/)
@@ -1097,15 +1161,7 @@ void SplitPredictionPanel::paintEvent(QPaintEvent * /*event*/)
 void SplitPredictionPanel::resizeEvent(QResizeEvent *event)
 {
     BaseWidget::resizeEvent(event);
-    if (this->lastTitleForElide_.isEmpty())
-    {
-        return;
-    }
-    const QFontMetrics fm(this->collapsedTitle_->font());
-    const auto elided = fm.elidedText(this->lastTitleForElide_, Qt::ElideRight,
-                                      std::max(80, this->width() - 160));
-    this->collapsedTitle_->setText(elided.isEmpty() ? this->lastTitleForElide_
-                                                    : elided);
+    this->refreshTopRowText();
 }
 
 void SplitPredictionPanel::syncPredictionBetRow()

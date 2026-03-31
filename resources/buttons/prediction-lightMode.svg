@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original artwork: channel points prediction (crystal ball metaphor). -->
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="15.999924mm"
+     height="15.999949mm"
+     viewBox="0 0 24 24"
+     fill="none">
+  <g stroke="#4d4d4d" stroke-linecap="round" stroke-linejoin="round"
+     transform="translate(12 5.141) scale(1.434 1.205) translate(-12 -5.141)">
+    <line stroke-width="1.5" x1="7.6" y1="16.7" x2="9.3" y2="15"/>
+    <line stroke-width="1.5" x1="16.4" y1="16.7" x2="14.7" y2="15"/>
+    <rect x="6" y="16.6" width="12" height="3.4" rx="0.55" stroke-width="1.5" fill="none"/>
+    <circle cx="12" cy="9.2" r="7.5" stroke-width="1.65" fill="none"/>
+    <path stroke-width="1.35" d="M 13.1 6.5 h 2.1 M 14.15 5.45 v 2.1"/>
+  </g>
+</svg>

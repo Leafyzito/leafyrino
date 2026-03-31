@@ -23,6 +23,19 @@ namespace chatterino {
  */
 namespace TwitchGql {
 
+struct PinnedChatMessage {
+    QString id;
+    QString sentAt;  // ISO timestamp from GQL
+    QString senderDisplayName;
+    /// Lowercase login when returned by GQL (`sender.login`).
+    QString senderLogin;
+    /// Numeric Twitch user id when returned by GQL (`sender.id`).
+    QString senderId;
+    /// Hex color e.g. `#FF0000` when returned (`sender.chatColor`).
+    QString senderChatColor;
+    QString text;
+};
+
 /// Fetches active/locked prediction for the channel; maps GQL into HelixPrediction for UI.
 /// \a clientId is ignored: gql.twitch.tv rejects most Helix app Client-IDs with HTTP 400;
 /// requests use Twitch's public web Client-ID; \a oauthToken is still sent as Bearer.
@@ -30,6 +43,14 @@ void fetchPredictionsForChannel(
     const QString &channelId, const QString &channelLogin,
     const QString &clientId, const QString &oauthToken, const QObject *caller,
     std::function<void(std::optional<HelixPrediction>)> onSuccess,
+    std::function<void(QString)> onError);
+
+/// Persisted query GetPinnedChat: fetches the current moderator-pinned chat message.
+/// Returns std::nullopt when no pinned message is present.
+void fetchPinnedChatMessage(
+    const QString &channelId, int count, const QString &oauthToken,
+    const QString &gqlClientId, const QObject *caller,
+    std::function<void(std::optional<PinnedChatMessage>)> onSuccess,
     std::function<void(QString)> onError);
 
 /// Persisted query ChannelPointsContext: viewer's channel points balance for @a channelLogin.
