@@ -69,8 +69,9 @@ TwitchDeviceLoginPage::TwitchDeviceLoginPage(QWidget *parent)
     auto *root = new QVBoxLayout(this);
 
     this->purposeLabel_ = new QLabel(
-        u"This sign in is only needed for channel points features (like "
-        u"predictions) to work. If you don't care or plan to use those, you can just use the basic login."_s,
+        u"This sign in is only needed for channel points features and pinned "
+        u"messages "
+        u"to work. If you don't care or plan to use those, you can just use the basic login."_s,
         this);
     this->purposeLabel_->setWordWrap(true);
     root->addWidget(this->purposeLabel_);

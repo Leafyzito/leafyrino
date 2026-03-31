@@ -97,7 +97,7 @@ BasicLoginWidget::BasicLoginWidget()
 
     this->ui_.channelPointsHint.setText(
         "The Twitch (Device) tab is a newer sign in option that enables "
-        "channel points features (for example predictions). The usual login "
+        "channel points features and pinned messages. The usual login "
         "below is enough for chat.");
     this->ui_.channelPointsHint.setWordWrap(true);
     this->ui_.channelPointsHint.setAlignment(Qt::AlignLeft | Qt::AlignTop);
