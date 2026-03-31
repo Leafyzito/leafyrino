@@ -64,6 +64,7 @@ private:
     void showUserInfoPopup(const QString &userName);
 
     bool layoutUsesChatWordFlags_{false};
+    bool hasAnimatedElements_{false};
     MessagePtr message_;
     std::unique_ptr<MessageLayout> messageLayout_;
 

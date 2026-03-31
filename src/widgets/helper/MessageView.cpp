@@ -91,6 +91,14 @@ MessageView::MessageView(QWidget *parent)
 
     this->messagePreferences_.connectSettings(getSettings(),
                                               this->signalHolder_);
+
+    this->signalHolder_.managedConnect(
+        getApp()->getWindows()->gifRepaintRequested, [this] {
+            if (this->hasAnimatedElements_ && this->isVisible())
+            {
+                this->update();
+            }
+        });
 }
 
 MessageView::~MessageView() = default;
@@ -114,6 +122,7 @@ void MessageView::setMessage(const MessagePtr &message)
     {
         this->message_.reset();
         this->messageLayout_.reset();
+        this->hasAnimatedElements_ = false;
         this->tooltipWidget_->hide();
         this->update();
         return;
@@ -137,6 +146,7 @@ void MessageView::setFullMessage(const MessagePtr &message)
     {
         this->message_.reset();
         this->messageLayout_.reset();
+        this->hasAnimatedElements_ = false;
         this->tooltipWidget_->hide();
         this->update();
         return;
@@ -546,6 +556,7 @@ void MessageView::paintEvent(QPaintEvent * /*event*/)
 {
     if (this->messageLayout_ == nullptr)
     {
+        this->hasAnimatedElements_ = false;
         return;
     }
 
@@ -567,7 +578,8 @@ void MessageView::paintEvent(QPaintEvent * /*event*/)
         .isLastReadMessage = false,
     };
 
-    this->messageLayout_->paint(ctx);
+    const auto result = this->messageLayout_->paint(ctx);
+    this->hasAnimatedElements_ = result.hasAnimatedElements;
 }
 
 void MessageView::themeChangedEvent()
