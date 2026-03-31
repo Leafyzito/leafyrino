@@ -44,5 +44,9 @@ in
       postInstall = ''
         echo "nightly" > $out/bin/modes
       '';
+
+      meta = (prev.meta or {}) // {
+        mainProgram = "chatterino";
+      };
     }
   )
