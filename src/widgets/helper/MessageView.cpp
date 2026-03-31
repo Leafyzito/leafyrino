@@ -14,8 +14,8 @@
 #include "providers/colors/ColorProvider.hpp"
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/links/LinkInfo.hpp"
-#include "providers/twitch/TwitchIrcServer.hpp"
 #include "providers/links/LinkResolver.hpp"
+#include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
@@ -89,7 +89,8 @@ MessageView::MessageView(QWidget *parent)
 {
     this->setMouseTracking(true);
 
-    this->messagePreferences_.connectSettings(getSettings(), this->signalHolder_);
+    this->messagePreferences_.connectSettings(getSettings(),
+                                              this->signalHolder_);
 }
 
 MessageView::~MessageView() = default;
@@ -412,8 +413,8 @@ void MessageView::showUserInfoPopup(const QString &userName)
     ChannelPtr contextChannel;
     if (openingChannel && openingChannel->isKickChannel())
     {
-        contextChannel =
-            getApp()->getKickChatServer()->findBySlug(this->message_->channelName);
+        contextChannel = getApp()->getKickChatServer()->findBySlug(
+            this->message_->channelName);
         if (!contextChannel)
         {
             contextChannel = Channel::getEmpty();
@@ -421,8 +422,8 @@ void MessageView::showUserInfoPopup(const QString &userName)
     }
     else
     {
-        contextChannel =
-            getApp()->getTwitch()->getChannelOrEmpty(this->message_->channelName);
+        contextChannel = getApp()->getTwitch()->getChannelOrEmpty(
+            this->message_->channelName);
     }
     userPopup->setData(userName, contextChannel, openingChannel);
 
@@ -492,8 +493,7 @@ void MessageView::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    const auto *hoverElement =
-        this->messageLayout_->getElementAt(event->pos());
+    const auto *hoverElement = this->messageLayout_->getElementAt(event->pos());
 
     if (event->button() == Qt::MiddleButton)
     {
@@ -596,10 +596,9 @@ void MessageView::layoutMessage()
         return;
     }
 
-    const auto flags =
-        this->layoutUsesChatWordFlags_
-            ? getApp()->getWindows()->getWordFlags()
-            : MessageElementFlags(MESSAGE_FLAGS);
+    const auto flags = this->layoutUsesChatWordFlags_
+                           ? getApp()->getWindows()->getWordFlags()
+                           : MessageElementFlags(MESSAGE_FLAGS);
 
     const bool updateRequired = this->messageLayout_->layout(
         {
