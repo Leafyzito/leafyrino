@@ -696,9 +696,22 @@ void SplitPredictionPanel::fetchPredictions()
             this->lingerTimer_.stop();
             this->lingering_ = false;
             this->lingerEventId_.clear();
-            this->lastLivePrediction_ = pr;
+            HelixPrediction merged = pr;
+            if (this->lastLivePrediction_.has_value())
+            {
+                const auto &prev = *this->lastLivePrediction_;
+                if (prev.id == merged.id &&
+                    !prev.viewerPredictionOutcomeId.trimmed().isEmpty() &&
+                    merged.viewerPredictionOutcomeId.trimmed().isEmpty())
+                {
+                    merged.viewerPredictionOutcomeId =
+                        prev.viewerPredictionOutcomeId;
+                    merged.viewerPredictionPoints = prev.viewerPredictionPoints;
+                }
+            }
+            this->lastLivePrediction_ = merged;
             this->currentDisplayId_ = pr.id;
-            this->renderPrediction(pr, true);
+            this->renderPrediction(merged, true);
             this->show();
             this->updateExpandToggle();
             this->updateStyleSheets();
@@ -1241,8 +1254,10 @@ void SplitPredictionPanel::syncPredictionBetRow()
     const bool hasPick = !pickId.isEmpty();
     const QString id0 = pr.outcomes[0].id.trimmed();
     const QString id1 = pr.outcomes[1].id.trimmed();
-    const bool picked0 = hasPick && pickId == id0;
-    const bool picked1 = hasPick && pickId == id1;
+    const bool picked0 =
+        hasPick && pickId.compare(id0, Qt::CaseInsensitive) == 0;
+    const bool picked1 =
+        hasPick && pickId.compare(id1, Qt::CaseInsensitive) == 0;
 
     const bool canSpend = this->lastChannelPointsBalance_.has_value() &&
                           *this->lastChannelPointsBalance_ >= kBetMin;
@@ -1275,40 +1290,38 @@ void SplitPredictionPanel::syncPredictionBetRow()
 
     if (picked0)
     {
-        this->betButton0_->setText(QStringLiteral("Your pick · %1 (%2 pts)")
+        this->betButton0_->setText(QStringLiteral("Your pick - %1 (%2 pts)")
                                        .arg(pr.outcomes[0].title)
                                        .arg(pr.viewerPredictionPoints));
     }
     else
     {
-        this->betButton0_->setText(
-            QStringLiteral("Predict %1").arg(pr.outcomes[0].title));
+        this->betButton0_->setText(pr.outcomes[0].title);
     }
     if (picked1)
     {
-        this->betButton1_->setText(QStringLiteral("Your pick · %1 (%2 pts)")
+        this->betButton1_->setText(QStringLiteral("Your pick - %1 (%2 pts)")
                                        .arg(pr.outcomes[1].title)
                                        .arg(pr.viewerPredictionPoints));
     }
     else
     {
-        this->betButton1_->setText(
-            QStringLiteral("Predict %1").arg(pr.outcomes[1].title));
+        this->betButton1_->setText(pr.outcomes[1].title);
     }
 
     if (picked0)
     {
         this->betButton1_->setToolTip(
-            QStringLiteral("You already predicted “%1”. Twitch only allows "
-                           "choosing one outcome per prediction.")
+            QStringLiteral(
+                "You can only choose one outcome. You already predicted “%1”.")
                 .arg(pr.outcomes[0].title));
         this->betButton0_->setToolTip({});
     }
     else if (picked1)
     {
         this->betButton0_->setToolTip(
-            QStringLiteral("You already predicted “%1”. Twitch only allows "
-                           "choosing one outcome per prediction.")
+            QStringLiteral(
+                "You can only choose one outcome. You already predicted “%1”.")
                 .arg(pr.outcomes[1].title));
         this->betButton1_->setToolTip({});
     }
@@ -1370,7 +1383,7 @@ void SplitPredictionPanel::placePredictionBet(int outcomeIndex)
     {
         const QString chosenId =
             pr.outcomes[static_cast<size_t>(outcomeIndex)].id.trimmed();
-        if (existingPick != chosenId)
+        if (existingPick.compare(chosenId, Qt::CaseInsensitive) != 0)
         {
             return;
         }
@@ -1405,13 +1418,26 @@ void SplitPredictionPanel::placePredictionBet(int outcomeIndex)
     TwitchGql::makePrediction(
         eventId, outcomeId, points, acc->getOAuthToken(), acc->getOAuthClient(),
         this,
-        [this, fetchRoomId]() {
+        [this, fetchRoomId, eventId, outcomeId, points]() {
             this->betInFlight_ = false;
             if (this->twitchChannel_ == nullptr ||
                 (!fetchRoomId.isEmpty() &&
                  this->twitchChannel_->roomId() != fetchRoomId))
             {
                 return;
+            }
+            if (this->lastLivePrediction_.has_value() &&
+                this->lastLivePrediction_->id == eventId)
+            {
+                auto &mutablePred = *this->lastLivePrediction_;
+                const QString o = outcomeId.trimmed();
+                if (mutablePred.viewerPredictionOutcomeId.trimmed().compare(
+                        o, Qt::CaseInsensitive) == 0 ||
+                    mutablePred.viewerPredictionOutcomeId.trimmed().isEmpty())
+                {
+                    mutablePred.viewerPredictionOutcomeId = outcomeId;
+                    mutablePred.viewerPredictionPoints += points;
+                }
             }
             this->statusLabel_->setText(QStringLiteral("Prediction placed"));
             this->syncPredictionBetRow();
