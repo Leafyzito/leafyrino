@@ -12,15 +12,18 @@
 #include "singletons/Settings.hpp"
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
+#include "widgets/helper/ChannelView.hpp"
 #include "widgets/helper/MessageView.hpp"
 #include "widgets/splits/Split.hpp"
 #include "widgets/splits/SplitCommon.hpp"
 
+#include <QEvent>
 #include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
 #include <QMargins>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -121,6 +124,13 @@ SplitPinnedMessagePanel::SplitPinnedMessagePanel(Split *split)
     mainLayout->addWidget(topRow);
     mainLayout->addWidget(this->expandedWidget_);
 
+    this->installClickFocusesSplit(this);
+
+    this->managedConnections_.addConnection(pajlada::Signals::ScopedConnection(
+        this->expandedMessageView_->selectionChanged.connect([this] {
+            this->split_->getChannelView().clearSelection();
+        })));
+
     this->updateExpandToggle();
 
     getSettings()->showPinnedMessagePanel.connect(
@@ -159,6 +169,43 @@ SplitPinnedMessagePanel::SplitPinnedMessagePanel(Split *split)
 
     this->themeChangedEvent();
     this->scaleChangedEvent(this->scale());
+}
+
+void SplitPinnedMessagePanel::installClickFocusesSplit(QWidget *root)
+{
+    if (root == nullptr)
+    {
+        return;
+    }
+    root->installEventFilter(this);
+    for (QObject *child : root->children())
+    {
+        if (auto *cw = qobject_cast<QWidget *>(child))
+        {
+            this->installClickFocusesSplit(cw);
+        }
+    }
+}
+
+bool SplitPinnedMessagePanel::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::MouseButtonPress)
+    {
+        const auto *me = static_cast<QMouseEvent *>(event);
+        if (me->button() == Qt::LeftButton)
+        {
+            this->split_->setFocus(Qt::MouseFocusReason);
+        }
+    }
+    return BaseWidget::eventFilter(watched, event);
+}
+
+void SplitPinnedMessagePanel::clearExpandedMessageSelection()
+{
+    if (this->expandedMessageView_ != nullptr)
+    {
+        this->expandedMessageView_->clearSelection();
+    }
 }
 
 void SplitPinnedMessagePanel::setTwitchChannel(TwitchChannel *channel)

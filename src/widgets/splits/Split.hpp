@@ -20,6 +20,7 @@
 namespace chatterino {
 
 class ChannelView;
+class MessageView;
 class SplitHeader;
 class SplitInput;
 class SplitPinnedMessagePanel;
@@ -57,6 +58,9 @@ public:
 
     ChannelView &getChannelView();
     SplitInput &getInput();
+
+    /// Expanded pinned-message preview, or nullptr if unavailable.
+    MessageView *pinnedExpandedMessageView() const;
 
     IndirectChannel getIndirectChannel();
     ChannelPtr getChannel() const;

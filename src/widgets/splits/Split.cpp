@@ -30,6 +30,7 @@
 #include "widgets/dialogs/UserInfoPopup.hpp"
 #include "widgets/helper/ChannelView.hpp"
 #include "widgets/helper/DebugPopup.hpp"
+#include "widgets/helper/MessageView.hpp"
 #include "widgets/helper/NotebookTab.hpp"
 #include "widgets/helper/ResizingTextEdit.hpp"
 #include "widgets/helper/SearchPopup.hpp"
@@ -139,6 +140,7 @@ Split::Split(QWidget *parent)
         {
             this->input_->clearSelection();
         }
+        this->pinnedMessagePanel_->clearExpandedMessageSelection();
     });
 
     // clear ChannelView selection when selecting in SplitInput
@@ -762,6 +764,11 @@ ChannelView &Split::getChannelView()
 SplitInput &Split::getInput()
 {
     return *this->input_;
+}
+
+MessageView *Split::pinnedExpandedMessageView() const
+{
+    return this->pinnedMessagePanel_->expandedMessageView();
 }
 
 void Split::updateInputPlaceholder()

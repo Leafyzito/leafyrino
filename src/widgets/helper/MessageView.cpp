@@ -5,6 +5,7 @@
 #include "widgets/helper/MessageView.hpp"
 
 #include "Application.hpp"
+#include "common/Common.hpp"
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
 #include "messages/layouts/MessageLayout.hpp"
@@ -22,6 +23,7 @@
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
 #include "util/Clipboard.hpp"
+#include "util/DistanceBetweenPoints.hpp"
 #include "util/IncognitoBrowser.hpp"
 #include "util/Twitch.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
@@ -30,18 +32,21 @@
 #include "widgets/TooltipWidget.hpp"
 
 #include <QApplication>
+#include <QContextMenuEvent>
 #include <QDesktopServices>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QShortcut>
 #include <QUrl>
+
+#include <climits>
 
 namespace {
 
 using namespace chatterino;
 
 constexpr size_t TOOLTIP_EMOTE_ENTRIES_LIMIT = 7;
-
-const Selection EMPTY_SELECTION;
 
 const MessageElementFlags MESSAGE_FLAGS{
     MessageElementFlag::Text,
@@ -89,6 +94,14 @@ MessageView::MessageView(QWidget *parent)
 {
     this->setMouseTracking(true);
 
+    this->clickTimer_.setSingleShot(true);
+    this->clickTimer_.setInterval(500);
+
+    auto *copyShortcut = new QShortcut(QKeySequence::StandardKey::Copy, this);
+    QObject::connect(copyShortcut, &QShortcut::activated, this, [this] {
+        this->copySelectedText();
+    });
+
     this->messagePreferences_.connectSettings(getSettings(),
                                               this->signalHolder_);
 
@@ -117,6 +130,7 @@ void MessageView::createMessageLayout()
 void MessageView::setMessage(const MessagePtr &message)
 {
     this->layoutUsesChatWordFlags_ = false;
+    this->clearSelection();
 
     if (!message)
     {
@@ -141,6 +155,14 @@ void MessageView::setMessage(const MessagePtr &message)
 void MessageView::setFullMessage(const MessagePtr &message)
 {
     this->layoutUsesChatWordFlags_ = true;
+
+    const bool keepSelection = message && this->message_ &&
+                               !message->id.isEmpty() &&
+                               message->id == this->message_->id;
+    if (!keepSelection)
+    {
+        this->clearSelection();
+    }
 
     if (!message)
     {
@@ -392,6 +414,33 @@ void MessageView::updateHoverTooltip(QMouseEvent *event)
 
 void MessageView::mouseMoveEvent(QMouseEvent *event)
 {
+    if (this->messageLayout_ != nullptr &&
+        !this->messageLayout_->flags.has(MessageLayoutFlag::Collapsed))
+    {
+        if (this->isLeftMouseDown_)
+        {
+            const size_t index =
+                this->messageLayout_->getSelectionIndex(QPointF(event->pos()));
+            this->setSelection(this->selection_.start, SelectionItem(0, index));
+        }
+        if (this->isDoubleClick_)
+        {
+            const auto *hoverLayoutElement =
+                this->messageLayout_->getElementAt(event->pos());
+            if (hoverLayoutElement != nullptr)
+            {
+                auto [wordStart, wordEnd] = this->messageLayout_->getWordBounds(
+                    hoverLayoutElement, event->pos());
+                const Selection hoveredWord{
+                    SelectionItem(0, static_cast<size_t>(wordStart)),
+                    SelectionItem(0, static_cast<size_t>(wordEnd))};
+                const Selection selectUnion =
+                    this->doubleClickSelection_ | hoveredWord;
+                this->setSelection(selectUnion);
+            }
+        }
+    }
+
     BaseWidget::mouseMoveEvent(event);
     this->updateHoverTooltip(event);
 }
@@ -483,6 +532,159 @@ void MessageView::handleLinkClick(QMouseEvent *event, const Link &link)
     }
 }
 
+void MessageView::handleMouseClickFromRelease(
+    QMouseEvent *event, const MessageLayoutElement *hoveredElement)
+{
+    if (event->button() != Qt::LeftButton &&
+        event->button() != Qt::MiddleButton)
+    {
+        return;
+    }
+    if (hoveredElement == nullptr)
+    {
+        return;
+    }
+
+    const auto &link = hoveredElement->getLink();
+    if (!getSettings()->linksDoubleClickOnly.getValue())
+    {
+        this->handleLinkClick(event, link);
+    }
+
+    if (link.type == Link::InsertText)
+    {
+        if (auto *split = findAncestorSplit(this))
+        {
+            split->insertTextToInput(link.value);
+        }
+    }
+}
+
+void MessageView::setSelection(const Selection &newSelection)
+{
+    if (this->selection_ != newSelection)
+    {
+        this->selection_ = newSelection;
+        this->selectionChanged.invoke();
+        this->update();
+    }
+}
+
+void MessageView::setSelection(const SelectionItem &start,
+                               const SelectionItem &end)
+{
+    this->setSelection({start, end});
+}
+
+void MessageView::selectWholeMessage()
+{
+    if (this->messageLayout_ == nullptr)
+    {
+        return;
+    }
+    const SelectionItem msgStart(
+        0, this->messageLayout_->getFirstMessageCharacterIndex());
+    const SelectionItem msgEnd(0,
+                               this->messageLayout_->getLastCharacterIndex());
+    this->setSelection(msgStart, msgEnd);
+}
+
+QString MessageView::getSelectedText() const
+{
+    if (this->messageLayout_ == nullptr || this->selection_.isEmpty())
+    {
+        return {};
+    }
+
+    QString result;
+    this->messageLayout_->addSelectionText(
+        result, static_cast<uint32_t>(this->selection_.selectionMin.charIndex),
+        static_cast<uint32_t>(this->selection_.selectionMax.charIndex + 1));
+    return result;
+}
+
+bool MessageView::hasSelection() const
+{
+    return !this->selection_.isEmpty();
+}
+
+void MessageView::copySelectedText()
+{
+    crossPlatformCopy(this->getSelectedText());
+}
+
+void MessageView::clearSelection()
+{
+    this->setSelection(Selection());
+}
+
+void MessageView::contextMenuEvent(QContextMenuEvent *event)
+{
+    if (this->messageLayout_ == nullptr)
+    {
+        BaseWidget::contextMenuEvent(event);
+        return;
+    }
+
+    QMenu menu;
+    if (!this->selection_.isEmpty())
+    {
+        menu.addAction(QStringLiteral("&Copy selection"), [this] {
+            this->copySelectedText();
+        });
+    }
+
+    menu.addAction(QStringLiteral("Copy &message"), [this] {
+        QString copyString;
+        this->messageLayout_->addSelectionText(copyString, 0, UINT32_MAX,
+                                               CopyMode::OnlyTextAndEmotes);
+        crossPlatformCopy(copyString);
+    });
+
+    menu.addAction(QStringLiteral("Copy &full message"), [this] {
+        QString copyString;
+        this->messageLayout_->addSelectionText(copyString, 0, UINT32_MAX,
+                                               CopyMode::EverythingButReplies);
+        crossPlatformCopy(copyString);
+    });
+
+    if (!this->selection_.isEmpty() && getSettings()->searchEnabled.getValue())
+    {
+        const QString searchURL = getSettings()->searchEngineUrl.getValue();
+        const QString searchName = getSettings()->searchEngineName.getValue();
+
+        if (!searchURL.isEmpty())
+        {
+            QString actionText =
+                searchName.isEmpty()
+                    ? QStringLiteral("&Search")
+                    : QStringLiteral("&Search with %1").arg(searchName);
+
+            if (getSettings()->searchIncognito && supportsIncognitoLinks())
+            {
+                actionText += QStringLiteral(" in private mode");
+            }
+
+            menu.addAction(actionText, [this, searchURL] {
+                QString query = this->getSelectedText().trimmed();
+                QString encodedQuery = QUrl::toPercentEncoding(query);
+                QString url = searchURL + encodedQuery;
+
+                if (getSettings()->searchIncognito && supportsIncognitoLinks())
+                {
+                    openLinkIncognito(url);
+                }
+                else
+                {
+                    QDesktopServices::openUrl(QUrl(url));
+                }
+            });
+        }
+    }
+
+    menu.exec(event->globalPos());
+}
+
 void MessageView::mousePressEvent(QMouseEvent *event)
 {
     if (this->messageLayout_ == nullptr)
@@ -503,30 +705,99 @@ void MessageView::mousePressEvent(QMouseEvent *event)
         }
     }
 
+    switch (event->button())
+    {
+        case Qt::LeftButton: {
+            this->lastLeftPressPosition_ = event->globalPosition();
+            this->isLeftMouseDown_ = true;
+
+            const size_t index =
+                this->messageLayout_->getSelectionIndex(QPointF(event->pos()));
+            const SelectionItem item(0, index);
+            this->setSelection(item, item);
+        }
+        break;
+
+        default:
+            break;
+    }
+
+    this->update();
+}
+
+void MessageView::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (this->messageLayout_ == nullptr)
+    {
+        BaseWidget::mouseReleaseEvent(event);
+        return;
+    }
+
+    this->layoutMessage();
+
+    if (event->button() == Qt::LeftButton)
+    {
+        if (this->isDoubleClick_)
+        {
+            this->isDoubleClick_ = false;
+            if (std::abs(distanceBetweenPoints(this->lastDoubleClickPosition_,
+                                               event->globalPosition())) > 10.F)
+            {
+                this->clickTimer_.stop();
+                return;
+            }
+        }
+        else if (this->isLeftMouseDown_)
+        {
+            this->isLeftMouseDown_ = false;
+
+            if (std::abs(distanceBetweenPoints(this->lastLeftPressPosition_,
+                                               event->globalPosition())) > 15.F)
+            {
+                return;
+            }
+
+            if (this->clickTimer_.isActive() &&
+                (std::abs(distanceBetweenPoints(this->lastDoubleClickPosition_,
+                                                event->globalPosition())) <
+                 10.F))
+            {
+                this->selectWholeMessage();
+                return;
+            }
+        }
+        else
+        {
+            return;
+        }
+    }
+    else if (event->button() == Qt::MiddleButton)
+    {
+        const auto *hoverElement =
+            this->messageLayout_->getElementAt(event->pos());
+        if (hoverElement != nullptr && hoverElement->getLink().isValid() &&
+            !getSettings()->linksDoubleClickOnly.getValue())
+        {
+            this->handleLinkClick(event, hoverElement->getLink());
+        }
+        this->update();
+        return;
+    }
+    else
+    {
+        BaseWidget::mouseReleaseEvent(event);
+        return;
+    }
+
+    if (this->messageLayout_->flags.has(MessageLayoutFlag::Collapsed))
+    {
+        return;
+    }
+
     const auto *hoverElement = this->messageLayout_->getElementAt(event->pos());
+    this->handleMouseClickFromRelease(event, hoverElement);
 
-    if (event->button() == Qt::MiddleButton)
-    {
-        if (hoverElement != nullptr && hoverElement->getLink().isValid() &&
-            !getSettings()->linksDoubleClickOnly)
-        {
-            this->handleLinkClick(event, hoverElement->getLink());
-            event->accept();
-            return;
-        }
-    }
-    else if (event->button() == Qt::LeftButton)
-    {
-        if (hoverElement != nullptr && hoverElement->getLink().isValid() &&
-            !getSettings()->linksDoubleClickOnly)
-        {
-            this->handleLinkClick(event, hoverElement->getLink());
-            event->accept();
-            return;
-        }
-    }
-
-    BaseWidget::mousePressEvent(event);
+    this->update();
 }
 
 void MessageView::mouseDoubleClickEvent(QMouseEvent *event)
@@ -538,18 +809,35 @@ void MessageView::mouseDoubleClickEvent(QMouseEvent *event)
         return;
     }
 
-    if (getSettings()->linksDoubleClickOnly)
+    this->isDoubleClick_ = true;
+    this->lastDoubleClickPosition_ = event->globalPosition();
+    this->clickTimer_.start();
+
+    const auto *hoverLayoutElement =
+        this->messageLayout_->getElementAt(event->pos());
+
+    if (hoverLayoutElement == nullptr)
     {
-        const auto *hover = this->messageLayout_->getElementAt(event->pos());
-        if (hover != nullptr && hover->getLink().isValid())
-        {
-            this->handleLinkClick(event, hover->getLink());
-            event->accept();
-            return;
-        }
+        const size_t idx =
+            this->messageLayout_->getSelectionIndex(QPointF(event->pos()));
+        const SelectionItem item(0, idx);
+        this->doubleClickSelection_ = {item, item};
+        return;
     }
 
-    BaseWidget::mouseDoubleClickEvent(event);
+    auto [wordStart, wordEnd] =
+        this->messageLayout_->getWordBounds(hoverLayoutElement, event->pos());
+
+    this->doubleClickSelection_ = {
+        SelectionItem(0, static_cast<size_t>(wordStart)),
+        SelectionItem(0, static_cast<size_t>(wordEnd))};
+    this->setSelection(this->doubleClickSelection_);
+
+    if (getSettings()->linksDoubleClickOnly.getValue() &&
+        hoverLayoutElement->getLink().isValid())
+    {
+        this->handleLinkClick(event, hoverLayoutElement->getLink());
+    }
 }
 
 void MessageView::paintEvent(QPaintEvent * /*event*/)
@@ -564,7 +852,7 @@ void MessageView::paintEvent(QPaintEvent * /*event*/)
 
     auto ctx = MessagePaintContext{
         .painter = painter,
-        .selection = EMPTY_SELECTION,
+        .selection = this->selection_,
         .colorProvider = ColorProvider::instance(),
         .messageColors = this->messageColors_,
         .preferences = this->messagePreferences_,

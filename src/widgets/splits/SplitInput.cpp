@@ -700,7 +700,16 @@ void SplitInput::addShortcuts()
 
              if (copyFromSplit)
              {
-                 this->channelView_->copySelectedText();
+                 if (auto *pinnedView =
+                         this->split_->pinnedExpandedMessageView();
+                     pinnedView != nullptr && pinnedView->hasSelection())
+                 {
+                     pinnedView->copySelectedText();
+                 }
+                 else
+                 {
+                     this->channelView_->copySelectedText();
+                 }
              }
              else
              {
@@ -789,7 +798,14 @@ void SplitInput::installTextEditEvents()
             if ((event->key() == Qt::Key_C || event->key() == Qt::Key_Insert) &&
                 event->modifiers() == Qt::ControlModifier)
             {
-                if (this->channelView_->hasSelection())
+                if (auto *pinnedView =
+                        this->split_->pinnedExpandedMessageView();
+                    pinnedView != nullptr && pinnedView->hasSelection())
+                {
+                    pinnedView->copySelectedText();
+                    event->accept();
+                }
+                else if (this->channelView_->hasSelection())
                 {
                     this->channelView_->copySelectedText();
                     event->accept();

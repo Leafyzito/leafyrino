@@ -8,6 +8,7 @@
 #include "widgets/BaseWidget.hpp"
 
 #include <pajlada/signals/signalholder.hpp>
+#include <QEvent>
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QString>
@@ -42,13 +43,22 @@ public:
     /// Clears per-event dismiss state and refetches (split menu).
     void recoverDismissedPanel();
 
+    MessageView *expandedMessageView() const
+    {
+        return this->expandedMessageView_;
+    }
+
+    void clearExpandedMessageSelection();
+
 protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
     void themeChangedEvent() override;
     void scaleChangedEvent(float scale) override;
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
 
 private:
+    void installClickFocusesSplit(QWidget *root);
     void startOrStopTimer();
     void fetchPinned();
     void hidePinnedUi();

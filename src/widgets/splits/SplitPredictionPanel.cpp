@@ -20,10 +20,12 @@
 #include <pajlada/signals/scoped-connection.hpp>
 #include <QColor>
 #include <QDateTime>
+#include <QEvent>
 #include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
 #include <QResizeEvent>
@@ -438,6 +440,8 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
     mainLayout->addWidget(topRow);
     mainLayout->addWidget(this->expandedWidget_);
 
+    this->installClickFocusesSplit(this);
+
     getSettings()->showPredictionPanel.connect(
         [this](const bool &enabled) {
             this->startOrStopTimer();
@@ -472,6 +476,35 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
     this->themeChangedEvent();
     this->scaleChangedEvent(this->scale());
     this->updateExpandToggle();
+}
+
+void SplitPredictionPanel::installClickFocusesSplit(QWidget *root)
+{
+    if (root == nullptr)
+    {
+        return;
+    }
+    root->installEventFilter(this);
+    for (QObject *child : root->children())
+    {
+        if (auto *cw = qobject_cast<QWidget *>(child))
+        {
+            this->installClickFocusesSplit(cw);
+        }
+    }
+}
+
+bool SplitPredictionPanel::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::MouseButtonPress)
+    {
+        const auto *me = static_cast<QMouseEvent *>(event);
+        if (me->button() == Qt::LeftButton)
+        {
+            this->split_->setFocus(Qt::MouseFocusReason);
+        }
+    }
+    return BaseWidget::eventFilter(watched, event);
 }
 
 void SplitPredictionPanel::setTwitchChannel(TwitchChannel *channel)

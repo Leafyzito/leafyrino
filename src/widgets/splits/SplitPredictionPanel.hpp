@@ -10,6 +10,7 @@
 #include <boost/signals2.hpp>
 #include <pajlada/signals/signalholder.hpp>
 #include <QDateTime>
+#include <QEvent>
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QString>
@@ -52,12 +53,14 @@ public:
     void recoverDismissedPanel();
 
 protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
     void themeChangedEvent() override;
     void scaleChangedEvent(float scale) override;
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
 
 private:
+    void installClickFocusesSplit(QWidget *root);
     void startOrStopTimer();
     void fetchPredictions();
     void renderPrediction(const HelixPrediction &prediction, bool liveMode);
