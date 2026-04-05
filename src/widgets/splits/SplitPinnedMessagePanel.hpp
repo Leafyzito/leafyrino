@@ -18,6 +18,7 @@
 
 class QLabel;
 class QPushButton;
+class QShowEvent;
 class QWidget;
 
 namespace chatterino {
@@ -56,6 +57,7 @@ protected:
     void scaleChangedEvent(float scale) override;
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private:
     void installClickFocusesSplit(QWidget *root);

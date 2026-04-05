@@ -26,6 +26,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
+#include <QShowEvent>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -585,6 +586,15 @@ void SplitPinnedMessagePanel::resizeEvent(QResizeEvent *event)
     BaseWidget::resizeEvent(event);
     this->updateCollapsedElide();
     this->updateExpandedMessageWidth();
+}
+
+void SplitPinnedMessagePanel::showEvent(QShowEvent *event)
+{
+    BaseWidget::showEvent(event);
+    QTimer::singleShot(0, this, [this] {
+        this->updateCollapsedElide();
+        this->updateExpandedMessageWidth();
+    });
 }
 
 void SplitPinnedMessagePanel::updateExpandedMessageWidth()
