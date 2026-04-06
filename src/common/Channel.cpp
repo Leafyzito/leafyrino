@@ -14,8 +14,9 @@
 #include "singletons/Settings.hpp"
 #include "util/ChannelHelpers.hpp"
 
-#include <cassert>
 #include <QRegularExpression>
+
+#include <cassert>
 
 namespace {
 
