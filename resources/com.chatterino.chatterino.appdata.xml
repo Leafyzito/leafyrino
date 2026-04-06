@@ -34,6 +34,9 @@
         <binary>chatterino</binary>
     </provides>
     <releases>
+        <release version="7.5.5" date="2026-03-22">
+            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.5</url>
+        </release>
         <release version="7.5.5~beta1" date="2026-03-01">
             <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.5-beta.1</url>
         </release>

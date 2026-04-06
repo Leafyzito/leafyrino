@@ -182,6 +182,8 @@ set(SOURCE_FILES
         controllers/filters/lang/expressions/Expression.hpp
         controllers/filters/lang/expressions/BinaryOperation.cpp
         controllers/filters/lang/expressions/BinaryOperation.hpp
+        controllers/filters/lang/expressions/IdentifierExpression.cpp
+        controllers/filters/lang/expressions/IdentifierExpression.hpp
         controllers/filters/lang/expressions/ListExpression.cpp
         controllers/filters/lang/expressions/ListExpression.hpp
         controllers/filters/lang/expressions/RegexExpression.cpp
@@ -271,6 +273,8 @@ set(SOURCE_FILES
         controllers/plugins/api/HTTPRequest.hpp
         controllers/plugins/api/HTTPResponse.cpp
         controllers/plugins/api/HTTPResponse.hpp
+        controllers/plugins/api/Images.cpp
+        controllers/plugins/api/Images.hpp
         controllers/plugins/api/IOWrapper.cpp
         controllers/plugins/api/IOWrapper.hpp
         controllers/plugins/api/JSON.cpp
@@ -1012,6 +1016,7 @@ target_link_libraries(${LIBRARY_PROJECT}
         Qt${MAJOR_QT_VERSION}::Network
         Qt${MAJOR_QT_VERSION}::NetworkPrivate # for DELETE with a body (Kick)
         Qt${MAJOR_QT_VERSION}::Svg
+        Qt${MAJOR_QT_VERSION}::SvgWidgets
         Qt${MAJOR_QT_VERSION}::Concurrent
 
         LibCommuni::LibCommuni
@@ -1136,12 +1141,14 @@ if (BUILD_APP)
         endif()
         string(REPLACE ";" " " WINDEPLOYQT_COMMAND "${WINDEPLOYQT_COMMAND_ARGV}")
 
-        install(TARGETS ${EXECUTABLE_PROJECT} 
-            RUNTIME_DEPENDENCIES 
+        install(TARGETS ${EXECUTABLE_PROJECT}
+            RUNTIME_DEPENDENCIES
                 PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
-                POST_EXCLUDE_REGEXES ".*system32/.*\\.dll" 
+                POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
                 DIRECTORIES ${QT_BIN_DIR}
-            RUNTIME DESTINATION .)
+            COMPONENT ${PROJECT_NAME}
+            RUNTIME DESTINATION .
+        )
 
         # Hardcoded list of DLLs to install from Qt - these are marked as optional since they only exist for vcpkg
         install(FILES
@@ -1151,31 +1158,45 @@ if (BUILD_APP)
             ${QT_BIN_DIR}/libwebp.dll
             ${QT_BIN_DIR}/libsharpyuv.dll
             DESTINATION .
-            OPTIONAL)
+            COMPONENT ${PROJECT_NAME}
+            OPTIONAL
+        )
 
-        install(CODE "message(\"-- Running: ${WINDEPLOYQT_COMMAND} --dir \\\"\${CMAKE_INSTALL_PREFIX}\\\"\")")
-        install(CODE "execute_process(COMMAND ${WINDEPLOYQT_COMMAND} --dir \"\${CMAKE_INSTALL_PREFIX}\" COMMAND_ERROR_IS_FATAL ANY)")   
+        install(
+            CODE
+                "message(\"-- Running: ${WINDEPLOYQT_COMMAND} --dir \\\"\${CMAKE_INSTALL_PREFIX}\\\"\")"
+            COMPONENT ${PROJECT_NAME}
+        )
+        install(
+            CODE
+                "execute_process(COMMAND ${WINDEPLOYQT_COMMAND} --dir \"\${CMAKE_INSTALL_PREFIX}\" COMMAND_ERROR_IS_FATAL ANY)"
+            COMPONENT ${PROJECT_NAME}
+        )
     elseif (APPLE)
         install(TARGETS ${EXECUTABLE_PROJECT}
                 RUNTIME DESTINATION bin
                 BUNDLE DESTINATION bin
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib/static
+                COMPONENT ${PROJECT_NAME}
                 )
     else ()
         install(TARGETS ${EXECUTABLE_PROJECT}
                 RUNTIME DESTINATION bin
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib/static
+                COMPONENT ${PROJECT_NAME}
                 )
 
         install(FILES ${CMAKE_SOURCE_DIR}/resources/com.chatterino.chatterino.desktop
                 DESTINATION share/applications
+                COMPONENT ${PROJECT_NAME}
                 )
 
         install(FILES ${CMAKE_SOURCE_DIR}/resources/icon.png
                 RENAME com.chatterino.chatterino.png
                 DESTINATION share/icons/hicolor/256x256/apps
+                COMPONENT ${PROJECT_NAME}
                 )
     endif ()
 
@@ -1231,7 +1252,6 @@ target_link_libraries(${LIBRARY_PROJECT} PRIVATE ${VERSION_PROJECT})
 target_compile_definitions(${LIBRARY_PROJECT} PUBLIC
     CHATTERINO
     UNICODE
-    AB_CUSTOM_SETTINGS
     IRC_STATIC
     IRC_NAMESPACE=Communi
     $<$<BOOL:${WIN32}>:_WIN32_WINNT=0x0A00> # Windows 10
@@ -1240,6 +1260,9 @@ target_compile_definitions(${LIBRARY_PROJECT} PUBLIC
     $<$<BOOL:${WIN32}>:NOMINMAX>
     # Exclude some headers when including Windows.h
     $<$<BOOL:${WIN32}>:WIN32_LEAN_AND_MEAN>
+    # Don't allow the use of deprecated Boost.Asio functionality
+    # https://www.boost.org/doc/libs/latest/doc/html/boost_asio/using.html#boost_asio.using.macros
+    BOOST_ASIO_NO_DEPRECATED
     )
 
 set(_c2_qt_defs

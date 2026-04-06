@@ -140,6 +140,8 @@ struct Message {
 
     std::shared_ptr<ChannelPointReward> reward = nullptr;
 
+    uint32_t bits{0};
+
     /**
      * Clones this message.
      *

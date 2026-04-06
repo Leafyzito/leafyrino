@@ -168,6 +168,8 @@ private:
             if (this->isSubscribed(last))
             {
                 // we subscribed to this in the meantime
+                qCDebug(chatterinoLiveupdates)
+                    << "Already subscribed to" << last << "in the meantime";
                 continue;
             }
 
@@ -208,7 +210,7 @@ private:
         DebugCount::decrease(DebugObject::LiveUpdatesConnection);
         qCDebug(chatterinoLiveupdates) << "Connection" << id << "closed";
 
-        auto subs = std::move(it->second->subscriptions_);
+        auto subs = std::exchange(it->second->subscriptions_, {});
         bool wasOpen = it->second->isOpen();
 
         if (wasOpen)

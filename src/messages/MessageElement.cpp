@@ -149,6 +149,11 @@ void ImageElement::addToContainer(MessageLayoutContainer &container,
     }
 }
 
+ImagePtr ImageElement::image() const
+{
+    return this->image_;
+}
+
 std::unique_ptr<MessageElement> ImageElement::clone() const
 {
     auto el = std::make_unique<ImageElement>(this->image_, this->getFlags());
@@ -958,11 +963,7 @@ FontStyle TextElement::fontStyle() const noexcept
 
 void TextElement::appendText(QStringView text)
 {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    for (auto word : text.split(' '))  // creates a QList
-#else
     for (auto word : text.tokenize(u' '))
-#endif
     {
         this->words_.append(word.toString());
     }
@@ -970,9 +971,6 @@ void TextElement::appendText(QStringView text)
 
 void TextElement::appendText(const QString &text)
 {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    this->appendText(QStringView{text});
-#else
     qsizetype firstSpace = text.indexOf(u' ');
     if (firstSpace == -1)
     {
@@ -986,7 +984,6 @@ void TextElement::appendText(const QString &text)
     {
         this->words_.emplace_back(word.toString());
     }
-#endif
 }
 
 QJsonObject TextElement::toJson() const
@@ -1508,6 +1505,11 @@ std::unique_ptr<MessageElement> ScalingImageElement::clone() const
         std::make_unique<ScalingImageElement>(this->images_, this->getFlags());
     el->cloneFrom(*this);
     return el;
+}
+
+const ImageSet &ScalingImageElement::images() const
+{
+    return this->images_;
 }
 
 QJsonObject ScalingImageElement::toJson() const

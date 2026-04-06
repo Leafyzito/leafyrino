@@ -442,12 +442,22 @@ bool Image::loaded() const
 {
     assertInGuiThread();
 
+    if (!this->frames_)
+    {
+        return false;
+    }
+
     return this->frames_->current().has_value();
 }
 
 std::optional<QPixmap> Image::pixmapOrLoad() const
 {
     assertInGuiThread();
+
+    if (!this->frames_)
+    {
+        return std::nullopt;
+    }
 
     // Mark the image as just used.
     // Any time this Image is painted, this method is invoked.
@@ -488,12 +498,22 @@ bool Image::animated() const
 {
     assertInGuiThread();
 
+    if (!this->frames_)
+    {
+        return false;
+    }
+
     return this->frames_->animated();
 }
 
 int Image::width() const
 {
     assertInGuiThread();
+
+    if (!this->frames_)
+    {
+        return 0;
+    }
 
     if (auto pixmap = this->frames_->first())
     {
@@ -508,6 +528,11 @@ int Image::height() const
 {
     assertInGuiThread();
 
+    if (!this->frames_)
+    {
+        return 0;
+    }
+
     if (auto pixmap = this->frames_->first())
     {
         return static_cast<int>(pixmap->height() * this->scale_);
@@ -520,6 +545,11 @@ int Image::height() const
 QSizeF Image::size() const
 {
     assertInGuiThread();
+
+    if (!this->frames_)
+    {
+        return {0, 0};
+    }
 
     if (auto pixmap = this->frames_->first())
     {
@@ -639,6 +669,11 @@ void Image::actuallyLoad()
 void Image::expireFrames()
 {
     assertInGuiThread();
+    if (!this->frames_)
+    {
+        return;
+    }
+
     this->frames_->clear();
     this->shouldLoad_ = true;  // Mark as needing load again
 }

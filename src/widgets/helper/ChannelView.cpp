@@ -643,11 +643,6 @@ void ChannelView::scaleChangedEvent(float scale)
     if (this->goToBottom_)
     {
         auto factor = this->scale();
-#ifdef Q_OS_MACOS
-        factor = scale * 80.F /
-                 std::max<float>(
-                     0.01, this->logicalDpiX() * this->devicePixelRatioF());
-#endif
         this->goToBottom_->setFont(
             getApp()->getFonts()->getFont(FontStyle::UiMedium, factor));
     }
@@ -1898,11 +1893,7 @@ void ChannelView::wheelEvent(QWheelEvent *event)
     }
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 void ChannelView::enterEvent(QEnterEvent * /*event*/)
-#else
-void ChannelView::enterEvent(QEvent * /*event*/)
-#endif
 {
 }
 

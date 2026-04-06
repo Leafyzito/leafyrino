@@ -14,6 +14,7 @@
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "messages/MessageElement.hpp"
+#include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/twitch/eventsub/Controller.hpp"
 #include "providers/twitch/PubSubManager.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
@@ -27,6 +28,8 @@
 
 #include <QApplication>
 #include <QLoggingCategory>
+#include <QProcess>
+#include <QProcessEnvironment>
 #include <QString>
 
 using namespace Qt::StringLiterals;
@@ -242,6 +245,14 @@ QString debugTest(const CommandContext &ctx)
     {
         getApp()->getTwitchPubSub()->reconnect();
     }
+    else if (command == "7tv-reconnect")
+    {
+        getApp()->getSeventvEventAPI()->reconnect();
+    }
+    else if (command == "7tv-reconnect-random")
+    {
+        getApp()->getSeventvEventAPI()->reconnectRandom();
+    }
     else
     {
         ctx.channel->addSystemMessage(
@@ -250,5 +261,51 @@ QString debugTest(const CommandContext &ctx)
 
     return "";
 }
+
+#ifdef Q_OS_WIN
+QString relaunchWithConsole(const CommandContext &ctx)
+{
+    if (!ctx.channel)
+    {
+        return {};
+    }
+
+    const QString loggingRulesEnv = u"QT_LOGGING_RULES"_s;
+    const QString winDebugConsoleEnv = u"QT_WIN_DEBUG_CONSOLE"_s;
+
+    auto env = QProcessEnvironment::systemEnvironment();
+    if (ctx.words.size() > 1)
+    {
+        env.insert(loggingRulesEnv, ctx.words.mid(1).join(';'));
+    }
+    else if (!env.contains(loggingRulesEnv))
+    {
+        // by default, enable all debug logging
+        env.insert(loggingRulesEnv, "chatterino.*.debug=true");
+    }
+
+    getSettings()->requestSave();
+
+    QProcess proc;
+    proc.setProgram(qApp->applicationFilePath());
+    // https://doc.qt.io/qt-6/debug.html#environment-variables-recognized-by-qt
+    env.insert(winDebugConsoleEnv, "new");
+    proc.setProcessEnvironment(env);
+    if (proc.startDetached())
+    {
+        getSettings()->disableSave();  // only disable if the process started
+        QMetaObject::invokeMethod(
+            qApp,
+            [] {
+                QApplication::exit();
+            },
+            Qt::QueuedConnection);
+        return {};
+    }
+
+    ctx.channel->addSystemMessage("Failed to start process.");
+    return {};
+}
+#endif
 
 }  // namespace chatterino::commands

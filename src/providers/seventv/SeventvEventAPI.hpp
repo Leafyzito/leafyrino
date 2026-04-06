@@ -86,6 +86,9 @@ public:
     /// Otherwise, calling the destructor is sufficient.
     void stop();
 
+    void reconnect();
+    void reconnectRandom();
+
     /// Statistics about the opened/closed connections and received messages
     ///
     /// Used in tests.
