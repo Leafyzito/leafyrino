@@ -117,11 +117,11 @@ QString getVIPs(const CommandContext &ctx)
     else
     {
         QString target = ctx.channel->getName();
-        getIvr()->getVips2807Tools(
+        getIvr()->getModVip(
             target,
             [channel{ctx.channel}, twitchChannel{ctx.twitchChannel},
              target](auto result) {
-                if (result.isEmpty())
+                if (result.vips.isEmpty())
                 {
                     channel->addSystemMessage(
                         "This channel does not have any VIPs.");
@@ -129,16 +129,14 @@ QString getVIPs(const CommandContext &ctx)
                 }
 
                 std::vector<HelixVip> vips;
-                for (int i = 0; i < result.size(); i++)
+                for (int i = 0; i < result.vips.size(); i++)
                 {
                     QJsonObject vipJson;
+                    auto obj = result.vips.at(i).toObject();
 
-                    vipJson.insert("user_id",
-                                   result.at(i).toObject().value("id"));
-                    vipJson.insert("user_name", result.at(i).toObject().value(
-                                                    "displayName"));
-                    vipJson.insert("user_login",
-                                   result.at(i).toObject().value("login"));
+                    vipJson.insert("user_id", obj.value("id"));
+                    vipJson.insert("user_name", obj.value("displayName"));
+                    vipJson.insert("user_login", obj.value("login"));
 
                     HelixVip vip(vipJson);
 

@@ -98,11 +98,11 @@ QString getModerators(const CommandContext &ctx)
     else
     {
         QString target = ctx.channel->getName();
-        getIvr()->getMods2807Tools(
+        getIvr()->getModVip(
             target,
             [channel{ctx.channel}, twitchChannel{ctx.twitchChannel},
              target](auto result) {
-                if (result.isEmpty())
+                if (result.mods.isEmpty())
                 {
                     channel->addSystemMessage(
                         "This channel does not have any moderators.");
@@ -110,16 +110,14 @@ QString getModerators(const CommandContext &ctx)
                 }
 
                 std::vector<HelixModerator> mods;
-                for (int i = 0; i < result.size(); i++)
+                for (int i = 0; i < result.mods.size(); i++)
                 {
                     QJsonObject modJson;
+                    auto obj = result.mods.at(i).toObject();
 
-                    modJson.insert("user_id",
-                                   result.at(i).toObject().value("id"));
-                    modJson.insert("user_name", result.at(i).toObject().value(
-                                                    "displayName"));
-                    modJson.insert("user_login",
-                                   result.at(i).toObject().value("login"));
+                    modJson.insert("user_id", obj.value("id"));
+                    modJson.insert("user_name", obj.value("displayName"));
+                    modJson.insert("user_login", obj.value("login"));
 
                     HelixModerator moderator(modJson);
 
