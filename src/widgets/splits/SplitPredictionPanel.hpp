@@ -13,6 +13,7 @@
 #include <QEvent>
 #include <QPaintEvent>
 #include <QResizeEvent>
+#include <QShowEvent>
 #include <QString>
 #include <QTimer>
 
@@ -58,6 +59,7 @@ protected:
     void scaleChangedEvent(float scale) override;
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private:
     void installClickFocusesSplit(QWidget *root);
@@ -67,6 +69,7 @@ private:
     void resetPredictionUiState();
     void hidePanel();
     void refreshTopRowText();
+    void updateCollapsedElide();
     void updateExpandToggle();
     void updateStyleSheets();
     void updatePredictionIcon();

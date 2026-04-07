@@ -1021,9 +1021,56 @@ void SplitPredictionPanel::refreshTopRowText()
         return;
     }
 
+    this->updateCollapsedElide();
+}
+
+void SplitPredictionPanel::updateCollapsedElide()
+{
+    if (this->collapsedTitle_ == nullptr ||
+        this->lastTitleForElide_.isEmpty() || this->expanded_)
+    {
+        return;
+    }
+
+    // Mirror `SplitPinnedMessagePanel` collapsed width behavior:
+    // derive available width from the actual top-row layout (not magic numbers),
+    // and avoid early-layout width=0 producing overly aggressive elides.
+    int avail = 0;
+    auto *topRow = this->collapsedTitle_->parentWidget();
+    auto *hl = topRow ? qobject_cast<QHBoxLayout *>(topRow->layout()) : nullptr;
+    const int rowW = topRow ? topRow->width() : this->width();
+
+    if (rowW > 0 && this->iconLabel_ != nullptr &&
+        this->dismissButton_ != nullptr && this->expandButton_ != nullptr)
+    {
+        const QMargins cm = hl ? hl->contentsMargins() : QMargins{};
+        const int spacing = hl ? hl->spacing() : 4;
+        const int iconW = this->iconLabel_->width() > 0
+                              ? this->iconLabel_->width()
+                              : splitHeaderIconColumnWidth(this->scale());
+        const int dismissW = this->dismissButton_->width() > 0
+                                 ? this->dismissButton_->width()
+                                 : this->dismissButton_->sizeHint().width();
+        const int expandW = this->expandButton_->width() > 0
+                                ? this->expandButton_->width()
+                                : this->expandButton_->sizeHint().width();
+        avail = rowW - cm.left() - cm.right() - iconW - dismissW - expandW -
+                3 * spacing;
+    }
+    else if (this->width() > 0)
+    {
+        avail = this->width() - 100;
+    }
+    else
+    {
+        avail = this->collapsedTitle_->width();
+    }
+
+    avail = std::max(40, avail);
+
     const QFontMetrics fm(this->collapsedTitle_->font());
-    const auto elided = fm.elidedText(this->lastTitleForElide_, Qt::ElideRight,
-                                      std::max(80, this->width() - 216));
+    const QString elided =
+        fm.elidedText(this->lastTitleForElide_, Qt::ElideRight, avail);
     this->collapsedTitle_->setText(elided.isEmpty() ? this->lastTitleForElide_
                                                     : elided);
 }
@@ -1208,6 +1255,14 @@ void SplitPredictionPanel::resizeEvent(QResizeEvent *event)
 {
     BaseWidget::resizeEvent(event);
     this->refreshTopRowText();
+}
+
+void SplitPredictionPanel::showEvent(QShowEvent *event)
+{
+    BaseWidget::showEvent(event);
+    QTimer::singleShot(0, this, [this] {
+        this->updateCollapsedElide();
+    });
 }
 
 void SplitPredictionPanel::syncPredictionBetRow()
