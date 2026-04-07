@@ -265,8 +265,11 @@ LoginDialog::LoginDialog(QWidget *parent)
     this->setLayout(&this->ui_.mainLayout);
     this->ui_.mainLayout.addWidget(&this->ui_.tabWidget);
 
+    this->ui_.tabWidget.addTab(&this->ui_.twitchDevice, "Twitch (Device)");
     this->ui_.tabWidget.addTab(&this->ui_.basic, "Basic");
     this->ui_.tabWidget.addTab(&this->ui_.advanced, "Advanced");
+    this->ui_.tabWidget.addTab(&this->ui_.kick, "Kick");
+    this->ui_.tabWidget.setCurrentIndex(0);
 
     this->ui_.buttonBox.setStandardButtons(QDialogButtonBox::Close);
 
@@ -276,9 +279,6 @@ LoginDialog::LoginDialog(QWidget *parent)
                      });
 
     this->ui_.mainLayout.addWidget(&this->ui_.buttonBox);
-
-    this->ui_.tabWidget.addTab(&this->ui_.twitchDevice, "Twitch (Device)");
-    this->ui_.tabWidget.addTab(&this->ui_.kick, "Kick");
 }
 
 }  // namespace chatterino
