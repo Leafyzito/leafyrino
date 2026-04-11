@@ -77,6 +77,11 @@ private:
     void onPanelShown();
     void fetchChannelPoints();
     void syncPredictionBetRow();
+    void updateYourPickSummaryLabel();
+    void rememberViewerPickForEvent(const QString &eventId,
+                                    const QString &outcomeId, int points);
+    void clearViewerPickCache();
+    bool baseBetContextForBetting() const;
     void refreshBetOutcomeButtonStyles();
     void placePredictionBet(int outcomeIndex);
 
@@ -132,6 +137,13 @@ private:
     QString lingerEventId_;
     QString dismissedForPredictionId_;
     bool lingering_{false};
+    bool predictionUiLiveMode_{false};
+
+    QLabel *yourPickSummaryLabel_{};
+
+    QString viewerPickCacheEventId_;
+    QString viewerPickCacheOutcomeId_;
+    int viewerPickCachePoints_{0};
 };
 
 }  // namespace chatterino

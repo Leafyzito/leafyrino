@@ -39,7 +39,7 @@ namespace {
 
 using namespace chatterino;
 
-constexpr int POLL_INTERVAL_MS = 10'000;
+constexpr int POLL_INTERVAL_MS = 5'000;
 constexpr int LINGER_MS = 30'000;
 
 bool isResolvedLike(const HelixPrediction &p)
@@ -191,6 +191,33 @@ QColor twitchOutcomeAccentColor(const QString &gqlColor, const QColor &fallback)
     return fallback;
 }
 
+bool predictionOutcomeIdsEqual(const QString &a, const QString &b)
+{
+    const QString xa = a.trimmed();
+    const QString xb = b.trimmed();
+    if (xa.isEmpty() || xb.isEmpty())
+    {
+        return false;
+    }
+    if (xa.compare(xb, Qt::CaseInsensitive) == 0)
+    {
+        return true;
+    }
+    return xa.endsWith(xb, Qt::CaseInsensitive) ||
+           xb.endsWith(xa, Qt::CaseInsensitive);
+}
+
+bool viewerPickMatchesOutcomes(const HelixPrediction &p, const QString &pickRaw)
+{
+    const QString pick = pickRaw.trimmed();
+    if (pick.isEmpty() || p.outcomes.size() != 2)
+    {
+        return false;
+    }
+    return predictionOutcomeIdsEqual(pick, p.outcomes[0].id) ||
+           predictionOutcomeIdsEqual(pick, p.outcomes[1].id);
+}
+
 QString betOutcomeButtonStyleSheet(const QColor &accent,
                                    const QColor &labelColor, bool enabled)
 {
@@ -319,6 +346,10 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
 
     this->statusLabel_ = new QLabel(this->expandedWidget_);
 
+    this->yourPickSummaryLabel_ = new QLabel(this->expandedWidget_);
+    this->yourPickSummaryLabel_->setWordWrap(true);
+    this->yourPickSummaryLabel_->hide();
+
     this->outcomeRow_ = new QWidget(this->expandedWidget_);
     {
         auto *hl = new QHBoxLayout(this->outcomeRow_);
@@ -361,6 +392,7 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
 
     this->expandedLayout_->addWidget(this->predictionQuestionLabel_);
     this->expandedLayout_->addWidget(this->statusLabel_);
+    this->expandedLayout_->addWidget(this->yourPickSummaryLabel_);
     this->expandedLayout_->addWidget(this->outcomeRow_);
 
     this->poolBar_ = new PredictionPoolBar(this->expandedWidget_);
@@ -672,6 +704,7 @@ void SplitPredictionPanel::fetchPredictions()
                 this->lingerTimer_.stop();
                 this->lingering_ = false;
                 this->lingerEventId_.clear();
+                this->clearViewerPickCache();
             }
 
             if (isResolvedLike(pr))
@@ -702,7 +735,8 @@ void SplitPredictionPanel::fetchPredictions()
                 const auto &prev = *this->lastLivePrediction_;
                 if (prev.id == merged.id &&
                     !prev.viewerPredictionOutcomeId.trimmed().isEmpty() &&
-                    merged.viewerPredictionOutcomeId.trimmed().isEmpty())
+                    !viewerPickMatchesOutcomes(
+                        merged, merged.viewerPredictionOutcomeId))
                 {
                     merged.viewerPredictionOutcomeId =
                         prev.viewerPredictionOutcomeId;
@@ -710,6 +744,13 @@ void SplitPredictionPanel::fetchPredictions()
                 }
             }
             this->lastLivePrediction_ = merged;
+            if (viewerPickMatchesOutcomes(merged,
+                                          merged.viewerPredictionOutcomeId))
+            {
+                this->rememberViewerPickForEvent(
+                    merged.id, merged.viewerPredictionOutcomeId.trimmed(),
+                    merged.viewerPredictionPoints);
+            }
             this->currentDisplayId_ = pr.id;
             this->renderPrediction(merged, true);
             this->show();
@@ -804,6 +845,8 @@ void SplitPredictionPanel::fetchChannelPoints()
 void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
                                             bool liveMode)
 {
+    this->predictionUiLiveMode_ = liveMode;
+
     if (!getSettings()->showPredictionPanel)
     {
         this->hidePanel();
@@ -974,6 +1017,13 @@ void SplitPredictionPanel::resetPredictionUiState()
     {
         this->outcomeWon1_->hide();
     }
+    if (this->yourPickSummaryLabel_ != nullptr)
+    {
+        this->yourPickSummaryLabel_->hide();
+        this->yourPickSummaryLabel_->clear();
+    }
+    this->predictionUiLiveMode_ = false;
+    this->clearViewerPickCache();
     this->hide();
 }
 
@@ -1100,10 +1150,10 @@ void SplitPredictionPanel::updateStyleSheets()
         QStringLiteral("QLabel { color: %1; }").arg(textCss);
     for (auto *lab :
          {this->collapsedTitle_, this->predictionQuestionLabel_,
-          this->statusLabel_, this->outcomeTitle0_, this->outcomeDash0_,
-          this->outcomePct0_, this->outcomeTitle1_, this->outcomeDash1_,
-          this->outcomePct1_, this->yourPointsLabel_, this->yourPointsValue_,
-          this->betAmountCaption_})
+          this->statusLabel_, this->yourPickSummaryLabel_, this->outcomeTitle0_,
+          this->outcomeDash0_, this->outcomePct0_, this->outcomeTitle1_,
+          this->outcomeDash1_, this->outcomePct1_, this->yourPointsLabel_,
+          this->yourPointsValue_, this->betAmountCaption_})
     {
         if (lab != nullptr)
         {
@@ -1194,12 +1244,12 @@ void SplitPredictionPanel::scaleChangedEvent(float scale)
     f.setPointSize(std::max(8, fs));
     for (QWidget *w : std::initializer_list<QWidget *>{
              this->collapsedTitle_, this->predictionQuestionLabel_,
-             this->statusLabel_, this->outcomeTitle0_, this->outcomeWon0_,
-             this->outcomeDash0_, this->outcomePct0_, this->outcomeTitle1_,
-             this->outcomeWon1_, this->outcomeDash1_, this->outcomePct1_,
-             this->yourPointsLabel_, this->yourPointsValue_,
-             this->betAmountCaption_, this->betAmountSpin_, this->betButton0_,
-             this->betButton1_})
+             this->statusLabel_, this->yourPickSummaryLabel_,
+             this->outcomeTitle0_, this->outcomeWon0_, this->outcomeDash0_,
+             this->outcomePct0_, this->outcomeTitle1_, this->outcomeWon1_,
+             this->outcomeDash1_, this->outcomePct1_, this->yourPointsLabel_,
+             this->yourPointsValue_, this->betAmountCaption_,
+             this->betAmountSpin_, this->betButton0_, this->betButton1_})
     {
         if (w != nullptr)
         {
@@ -1265,10 +1315,128 @@ void SplitPredictionPanel::showEvent(QShowEvent *event)
     });
 }
 
+void SplitPredictionPanel::clearViewerPickCache()
+{
+    this->viewerPickCacheEventId_.clear();
+    this->viewerPickCacheOutcomeId_.clear();
+    this->viewerPickCachePoints_ = 0;
+}
+
+void SplitPredictionPanel::rememberViewerPickForEvent(const QString &eventId,
+                                                      const QString &outcomeId,
+                                                      int points)
+{
+    const QString o = outcomeId.trimmed();
+    if (eventId.isEmpty() || o.isEmpty())
+    {
+        return;
+    }
+    this->viewerPickCacheEventId_ = eventId;
+    this->viewerPickCacheOutcomeId_ = o;
+    this->viewerPickCachePoints_ = points;
+}
+
+bool SplitPredictionPanel::baseBetContextForBetting() const
+{
+    if (!getSettings()->showPredictionPanel ||
+        this->twitchChannel_ == nullptr ||
+        getApp()->getAccounts()->twitch.getCurrent()->isAnon() ||
+        this->lingering_ || !this->lastLivePrediction_.has_value())
+    {
+        return false;
+    }
+    const auto &pre = *this->lastLivePrediction_;
+    return pre.status.compare(QStringLiteral("ACTIVE"), Qt::CaseInsensitive) ==
+               0 &&
+           this->predictionBettingEnds_.isValid() &&
+           QDateTime::currentDateTimeUtc().secsTo(
+               this->predictionBettingEnds_) > 0 &&
+           pre.outcomes.size() == 2;
+}
+
+void SplitPredictionPanel::updateYourPickSummaryLabel()
+{
+    if (this->yourPickSummaryLabel_ == nullptr)
+    {
+        return;
+    }
+
+    const auto clearSummary = [this] {
+        this->yourPickSummaryLabel_->hide();
+        this->yourPickSummaryLabel_->clear();
+    };
+
+    if (!getSettings()->showPredictionPanel ||
+        this->twitchChannel_ == nullptr ||
+        getApp()->getAccounts()->twitch.getCurrent()->isAnon() ||
+        this->lingering_ || !this->predictionUiLiveMode_)
+    {
+        clearSummary();
+        return;
+    }
+
+    if (!this->lastLivePrediction_.has_value())
+    {
+        clearSummary();
+        return;
+    }
+
+    const auto &pr = *this->lastLivePrediction_;
+    if (pr.outcomes.size() != 2)
+    {
+        clearSummary();
+        return;
+    }
+
+    QString pickId = pr.viewerPredictionOutcomeId.trimmed();
+    int pickPts = pr.viewerPredictionPoints;
+    if (pickId.isEmpty() || !viewerPickMatchesOutcomes(pr, pickId))
+    {
+        if (pr.id == this->viewerPickCacheEventId_)
+        {
+            pickId = this->viewerPickCacheOutcomeId_.trimmed();
+            pickPts = this->viewerPickCachePoints_;
+        }
+    }
+    if (pickId.isEmpty())
+    {
+        clearSummary();
+        return;
+    }
+
+    const bool baseBetContext = this->baseBetContextForBetting();
+
+    if (baseBetContext || this->betInFlight_)
+    {
+        clearSummary();
+        return;
+    }
+
+    QString title;
+    for (const auto &o : pr.outcomes)
+    {
+        if (predictionOutcomeIdsEqual(pickId, o.id))
+        {
+            title = o.title;
+            break;
+        }
+    }
+    if (title.isEmpty())
+    {
+        clearSummary();
+        return;
+    }
+
+    this->yourPickSummaryLabel_->setText(
+        QStringLiteral("Your pick - %1 (%2 pts)").arg(title).arg(pickPts));
+    this->yourPickSummaryLabel_->show();
+}
+
 void SplitPredictionPanel::syncPredictionBetRow()
 {
     if (this->betRow_ == nullptr)
     {
+        this->updateYourPickSummaryLabel();
         return;
     }
 
@@ -1281,38 +1449,26 @@ void SplitPredictionPanel::syncPredictionBetRow()
         {
             this->betRow_->hide();
         }
+        this->updateYourPickSummaryLabel();
         return;
     }
 
-    bool baseBetContext = false;
-    if (getSettings()->showPredictionPanel && this->twitchChannel_ != nullptr &&
-        !getApp()->getAccounts()->twitch.getCurrent()->isAnon() &&
-        !this->lingering_)
-    {
-        const auto &pre = *this->lastLivePrediction_;
-        baseBetContext = pre.status.compare(QStringLiteral("ACTIVE"),
-                                            Qt::CaseInsensitive) == 0 &&
-                         this->predictionBettingEnds_.isValid() &&
-                         QDateTime::currentDateTimeUtc().secsTo(
-                             this->predictionBettingEnds_) > 0 &&
-                         pre.outcomes.size() == 2;
-    }
+    const bool baseBetContext = this->baseBetContextForBetting();
 
     if (!baseBetContext && !this->betInFlight_)
     {
         this->betRow_->hide();
+        this->updateYourPickSummaryLabel();
         return;
     }
 
     const auto &pr = *this->lastLivePrediction_;
     const QString pickId = pr.viewerPredictionOutcomeId.trimmed();
     const bool hasPick = !pickId.isEmpty();
-    const QString id0 = pr.outcomes[0].id.trimmed();
-    const QString id1 = pr.outcomes[1].id.trimmed();
     const bool picked0 =
-        hasPick && pickId.compare(id0, Qt::CaseInsensitive) == 0;
+        hasPick && predictionOutcomeIdsEqual(pickId, pr.outcomes[0].id);
     const bool picked1 =
-        hasPick && pickId.compare(id1, Qt::CaseInsensitive) == 0;
+        hasPick && predictionOutcomeIdsEqual(pickId, pr.outcomes[1].id);
 
     const bool canSpend = this->lastChannelPointsBalance_.has_value() &&
                           *this->lastChannelPointsBalance_ >= kBetMin;
@@ -1323,6 +1479,7 @@ void SplitPredictionPanel::syncPredictionBetRow()
     if (!showRow)
     {
         this->betRow_->hide();
+        this->updateYourPickSummaryLabel();
         return;
     }
 
@@ -1392,6 +1549,7 @@ void SplitPredictionPanel::syncPredictionBetRow()
     this->betButton1_->setEnabled(canBet1);
 
     this->refreshBetOutcomeButtonStyles();
+    this->updateYourPickSummaryLabel();
 }
 
 void SplitPredictionPanel::refreshBetOutcomeButtonStyles()
@@ -1437,8 +1595,8 @@ void SplitPredictionPanel::placePredictionBet(int outcomeIndex)
     if (!existingPick.isEmpty())
     {
         const QString chosenId =
-            pr.outcomes[static_cast<size_t>(outcomeIndex)].id.trimmed();
-        if (existingPick.compare(chosenId, Qt::CaseInsensitive) != 0)
+            pr.outcomes[static_cast<size_t>(outcomeIndex)].id;
+        if (!predictionOutcomeIdsEqual(existingPick, chosenId))
         {
             return;
         }
@@ -1486,13 +1644,16 @@ void SplitPredictionPanel::placePredictionBet(int outcomeIndex)
             {
                 auto &mutablePred = *this->lastLivePrediction_;
                 const QString o = outcomeId.trimmed();
-                if (mutablePred.viewerPredictionOutcomeId.trimmed().compare(
-                        o, Qt::CaseInsensitive) == 0 ||
-                    mutablePred.viewerPredictionOutcomeId.trimmed().isEmpty())
+                const QString cur =
+                    mutablePred.viewerPredictionOutcomeId.trimmed();
+                if (cur.isEmpty() || predictionOutcomeIdsEqual(cur, o))
                 {
                     mutablePred.viewerPredictionOutcomeId = outcomeId;
                     mutablePred.viewerPredictionPoints += points;
                 }
+                this->rememberViewerPickForEvent(
+                    eventId, mutablePred.viewerPredictionOutcomeId.trimmed(),
+                    mutablePred.viewerPredictionPoints);
             }
             this->statusLabel_->setText(QStringLiteral("Prediction placed"));
             this->syncPredictionBetRow();

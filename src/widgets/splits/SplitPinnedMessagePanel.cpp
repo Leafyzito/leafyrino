@@ -36,7 +36,7 @@ namespace {
 
 using namespace chatterino;
 
-constexpr int POLL_INTERVAL_MS = 10'000;
+constexpr int POLL_INTERVAL_MS = 5'000;
 
 QString formatPinnedLine(const TwitchGql::PinnedChatMessage &m)
 {
