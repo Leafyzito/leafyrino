@@ -1217,10 +1217,26 @@ void UserInfoPopup::updateUserData()
                     }
                     else if (subageInfo.isSubbed)
                     {
-                        this->ui_.subageLabel->setText(
+                        auto labelText =
                             QString("★ Tier %1 - Subscribed for %2 months")
                                 .arg(subageInfo.subTier)
-                                .arg(subageInfo.totalSubMonths));
+                                .arg(subageInfo.totalSubMonths);
+
+                        const auto endsAt = QDateTime::fromString(
+                            subageInfo.endsAt, Qt::ISODate);
+                        const auto now = QDateTime::currentDateTimeUtc();
+                        if (endsAt.isValid() && endsAt > now)
+                        {
+                            this->ui_.subageLabel->setToolTip(
+                                QString("Ends in: %1\nEnds at: %2")
+                                    .arg(
+                                        formatLongFriendlyDuration(now, endsAt))
+                                    .arg(endsAt.toUTC().toString(
+                                        "yyyy-MM-dd HH:mm:ss 'UTC'")));
+                            this->ui_.subageLabel->setMouseTracking(true);
+                        }
+
+                        this->ui_.subageLabel->setText(labelText);
                     }
                     else if (subageInfo.totalSubMonths)
                     {
