@@ -557,6 +557,7 @@ void SplitPredictionPanel::setTwitchChannel(TwitchChannel *channel)
     }
 
     this->channelConnections_.managedConnect(channel->roomIdAssigned, [this] {
+        this->startOrStopTimer();
         this->refresh();
     });
     this->channelConnections_.managedConnect(channel->destroyed, [this] {
