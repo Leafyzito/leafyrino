@@ -287,6 +287,8 @@ set(SOURCE_FILES
         controllers/plugins/api/Message.hpp
         controllers/plugins/api/WebSocket.cpp
         controllers/plugins/api/WebSocket.hpp
+        controllers/plugins/api/WindowManager.cpp
+        controllers/plugins/api/WindowManager.hpp
         controllers/plugins/ConnectionManager.cpp
         controllers/plugins/ConnectionManager.hpp
         controllers/plugins/LuaAPI.cpp
@@ -565,6 +567,8 @@ set(SOURCE_FILES
 
         singletons/CrashHandler.cpp
         singletons/CrashHandler.hpp
+        singletons/FileLogger.cpp
+        singletons/FileLogger.hpp
         singletons/Fonts.cpp
         singletons/Fonts.hpp
         singletons/ImageUploader.cpp
@@ -1457,6 +1461,13 @@ else ()
         )
     endif()
 endif ()
+
+# Extra Clang warnings
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(${LIBRARY_PROJECT} PUBLIC
+        -Wrange-loop-analysis
+    )
+endif()
 
 if(CHATTERINO_ENABLE_LTO)
     message(STATUS "Enabling LTO for ${LIBRARY_PROJECT}")

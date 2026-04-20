@@ -353,7 +353,7 @@ TEST(Filters, Evaluation)
 
 TEST(Filters, Identifier)
 {
-    for (const auto &[identifier, _] : VALID_IDENTIFIERS_MAP.asKeyValueRange())
+    for (const auto [identifier, _] : VALID_IDENTIFIERS_MAP.asKeyValueRange())
     {
         auto expr = createIdentifierExpression(identifier);
         ASSERT_TRUE(isWellTyped(expr->synthesizeType()))
