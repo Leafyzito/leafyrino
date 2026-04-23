@@ -39,6 +39,7 @@
 #include "util/DistanceBetweenPoints.hpp"
 #include "util/Helpers.hpp"
 #include "util/IncognitoBrowser.hpp"
+#include "util/MultiChannel.hpp"
 #include "util/QMagicEnum.hpp"
 #include "util/Twitch.hpp"
 #include "widgets/buttons/LabelButton.hpp"
@@ -722,6 +723,9 @@ void ChannelView::layoutVisibleMessages(
         auto y = -(messages[start]->getHeight() *
                    (fmod(this->scrollBar_->getRelativeCurrentValue(), 1)));
 
+        auto [selectedChannel, mcFlags] = this->getMultiChannelInfo();
+        auto layoutFlags = flags | mcFlags;
+
         for (auto i = start; i < messages.size() && y <= this->height(); i++)
         {
             const auto &message = messages[i];
@@ -729,11 +733,13 @@ void ChannelView::layoutVisibleMessages(
             redrawRequired |= message->layout(
                 {
                     .messageColors = this->messageColors_,
-                    .flags = flags,
+                    .flags = layoutFlags,
                     .width = layoutWidth,
                     .scale = this->scale(),
                     .imageScale = this->scale() *
                                   static_cast<float>(this->devicePixelRatio()),
+                    .selectedChannel = selectedChannel,
+                    .message = *message->getMessage(),
                 },
                 this->bufferInvalidationQueued_);
 
@@ -762,6 +768,8 @@ void ChannelView::updateScrollbar(const std::vector<MessageLayoutPtr> &messages,
     auto flags = this->getFlags();
     auto layoutWidth = this->getLayoutWidth();
     auto showScrollbar = false;
+    auto [selectedChannel, mcFlags] = this->getMultiChannelInfo();
+    flags = flags | mcFlags;
 
     // convert i to int since it checks >= 0
     for (auto i = int(messages.size()) - 1; i >= 0; i--)
@@ -776,6 +784,8 @@ void ChannelView::updateScrollbar(const std::vector<MessageLayoutPtr> &messages,
                 .scale = this->scale(),
                 .imageScale = this->scale() *
                               static_cast<float>(this->devicePixelRatio()),
+                .selectedChannel = selectedChannel,
+                .message = *message->getMessage(),
             },
             false);
 
@@ -934,6 +944,49 @@ ChannelPtr ChannelView::channel() const
 ChannelPtr ChannelView::underlyingChannel() const
 {
     return this->underlyingChannel_;
+}
+
+ChannelPtr ChannelView::selectedChannel() const
+{
+    if (auto *mc = dynamic_cast<MultiChannel *>(this->underlyingChannel_.get()))
+    {
+        const auto *active = mc->activeChannel();
+        if (active)
+        {
+            return active->channel;
+        }
+    }
+    return this->underlyingChannel_;
+}
+
+std::pair<Channel *, MessageElementFlags> ChannelView::getMultiChannelInfo()
+    const
+{
+    Channel *selectedChannel = this->underlyingChannel_.get();
+    MessageElementFlags flags{};
+    if (auto *mc = dynamic_cast<MultiChannel *>(selectedChannel))
+    {
+        const auto *active = mc->activeChannel();
+        if (active)
+        {
+            selectedChannel = active->channel.get();
+        }
+        switch (mc->indicatorMode())
+        {
+            case MultiChannelIndicatorMode::None:
+                break;
+            case MultiChannelIndicatorMode::PlatformBadgeIfUnselected:
+                flags.set(MessageElementFlag::PlatformBadgeIfUnselected);
+                break;
+            case MultiChannelIndicatorMode::PlatformBadgeAlways:
+                flags.set(MessageElementFlag::PlatformBadgeAlways);
+                break;
+            case MultiChannelIndicatorMode::ChannelName:
+                flags.set(MessageElementFlag::ChannelName);
+                break;
+        }
+    }
+    return {selectedChannel, flags};
 }
 
 bool ChannelView::showScrollbarHighlights() const
@@ -1803,6 +1856,10 @@ void ChannelView::wheelEvent(QWheelEvent *event)
         int i = std::min<int>(int(desired - this->scrollBar_->getMinimum()),
                               snapshotLength - 1);
 
+        auto flags = this->getFlags();
+        auto [selectedChannel, mcFlags] = this->getMultiChannelInfo();
+        flags = flags | mcFlags;
+
         if (delta > 0)
         {
             qreal scrollFactor = fmod(desired, 1);
@@ -1831,12 +1888,14 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                     snapshot[i - 1]->layout(
                         {
                             .messageColors = this->messageColors_,
-                            .flags = this->getFlags(),
+                            .flags = flags,
                             .width = this->getLayoutWidth(),
                             .scale = this->scale(),
                             .imageScale =
                                 this->scale() *
                                 static_cast<float>(this->devicePixelRatio()),
+                            .selectedChannel = selectedChannel,
+                            .message = *snapshot[i - 1]->getMessage(),
                         },
                         false);
                     scrollFactor = 1;
@@ -1874,12 +1933,14 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                     snapshot[i + 1]->layout(
                         {
                             .messageColors = this->messageColors_,
-                            .flags = this->getFlags(),
+                            .flags = flags,
                             .width = this->getLayoutWidth(),
                             .scale = this->scale(),
                             .imageScale =
                                 this->scale() *
                                 static_cast<float>(this->devicePixelRatio()),
+                            .selectedChannel = selectedChannel,
+                            .message = *snapshot[i + 1]->getMessage(),
                         },
                         false);
 
@@ -3052,7 +3113,8 @@ void ChannelView::hideEvent(QHideEvent * /*event*/)
 }
 
 void ChannelView::showUserInfoPopup(const QString &userName,
-                                    QString alternativePopoutChannel)
+                                    MessagePlatform platform,
+                                    const QString &alternativePopoutChannel)
 {
     if (!this->split_)
     {
@@ -3068,7 +3130,7 @@ void ChannelView::showUserInfoPopup(const QString &userName,
     auto openingChannel = this->hasSourceChannel() ? this->sourceChannel_
                                                    : this->underlyingChannel_;
     ChannelPtr contextChannel;
-    if (openingChannel && openingChannel->isKickChannel())
+    if (openingChannel && platform == MessagePlatform::Kick)
     {
         contextChannel =
             getApp()->getKickChatServer()->findBySlug(alternativePopoutChannel);
@@ -3131,7 +3193,8 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
         case Link::UserWhisper:
         case Link::UserInfo: {
             auto user = link.value;
-            this->showUserInfoPopup(user, layout->getMessage()->channelName);
+            this->showUserInfoPopup(user, layout->getMessage()->platform,
+                                    layout->getMessage()->channelName);
         }
         break;
 
@@ -3203,6 +3266,12 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
                 openPages.push_back(
                     static_cast<SplitContainer *>(nb.getPageAt(i)));
             }
+            QStringView searchName = link.value;
+            bool searchKickChannel = link.value.startsWith(u":kick:");
+            if (searchKickChannel)
+            {
+                searchName = searchName.sliced(sizeof(":kick:") - 1);
+            }
 
             for (auto *page : openPages)
             {
@@ -3210,9 +3279,11 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
 
                 // Search for channel matching link in page/split container
                 // TODO(zneix): Consider opening a channel if it's closed (?)
-                auto it = std::find_if(
-                    splits.begin(), splits.end(), [link](Split *split) {
-                        return split->getChannel()->getName() == link.value;
+                auto it = std::ranges::find_if(
+                    splits, [searchName, searchKickChannel](Split *split) {
+                        return split->getChannel()->getName() == searchName &&
+                               split->getChannel()->isKickChannel() ==
+                                   searchKickChannel;
                     });
 
                 if (it != splits.end())
@@ -3401,9 +3472,10 @@ void ChannelView::setInputReply(const MessagePtr &message)
     if (!message->replyThread)
     {
         // Message did not already have a thread attached, try to find or create one
-        auto *tc =
-            dynamic_cast<TwitchChannel *>(this->underlyingChannel_.get());
-        auto *kc = dynamic_cast<KickChannel *>(this->underlyingChannel_.get());
+        auto chan = this->selectedChannel();
+
+        auto *tc = dynamic_cast<TwitchChannel *>(chan.get());
+        auto *kc = dynamic_cast<KickChannel *>(chan.get());
 
         if (tc)
         {
@@ -3466,13 +3538,19 @@ bool ChannelView::canReplyToMessages() const
 
     assert(this->channel_ != nullptr);
 
-    if (!this->channel_->isTwitchOrKickChannel())
+    auto chan = this->selectedChannel();
+    if (!chan)
     {
         return false;
     }
 
-    if (this->channel_->getType() == Channel::Type::TwitchWhispers ||
-        this->channel_->getType() == Channel::Type::TwitchLive)
+    if (!chan->isTwitchOrKickChannel())
+    {
+        return false;
+    }
+
+    if (chan->getType() == Channel::Type::TwitchWhispers ||
+        chan->getType() == Channel::Type::TwitchLive)
     {
         return false;
     }

@@ -64,6 +64,7 @@ public:
 
     IndirectChannel getIndirectChannel();
     ChannelPtr getChannel() const;
+    ChannelPtr getSelectedChannel() const;
     void setChannel(IndirectChannel newChannel);
 
     void setFilters(const QList<QUuid> ids);

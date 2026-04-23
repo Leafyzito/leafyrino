@@ -25,6 +25,7 @@
 #include "util/FormatTime.hpp"
 #include "util/Helpers.hpp"
 #include "util/LayoutHelper.hpp"
+#include "util/MultiChannel.hpp"
 #include "widgets/buttons/DrawnButton.hpp"
 #include "widgets/buttons/LabelButton.hpp"
 #include "widgets/buttons/SvgButton.hpp"
@@ -490,10 +491,9 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                     this->split_, &Split::setFiltersDialog);
     menu->addSeparator();
 
-    auto *twitchChannel =
-        dynamic_cast<TwitchChannel *>(this->split_->getChannel().get());
-    auto *kickChannel =
-        dynamic_cast<KickChannel *>(this->split_->getChannel().get());
+    auto selected = this->split_->getSelectedChannel();
+    auto *twitchChannel = dynamic_cast<TwitchChannel *>(selected.get());
+    auto *kickChannel = dynamic_cast<KickChannel *>(selected.get());
 
     if (twitchChannel || kickChannel)
     {
@@ -680,12 +680,13 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                 moreMenu, &QMenu::aboutToShow, this, [action, this]() {
                     action->setChecked(
                         getApp()->getNotifications()->isChannelNotified(
-                            this->split_->getChannel()->getName(),
+                            this->split_->getSelectedChannel()->getName(),
                             Platform::Twitch));
                 });
             QObject::connect(action, &QAction::triggered, this, [this]() {
                 getApp()->getNotifications()->updateChannelNotification(
-                    this->split_->getChannel()->getName(), Platform::Twitch);
+                    this->split_->getSelectedChannel()->getName(),
+                    Platform::Twitch);
             });
 
             moreMenu->addAction(action);
@@ -709,11 +710,11 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
             QObject::connect(
                 moreMenu, &QMenu::aboutToShow, this, [action, this]() {
                     action->setChecked(getSettings()->isMutedChannel(
-                        this->split_->getChannel()->getName()));
+                        this->split_->getSelectedChannel()->getName()));
                 });
             QObject::connect(action, &QAction::triggered, this, [this]() {
                 getSettings()->toggleMutedChannel(
-                    this->split_->getChannel()->getName());
+                    this->split_->getSelectedChannel()->getName());
             });
 
             moreMenu->addAction(action);
@@ -832,10 +833,10 @@ std::unique_ptr<QMenu> SplitHeader::createChatModeMenu()
 void SplitHeader::updateRoomModes()
 {
     assert(this->modeButton_ != nullptr);
+    auto chan = this->split_->getSelectedChannel();
 
     // Update the mode button
-    if (auto *twitchChannel =
-            dynamic_cast<TwitchChannel *>(this->split_->getChannel().get()))
+    if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(chan.get()))
     {
         this->modeButton_->setEnabled(twitchChannel->hasModRights());
 
@@ -868,8 +869,7 @@ void SplitHeader::updateRoomModes()
 
         // Update the mode button menu actions
     }
-    else if (auto *kc =
-                 dynamic_cast<KickChannel *>(this->split_->getChannel().get()))
+    else if (auto *kc = dynamic_cast<KickChannel *>(chan.get()))
     {
         this->modeButton_->setEnabled(false);
 
@@ -921,6 +921,14 @@ void SplitHeader::handleChannelChanged()
                                                      this->updateChannelText();
                                                  });
     }
+    else if (auto *multiChannel = dynamic_cast<MultiChannel *>(channel.get()))
+    {
+        this->channelConnections_.managedConnect(
+            multiChannel->activeChannelChanged, [this] {
+                this->updateChannelText();
+                this->updateRoomModes();
+            });
+    }
 }
 
 void SplitHeader::scaleChangedEvent(float scale)
@@ -948,6 +956,8 @@ void SplitHeader::updateChannelText()
     this->isLive_ = false;
     this->tooltipText_ = QString();
 
+    auto selectedChannel = this->split_->getSelectedChannel();
+
     auto title = channel->getLocalizedName();
 
     if (indirectChannel.getType() == Channel::Type::TwitchWatching)
@@ -955,7 +965,8 @@ void SplitHeader::updateChannelText()
         title = "watching: " + (title.isEmpty() ? "none" : title);
     }
 
-    if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get()))
+    if (auto *twitchChannel =
+            dynamic_cast<TwitchChannel *>(selectedChannel.get()))
     {
         const auto streamStatus = twitchChannel->accessStreamStatus();
 
@@ -965,7 +976,7 @@ void SplitHeader::updateChannelText()
             // XXX: This URL format can be figured out from the Helix Get Streams API which we parse in TwitchChannel::parseLiveStatus
             QString url = "https://static-cdn.jtvnw.net/"
                           "previews-ttv/live_user_" +
-                          channel->getName().toLower();
+                          selectedChannel->getName().toLower();
             switch (getSettings()->thumbnailSizeStream.getValue())
             {
                 case 1:
@@ -1012,7 +1023,8 @@ void SplitHeader::updateChannelText()
             this->tooltipText_ = formatOfflineTooltip(*streamStatus);
         }
     }
-    else if (auto *kickChannel = dynamic_cast<KickChannel *>(channel.get()))
+    else if (auto *kickChannel =
+                 dynamic_cast<KickChannel *>(selectedChannel.get()))
     {
         const auto &stream = kickChannel->streamData();
         auto twitch = toTwitchStreamStatus(stream);
@@ -1055,7 +1067,7 @@ void SplitHeader::updateChannelText()
 
 void SplitHeader::updateIcons()
 {
-    auto channel = this->split_->getChannel();
+    auto channel = this->split_->getSelectedChannel();
 
     if (channel->isTwitchOrKickChannel())
     {

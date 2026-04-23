@@ -18,12 +18,15 @@
 
 #include <memory>
 #include <optional>
+#include <span>
 
 namespace chatterino {
 
 struct Message;
 using MessagePtr = std::shared_ptr<const Message>;
 using MessagePtrMut = std::shared_ptr<Message>;
+
+enum class MessagePlatform : uint8_t;
 
 class EmoteMap;
 
@@ -58,6 +61,7 @@ public:
         Kick,
         /// Misc
         Misc,
+        Multi,
     };
 
     explicit Channel(const QString &name, Type type, bool watching = false);
@@ -122,6 +126,8 @@ public:
                         const MessagePtr &replacement);
     void disableMessage(const QString &messageID);
 
+    void mergeFrom(std::span<std::span<const MessagePtr>> sources);
+
     /// Removes all messages from this channel and invokes #messagesCleared
     void clearMessages();
 
@@ -158,6 +164,8 @@ public:
         const QString &userLogin,
         const std::shared_ptr<const EmoteMap> &emoteMap);
 
+    MessagePlatform messagePlatform() const;
+
     TabCompletionModel *completionModel;
     QDate lastDate_;
 
@@ -184,6 +192,7 @@ private:
 
     QTimer clearCompletionModelTimer_;
     bool watching_;
+    MessagePlatform messagePlatform_;
 };
 
 using ChannelPtr = std::shared_ptr<Channel>;

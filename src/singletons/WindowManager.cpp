@@ -17,6 +17,7 @@
 #include "singletons/Theme.hpp"
 #include "util/CombinePath.hpp"
 #include "util/FilesystemHelpers.hpp"
+#include "util/MultiChannel.hpp"
 #include "util/SignalListener.hpp"
 #include "widgets/AccountSwitchPopup.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
@@ -648,6 +649,11 @@ std::set<QString> WindowManager::getVisibleChannelNames() const
     return visible;
 }
 
+std::span<Window *const> WindowManager::windows() const
+{
+    return this->windows_;
+}
+
 void WindowManager::encodeTab(SplitContainer *tab, bool isSelected,
                               QJsonObject &obj)
 {
@@ -779,6 +785,24 @@ void WindowManager::encodeChannel(IndirectChannel channel, QJsonObject &obj)
             }
         }
         break;
+        case Channel::Type::Multi: {
+            obj.insert("type", "multi");
+            auto *mc = dynamic_cast<MultiChannel *>(channel.get().get());
+            if (mc)
+            {
+                QJsonArray children;
+                for (const auto &child : mc->channels())
+                {
+                    children.append(child.descriptor().toJson());
+                }
+                obj.insert("children", children);
+                obj.insert("indicatorMode",
+                           qmagicenum::enumNameString(mc->indicatorMode()));
+                obj.insert("activeIndex",
+                           static_cast<int32_t>(mc->activeChannelIndex()));
+            }
+        }
+        break;
 
         default:
             break;
@@ -837,6 +861,22 @@ IndirectChannel WindowManager::decodeChannel(const SplitDescriptor &descriptor)
                                          .userID = descriptor.kickUserID,
                                          .channelID = descriptor.kickChannelID,
                                      });
+    }
+    else if (descriptor.type_ == u"multi")
+    {
+        QVarLengthArray<MultiChannel::Spec, 4> specs;
+        for (const auto &child : descriptor.children)
+        {
+            auto spec = MultiChannel::Spec::fromDescriptor(child);
+            if (spec)
+            {
+                specs.emplace_back(*std::move(spec));
+            }
+        }
+        auto ptr =
+            std::make_shared<MultiChannel>(specs, descriptor.mcIndicator);
+        ptr->setActiveChannelIndex(descriptor.mcIndex);
+        return {std::move(ptr)};
     }
 
     return Channel::getEmpty();
