@@ -894,6 +894,8 @@ set(SOURCE_FILES
         widgets/settingspages/GeneralPage.hpp
         widgets/settingspages/GeneralPageView.cpp
         widgets/settingspages/GeneralPageView.hpp
+        widgets/settingspages/LeafyrinoPage.cpp
+        widgets/settingspages/LeafyrinoPage.hpp
         widgets/settingspages/TechnorinoPage.cpp
         widgets/settingspages/TechnorinoPage.hpp
         widgets/settingspages/HighlightingPage.cpp

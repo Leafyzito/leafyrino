@@ -10,6 +10,7 @@
 
 #include <pajlada/signals/scoped-connection.hpp>
 #include <pajlada/signals/signal.hpp>
+#include <pajlada/signals/signalholder.hpp>
 #include <QMovie>
 #include <QPixmap>
 #include <QPointer>
@@ -122,6 +123,8 @@ private:
     // Set based on the "Automatically close usercard when it loses focus" setting
     // Pinned status is tracked in DraggablePopup::isPinned_.
     const bool closeAutomatically_;
+
+    pajlada::Signals::SignalHolder signalHolder_;
 
     class TimeoutWidget;
     struct {

@@ -333,6 +333,12 @@ public:
                                         true};
     BoolSetting showBadgesHomies = {"/appearance/badges/homies", true};
     BoolSetting showBadgesFolhinha = {"/appearance/badges/folhinha", true};
+    BoolSetting showUserinfoPopupChatters = {
+        "/appearance/userinfoPopup/showChatters", true};
+    BoolSetting showUserinfoPopupLastLive = {
+        "/appearance/userinfoPopup/showLastLive", true};
+    BoolSetting showUserinfoPopupColor = {"/appearance/userinfoPopup/showColor",
+                                          true};
     QSizeSetting lastPopupSize = {
         "/appearance/lastPopup/size",
         {300, 500},

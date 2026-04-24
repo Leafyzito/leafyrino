@@ -444,6 +444,48 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
             vbox.emplace<Label>("").assign(&this->ui_.followageLabel);
             vbox.emplace<Label>("").assign(&this->ui_.subageLabel);
             vbox.emplace<Label>("").assign(&this->ui_.rolesLabel);
+
+            auto applyPopupVisibility = [this] {
+                auto *settings = getSettings();
+
+                if (this->ui_.chattersLabel)
+                {
+                    this->ui_.chattersLabel->setVisible(
+                        settings->showUserinfoPopupChatters.getValue());
+                }
+                if (this->ui_.lastLiveLabel)
+                {
+                    this->ui_.lastLiveLabel->setVisible(
+                        settings->showUserinfoPopupLastLive.getValue());
+                }
+                if (this->ui_.colorLabel)
+                {
+                    this->ui_.colorLabel->setVisible(
+                        settings->showUserinfoPopupColor.getValue());
+                }
+                if (this->ui_.colorSwatch)
+                {
+                    this->ui_.colorSwatch->setVisible(
+                        settings->showUserinfoPopupColor.getValue());
+                }
+            };
+
+            applyPopupVisibility();
+            getSettings()->showUserinfoPopupChatters.connect(
+                [applyPopupVisibility](auto) {
+                    applyPopupVisibility();
+                },
+                this->signalHolder_, false);
+            getSettings()->showUserinfoPopupLastLive.connect(
+                [applyPopupVisibility](auto) {
+                    applyPopupVisibility();
+                },
+                this->signalHolder_, false);
+            getSettings()->showUserinfoPopupColor.connect(
+                [applyPopupVisibility](auto) {
+                    applyPopupVisibility();
+                },
+                this->signalHolder_, false);
         }
     }
 

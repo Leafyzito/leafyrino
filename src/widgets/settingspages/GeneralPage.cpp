@@ -279,12 +279,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             removeTabShortcut + ".")
         ->addTo(layout);
 
-    SettingWidget::checkbox("Always use theme color for tab highlights",
-                            s.tabHighlightsUseThemeColor)
-        ->setTooltip("Use the theme's default highlighted tab color instead of "
-                     "per-highlight colors.")
-        ->addTo(layout);
-
     SettingWidget::checkbox("Always on top", s.windowTopMost)
         ->setTooltip("Always keep Chatterino as the top window.")
         ->addTo(layout);
@@ -1085,35 +1079,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->setTooltip("Show the stream title")
         ->addTo(layout);
 
-    layout.addSubtitle("Predictions");
-    SettingWidget::checkbox("Show active prediction panel in splits",
-                            s.showPredictionPanel)
-        ->setTooltip("Polls Twitch for an active or locked channel points "
-                     "prediction and shows it above chat.")
-        ->addTo(layout);
-
-    layout.addSubtitle("Pinned message");
-    SettingWidget::checkbox("Show pinned message panel in splits",
-                            s.showPinnedMessagePanel)
-        ->setTooltip("Polls Twitch for the current moderator-pinned chat "
-                     "message and shows it above chat.")
-        ->addTo(layout);
-
-    layout.addSubtitle("Split performance overlay");
-    SettingWidget::checkbox("Show messages-per-second (mps) overlay in splits",
-                            s.showSplitMps)
-        ->setTooltip("Shows a faint overlay label (e.g. \"12 mps\") of how "
-                     "many messages are being sent per second.")
-        ->addTo(layout);
-
-    SettingWidget::dropdown("MPS overlay position", s.splitMpsCorner)
-        ->conditionallyEnabledBy(s.showSplitMps)
-        ->addTo(layout);
-
-    SettingWidget::checkbox("Show 0 mps", s.showSplitMpsWhenZero)
-        ->conditionallyEnabledBy(s.showSplitMps)
-        ->addTo(layout);
-
     layout.addSubtitle("R9K");
     auto toggleLocalr9kSeq = getApp()->getHotkeys()->getDisplaySequence(
         HotkeyCategory::Window, "toggleLocalR9K");
@@ -1221,14 +1186,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->addTo(layout);
     SettingWidget::checkbox("BetterTTV", s.showBadgesBttv)
         ->addKeywords({"bttv"})
-        ->addTo(layout);
-    SettingWidget::checkbox("Homies", s.showBadgesHomies)
-        ->addKeywords({"homies"})
-        ->setTooltip("Homies supporter badges and custom badges")
-        ->addTo(layout);
-    SettingWidget::checkbox("Folhinha", s.showBadgesFolhinha)
-        ->addKeywords({"folhinha"})
-        ->setTooltip("FolhinhaBot Plus and Founder badges")
         ->addTo(layout);
     layout.addSeparator();
     SettingWidget::checkbox("Use custom FrankerFaceZ moderator badges",
