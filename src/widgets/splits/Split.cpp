@@ -42,6 +42,7 @@
 #include "widgets/splits/SplitContainer.hpp"
 #include "widgets/splits/SplitHeader.hpp"
 #include "widgets/splits/SplitInput.hpp"
+#include "widgets/splits/SplitMpsOverlay.hpp"
 #include "widgets/splits/SplitOverlay.hpp"
 #include "widgets/splits/SplitPinnedMessagePanel.hpp"
 #include "widgets/splits/SplitPredictionPanel.hpp"
@@ -57,6 +58,7 @@
 #include <QMovie>
 #include <QPainter>
 #include <QSet>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include <functional>
@@ -220,6 +222,37 @@ Split::Split(QWidget *parent)
 
     this->header_->updateIcons();
     this->overlay_->hide();
+
+    this->mpsOverlay_ = new SplitMpsOverlay(this);
+    this->mpsOverlay_->setGeometry(this->rect());
+    this->updateMpsOverlayAnchor();
+
+    // Keep the mps overlay anchored to the top of the message view even when
+    // panels show/hide without resizing the split
+    this->view_->installEventFilter(this);
+    this->pinnedMessagePanel_->installEventFilter(this);
+    this->predictionPanel_->installEventFilter(this);
+    this->installEventFilter(this);
+
+    QTimer::singleShot(0, this, [this] {
+        this->updateMpsOverlayAnchor();
+    });
+
+    QObject::connect(
+        this->view_, &ChannelView::messageAddedToChannel, this,
+        [this](MessagePtr &message) {
+            // Existing feature: pulse the input on self message
+            if (getSettings()->pulseTextInputOnSelfMessage)
+            {
+                auto user = getApp()->getAccounts()->twitch.getCurrent();
+                if (!user->isAnon() && message->userID == user->getUserId())
+                {
+                    this->input_->triggerSelfMessageReceived();
+                }
+            }
+
+            this->mpsOverlay_->onMessageAdded();
+        });
 
     this->setSizePolicy(QSizePolicy::MinimumExpanding,
                         QSizePolicy::MinimumExpanding);
@@ -981,21 +1014,6 @@ void Split::setChannel(IndirectChannel newChannel)
             this->actionRequested.invoke(Action::RefreshTab);
         });
 
-    QObject::connect(
-        this->view_, &ChannelView::messageAddedToChannel, this,
-        [this](MessagePtr &message) {
-            if (!getSettings()->pulseTextInputOnSelfMessage)
-            {
-                return;
-            }
-            auto user = getApp()->getAccounts()->twitch.getCurrent();
-            if (!user->isAnon() && message->userID == user->getUserId())
-            {
-                // A message from yourself was just received in this split
-                this->input_->triggerSelfMessageReceived();
-            }
-        });
-
     this->channelChanged.invoke();
     this->actionRequested.invoke(Action::RefreshTab);
 
@@ -1119,6 +1137,41 @@ void Split::resizeEvent(QResizeEvent *event)
     BaseWidget::resizeEvent(event);
 
     this->overlay_->setGeometry(this->rect());
+    this->mpsOverlay_->setGeometry(this->rect());
+    this->updateMpsOverlayAnchor();
+}
+
+bool Split::eventFilter(QObject *watched, QEvent *event)
+{
+    switch (event->type())
+    {
+        case QEvent::Move:
+        case QEvent::Resize:
+        case QEvent::Show:
+        case QEvent::Hide:
+        case QEvent::LayoutRequest: {
+            if (watched == this || watched == this->view_ ||
+                watched == this->pinnedMessagePanel_ ||
+                watched == this->predictionPanel_)
+            {
+                this->updateMpsOverlayAnchor();
+            }
+        }
+        break;
+        default:
+            break;
+    }
+
+    return BaseWidget::eventFilter(watched, event);
+}
+
+void Split::updateMpsOverlayAnchor()
+{
+    if (!this->mpsOverlay_)
+    {
+        return;
+    }
+    this->mpsOverlay_->setViewRect(this->view_->geometry());
 }
 
 void Split::enterEvent(QEnterEvent * /*event*/)

@@ -1099,6 +1099,21 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                      "message and shows it above chat.")
         ->addTo(layout);
 
+    layout.addSubtitle("Split performance overlay");
+    SettingWidget::checkbox("Show messages-per-second (mps) overlay in splits",
+                            s.showSplitMps)
+        ->setTooltip("Shows a faint overlay label (e.g. \"12 mps\") of how "
+                     "many messages are being sent per second.")
+        ->addTo(layout);
+
+    SettingWidget::dropdown("MPS overlay position", s.splitMpsCorner)
+        ->conditionallyEnabledBy(s.showSplitMps)
+        ->addTo(layout);
+
+    SettingWidget::checkbox("Show 0 mps", s.showSplitMpsWhenZero)
+        ->conditionallyEnabledBy(s.showSplitMps)
+        ->addTo(layout);
+
     layout.addSubtitle("R9K");
     auto toggleLocalr9kSeq = getApp()->getHotkeys()->getDisplaySequence(
         HotkeyCategory::Window, "toggleLocalR9K");

@@ -27,6 +27,7 @@ class SplitPinnedMessagePanel;
 class SplitPredictionPanel;
 class SplitContainer;
 class SplitOverlay;
+class SplitMpsOverlay;
 class SelectChannelDialog;
 class OverlayWindow;
 
@@ -128,6 +129,7 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
     void enterEvent(QEnterEvent * /*event*/) override;
     void leaveEvent(QEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
@@ -137,6 +139,7 @@ private:
     void handleModifiers(Qt::KeyboardModifiers modifiers);
     void updateInputPlaceholder();
     void addShortcuts() override;
+    void updateMpsOverlayAnchor();
 
     /**
      * @brief Opens a Twitch channel's stream in your default browser's player (opens a formatted link)
@@ -178,6 +181,7 @@ private:
     ChannelView *const view_;
     SplitInput *const input_;
     SplitOverlay *const overlay_;
+    SplitMpsOverlay *mpsOverlay_{};
 
     QPointer<OverlayWindow> overlayWindow_;
 
