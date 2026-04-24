@@ -30,6 +30,7 @@
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QSpinBox>
+#include <QUrl>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -216,6 +217,22 @@ bool viewerPickMatchesOutcomes(const HelixPrediction &p, const QString &pickRaw)
     }
     return predictionOutcomeIdsEqual(pick, p.outcomes[0].id) ||
            predictionOutcomeIdsEqual(pick, p.outcomes[1].id);
+}
+
+QUrl predictionStartSoundUrl()
+{
+    if (!getSettings()->predictionStartCustomSound)
+    {
+        return QUrl(QStringLiteral("qrc:/sounds/ping2.wav"));
+    }
+
+    const QString path = getSettings()->predictionStartSoundPath.getValue();
+    if (path.trimmed().isEmpty())
+    {
+        return QUrl(QStringLiteral("qrc:/sounds/ping2.wav"));
+    }
+
+    return QUrl::fromLocalFile(path);
 }
 
 QString betOutcomeButtonStyleSheet(const QColor &accent,
@@ -752,6 +769,14 @@ void SplitPredictionPanel::fetchPredictions()
                     merged.id, merged.viewerPredictionOutcomeId.trimmed(),
                     merged.viewerPredictionPoints);
             }
+
+            const bool isNewId = this->currentDisplayId_.isEmpty() ||
+                                 pr.id != this->currentDisplayId_;
+            if (isNewId && getSettings()->predictionStartPlaySound)
+            {
+                getApp()->getSound()->play(predictionStartSoundUrl());
+            }
+
             this->currentDisplayId_ = pr.id;
             this->renderPrediction(merged, true);
             this->show();

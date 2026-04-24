@@ -731,6 +731,19 @@ public:
     BoolSetting suppressInitialLiveNotification = {
         "/notifications/suppressInitialLive", false};
 
+    BoolSetting predictionStartPlaySound = {
+        "/notifications/predictionStart/enablePlaySound",
+        false,
+    };
+    BoolSetting predictionStartCustomSound = {
+        "/notifications/predictionStart/customPlaySound",
+        false,
+    };
+    QStringSetting predictionStartSoundPath = {
+        "/notifications/predictionStart/soundPath",
+        "",
+    };
+
     BoolSetting notificationToast = {"/notifications/enableToast", false};
     BoolSetting createShortcutForToasts = {
         "/notifications/createShortcutForToasts",

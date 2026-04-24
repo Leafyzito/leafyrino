@@ -5,6 +5,12 @@
 #include "widgets/settingspages/GeneralPageView.hpp"
 #include "widgets/settingspages/SettingWidget.hpp"
 
+#include <QFileDialog>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QUrl>
+
 namespace chatterino {
 
 LeafyrinoPage::LeafyrinoPage()
@@ -71,6 +77,86 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->setTooltip("Polls Twitch for an active or locked channel points "
                      "prediction and shows it above chat.")
         ->addTo(layout);
+
+    SettingWidget::checkbox("Play sound when a new prediction starts",
+                            s.predictionStartPlaySound)
+        ->addKeywords({"prediction", "sound", "ping"})
+        ->addTo(layout);
+    SettingWidget::checkbox("Custom sound for prediction start",
+                            s.predictionStartCustomSound)
+        ->addKeywords({"prediction", "sound", "custom"})
+        ->conditionallyEnabledBy(s.predictionStartPlaySound)
+        ->addTo(layout);
+
+    // Custom sound file picker row
+    {
+        auto *row = new QWidget(this);
+        auto *hl = new QHBoxLayout(row);
+        hl->setContentsMargins(0, 0, 0, 0);
+        hl->setSpacing(6);
+
+        auto *label = new QLabel(row);
+        label->setTextFormat(Qt::RichText);
+        label->setTextInteractionFlags(Qt::TextBrowserInteraction |
+                                       Qt::LinksAccessibleByKeyboard);
+        label->setOpenExternalLinks(true);
+
+        auto *clearBtn = new QPushButton(QStringLiteral("Clear"), row);
+        auto *changeBtn = new QPushButton(QStringLiteral("Change..."), row);
+
+        hl->addWidget(label, 1);
+        hl->addWidget(changeBtn, 0);
+        hl->addWidget(clearBtn, 0);
+
+        const auto updateUi = [label, changeBtn, clearBtn, &s] {
+            const bool enabled =
+                s.predictionStartPlaySound && s.predictionStartCustomSound;
+            label->setEnabled(enabled);
+            changeBtn->setEnabled(enabled);
+            clearBtn->setEnabled(enabled);
+
+            const QString value = s.predictionStartSoundPath.getValue();
+            if (value.trimmed().isEmpty())
+            {
+                label->setText(QStringLiteral(
+                    "Prediction start sound: Default (Chatterino Ping)"));
+                clearBtn->hide();
+                return;
+            }
+
+            const QUrl url = QUrl::fromLocalFile(value);
+            label->setText(
+                QStringLiteral("Prediction start sound: <a href=\"%1\">%2</a>")
+                    .arg(url.toString(QUrl::FullyEncoded), url.fileName()));
+            clearBtn->show();
+        };
+
+        QObject::connect(changeBtn, &QPushButton::clicked, this, [&s] {
+            const auto fileName = QFileDialog::getOpenFileName(
+                nullptr, QObject::tr("Open Sound"), "",
+                QObject::tr("Audio Files (*.mp3 *.wav)"));
+            s.predictionStartSoundPath = fileName;
+        });
+        QObject::connect(clearBtn, &QPushButton::clicked, this, [&s] {
+            s.predictionStartSoundPath = QString();
+        });
+
+        s.predictionStartPlaySound.connect(
+            [updateUi](const bool &, const auto &) {
+                updateUi();
+            });
+        s.predictionStartCustomSound.connect(
+            [updateUi](const bool &, const auto &) {
+                updateUi();
+            });
+        s.predictionStartSoundPath.connect(
+            [updateUi](const QString &, const auto &) {
+                updateUi();
+            });
+        updateUi();
+
+        layout.addWidget(row);
+    }
 
     layout.addTitle("Split performance overlay");
     SettingWidget::checkbox("Show messages-per-second (mps) overlay in splits",
