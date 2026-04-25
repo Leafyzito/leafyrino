@@ -158,7 +158,7 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         layout.addWidget(row);
     }
 
-    layout.addTitle("Split performance overlay");
+    layout.addTitle("Messages per second");
     SettingWidget::checkbox("Show messages-per-second (mps) overlay in splits",
                             s.showSplitMps)
         ->setTooltip("Shows a faint overlay label (e.g. \"12 mps\") of how "
