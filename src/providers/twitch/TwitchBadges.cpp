@@ -70,11 +70,8 @@ void TwitchBadges::loadTwitchBadges()
                 }
             }
 
-            getApp()
-                ->getWindows()
-                ->getMainWindow()
-                .getNotebook()
-                .forEachSplit([](Split *split) {
+            getApp()->getWindows()->getMainWindow().getNotebook().forEachSplit(
+                [](Split *split) {
                     auto channel = split->getChannel();
                     const auto type = channel->getType();
 
