@@ -524,6 +524,10 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             "When enabled, messages deleted by moderators will be hidden.")
         ->addTo(layout);
 
+    SettingWidget::checkbox("Hide message timestamps when channel is live",
+                            s.hideMessageTimestampsWhenLive)
+        ->addTo(layout);
+
     layout.addDropdown<QString>(
         "Message timestamp format",
         {"Disable", "h:mm", "hh:mm", "h:mm a", "hh:mm a", "h:mm:ss", "hh:mm:ss",
@@ -767,6 +771,10 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             "Hide blocked terms from showing up in places like AutoMod "
             "messages. This can be useful in case you have some blocked terms "
             "that you don't want to show on stream.")
+        ->addTo(layout);
+
+    SettingWidget::checkbox("Hide user notes", s.streamerModeHideUserNotes)
+        ->setTooltip("Hide user notes from showing in usercards.")
         ->addTo(layout);
 
     SettingWidget::checkbox("Mute mention sounds", s.streamerModeMuteMentions)
