@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "common/Channel.hpp"
 #include "common/UniqueAccess.hpp"
 #include "util/QStringHash.hpp"
 
@@ -47,7 +48,7 @@ public:
     void getBadgeIcons(const QList<DisplayBadge> &badges,
                        BadgeIconCallback callback);
 
-    void loadTwitchBadges();
+    void loadTwitchBadges(std::optional<ChannelPtr> messageChannel = {});
 
     /// Loads the badges shipped with Chatterino (twitch-badges.json)
     void loadLocalBadges();

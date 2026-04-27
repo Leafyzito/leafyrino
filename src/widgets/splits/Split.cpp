@@ -549,16 +549,19 @@ void Split::addShortcuts()
          [this](const std::vector<QString> &arguments) -> QString {
              auto reloadChannel = true;
              auto reloadSubscriber = true;
+             auto reloadBadges = true;
              if (!arguments.empty())
              {
                  const auto &arg = arguments.at(0);
                  if (arg == "channel")
                  {
                      reloadSubscriber = false;
+                     reloadBadges = false;
                  }
                  else if (arg == "subscriber")
                  {
                      reloadChannel = false;
+                     reloadBadges = false;
                  }
              }
 
@@ -571,7 +574,11 @@ void Split::addShortcuts()
                  this->header_->reloadSubscriberEmotes();
              }
 
-             getApp()->getTwitchBadges()->loadTwitchBadges();
+             if (reloadBadges)
+             {
+                 getApp()->getTwitchBadges()->loadTwitchBadges(
+                     this->getChannel());
+             }
 
              return "";
          }},
