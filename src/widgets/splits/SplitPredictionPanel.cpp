@@ -733,6 +733,11 @@ void SplitPredictionPanel::fetchPredictions()
                 if (this->lastLivePrediction_.has_value() &&
                     !this->lastLivePrediction_->id.isEmpty())
                 {
+                    if (this->lastLivePrediction_->outcomes.size() != 2)
+                    {
+                        this->hidePanel();
+                        return;
+                    }
                     if (!this->dismissedForPredictionId_.isEmpty() &&
                         this->lastLivePrediction_->id ==
                             this->dismissedForPredictionId_)
@@ -783,6 +788,11 @@ void SplitPredictionPanel::fetchPredictions()
 
             if (isResolvedLike(pr))
             {
+                if (pr.outcomes.size() != 2)
+                {
+                    this->hidePanel();
+                    return;
+                }
                 this->currentDisplayId_ = pr.id;
                 this->renderPrediction(pr, false);
                 this->show();
@@ -804,6 +814,11 @@ void SplitPredictionPanel::fetchPredictions()
             this->lingering_ = false;
             this->lingerEventId_.clear();
             HelixPrediction merged = pr;
+            if (merged.outcomes.size() != 2)
+            {
+                this->hidePanel();
+                return;
+            }
             if (this->lastLivePrediction_.has_value())
             {
                 const auto &prev = *this->lastLivePrediction_;
@@ -936,7 +951,7 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
     }
 
     const auto &outcomes = prediction.outcomes;
-    if (outcomes.empty())
+    if (outcomes.size() != 2)
     {
         this->hidePanel();
         return;
@@ -1016,13 +1031,12 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
     this->statusLabel_->setText(statusText);
 
     const HelixPredictionOutcome *o0 = &outcomes[0];
-    const HelixPredictionOutcome *o1 =
-        outcomes.size() > 1 ? &outcomes[1] : nullptr;
+    const HelixPredictionOutcome *o1 = &outcomes[1];
 
     int p0 = std::max(0, o0->channelPoints);
-    int p1 = o1 ? std::max(0, o1->channelPoints) : 0;
+    int p1 = std::max(0, o1->channelPoints);
     const int total = p0 + p1;
-    const bool canShowCollapsedBar = (o1 != nullptr) && (total > 0);
+    const bool canShowCollapsedBar = (total > 0);
     int pct0 = 50;
     int pct1 = 50;
     if (total > 0)
@@ -1042,48 +1056,32 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
     this->outcomeWon0_->setVisible(wSide == 0);
     this->outcomeWon1_->setVisible(wSide == 1);
 
-    if (o1 != nullptr)
+    this->outcomeTitle1_->show();
+    this->outcomeDetails1_->show();
+    this->outcomeTitle1_->setText(o1->title);
+    const double leftFrac =
+        total > 0 ? static_cast<double>(p0) / static_cast<double>(total) : 0.5;
+    this->poolBar_->setLeftFraction(leftFrac);
+    if (this->collapsedPoolBar_ != nullptr)
     {
-        this->outcomeTitle1_->show();
-        this->outcomeDetails1_->show();
-        this->outcomeTitle1_->setText(o1->title);
-        const double leftFrac =
-            total > 0 ? static_cast<double>(p0) / static_cast<double>(total)
-                      : 0.5;
-        this->poolBar_->setLeftFraction(leftFrac);
-        if (this->collapsedPoolBar_ != nullptr)
+        if (canShowCollapsedBar)
         {
-            if (canShowCollapsedBar)
-            {
-                this->collapsedPoolBar_->setLeftFraction(leftFrac);
-                this->collapsedPoolBar_->setVisible(!this->expanded_);
-            }
-            else
-            {
-                this->collapsedPoolBar_->hide();
-            }
+            this->collapsedPoolBar_->setLeftFraction(leftFrac);
+            this->collapsedPoolBar_->setVisible(!this->expanded_);
         }
-
-        const double r1 =
-            (total > 0 && p1 > 0) ? static_cast<double>(total) / p1 : 0.0;
-        const QString pct1s = QStringLiteral("%1%").arg(pct1);
-        this->outcomeDetails1_->setText(
-            QStringLiteral("%1 • %2 • %3")
-                .arg(pct1s, formatReturnRatio(r1), formatPointsCompact(p1)));
-        this->poolBar_->setOutcomeMeta({}, {}, {}, {});
-    }
-    else
-    {
-        this->outcomeTitle1_->hide();
-        this->outcomeDetails1_->hide();
-        this->outcomeWon1_->hide();
-        this->poolBar_->setLeftFraction(1.0);
-        this->poolBar_->setOutcomeMeta({}, {}, {}, {});
-        if (this->collapsedPoolBar_ != nullptr)
+        else
         {
             this->collapsedPoolBar_->hide();
         }
     }
+
+    const double r1 =
+        (total > 0 && p1 > 0) ? static_cast<double>(total) / p1 : 0.0;
+    const QString pct1s = QStringLiteral("%1%").arg(pct1);
+    this->outcomeDetails1_->setText(
+        QStringLiteral("%1 • %2 • %3")
+            .arg(pct1s, formatReturnRatio(r1), formatPointsCompact(p1)));
+    this->poolBar_->setOutcomeMeta({}, {}, {}, {});
 
     this->lastTitleForElide_ = prediction.title;
     this->refreshTopRowText();
