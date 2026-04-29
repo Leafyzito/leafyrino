@@ -269,6 +269,41 @@ QString betOutcomeButtonStyleSheet(const QColor &accent,
         .arg(labelCss, accentCss, bg1, bg2);
 }
 
+QString formatPointsCompact(int points)
+{
+    points = std::max(0, points);
+    if (points < 1000)
+    {
+        return QString::number(points);
+    }
+
+    auto fmt = [](double v, const QChar suffix, int decimals) {
+        return QStringLiteral("%1%2").arg(QString::number(v, 'f', decimals),
+                                          suffix);
+    };
+
+    if (points < 1'000'000)
+    {
+        const double k = static_cast<double>(points) / 1000.0;
+        const bool whole = std::fabs(k - std::round(k)) < 0.0001;
+        return fmt(k, QLatin1Char('K'), whole ? 0 : 1);
+    }
+
+    const double m = static_cast<double>(points) / 1'000'000.0;
+    const bool whole = std::fabs(m - std::round(m)) < 0.0001;
+    const int decimals = whole ? 0 : (m >= 10.0 ? 1 : 2);
+    return fmt(m, QLatin1Char('M'), decimals);
+}
+
+QString formatReturnRatio(double ratio)
+{
+    if (!(ratio > 0.0) || !std::isfinite(ratio))
+    {
+        return QStringLiteral("—");
+    }
+    return QStringLiteral("%1x").arg(QString::number(ratio, 'f', 2));
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -374,30 +409,44 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
         hl->setSpacing(4);
 
         auto *leftWrap = new QWidget(this->outcomeRow_);
-        auto *leftLay = new QHBoxLayout(leftWrap);
+        auto *leftLay = new QVBoxLayout(leftWrap);
         leftLay->setContentsMargins(0, 0, 0, 0);
-        leftLay->setSpacing(4);
+        leftLay->setSpacing(0);
         this->outcomeTitle0_ = new QLabel(leftWrap);
-        this->outcomeDash0_ = new QLabel(QStringLiteral(" - "), leftWrap);
-        this->outcomePct0_ = new QLabel(leftWrap);
+        this->outcomeTitle0_->setWordWrap(false);
+        this->outcomeDetails0_ = new QLabel(leftWrap);
+        this->outcomeDetails0_->setWordWrap(false);
         this->outcomeWon0_ = new QLabel(QStringLiteral("Won"), leftWrap);
-        leftLay->addWidget(this->outcomeTitle0_, 0);
-        leftLay->addWidget(this->outcomeDash0_, 0);
-        leftLay->addWidget(this->outcomePct0_, 0);
-        leftLay->addWidget(this->outcomeWon0_, 0);
+        auto *leftTop = new QWidget(leftWrap);
+        auto *leftTopLay = new QHBoxLayout(leftTop);
+        leftTopLay->setContentsMargins(0, 0, 0, 0);
+        leftTopLay->setSpacing(4);
+        leftTopLay->addWidget(this->outcomeTitle0_, 0);
+        leftTopLay->addWidget(this->outcomeWon0_, 0);
+        leftTopLay->addStretch(1);
+        leftLay->addWidget(leftTop);
+        leftLay->addWidget(this->outcomeDetails0_);
 
         auto *rightWrap = new QWidget(this->outcomeRow_);
-        auto *rightLay = new QHBoxLayout(rightWrap);
+        auto *rightLay = new QVBoxLayout(rightWrap);
         rightLay->setContentsMargins(0, 0, 0, 0);
-        rightLay->setSpacing(4);
+        rightLay->setSpacing(0);
         this->outcomeWon1_ = new QLabel(QStringLiteral("Won"), rightWrap);
-        this->outcomePct1_ = new QLabel(rightWrap);
-        this->outcomeDash1_ = new QLabel(QStringLiteral(" - "), rightWrap);
         this->outcomeTitle1_ = new QLabel(rightWrap);
-        rightLay->addWidget(this->outcomeWon1_, 0);
-        rightLay->addWidget(this->outcomePct1_, 0);
-        rightLay->addWidget(this->outcomeDash1_, 0);
-        rightLay->addWidget(this->outcomeTitle1_, 0);
+        this->outcomeTitle1_->setWordWrap(false);
+        this->outcomeDetails1_ = new QLabel(rightWrap);
+        this->outcomeDetails1_->setWordWrap(false);
+        this->outcomeDetails1_->setAlignment(Qt::AlignRight);
+
+        auto *rightTop = new QWidget(rightWrap);
+        auto *rightTopLay = new QHBoxLayout(rightTop);
+        rightTopLay->setContentsMargins(0, 0, 0, 0);
+        rightTopLay->setSpacing(4);
+        rightTopLay->addStretch(1);
+        rightTopLay->addWidget(this->outcomeWon1_, 0);
+        rightTopLay->addWidget(this->outcomeTitle1_, 0);
+        rightLay->addWidget(rightTop);
+        rightLay->addWidget(this->outcomeDetails1_);
 
         this->outcomeWon0_->hide();
         this->outcomeWon1_->hide();
@@ -487,6 +536,13 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
     this->expandedLayout_->addWidget(this->disclaimerLabel_);
 
     mainLayout->addWidget(topRow);
+
+    this->collapsedPoolBar_ = new PredictionPoolBar(this);
+    this->collapsedPoolBar_->setOutcomeMeta({}, {}, {}, {});
+    this->collapsedPoolBar_->setRounded(false);
+    this->collapsedPoolBar_->hide();
+    mainLayout->addWidget(this->collapsedPoolBar_);
+
     mainLayout->addWidget(this->expandedWidget_);
 
     this->installClickFocusesSplit(this);
@@ -966,6 +1022,7 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
     int p0 = std::max(0, o0->channelPoints);
     int p1 = o1 ? std::max(0, o1->channelPoints) : 0;
     const int total = p0 + p1;
+    const bool canShowCollapsedBar = (o1 != nullptr) && (total > 0);
     int pct0 = 50;
     int pct1 = 50;
     if (total > 0)
@@ -975,7 +1032,12 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
     }
 
     this->outcomeTitle0_->setText(o0->title);
-    this->outcomePct0_->setText(QStringLiteral("%1%").arg(pct0));
+    const double r0 =
+        (total > 0 && p0 > 0) ? static_cast<double>(total) / p0 : 0.0;
+    const QString pct0s = QStringLiteral("%1%").arg(pct0);
+    this->outcomeDetails0_->setText(
+        QStringLiteral("%1 • %2 • %3")
+            .arg(formatPointsCompact(p0), formatReturnRatio(r0), pct0s));
 
     this->outcomeWon0_->setVisible(wSide == 0);
     this->outcomeWon1_->setVisible(wSide == 1);
@@ -983,23 +1045,44 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
     if (o1 != nullptr)
     {
         this->outcomeTitle1_->show();
-        this->outcomeDash1_->show();
-        this->outcomePct1_->show();
+        this->outcomeDetails1_->show();
         this->outcomeTitle1_->setText(o1->title);
-        this->outcomePct1_->setText(QStringLiteral("%1%").arg(pct1));
         const double leftFrac =
             total > 0 ? static_cast<double>(p0) / static_cast<double>(total)
                       : 0.5;
         this->poolBar_->setLeftFraction(leftFrac);
+        if (this->collapsedPoolBar_ != nullptr)
+        {
+            if (canShowCollapsedBar)
+            {
+                this->collapsedPoolBar_->setLeftFraction(leftFrac);
+                this->collapsedPoolBar_->setVisible(!this->expanded_);
+            }
+            else
+            {
+                this->collapsedPoolBar_->hide();
+            }
+        }
+
+        const double r1 =
+            (total > 0 && p1 > 0) ? static_cast<double>(total) / p1 : 0.0;
+        const QString pct1s = QStringLiteral("%1%").arg(pct1);
+        this->outcomeDetails1_->setText(
+            QStringLiteral("%1 • %2 • %3")
+                .arg(pct1s, formatReturnRatio(r1), formatPointsCompact(p1)));
+        this->poolBar_->setOutcomeMeta({}, {}, {}, {});
     }
     else
     {
         this->outcomeTitle1_->hide();
-        this->outcomeDash1_->hide();
-        this->outcomePct1_->hide();
+        this->outcomeDetails1_->hide();
         this->outcomeWon1_->hide();
-        this->outcomePct0_->setText(QStringLiteral("100%"));
         this->poolBar_->setLeftFraction(1.0);
+        this->poolBar_->setOutcomeMeta({}, {}, {}, {});
+        if (this->collapsedPoolBar_ != nullptr)
+        {
+            this->collapsedPoolBar_->hide();
+        }
     }
 
     this->lastTitleForElide_ = prediction.title;
@@ -1043,6 +1126,14 @@ void SplitPredictionPanel::resetPredictionUiState()
     {
         this->outcomeWon1_->hide();
     }
+    if (this->outcomeDetails0_ != nullptr)
+    {
+        this->outcomeDetails0_->clear();
+    }
+    if (this->outcomeDetails1_ != nullptr)
+    {
+        this->outcomeDetails1_->clear();
+    }
     if (this->yourPickSummaryLabel_ != nullptr)
     {
         this->yourPickSummaryLabel_->hide();
@@ -1050,6 +1141,12 @@ void SplitPredictionPanel::resetPredictionUiState()
     }
     this->predictionUiLiveMode_ = false;
     this->clearViewerPickCache();
+    if (this->collapsedPoolBar_ != nullptr)
+    {
+        this->collapsedPoolBar_->hide();
+        this->collapsedPoolBar_->setOutcomeMeta({}, {}, {}, {});
+        this->collapsedPoolBar_->setLeftFraction(0.5);
+    }
     this->hide();
 }
 
@@ -1154,6 +1251,38 @@ void SplitPredictionPanel::updateCollapsedElide()
 void SplitPredictionPanel::updateExpandToggle()
 {
     this->expandedWidget_->setVisible(this->expanded_);
+    if (this->collapsedPoolBar_ != nullptr)
+    {
+        // Only show when collapsed and we have a meaningful 2-outcome pool.
+        // Visibility is also updated in renderPrediction based on data availability.
+        if (this->expanded_)
+        {
+            this->collapsedPoolBar_->hide();
+        }
+        else if (this->lastLivePrediction_.has_value() &&
+                 this->lastLivePrediction_->outcomes.size() == 2)
+        {
+            const int p0 = std::max(
+                0, this->lastLivePrediction_->outcomes[0].channelPoints);
+            const int p1 = std::max(
+                0, this->lastLivePrediction_->outcomes[1].channelPoints);
+            const int total = p0 + p1;
+            if (total > 0)
+            {
+                this->collapsedPoolBar_->setLeftFraction(
+                    static_cast<double>(p0) / static_cast<double>(total));
+                this->collapsedPoolBar_->show();
+            }
+            else
+            {
+                this->collapsedPoolBar_->hide();
+            }
+        }
+        else
+        {
+            this->collapsedPoolBar_->hide();
+        }
+    }
     this->expandButton_->setText(this->expanded_ ? QStringLiteral("▼")
                                                  : QStringLiteral("▶"));
     this->expandButton_->setToolTip(this->expanded_ ? QStringLiteral("Collapse")
@@ -1177,14 +1306,21 @@ void SplitPredictionPanel::updateStyleSheets()
     for (auto *lab :
          {this->collapsedTitle_, this->predictionQuestionLabel_,
           this->statusLabel_, this->yourPickSummaryLabel_, this->outcomeTitle0_,
-          this->outcomeDash0_, this->outcomePct0_, this->outcomeTitle1_,
-          this->outcomeDash1_, this->outcomePct1_, this->yourPointsLabel_,
-          this->yourPointsValue_, this->betAmountCaption_})
+          this->outcomeDetails0_, this->outcomeTitle1_, this->outcomeDetails1_,
+          this->yourPointsLabel_, this->yourPointsValue_,
+          this->betAmountCaption_})
     {
         if (lab != nullptr)
         {
             lab->setStyleSheet(labelStyle);
         }
+    }
+
+    if (this->poolBar_ != nullptr)
+    {
+        // Used by PredictionPoolBar::paintEvent for overlay text
+        this->poolBar_->setStyleSheet(
+            QStringLiteral("PredictionPoolBar { color: %1; }").arg(textCss));
     }
 
     const auto accentCss = this->theme->accent.name(QColor::HexArgb);
@@ -1272,8 +1408,8 @@ void SplitPredictionPanel::scaleChangedEvent(float scale)
              this->collapsedTitle_, this->predictionQuestionLabel_,
              this->statusLabel_, this->yourPickSummaryLabel_,
              this->outcomeTitle0_, this->outcomeWon0_, this->outcomeDash0_,
-             this->outcomePct0_, this->outcomeTitle1_, this->outcomeWon1_,
-             this->outcomeDash1_, this->outcomePct1_, this->yourPointsLabel_,
+             this->outcomeDetails0_, this->outcomeTitle1_, this->outcomeWon1_,
+             this->outcomeDetails1_, this->yourPointsLabel_,
              this->yourPointsValue_, this->betAmountCaption_,
              this->betAmountSpin_, this->betButton0_, this->betButton1_})
     {
@@ -1295,7 +1431,14 @@ void SplitPredictionPanel::scaleChangedEvent(float scale)
     const int barH = static_cast<int>(std::clamp(10.0f * scale, 8.0f, 16.0f));
     if (this->poolBar_ != nullptr)
     {
+        this->poolBar_->setFont(f);
         this->poolBar_->setFixedHeight(barH);
+    }
+    if (this->collapsedPoolBar_ != nullptr)
+    {
+        const int collapsedH =
+            static_cast<int>(std::clamp(2.0f * scale, 2.0f, 3.0f));
+        this->collapsedPoolBar_->setFixedHeight(collapsedH);
     }
 
     if (this->expandedLayout_ != nullptr)

@@ -110,6 +110,7 @@ private:
     QLabel *collapsedTitle_{};
     QPushButton *dismissButton_{};
     QPushButton *expandButton_{};
+    PredictionPoolBar *collapsedPoolBar_{};
 
     QLabel *predictionQuestionLabel_{};
     QLabel *statusLabel_{};
@@ -118,10 +119,14 @@ private:
     QLabel *outcomeWon0_{};
     QLabel *outcomeDash0_{};
     QLabel *outcomePct0_{};
+    QLabel *outcomeRatio0_{};
+    QLabel *outcomeDetails0_{};
     QLabel *outcomeTitle1_{};
     QLabel *outcomeWon1_{};
     QLabel *outcomeDash1_{};
     QLabel *outcomePct1_{};
+    QLabel *outcomeRatio1_{};
+    QLabel *outcomeDetails1_{};
     PredictionPoolBar *poolBar_{};
     QLabel *yourPointsLabel_{};
     QLabel *yourPointsValue_{};
