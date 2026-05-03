@@ -1168,7 +1168,8 @@ void Split::setPerSplitHidePoll(bool hide)
 void Split::setPerSplitHideAllPanels(bool hide)
 {
     if (this->perSplitHidePinnedMessage_ == hide &&
-        this->perSplitHidePrediction_ == hide && this->perSplitHidePoll_ == hide)
+        this->perSplitHidePrediction_ == hide &&
+        this->perSplitHidePoll_ == hide)
     {
         return;
     }

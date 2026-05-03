@@ -63,7 +63,6 @@ struct SplitDescriptor {
     bool perSplitHidePrediction_{false};
     bool perSplitHidePoll_{false};
 
-
     QList<QUuid> filters_;
 
     uint64_t kickChannelID = 0;

@@ -499,7 +499,8 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
     {
         menu->addSeparator();
 
-        auto *panelsMenu = menu->addMenu(QStringLiteral("Panels in this split"));
+        auto *panelsMenu =
+            menu->addMenu(QStringLiteral("Panels in this split"));
         const bool hideAll = this->split_->perSplitHidePinnedMessage() &&
                              this->split_->perSplitHidePrediction() &&
                              this->split_->perSplitHidePoll();
@@ -513,8 +514,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
         auto *hidePinnedAction =
             panelsMenu->addAction(QStringLiteral("Hide pinned message"));
         hidePinnedAction->setCheckable(true);
-        hidePinnedAction->setChecked(
-            this->split_->perSplitHidePinnedMessage());
+        hidePinnedAction->setChecked(this->split_->perSplitHidePinnedMessage());
         QObject::connect(hidePinnedAction, &QAction::toggled, this->split_,
                          &Split::setPerSplitHidePinnedMessage);
         auto *hidePredictionAction =
@@ -531,8 +531,8 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
         QObject::connect(hidePollAction, &QAction::toggled, this->split_,
                          &Split::setPerSplitHidePoll);
 
-        menu->addAction(QStringLiteral("Restore dismissed panels"), this->split_,
-                        &Split::recoverDismissedPanels);
+        menu->addAction(QStringLiteral("Restore dismissed panels"),
+                        this->split_, &Split::recoverDismissedPanels);
         menu->addSeparator();
     }
     else if (kickChannel)
