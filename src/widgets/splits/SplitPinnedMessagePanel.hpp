@@ -31,6 +31,7 @@ class TwitchChannel;
 class SplitPinnedMessagePanel : public BaseWidget
 {
     Q_OBJECT
+    friend class Split;
 
 public:
     explicit SplitPinnedMessagePanel(Split *split);

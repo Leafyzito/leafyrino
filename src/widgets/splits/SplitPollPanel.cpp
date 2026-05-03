@@ -475,9 +475,10 @@ SplitPollPanel::SplitPollPanel(Split *split)
     this->updateExpandToggle();
 
     getSettings()->showPollPanel.connect(
-        [this](const bool &enabled) {
+        [this](const bool & /*enabled*/) {
             this->startOrStopTimer();
-            if (!enabled)
+            if (!getSettings()->showPollPanel ||
+                this->split_->perSplitHidePoll())
             {
                 this->hidePanel();
             }
@@ -577,7 +578,7 @@ void SplitPollPanel::startOrStopTimer()
     this->pollTimer_.stop();
     this->countdownTimer_.stop();
 
-    if (!getSettings()->showPollPanel)
+    if (!getSettings()->showPollPanel || this->split_->perSplitHidePoll())
     {
         return;
     }
@@ -599,7 +600,7 @@ void SplitPollPanel::startOrStopTimer()
 
 void SplitPollPanel::fetchPoll()
 {
-    if (!getSettings()->showPollPanel)
+    if (!getSettings()->showPollPanel || this->split_->perSplitHidePoll())
     {
         this->hidePanel();
         return;

@@ -465,6 +465,11 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
     // top level menu
     const auto &h = getApp()->getHotkeys();
     auto menu = std::make_unique<QMenu>();
+
+    auto selected = this->split_->getSelectedChannel();
+    auto *twitchChannel = dynamic_cast<TwitchChannel *>(selected.get());
+    auto *kickChannel = dynamic_cast<KickChannel *>(selected.get());
+
     menu->addAction(
         "Change channel",
         h->getDisplaySequence(HotkeyCategory::Split, "changeChannel"),
@@ -489,11 +494,51 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
     menu->addAction("Set filters",
                     h->getDisplaySequence(HotkeyCategory::Split, "pickFilters"),
                     this->split_, &Split::setFiltersDialog);
-    menu->addSeparator();
 
-    auto selected = this->split_->getSelectedChannel();
-    auto *twitchChannel = dynamic_cast<TwitchChannel *>(selected.get());
-    auto *kickChannel = dynamic_cast<KickChannel *>(selected.get());
+    if (twitchChannel)
+    {
+        menu->addSeparator();
+
+        auto *panelsMenu = menu->addMenu(QStringLiteral("Panels in this split"));
+        const bool hideAll = this->split_->perSplitHidePinnedMessage() &&
+                             this->split_->perSplitHidePrediction() &&
+                             this->split_->perSplitHidePoll();
+        auto *hideAllPanelsAction =
+            panelsMenu->addAction(QStringLiteral("Hide all"));
+        hideAllPanelsAction->setCheckable(true);
+        hideAllPanelsAction->setChecked(hideAll);
+        QObject::connect(hideAllPanelsAction, &QAction::toggled, this->split_,
+                         &Split::setPerSplitHideAllPanels);
+        panelsMenu->addSeparator();
+        auto *hidePinnedAction =
+            panelsMenu->addAction(QStringLiteral("Hide pinned message"));
+        hidePinnedAction->setCheckable(true);
+        hidePinnedAction->setChecked(
+            this->split_->perSplitHidePinnedMessage());
+        QObject::connect(hidePinnedAction, &QAction::toggled, this->split_,
+                         &Split::setPerSplitHidePinnedMessage);
+        auto *hidePredictionAction =
+            panelsMenu->addAction(QStringLiteral("Hide prediction"));
+        hidePredictionAction->setCheckable(true);
+        hidePredictionAction->setChecked(
+            this->split_->perSplitHidePrediction());
+        QObject::connect(hidePredictionAction, &QAction::toggled, this->split_,
+                         &Split::setPerSplitHidePrediction);
+        auto *hidePollAction =
+            panelsMenu->addAction(QStringLiteral("Hide poll"));
+        hidePollAction->setCheckable(true);
+        hidePollAction->setChecked(this->split_->perSplitHidePoll());
+        QObject::connect(hidePollAction, &QAction::toggled, this->split_,
+                         &Split::setPerSplitHidePoll);
+
+        menu->addAction(QStringLiteral("Restore dismissed panels"), this->split_,
+                        &Split::recoverDismissedPanels);
+        menu->addSeparator();
+    }
+    else if (kickChannel)
+    {
+        menu->addSeparator();
+    }
 
     if (twitchChannel || kickChannel)
     {
@@ -594,8 +639,6 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
             menu->addAction("Reload subscriber emotes",
                             subSeq.isEmpty() ? bothSeq : subSeq, this,
                             &SplitHeader::reloadSubscriberEmotes);
-            menu->addAction("Restore dismissed panels", this->split_,
-                            &Split::recoverDismissedPanels);
         }
     }
 

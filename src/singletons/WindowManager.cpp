@@ -713,6 +713,19 @@ void WindowManager::encodeNodeRecursively(SplitNode *node, QJsonObject &obj)
             {
                 obj["checkSpelling"] = *spellOverride;
             }
+
+            if (node->getSplit()->perSplitHidePinnedMessage())
+            {
+                obj.insert(QStringLiteral("splitHidePinnedMessage"), true);
+            }
+            if (node->getSplit()->perSplitHidePrediction())
+            {
+                obj.insert(QStringLiteral("splitHidePrediction"), true);
+            }
+            if (node->getSplit()->perSplitHidePoll())
+            {
+                obj.insert(QStringLiteral("splitHidePoll"), true);
+            }
         }
         break;
         case SplitNode::Type::HorizontalContainer:

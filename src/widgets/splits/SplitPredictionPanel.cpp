@@ -504,9 +504,10 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
     this->installClickFocusesSplit(this);
 
     getSettings()->showPredictionPanel.connect(
-        [this](const bool &enabled) {
+        [this](const bool & /*enabled*/) {
             this->startOrStopTimer();
-            if (!enabled)
+            if (!getSettings()->showPredictionPanel ||
+                this->split_->perSplitHidePrediction())
             {
                 this->hidePanel();
             }
@@ -612,7 +613,8 @@ void SplitPredictionPanel::startOrStopTimer()
 {
     this->pollTimer_.stop();
 
-    if (!getSettings()->showPredictionPanel)
+    if (!getSettings()->showPredictionPanel ||
+        this->split_->perSplitHidePrediction())
     {
         return;
     }
@@ -634,7 +636,8 @@ void SplitPredictionPanel::startOrStopTimer()
 
 void SplitPredictionPanel::fetchPredictions()
 {
-    if (!getSettings()->showPredictionPanel)
+    if (!getSettings()->showPredictionPanel ||
+        this->split_->perSplitHidePrediction())
     {
         this->hidePanel();
         return;
@@ -836,7 +839,8 @@ void SplitPredictionPanel::fetchChannelPoints()
     {
         return;
     }
-    if (!getSettings()->showPredictionPanel)
+    if (!getSettings()->showPredictionPanel ||
+        this->split_->perSplitHidePrediction())
     {
         return;
     }
@@ -900,7 +904,8 @@ void SplitPredictionPanel::renderPrediction(const HelixPrediction &prediction,
 {
     this->predictionUiLiveMode_ = liveMode;
 
-    if (!getSettings()->showPredictionPanel)
+    if (!getSettings()->showPredictionPanel ||
+        this->split_->perSplitHidePrediction())
     {
         this->hidePanel();
         return;
@@ -1448,6 +1453,7 @@ void SplitPredictionPanel::rememberViewerPickForEvent(const QString &eventId,
 bool SplitPredictionPanel::baseBetContextForBetting() const
 {
     if (!getSettings()->showPredictionPanel ||
+        this->split_->perSplitHidePrediction() ||
         this->twitchChannel_ == nullptr ||
         getApp()->getAccounts()->twitch.getCurrent()->isAnon() ||
         this->lingering_ || !this->lastLivePrediction_.has_value())
@@ -1476,6 +1482,7 @@ void SplitPredictionPanel::updateYourPickSummaryLabel()
     };
 
     if (!getSettings()->showPredictionPanel ||
+        this->split_->perSplitHidePrediction() ||
         this->twitchChannel_ == nullptr ||
         getApp()->getAccounts()->twitch.getCurrent()->isAnon() ||
         this->lingering_ || !this->predictionUiLiveMode_)

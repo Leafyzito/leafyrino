@@ -34,6 +34,7 @@ class TwitchChannel;
 class SplitPollPanel : public BaseWidget
 {
     Q_OBJECT
+    friend class Split;
 
 public:
     explicit SplitPollPanel(Split *split);

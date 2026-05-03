@@ -78,6 +78,16 @@ public:
     std::optional<bool> checkSpellingOverride() const;
     void setCheckSpellingOverride(std::optional<bool> override);
 
+    bool perSplitHidePinnedMessage() const;
+    void setPerSplitHidePinnedMessage(bool hide);
+    bool perSplitHidePrediction() const;
+    void setPerSplitHidePrediction(bool hide);
+    bool perSplitHidePoll() const;
+    void setPerSplitHidePoll(bool hide);
+    void setPerSplitHideAllPanels(bool hide);
+    void loadPerSplitPanelHides(bool hidePinned, bool hidePrediction,
+                                bool hidePoll);
+
     void insertTextToInput(const QString &text);
 
     void showChangeChannelPopup(const char *dialogTitle, bool empty,
@@ -141,6 +151,7 @@ private:
     void updateInputPlaceholder();
     void addShortcuts() override;
     void updateMpsOverlayAnchor();
+    void syncPerSplitPanelHidesToPanels();
 
     /**
      * @brief Opens a Twitch channel's stream in your default browser's player (opens a formatted link)
@@ -170,6 +181,9 @@ private:
     IndirectChannel channel_;
 
     bool moderationMode_{};
+    bool perSplitHidePinnedMessage_{};
+    bool perSplitHidePrediction_{};
+    bool perSplitHidePoll_{};
     bool isTopRightSplit_{};
 
     bool isMouseOver_{};

@@ -135,9 +135,10 @@ SplitPinnedMessagePanel::SplitPinnedMessagePanel(Split *split)
     this->updateExpandToggle();
 
     getSettings()->showPinnedMessagePanel.connect(
-        [this](const bool &enabled) {
+        [this](const bool & /*enabled*/) {
             this->startOrStopTimer();
-            if (!enabled)
+            if (!getSettings()->showPinnedMessagePanel ||
+                this->split_->perSplitHidePinnedMessage())
             {
                 this->hidePanel();
             }
@@ -250,7 +251,8 @@ void SplitPinnedMessagePanel::startOrStopTimer()
 {
     this->pollTimer_.stop();
 
-    if (!getSettings()->showPinnedMessagePanel)
+    if (!getSettings()->showPinnedMessagePanel ||
+        this->split_->perSplitHidePinnedMessage())
     {
         return;
     }
@@ -272,7 +274,8 @@ void SplitPinnedMessagePanel::startOrStopTimer()
 
 void SplitPinnedMessagePanel::fetchPinned()
 {
-    if (!getSettings()->showPinnedMessagePanel)
+    if (!getSettings()->showPinnedMessagePanel ||
+        this->split_->perSplitHidePinnedMessage())
     {
         this->hidePanel();
         return;

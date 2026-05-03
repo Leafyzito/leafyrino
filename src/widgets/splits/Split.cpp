@@ -1060,6 +1060,140 @@ void Split::setCheckSpellingOverride(std::optional<bool> override)
     this->input_->setCheckSpellingOverride(override);
 }
 
+void Split::syncPerSplitPanelHidesToPanels()
+{
+    this->pinnedMessagePanel_->startOrStopTimer();
+    if (this->perSplitHidePinnedMessage_)
+    {
+        this->pinnedMessagePanel_->hidePanel();
+    }
+    else
+    {
+        this->pinnedMessagePanel_->refresh();
+    }
+
+    this->predictionPanel_->startOrStopTimer();
+    if (this->perSplitHidePrediction_)
+    {
+        this->predictionPanel_->hidePanel();
+    }
+    else
+    {
+        this->predictionPanel_->refresh();
+    }
+
+    this->pollPanel_->startOrStopTimer();
+    if (this->perSplitHidePoll_)
+    {
+        this->pollPanel_->hidePanel();
+    }
+    else
+    {
+        this->pollPanel_->refresh();
+    }
+}
+
+bool Split::perSplitHidePinnedMessage() const
+{
+    return this->perSplitHidePinnedMessage_;
+}
+
+void Split::setPerSplitHidePinnedMessage(bool hide)
+{
+    if (this->perSplitHidePinnedMessage_ == hide)
+    {
+        return;
+    }
+    this->perSplitHidePinnedMessage_ = hide;
+    this->pinnedMessagePanel_->startOrStopTimer();
+    if (hide)
+    {
+        this->pinnedMessagePanel_->hidePanel();
+    }
+    else
+    {
+        this->pinnedMessagePanel_->refresh();
+    }
+    getApp()->getWindows()->queueSave();
+}
+
+bool Split::perSplitHidePrediction() const
+{
+    return this->perSplitHidePrediction_;
+}
+
+void Split::setPerSplitHidePrediction(bool hide)
+{
+    if (this->perSplitHidePrediction_ == hide)
+    {
+        return;
+    }
+    this->perSplitHidePrediction_ = hide;
+    this->predictionPanel_->startOrStopTimer();
+    if (hide)
+    {
+        this->predictionPanel_->hidePanel();
+    }
+    else
+    {
+        this->predictionPanel_->refresh();
+    }
+    getApp()->getWindows()->queueSave();
+}
+
+bool Split::perSplitHidePoll() const
+{
+    return this->perSplitHidePoll_;
+}
+
+void Split::setPerSplitHidePoll(bool hide)
+{
+    if (this->perSplitHidePoll_ == hide)
+    {
+        return;
+    }
+    this->perSplitHidePoll_ = hide;
+    this->pollPanel_->startOrStopTimer();
+    if (hide)
+    {
+        this->pollPanel_->hidePanel();
+    }
+    else
+    {
+        this->pollPanel_->refresh();
+    }
+    getApp()->getWindows()->queueSave();
+}
+
+void Split::setPerSplitHideAllPanels(bool hide)
+{
+    if (this->perSplitHidePinnedMessage_ == hide &&
+        this->perSplitHidePrediction_ == hide && this->perSplitHidePoll_ == hide)
+    {
+        return;
+    }
+    this->perSplitHidePinnedMessage_ = hide;
+    this->perSplitHidePrediction_ = hide;
+    this->perSplitHidePoll_ = hide;
+    this->syncPerSplitPanelHidesToPanels();
+    getApp()->getWindows()->queueSave();
+}
+
+void Split::loadPerSplitPanelHides(bool hidePinned, bool hidePrediction,
+                                   bool hidePoll)
+{
+    if (this->perSplitHidePinnedMessage_ == hidePinned &&
+        this->perSplitHidePrediction_ == hidePrediction &&
+        this->perSplitHidePoll_ == hidePoll)
+    {
+        return;
+    }
+    this->perSplitHidePinnedMessage_ = hidePinned;
+    this->perSplitHidePrediction_ = hidePrediction;
+    this->perSplitHidePoll_ = hidePoll;
+    this->syncPerSplitPanelHidesToPanels();
+}
+
 void Split::insertTextToInput(const QString &text)
 {
     this->input_->insertText(text);

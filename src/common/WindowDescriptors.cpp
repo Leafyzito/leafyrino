@@ -138,6 +138,12 @@ void SplitDescriptor::loadFromJSON(SplitDescriptor &descriptor,
     {
         descriptor.spellCheckOverride = spellOverride.toBool();
     }
+    descriptor.perSplitHidePinnedMessage_ =
+        root.value(QStringLiteral("splitHidePinnedMessage")).toBool();
+    descriptor.perSplitHidePrediction_ =
+        root.value(QStringLiteral("splitHidePrediction")).toBool();
+    descriptor.perSplitHidePoll_ =
+        root.value(QStringLiteral("splitHidePoll")).toBool();
     if (descriptor.type_ == u"kick")
     {
         descriptor.kickChannelID =

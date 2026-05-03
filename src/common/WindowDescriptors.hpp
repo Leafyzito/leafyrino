@@ -59,6 +59,11 @@ struct SplitDescriptor {
 
     std::optional<bool> spellCheckOverride;
 
+    bool perSplitHidePinnedMessage_{false};
+    bool perSplitHidePrediction_{false};
+    bool perSplitHidePoll_{false};
+
+
     QList<QUuid> filters_;
 
     uint64_t kickChannelID = 0;

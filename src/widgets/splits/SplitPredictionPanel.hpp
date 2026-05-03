@@ -40,6 +40,7 @@ class TwitchChannel;
 class SplitPredictionPanel : public BaseWidget
 {
     Q_OBJECT
+    friend class Split;
 
 public:
     explicit SplitPredictionPanel(Split *split);

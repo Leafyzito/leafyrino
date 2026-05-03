@@ -879,6 +879,11 @@ NodeDescriptor SplitContainer::buildDescriptorRecursively(
         result.type_ = channelTypeToString(channelType);
         result.channelName_ = currentNode->split_->getChannel()->getName();
         result.filters_ = currentNode->split_->getFilters();
+        result.perSplitHidePinnedMessage_ =
+            currentNode->split_->perSplitHidePinnedMessage();
+        result.perSplitHidePrediction_ =
+            currentNode->split_->perSplitHidePrediction();
+        result.perSplitHidePoll_ = currentNode->split_->perSplitHidePoll();
         return result;
     }
 
@@ -913,6 +918,9 @@ void SplitContainer::applyFromDescriptorRecursively(
         split->setModerationMode(splitNode.moderationMode_);
         split->setFilters(splitNode.filters_);
         split->setCheckSpellingOverride(splitNode.spellCheckOverride);
+        split->loadPerSplitPanelHides(splitNode.perSplitHidePinnedMessage_,
+                                     splitNode.perSplitHidePrediction_,
+                                     splitNode.perSplitHidePoll_);
 
         this->insertSplit(split);
 
@@ -949,6 +957,9 @@ void SplitContainer::applyFromDescriptorRecursively(
                 split->setChannel(WindowManager::decodeChannel(splitNode));
                 split->setModerationMode(splitNode.moderationMode_);
                 split->setCheckSpellingOverride(splitNode.spellCheckOverride);
+                split->loadPerSplitPanelHides(splitNode.perSplitHidePinnedMessage_,
+                                             splitNode.perSplitHidePrediction_,
+                                             splitNode.perSplitHidePoll_);
 
                 auto node = std::make_shared<Node>();
                 node->parent_ = baseNode;
