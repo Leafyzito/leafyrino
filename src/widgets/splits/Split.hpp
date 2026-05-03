@@ -24,6 +24,7 @@ class MessageView;
 class SplitHeader;
 class SplitInput;
 class SplitPinnedMessagePanel;
+class SplitPollPanel;
 class SplitPredictionPanel;
 class SplitContainer;
 class SplitOverlay;
@@ -178,6 +179,7 @@ private:
     SplitHeader *const header_;
     SplitPinnedMessagePanel *const pinnedMessagePanel_;
     SplitPredictionPanel *const predictionPanel_;
+    SplitPollPanel *const pollPanel_;
     ChannelView *const view_;
     SplitInput *const input_;
     SplitOverlay *const overlay_;

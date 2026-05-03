@@ -10,6 +10,7 @@
 
 #include <functional>
 #include <optional>
+#include <vector>
 
 class QObject;
 
@@ -22,6 +23,49 @@ namespace chatterino {
  * ToS implications — see implementation comments.
  */
 namespace TwitchGql {
+
+/// Active poll shown to viewers (`User.viewablePoll` / `channel.owner.viewablePoll` on gql.twitch.tv).
+struct ViewablePollChoice {
+    QString id;
+    QString title;
+    int votesTotal{};
+    int totalVoters{};
+};
+
+struct ViewablePoll {
+    QString id;
+    QString title;
+    QString status;
+    qint64 remainingDurationMs{};
+    int durationSeconds{};
+    QString startedAt;
+    QString endedAt;
+    int totalVoters{};
+    std::vector<ViewablePollChoice> choices;
+    /// Choice IDs the signed-in viewer selected (from `self.voter.choices`), if any.
+    std::vector<QString> viewerVotedChoiceIds;
+    /// For terminal polls: choice with highest `votes.total` (first wins on ties). `Poll` has no `winningChoice` field in GQL.
+    QString winningChoiceId;
+};
+
+/// `viewablePoll.status` is ACTIVE while the poll runs.
+inline bool pollStatusIsActive(const QString &status)
+{
+    return status.compare(QStringLiteral("ACTIVE"), Qt::CaseInsensitive) == 0;
+}
+
+/// Terminal poll statuses seen from Twitch GQL (may grow; unknown statuses are dropped in the parser).
+inline bool pollStatusIsTerminal(const QString &status)
+{
+    return status.compare(QStringLiteral("COMPLETED"), Qt::CaseInsensitive) ==
+               0 ||
+           status.compare(QStringLiteral("TERMINATED"), Qt::CaseInsensitive) ==
+               0 ||
+           status.compare(QStringLiteral("ARCHIVED"), Qt::CaseInsensitive) ==
+               0 ||
+           status.compare(QStringLiteral("ENDED"), Qt::CaseInsensitive) == 0 ||
+           status.compare(QStringLiteral("CLOSED"), Qt::CaseInsensitive) == 0;
+}
 
 struct PinnedChatMessage {
     QString id;
@@ -43,6 +87,19 @@ void fetchPredictionsForChannel(
     const QString &channelId, const QString &channelLogin,
     const QString &clientId, const QString &oauthToken, const QObject *caller,
     std::function<void(std::optional<HelixPrediction>)> onSuccess,
+    std::function<void(QString)> onError);
+
+/// Undocumented GQL: channel poll for viewers (`User.viewablePoll` / `channel.owner.viewablePoll`).
+/// Returns ACTIVE polls and terminal results while Twitch still exposes them. Uses the same
+/// gql.twitch.tv + Client-Integrity path as predictions. Request sends the full `query` document
+/// plus `extensions.persistedQuery.sha256Hash` = SHA256(UTF-8 query) — Twitch executes that
+/// document; the hash alone is not registered on Twitch's APQ map. If Twitch changes fields,
+/// update the query string (see https://kawcco.com/twitch-graphql-api/poll.doc.html) and DevTools.
+/// Casting votes uses undocumented `VoteInPoll` and may break without notice.
+void fetchViewablePollForChannel(
+    const QString &channelId, const QString &channelLogin,
+    const QString &clientId, const QString &oauthToken, const QObject *caller,
+    std::function<void(std::optional<ViewablePoll>)> onSuccess,
     std::function<void(QString)> onError);
 
 /// Persisted query GetPinnedChat: fetches the current moderator-pinned chat message.
@@ -72,6 +129,14 @@ void makePrediction(const QString &eventId, const QString &outcomeId,
                     const QString &gqlClientId, const QObject *caller,
                     std::function<void()> onSuccess,
                     std::function<void(QString)> onError);
+
+/// Undocumented `VoteInPoll` mutation (same transport as `makePrediction`). Free single-vote
+/// path only; channel-points multi-vote may require extra fields not implemented here.
+void voteInPoll(const QString &pollId, const QString &choiceId,
+                const QString &userId, const QString &oauthToken,
+                const QString &gqlClientId, const QObject *caller,
+                std::function<void()> onSuccess,
+                std::function<void(QString)> onError);
 
 }  // namespace TwitchGql
 

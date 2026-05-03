@@ -46,6 +46,7 @@
 #include "widgets/splits/SplitMpsOverlay.hpp"
 #include "widgets/splits/SplitOverlay.hpp"
 #include "widgets/splits/SplitPinnedMessagePanel.hpp"
+#include "widgets/splits/SplitPollPanel.hpp"
 #include "widgets/splits/SplitPredictionPanel.hpp"
 #include "widgets/Window.hpp"
 
@@ -100,6 +101,7 @@ Split::Split(QWidget *parent)
     , header_(new SplitHeader(this))
     , pinnedMessagePanel_(new SplitPinnedMessagePanel(this))
     , predictionPanel_(new SplitPredictionPanel(this))
+    , pollPanel_(new SplitPollPanel(this))
     , view_(new ChannelView(this, this, ChannelView::Context::None,
                             getSettings()->scrollbackSplitLimit))
     , input_(new SplitInput(this))
@@ -116,6 +118,7 @@ Split::Split(QWidget *parent)
     this->vbox_->addWidget(this->header_);
     this->vbox_->addWidget(this->pinnedMessagePanel_);
     this->vbox_->addWidget(this->predictionPanel_);
+    this->vbox_->addWidget(this->pollPanel_);
     this->vbox_->addWidget(this->view_, 1);
     this->vbox_->addWidget(this->input_);
 
@@ -233,6 +236,7 @@ Split::Split(QWidget *parent)
     this->view_->installEventFilter(this);
     this->pinnedMessagePanel_->installEventFilter(this);
     this->predictionPanel_->installEventFilter(this);
+    this->pollPanel_->installEventFilter(this);
     this->installEventFilter(this);
 
     QTimer::singleShot(0, this, [this] {
@@ -297,6 +301,7 @@ Split::Split(QWidget *parent)
     this->signalHolder_.managedConnect(this->focused, [this] {
         this->pinnedMessagePanel_->refresh();
         this->predictionPanel_->refresh();
+        this->pollPanel_->refresh();
     });
     this->signalHolder_.managedConnect(this->input_->ui_.textEdit->focusLost,
                                        [this] {
@@ -1009,11 +1014,13 @@ void Split::setChannel(IndirectChannel newChannel)
     {
         this->pinnedMessagePanel_->setTwitchChannel(tc);
         this->predictionPanel_->setTwitchChannel(tc);
+        this->pollPanel_->setTwitchChannel(tc);
     }
     else
     {
         this->pinnedMessagePanel_->setTwitchChannel(nullptr);
         this->predictionPanel_->setTwitchChannel(nullptr);
+        this->pollPanel_->setTwitchChannel(nullptr);
     }
 
     this->header_->updateIcons();
@@ -1102,6 +1109,7 @@ void Split::recoverDismissedPanels()
 {
     this->pinnedMessagePanel_->recoverDismissedPanel();
     this->predictionPanel_->recoverDismissedPanel();
+    this->pollPanel_->recoverDismissedPanel();
 }
 
 void Split::updateLastReadMessage()
@@ -1163,7 +1171,8 @@ bool Split::eventFilter(QObject *watched, QEvent *event)
         case QEvent::LayoutRequest: {
             if (watched == this || watched == this->view_ ||
                 watched == this->pinnedMessagePanel_ ||
-                watched == this->predictionPanel_)
+                watched == this->predictionPanel_ ||
+                watched == this->pollPanel_)
             {
                 this->updateMpsOverlayAnchor();
             }

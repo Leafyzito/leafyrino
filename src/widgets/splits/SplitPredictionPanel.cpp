@@ -235,40 +235,6 @@ QUrl predictionStartSoundUrl()
     return QUrl::fromLocalFile(path);
 }
 
-QString betOutcomeButtonStyleSheet(const QColor &accent,
-                                   const QColor &labelColor, bool enabled)
-{
-    const QString accentCss = accent.name(QColor::HexArgb);
-    const QString labelCss = labelColor.name(QColor::HexArgb);
-    if (!enabled)
-    {
-        const QColor dimText =
-            QColor::fromRgbF(labelColor.redF() * 0.5, labelColor.greenF() * 0.5,
-                             labelColor.blueF() * 0.5, labelColor.alphaF());
-        const QColor dimBorder =
-            QColor::fromRgbF(accent.redF() * 0.45 + dimText.redF() * 0.25,
-                             accent.greenF() * 0.45 + dimText.greenF() * 0.25,
-                             accent.blueF() * 0.45 + dimText.blueF() * 0.25,
-                             std::max(0.35f, accent.alphaF()));
-        return QStringLiteral(
-                   "QPushButton { color: %1; text-decoration: none; "
-                   "border: 2px solid %2; border-radius: 4px; padding: 4px "
-                   "8px; "
-                   "background-color: transparent; font-style: italic; }")
-            .arg(dimText.name(QColor::HexArgb),
-                 dimBorder.name(QColor::HexArgb));
-    }
-    const int r = accent.red(), g = accent.green(), b = accent.blue();
-    const QString bg1 = QColor(r, g, b, 55).name(QColor::HexArgb);
-    const QString bg2 = QColor(r, g, b, 90).name(QColor::HexArgb);
-    return QStringLiteral(
-               "QPushButton { color: %1; text-decoration: none; "
-               "border: 2px solid %2; border-radius: 4px; padding: 4px 8px; "
-               "background-color: %3; font-weight: 600; }"
-               "QPushButton:hover { background-color: %4; }")
-        .arg(labelCss, accentCss, bg1, bg2);
-}
-
 QString formatPointsCompact(int points)
 {
     points = std::max(0, points);
@@ -524,16 +490,6 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
     }
     this->betRow_->hide();
     this->expandedLayout_->addWidget(this->betRow_);
-
-    this->expandedLayout_->addSpacing(6);
-    this->disclaimerLabel_ = new QLabel(
-        QStringLiteral(
-            "Channel points features are in beta. They may change or stop "
-            "working if Twitch updates their API."),
-        this->expandedWidget_);
-    this->disclaimerLabel_->setWordWrap(true);
-    this->disclaimerLabel_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    this->expandedLayout_->addWidget(this->disclaimerLabel_);
 
     mainLayout->addWidget(topRow);
 
@@ -1335,14 +1291,6 @@ void SplitPredictionPanel::updateStyleSheets()
         this->outcomeWon1_->setStyleSheet(wonStyle);
     }
 
-    if (this->disclaimerLabel_ != nullptr)
-    {
-        const auto disclaimerCss =
-            this->theme->messages.textColors.system.name(QColor::HexArgb);
-        this->disclaimerLabel_->setStyleSheet(
-            QStringLiteral("QLabel { color: %1; }").arg(disclaimerCss));
-    }
-
     const QString btnStyle =
         QStringLiteral("QPushButton { color: %1; text-decoration: underline; "
                        "border: none; "
@@ -1415,12 +1363,6 @@ void SplitPredictionPanel::scaleChangedEvent(float scale)
         {
             w->setFont(f);
         }
-    }
-    if (this->disclaimerLabel_ != nullptr)
-    {
-        QFont df = f;
-        df.setPointSize(std::max(7, f.pointSize() - 1));
-        this->disclaimerLabel_->setFont(df);
     }
     QFont bf = f;
     bf.setBold(true);
@@ -1738,9 +1680,9 @@ void SplitPredictionPanel::refreshBetOutcomeButtonStyles()
     const QColor c0 = twitchOutcomeAccentColor(pr.outcomes[0].color, accent);
     const QColor c1 = twitchOutcomeAccentColor(pr.outcomes[1].color, accent);
 
-    this->betButton0_->setStyleSheet(betOutcomeButtonStyleSheet(
+    this->betButton0_->setStyleSheet(splitAccentActionButtonStyleSheet(
         c0, labelColor, this->betButton0_->isEnabled()));
-    this->betButton1_->setStyleSheet(betOutcomeButtonStyleSheet(
+    this->betButton1_->setStyleSheet(splitAccentActionButtonStyleSheet(
         c1, labelColor, this->betButton1_->isEnabled()));
 }
 

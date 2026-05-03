@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original artwork: poll winning choice (trophy). -->
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="15.999924mm"
+     height="15.999949mm"
+     viewBox="0 0 24 24"
+     fill="none">
+  <!-- BBox of paths ~[4.75,19.25]×[6.25,17.75]; scale to fill viewBox (same idea as prediction-darkMode). -->
+  <g stroke="#b7b7b7" stroke-linecap="round" stroke-linejoin="round"
+     stroke-width="1.5" fill="none"
+     transform="translate(12 12) scale(1.65517 2.08696) translate(-12 -12)">
+    <path d="M 8 7 h 8"/>
+    <path d="M 8 7.5 C 8 12.5 9.8 14 12 14 C 14.2 14 16 12.5 16 7.5"/>
+    <path d="M 8 9 Q 5.5 9.5 5.5 12"/>
+    <path d="M 16 9 Q 18.5 9.5 18.5 12"/>
+    <line x1="12" y1="14" x2="12" y2="17"/>
+    <path d="M 8.5 17 h 7"/>
+  </g>
+</svg>

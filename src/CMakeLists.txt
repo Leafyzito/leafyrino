@@ -944,6 +944,8 @@ set(SOURCE_FILES
         widgets/splits/SplitPinnedMessagePanel.hpp
         widgets/splits/SplitPredictionPanel.cpp
         widgets/splits/SplitPredictionPanel.hpp
+        widgets/splits/SplitPollPanel.cpp
+        widgets/splits/SplitPollPanel.hpp
         widgets/splits/SplitOverlay.cpp
         widgets/splits/SplitOverlay.hpp
         )

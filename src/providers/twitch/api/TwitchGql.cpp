@@ -8,6 +8,7 @@
 #include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
 
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -15,6 +16,7 @@
 #include <QUrl>
 #include <QUuid>
 
+#include <algorithm>
 #include <limits>
 
 namespace {
@@ -319,6 +321,277 @@ query ChannelPredictionsByLogin($login: String!) {
   }
 }
 )");
+
+// Undocumented viewer poll query (User.viewablePoll). Must stay byte-for-byte stable for
+// SHA256 in extensions.persistedQuery; if Twitch removes fields, adjust and re-verify.
+const QString QUERY_VIEWABLE_POLL_BY_CHANNEL_ID = QStringLiteral(R"(
+query ChannelPollContext_GetViewablePoll($channelID: ID!) {
+  channel(id: $channelID) {
+    owner {
+      viewablePoll {
+        id
+        title
+        status
+        remainingDurationMilliseconds
+        durationSeconds
+        startedAt
+        endedAt
+        totalVoters
+        isViewable
+        choices {
+          id
+          title
+          totalVoters
+          votes {
+            total
+            base
+            bits
+            communityPoints
+          }
+        }
+        self {
+          voter {
+            id
+            choices {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+}
+)");
+
+const QString QUERY_VIEWABLE_POLL_BY_LOGIN = QStringLiteral(R"(
+query ChannelPollContext_GetViewablePoll($login: String!) {
+  user(login: $login) {
+    viewablePoll {
+      id
+      title
+      status
+      remainingDurationMilliseconds
+      durationSeconds
+      startedAt
+      endedAt
+      totalVoters
+      isViewable
+      choices {
+        id
+        title
+        totalVoters
+        votes {
+          total
+          base
+          bits
+          communityPoints
+        }
+      }
+      self {
+        voter {
+          id
+          choices {
+            id
+          }
+        }
+      }
+    }
+  }
+}
+)");
+
+QString gqlDocumentSha256Hex(const QString &query)
+{
+    return QString::fromLatin1(
+        QCryptographicHash::hash(query.toUtf8(), QCryptographicHash::Sha256)
+            .toHex());
+}
+
+int jsonNumberToInt(const QJsonValue &v)
+{
+    if (v.isDouble())
+    {
+        return static_cast<int>(v.toDouble());
+    }
+    if (v.isString())
+    {
+        bool ok = false;
+        const int n = v.toString().toInt(&ok);
+        return ok ? n : 0;
+    }
+    return v.toInt();
+}
+
+std::optional<TwitchGql::ViewablePoll> tryParseViewablePollObject(
+    const QJsonObject &poll)
+{
+    if (poll.isEmpty())
+    {
+        return std::nullopt;
+    }
+    if (poll.contains(QStringLiteral("isViewable")) &&
+        !poll.value(QStringLiteral("isViewable")).toBool())
+    {
+        return std::nullopt;
+    }
+
+    TwitchGql::ViewablePoll out;
+    out.id = poll.value(QStringLiteral("id")).toString();
+    out.title = poll.value(QStringLiteral("title")).toString();
+    out.status = poll.value(QStringLiteral("status")).toString();
+    const bool active = TwitchGql::pollStatusIsActive(out.status);
+    const bool terminal = TwitchGql::pollStatusIsTerminal(out.status);
+    if (!active && !terminal)
+    {
+        qCDebug(chatterinoTwitch).nospace()
+            << "Twitch GQL viewablePoll unknown status: " << out.status;
+        return std::nullopt;
+    }
+    if (out.id.trimmed().isEmpty())
+    {
+        return std::nullopt;
+    }
+
+    const QJsonValue rem =
+        poll.value(QStringLiteral("remainingDurationMilliseconds"));
+    if (rem.isDouble())
+    {
+        out.remainingDurationMs = static_cast<qint64>(rem.toDouble());
+    }
+    else
+    {
+        out.remainingDurationMs =
+            static_cast<qint64>(rem.toVariant().toLongLong());
+    }
+    out.durationSeconds =
+        jsonNumberToInt(poll.value(QStringLiteral("durationSeconds")));
+    out.startedAt = poll.value(QStringLiteral("startedAt")).toString();
+    out.endedAt = poll.value(QStringLiteral("endedAt")).toString();
+    out.totalVoters =
+        jsonNumberToInt(poll.value(QStringLiteral("totalVoters")));
+
+    const auto choicesArr = poll.value(QStringLiteral("choices")).toArray();
+    out.choices.reserve(static_cast<size_t>(choicesArr.size()));
+    for (const auto &cv : choicesArr)
+    {
+        const auto c = cv.toObject();
+        TwitchGql::ViewablePollChoice ch;
+        ch.id = c.value(QStringLiteral("id")).toString();
+        ch.title = c.value(QStringLiteral("title")).toString();
+        ch.totalVoters =
+            jsonNumberToInt(c.value(QStringLiteral("totalVoters")));
+        const auto votes = c.value(QStringLiteral("votes")).toObject();
+        ch.votesTotal = jsonNumberToInt(votes.value(QStringLiteral("total")));
+        if (ch.id.trimmed().isEmpty())
+        {
+            continue;
+        }
+        out.choices.push_back(std::move(ch));
+    }
+
+    const auto self = poll.value(QStringLiteral("self")).toObject();
+    const auto voter = self.value(QStringLiteral("voter")).toObject();
+    for (const auto &vc : voter.value(QStringLiteral("choices")).toArray())
+    {
+        const QString cid =
+            vc.toObject().value(QStringLiteral("id")).toString();
+        if (!cid.isEmpty())
+        {
+            out.viewerVotedChoiceIds.push_back(cid);
+        }
+    }
+
+    if (terminal && !out.choices.empty())
+    {
+        int bestVotes = -1;
+        for (const auto &ch : out.choices)
+        {
+            const int v = std::max(0, ch.votesTotal);
+            if (v > bestVotes)
+            {
+                bestVotes = v;
+                out.winningChoiceId = ch.id;
+            }
+        }
+    }
+
+    return out;
+}
+
+std::optional<TwitchGql::ViewablePoll> tryParseViewablePollFromChannelResponse(
+    const QJsonObject &root)
+{
+    const auto data = root.value(QStringLiteral("data")).toObject();
+    const QJsonValue pollVal = data.value(QStringLiteral("channel"))
+                                   .toObject()
+                                   .value(QStringLiteral("owner"))
+                                   .toObject()
+                                   .value(QStringLiteral("viewablePoll"));
+    if (pollVal.isNull() || !pollVal.isObject())
+    {
+        return std::nullopt;
+    }
+    return tryParseViewablePollObject(pollVal.toObject());
+}
+
+std::optional<TwitchGql::ViewablePoll> tryParseViewablePollFromUserResponse(
+    const QJsonObject &root)
+{
+    const auto data = root.value(QStringLiteral("data")).toObject();
+    const QJsonValue pollVal = data.value(QStringLiteral("user"))
+                                   .toObject()
+                                   .value(QStringLiteral("viewablePoll"));
+    if (pollVal.isNull() || !pollVal.isObject())
+    {
+        return std::nullopt;
+    }
+    return tryParseViewablePollObject(pollVal.toObject());
+}
+
+QJsonObject gqlPollRequestBody(const QString &query,
+                               const QJsonObject &variables)
+{
+    QJsonObject persisted;
+    persisted.insert(QStringLiteral("version"), 1);
+    persisted.insert(QStringLiteral("sha256Hash"), gqlDocumentSha256Hex(query));
+
+    QJsonObject extensions;
+    extensions.insert(QStringLiteral("persistedQuery"), persisted);
+
+    QJsonObject body;
+    body.insert(QStringLiteral("operationName"),
+                QStringLiteral("ChannelPollContext_GetViewablePoll"));
+    body.insert(QStringLiteral("query"), query);
+    body.insert(QStringLiteral("variables"), variables);
+    body.insert(QStringLiteral("extensions"), extensions);
+    return body;
+}
+
+const QString MUTATION_VOTE_IN_POLL = QStringLiteral(R"(
+mutation VoteInPoll($input: VoteInPollInput!) {
+  voteInPoll(input: $input) {
+    __typename
+  }
+}
+)");
+
+QJsonObject gqlVoteInPollRequestBody(const QString &query,
+                                     const QJsonObject &variables)
+{
+    QJsonObject persisted;
+    persisted.insert(QStringLiteral("version"), 1);
+    persisted.insert(QStringLiteral("sha256Hash"), gqlDocumentSha256Hex(query));
+
+    QJsonObject extensions;
+    extensions.insert(QStringLiteral("persistedQuery"), persisted);
+
+    QJsonObject body;
+    body.insert(QStringLiteral("operationName"), QStringLiteral("VoteInPoll"));
+    body.insert(QStringLiteral("query"), query);
+    body.insert(QStringLiteral("variables"), variables);
+    body.insert(QStringLiteral("extensions"), extensions);
+    return body;
+}
 
 QJsonObject gqlEventToHelixPredictionJson(const QJsonObject &ev)
 {
@@ -907,6 +1180,124 @@ void fetchPredictionsForChannel(
     });
 }
 
+void fetchViewablePollForChannel(
+    const QString &channelId, const QString &channelLogin,
+    const QString &clientId, const QString &oauthToken, const QObject *caller,
+    std::function<void(std::optional<ViewablePoll>)> onSuccess,
+    std::function<void(QString)> onError)
+{
+    (void)clientId;
+    if (oauthToken.isEmpty())
+    {
+        onError(QStringLiteral("Missing OAuth token"));
+        return;
+    }
+
+    auto triedNameFallback = std::make_shared<bool>(false);
+
+    auto runGql =
+        std::make_shared<std::function<void(const QString &, bool, bool)>>();
+
+    *runGql = [runGql, triedNameFallback, channelId, channelLogin, oauthToken,
+               caller, onSuccess,
+               onError](const QString &integrityJwt, bool useChannelId,
+                        bool afterIntegrityRetry) {
+        const bool byId = useChannelId && !channelId.isEmpty();
+        QJsonObject variables;
+        QString query;
+        if (byId)
+        {
+            query = QUERY_VIEWABLE_POLL_BY_CHANNEL_ID;
+            variables.insert(QStringLiteral("channelID"), channelId);
+        }
+        else
+        {
+            query = QUERY_VIEWABLE_POLL_BY_LOGIN;
+            variables.insert(QStringLiteral("login"), channelLogin.toLower());
+        }
+
+        const QJsonObject body = gqlPollRequestBody(query, variables);
+
+        auto req =
+            NetworkRequest(QUrl(QStringLiteral("https://gql.twitch.tv/gql")),
+                           NetworkRequestType::Post)
+                .timeout(10'000)
+                .header("Client-ID", TWITCH_WEB_GQL_CLIENT_ID)
+                .header("Authorization",
+                        QStringLiteral("Bearer %1").arg(oauthToken))
+                .header("Content-Type", "application/json")
+                .caller(caller);
+
+        if (!integrityJwt.isEmpty())
+        {
+            req = std::move(req).header("Client-Integrity", integrityJwt);
+        }
+
+        std::move(req)
+            .json(body)
+            .onSuccess([runGql, triedNameFallback, afterIntegrityRetry,
+                        useChannelId, oauthToken, caller, onError, onSuccess,
+                        byId, channelLogin,
+                        integrityJwt](const NetworkResult &res) {
+                const auto root = res.parseJson();
+                const auto errs =
+                    root.value(QStringLiteral("errors")).toArray();
+
+                if (!errs.isEmpty() && errorsSuggestIntegrity(errs) &&
+                    !afterIntegrityRetry)
+                {
+                    fetchIntegrityToken(oauthToken, caller,
+                                        [runGql, useChannelId](QString jwt) {
+                                            (*runGql)(jwt, useChannelId, true);
+                                        });
+                    return;
+                }
+
+                if (!errs.isEmpty() &&
+                    (root.value(QStringLiteral("data")).isNull() ||
+                     root.value(QStringLiteral("data")).toObject().isEmpty()))
+                {
+                    qCDebug(chatterinoTwitch)
+                        << "Twitch GQL viewable poll errors:"
+                        << summarizeGraphqlErrors(errs);
+                    onError(summarizeGraphqlErrors(errs));
+                    return;
+                }
+
+                if (!errs.isEmpty())
+                {
+                    qCDebug(chatterinoTwitch)
+                        << "Twitch GQL viewable poll partial errors:"
+                        << summarizeGraphqlErrors(errs);
+                }
+
+                if (byId && channelObjectIsNull(root) &&
+                    !channelLogin.isEmpty() && !*triedNameFallback)
+                {
+                    *triedNameFallback = true;
+                    (*runGql)(integrityJwt, false, afterIntegrityRetry);
+                    return;
+                }
+
+                std::optional<ViewablePoll> picked =
+                    tryParseViewablePollFromChannelResponse(root);
+                if (!picked.has_value())
+                {
+                    picked = tryParseViewablePollFromUserResponse(root);
+                }
+                onSuccess(std::move(picked));
+            })
+            .onError([onError](const NetworkResult &res) {
+                onError(res.formatError());
+            })
+            .execute();
+    };
+
+    fetchIntegrityToken(oauthToken, caller, [runGql](QString jwt) {
+        (*runGql)(jwt, true, false);
+    });
+}
+
 void fetchChannelPointsBalance(const QString &channelLogin,
                                const QString &oauthToken,
                                const QString &gqlClientId,
@@ -1283,6 +1674,173 @@ void makePrediction(const QString &eventId, const QString &outcomeId,
                             msg = code.isEmpty()
                                       ? QStringLiteral(
                                             "Could not place prediction")
+                                      : code;
+                        }
+                        onError(msg);
+                        return;
+                    }
+                }
+
+                onSuccess();
+            })
+            .onError([onError](const NetworkResult &result) {
+                onError(result.formatError());
+            })
+            .execute();
+    };
+
+    if (useTvGqlClient)
+    {
+        (*runGql)(QString(), false);
+    }
+    else
+    {
+        fetchIntegrityToken(oauthToken, caller, [runGql](QString jwt) {
+            (*runGql)(jwt, false);
+        });
+    }
+}
+
+void voteInPoll(const QString &pollId, const QString &choiceId,
+                const QString &userId, const QString &oauthToken,
+                const QString &gqlClientId, const QObject *caller,
+                std::function<void()> onSuccess,
+                std::function<void(QString)> onError)
+{
+    if (oauthToken.isEmpty())
+    {
+        onError(QStringLiteral("Missing OAuth token"));
+        return;
+    }
+    if (pollId.isEmpty() || choiceId.isEmpty() || userId.isEmpty())
+    {
+        onError(QStringLiteral("Missing poll, choice, or user id"));
+        return;
+    }
+
+    const bool useTvGqlClient =
+        gqlClientId.compare(QString::fromLatin1(TWITCH_TV_GQL_CLIENT_ID),
+                            Qt::CaseInsensitive) == 0;
+
+    QJsonObject input;
+    input.insert(QStringLiteral("pollID"), pollId);
+    input.insert(QStringLiteral("choiceID"), choiceId);
+    input.insert(QStringLiteral("userID"), userId);
+    input.insert(QStringLiteral("voteID"), choiceId);
+
+    QJsonObject variables;
+    variables.insert(QStringLiteral("input"), input);
+
+    const QJsonObject body =
+        gqlVoteInPollRequestBody(MUTATION_VOTE_IN_POLL, variables);
+
+    auto runGql =
+        std::make_shared<std::function<void(const QString &, bool)>>();
+
+    *runGql = [runGql, body, oauthToken, caller, onSuccess, onError,
+               useTvGqlClient](const QString &integrityJwt,
+                               bool afterIntegrityRetry) {
+        NetworkRequest req = [&] {
+            if (useTvGqlClient)
+            {
+                return NetworkRequest(
+                           QUrl(QStringLiteral("https://gql.twitch.tv/gql")),
+                           NetworkRequestType::Post)
+                    .timeout(10'000)
+                    .header("Content-Type", "application/json")
+                    .caller(caller)
+                    .header("Client-ID", TWITCH_TV_GQL_CLIENT_ID)
+                    .header("Authorization",
+                            QStringLiteral("OAuth %1").arg(oauthToken))
+                    .header("Client-Session-Id", twitchGqlStaticSessionId())
+                    .header("Client-Version", TWITCH_GQL_CLIENT_VERSION)
+                    .header("User-Agent", TWITCH_TV_USER_AGENT)
+                    .header("X-Device-Id", twitchGqlStaticDeviceId());
+            }
+            return NetworkRequest(
+                       QUrl(QStringLiteral("https://gql.twitch.tv/gql")),
+                       NetworkRequestType::Post)
+                .timeout(10'000)
+                .header("Content-Type", "application/json")
+                .caller(caller)
+                .header("Client-ID", TWITCH_WEB_GQL_CLIENT_ID)
+                .header("Authorization",
+                        QStringLiteral("Bearer %1").arg(oauthToken));
+        }();
+
+        if (!integrityJwt.isEmpty())
+        {
+            req = std::move(req).header("Client-Integrity", integrityJwt);
+        }
+
+        std::move(req)
+            .json(body)
+            .onSuccess([runGql, afterIntegrityRetry, oauthToken, caller,
+                        onError, onSuccess,
+                        useTvGqlClient](const NetworkResult &res) {
+                const auto root = res.parseJson();
+                const auto errs =
+                    root.value(QStringLiteral("errors")).toArray();
+
+                if (!errs.isEmpty() && errorsSuggestIntegrity(errs) &&
+                    !afterIntegrityRetry)
+                {
+                    if (useTvGqlClient)
+                    {
+                        fetchIntegrityTokenTv(oauthToken, caller,
+                                              [runGql](QString jwt) {
+                                                  (*runGql)(jwt, true);
+                                              });
+                    }
+                    else
+                    {
+                        fetchIntegrityToken(oauthToken, caller,
+                                            [runGql](QString jwt) {
+                                                (*runGql)(jwt, true);
+                                            });
+                    }
+                    return;
+                }
+
+                if (!errs.isEmpty() &&
+                    (root.value(QStringLiteral("data")).isNull() ||
+                     root.value(QStringLiteral("data")).toObject().isEmpty()))
+                {
+                    qCDebug(chatterinoTwitch) << "Twitch GQL VoteInPoll errors:"
+                                              << summarizeGraphqlErrors(errs);
+                    onError(summarizeGraphqlErrors(errs));
+                    return;
+                }
+
+                if (!errs.isEmpty())
+                {
+                    qCDebug(chatterinoTwitch)
+                        << "Twitch GQL VoteInPoll partial errors:"
+                        << summarizeGraphqlErrors(errs);
+                }
+
+                const auto data = root.value(QStringLiteral("data")).toObject();
+                const auto vip = data.value(QStringLiteral("voteInPoll"));
+                if (vip.isNull() || !vip.isObject())
+                {
+                    onError(QStringLiteral("Unexpected response"));
+                    return;
+                }
+                const auto vipObj = vip.toObject();
+                const QJsonValue errVal = vipObj.value(QStringLiteral("error"));
+                if (errVal.isObject())
+                {
+                    const auto errObj = errVal.toObject();
+                    if (!errObj.isEmpty())
+                    {
+                        QString msg =
+                            errObj.value(QStringLiteral("message")).toString();
+                        const QString code =
+                            errObj.value(QStringLiteral("code")).toString();
+                        if (msg.isEmpty())
+                        {
+                            msg = code.isEmpty()
+                                      ? QStringLiteral("Could not cast vote")
                                       : code;
                         }
                         onError(msg);

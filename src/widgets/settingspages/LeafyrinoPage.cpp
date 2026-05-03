@@ -77,6 +77,10 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->setTooltip("Polls Twitch for an active or locked channel points "
                      "prediction and shows it above chat.")
         ->addTo(layout);
+    SettingWidget::checkbox("Show active poll panel in splits", s.showPollPanel)
+        ->setTooltip("Polls Twitch for an active channel poll and shows it "
+                     "above chat.")
+        ->addTo(layout);
 
     SettingWidget::checkbox("Play sound when a new prediction starts",
                             s.predictionStartPlaySound)

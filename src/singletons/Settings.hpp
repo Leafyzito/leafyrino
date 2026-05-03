@@ -285,6 +285,7 @@ public:
                                        true};
     BoolSetting showPinnedMessagePanel = {
         "/appearance/splits/showPinnedMessagePanel", true};
+    BoolSetting showPollPanel = {"/appearance/splits/showPollPanel", true};
     BoolSetting showSplitMps = {"/appearance/splits/showMps", false};
     EnumStringSetting<SplitMpsCorner> splitMpsCorner = {
         "/appearance/splits/mpsCorner",
