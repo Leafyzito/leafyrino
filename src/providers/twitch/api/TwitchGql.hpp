@@ -5,6 +5,7 @@
 #pragma once
 
 #include "providers/twitch/api/Helix.hpp"
+#include "providers/twitch/TwitchIrc.hpp"
 
 #include <QString>
 
@@ -78,6 +79,7 @@ struct PinnedChatMessage {
     /// Hex color e.g. `#FF0000` when returned (`sender.chatColor`).
     QString senderChatColor;
     QString text;
+    std::vector<TwitchEmoteOccurrence> twitchEmotes;
 };
 
 /// Fetches active/locked prediction for the channel; maps GQL into HelixPrediction for UI.

@@ -169,6 +169,16 @@ SplitPinnedMessagePanel::SplitPinnedMessagePanel(Split *split)
             }
         });
 
+    this->managedConnections_.managedConnect(
+        getApp()->getAccounts()->twitch.emotesReloaded,
+        [this](auto * /*caller*/, const auto &result) {
+            if (!result || !this->current_.has_value())
+            {
+                return;
+            }
+            this->updateText();
+        });
+
     this->themeChangedEvent();
     this->scaleChangedEvent(this->scale());
 }

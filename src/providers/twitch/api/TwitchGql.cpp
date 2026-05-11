@@ -4,9 +4,12 @@
 
 #include "providers/twitch/api/TwitchGql.hpp"
 
+#include "Application.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
+#include "controllers/emotes/EmoteController.hpp"
+#include "providers/twitch/TwitchEmotes.hpp"
 
 #include <QCryptographicHash>
 #include <QDateTime>
@@ -405,6 +408,114 @@ QString gqlDocumentSha256Hex(const QString &query)
     return QString::fromLatin1(
         QCryptographicHash::hash(query.toUtf8(), QCryptographicHash::Sha256)
             .toHex());
+}
+
+const QString QUERY_GET_PINNED_CHAT = QStringLiteral(R"(
+query GetPinnedChat($channelID: ID!, $count: Int!) {
+  channel(id: $channelID) {
+    pinnedChatMessages(first: $count) {
+      edges {
+        node {
+          pinnedMessage {
+            id
+            sentAt
+            sender {
+              displayName
+              login
+              id
+              chatColor
+            }
+            content {
+              text
+              fragments {
+                text
+                content {
+                  __typename
+                  ... on Emote {
+                    id
+                    token
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+)");
+
+QJsonObject gqlPinnedChatRequestBody(const QString &query,
+                                     const QJsonObject &variables)
+{
+    QJsonObject persisted;
+    persisted.insert(QStringLiteral("version"), 1);
+    persisted.insert(QStringLiteral("sha256Hash"), gqlDocumentSha256Hex(query));
+
+    QJsonObject extensions;
+    extensions.insert(QStringLiteral("persistedQuery"), persisted);
+
+    QJsonObject body;
+    body.insert(QStringLiteral("operationName"),
+                QStringLiteral("GetPinnedChat"));
+    body.insert(QStringLiteral("query"), query);
+    body.insert(QStringLiteral("variables"), variables);
+    body.insert(QStringLiteral("extensions"), extensions);
+    return body;
+}
+
+std::vector<TwitchEmoteOccurrence> parsePinnedChatEmoteFragments(
+    const QJsonArray &fragments)
+{
+    std::vector<TwitchEmoteOccurrence> twitchEmotes;
+    if (fragments.isEmpty())
+    {
+        return twitchEmotes;
+    }
+
+    auto *twitchEmoteCache = getApp()->getEmotes()->getTwitchEmotes();
+    int cursor = 0;
+
+    for (const auto fragmentValue : fragments)
+    {
+        const auto fragment = fragmentValue.toObject();
+        const QString fragmentText =
+            fragment.value(QStringLiteral("text")).toString();
+        if (fragmentText.isEmpty())
+        {
+            continue;
+        }
+
+        const auto content =
+            fragment.value(QStringLiteral("content")).toObject();
+        if (content.value(QStringLiteral("__typename")).toString() ==
+            QStringLiteral("Emote"))
+        {
+            const QString emoteID =
+                content.value(QStringLiteral("id")).toString();
+            if (!emoteID.isEmpty())
+            {
+                const QString token =
+                    content.value(QStringLiteral("token")).toString();
+                const EmoteName emoteName{token.isEmpty() ? fragmentText
+                                                          : token};
+                const int fragmentLength =
+                    static_cast<int>(fragmentText.length());
+                twitchEmotes.push_back(TwitchEmoteOccurrence{
+                    cursor,
+                    cursor + fragmentLength - 1,
+                    twitchEmoteCache->getOrCreateEmote(EmoteId{emoteID},
+                                                       emoteName),
+                    emoteName,
+                });
+            }
+        }
+
+        cursor += static_cast<int>(fragmentText.length());
+    }
+
+    return twitchEmotes;
 }
 
 int jsonNumberToInt(const QJsonValue &v)
@@ -825,10 +936,11 @@ std::optional<TwitchGql::PinnedChatMessage> tryParsePinnedChat(
     TwitchGql::PinnedChatMessage out;
     out.id = pinnedMessage.value(QStringLiteral("id")).toString();
     out.sentAt = pinnedMessage.value(QStringLiteral("sentAt")).toString();
-    out.text = pinnedMessage.value(QStringLiteral("content"))
-                   .toObject()
-                   .value(QStringLiteral("text"))
-                   .toString();
+    const auto content =
+        pinnedMessage.value(QStringLiteral("content")).toObject();
+    out.text = content.value(QStringLiteral("text")).toString();
+    out.twitchEmotes = parsePinnedChatEmoteFragments(
+        content.value(QStringLiteral("fragments")).toArray());
     const auto sender =
         pinnedMessage.value(QStringLiteral("sender")).toObject();
     out.senderDisplayName =
@@ -951,20 +1063,8 @@ void fetchPinnedChatMessage(
         variables.insert(QStringLiteral("channelID"), cid);
         variables.insert(QStringLiteral("count"), count);
 
-        QJsonObject persisted;
-        persisted.insert(QStringLiteral("version"), 1);
-        persisted.insert(QStringLiteral("sha256Hash"),
-                         QStringLiteral("2d099d4c9b6af80a07d8440140c4f3dbb04d51"
-                                        "6b35c401aab7ce8f60765308d5"));
-
-        QJsonObject extensions;
-        extensions.insert(QStringLiteral("persistedQuery"), persisted);
-
-        QJsonObject body;
-        body.insert(QStringLiteral("operationName"),
-                    QStringLiteral("GetPinnedChat"));
-        body.insert(QStringLiteral("variables"), variables);
-        body.insert(QStringLiteral("extensions"), extensions);
+        const QJsonObject body =
+            gqlPinnedChatRequestBody(QUERY_GET_PINNED_CHAT, variables);
 
         NetworkRequest req = [&] {
             if (useTvGqlClient)

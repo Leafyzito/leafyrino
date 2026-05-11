@@ -536,7 +536,6 @@ EmotePtr parseEmote(TwitchChannel *twitchChannel, const QString &userID,
     //  - FrankerFaceZ Global
     //  - BetterTTV Global
     //  - 7TV Global
-    //  - Twitch native (channel + account sets; used when IRC emote tags are absent)
 
     const auto *globalFfzEmotes = getApp()->getFfzEmotes();
     const auto *globalBttvEmotes = getApp()->getBttvEmotes();
@@ -591,21 +590,6 @@ EmotePtr parseEmote(TwitchChannel *twitchChannel, const QString &userID,
     if (emote)
     {
         return *emote;
-    }
-
-    if (twitchChannel != nullptr)
-    {
-        if (const auto twitchNative = twitchChannel->twitchEmote(name))
-        {
-            return *twitchNative;
-        }
-    }
-    else if (const auto acc = getApp()->getAccounts()->twitch.getCurrent())
-    {
-        if (const auto twitchNative = acc->twitchEmote(name))
-        {
-            return *twitchNative;
-        }
     }
 
     return {};
@@ -2999,7 +2983,7 @@ MessagePtr MessageBuilder::makePinnedChatPreviewMessage(
     builder.appendUsername(userTags, userArgs);
 
     QString content = pinned.text;
-    std::vector<TwitchEmoteOccurrence> twitchEmotes;
+    std::vector<TwitchEmoteOccurrence> twitchEmotes = pinned.twitchEmotes;
     TextState textState{.twitchChannel = channel, .userID = pinned.senderId};
 
     bool traditionalParsing = true;
