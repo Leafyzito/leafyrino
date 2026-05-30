@@ -518,11 +518,11 @@ SplitPredictionPanel::SplitPredictionPanel(Split *split)
         },
         this->managedConnections_);
 
-    this->boostConnections_.emplace_back(
-        getApp()->getAccounts()->twitch.currentUserChanged.connect([this] {
+    this->managedConnections_.managedConnect(
+        getApp()->getAccounts()->twitch.currentUserChanged, [this] {
             this->startOrStopTimer();
             this->refresh();
-        }));
+        });
 
     this->managedConnections_.addConnection(pajlada::Signals::ScopedConnection(
         this->split_->focused.connect([this] {

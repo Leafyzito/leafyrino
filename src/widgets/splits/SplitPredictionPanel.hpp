@@ -7,7 +7,6 @@
 #include "providers/twitch/api/Helix.hpp"
 #include "widgets/BaseWidget.hpp"
 
-#include <boost/signals2.hpp>
 #include <pajlada/signals/signalholder.hpp>
 #include <QDateTime>
 #include <QEvent>
@@ -18,7 +17,6 @@
 #include <QTimer>
 
 #include <optional>
-#include <vector>
 
 class QLabel;
 class QPushButton;
@@ -95,7 +93,6 @@ private:
     QDateTime predictionBettingEnds_;
     pajlada::Signals::SignalHolder channelConnections_;
     pajlada::Signals::SignalHolder managedConnections_;
-    std::vector<boost::signals2::scoped_connection> boostConnections_;
 
     bool expanded_{true};
     bool inFlight_{false};
