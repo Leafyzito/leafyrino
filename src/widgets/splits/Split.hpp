@@ -9,7 +9,6 @@
 #include "widgets/BaseWidget.hpp"
 #include "widgets/splits/SplitCommon.hpp"
 
-#include <boost/signals2.hpp>
 #include <pajlada/signals/signalholder.hpp>
 #include <QFont>
 #include <QPointer>
@@ -104,7 +103,7 @@ public:
 
     void setContainer(SplitContainer *container);
 
-    void setInputReply(const MessagePtr &reply);
+    void setInputReply(const MessagePtr &reply, std::weak_ptr<Channel> channel);
 
     // This is called on window focus lost
     void unpause();
@@ -213,7 +212,6 @@ private:
     pajlada::Signals::SignalHolder channelSignalHolder_;
 
     pajlada::Signals::SignalHolder signalHolder_;
-    std::vector<boost::signals2::scoped_connection> bSignals_;
 
 public Q_SLOTS:
     void addSibling();

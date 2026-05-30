@@ -35,6 +35,7 @@ using EmotePtr = std::shared_ptr<const Emote>;
 
 class Channel;
 class TwitchChannel;
+class ChannelChatters;
 class MessageThread;
 
 namespace TwitchGql {
@@ -45,7 +46,7 @@ struct HelixVip;
 using HelixModerator = HelixVip;
 struct ChannelPointReward;
 struct TwitchEmoteOccurrence;
-class ChannelChatters;
+struct HelixPinnedChatMessage;
 
 namespace linkparser {
 struct Parsed;
@@ -278,6 +279,11 @@ public:
     /// username, parsed body). For preview/history UIs without IRC tags.
     static MessagePtr makePinnedChatPreviewMessage(
         TwitchChannel *channel, const TwitchGql::PinnedChatMessage &pinned);
+
+    static MessagePtrMut makePinSuccessMessage(QString text, const QString &id);
+
+    static MessagePtrMut makeCurrentPinnedMessage(
+        const TwitchChannel &channel, const HelixPinnedChatMessage &pin);
 
 private:
     struct TextState {

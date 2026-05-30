@@ -405,7 +405,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         "Message overflow", {"Highlight", "Prevent", "Allow"},
         s.messageOverflow,
         [](auto index) {
-            return index;
+            return static_cast<int>(index);
         },
         [](auto args) {
             return static_cast<MessageOverflow>(args.index);
@@ -422,7 +422,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         },
         s.usernameRightClickBehavior,
         [](auto index) {
-            return index;
+            return static_cast<int>(index);
         },
         [](auto args) {
             return static_cast<UsernameRightClickBehavior>(args.index);
@@ -439,7 +439,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         },
         s.usernameRightClickModifierBehavior,
         [](auto index) {
-            return index;
+            return static_cast<int>(index);
         },
         [](auto args) {
             return static_cast<UsernameRightClickBehavior>(args.index);

@@ -42,6 +42,7 @@
 #include <rapidjson/pointer.h>
 
 #include <cstring>
+#include <iostream>
 #include <memory>
 
 #ifdef CHATTERINO_WITH_AVIF_PLUGIN
