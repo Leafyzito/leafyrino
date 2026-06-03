@@ -133,32 +133,6 @@ if(_compiler_launcher)
     endif()
 endif()
 
-set(_moltorino_pathmap_pairs "${CMAKE_SOURCE_DIR}=." "${CMAKE_BINARY_DIR}=./build")
-if(DEFINED ENV{USERPROFILE} AND NOT "$ENV{USERPROFILE}" STREQUAL "")
-    file(TO_CMAKE_PATH "$ENV{USERPROFILE}" _moltorino_user_profile)
-    list(APPEND _moltorino_pathmap_pairs "${_moltorino_user_profile}=~")
-endif()
-if(DEFINED ENV{HOME} AND NOT "$ENV{HOME}" STREQUAL "")
-    file(TO_CMAKE_PATH "$ENV{HOME}" _moltorino_home)
-    list(APPEND _moltorino_pathmap_pairs "${_moltorino_home}=~")
-endif()
-
-set(_moltorino_public_config "$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>")
-
-if(MSVC)
-    add_compile_options("$<${_moltorino_public_config}:/experimental:deterministic>")
-endif()
-
-foreach(_moltorino_pathmap_pair IN LISTS _moltorino_pathmap_pairs)
-    if(MSVC)
-        add_compile_options("$<${_moltorino_public_config}:/pathmap:${_moltorino_pathmap_pair}>")
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        add_compile_options("$<${_moltorino_public_config}:-ffile-prefix-map=${_moltorino_pathmap_pair}>")
-        add_compile_options("$<${_moltorino_public_config}:-fdebug-prefix-map=${_moltorino_pathmap_pair}>")
-        add_compile_options("$<${_moltorino_public_config}:-fmacro-prefix-map=${_moltorino_pathmap_pair}>")
-    endif()
-endforeach()
-
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/GIT.cmake)
 
 find_package(Qt${MAJOR_QT_VERSION} REQUIRED
