@@ -105,7 +105,7 @@ OverlayWindow::OverlayWindow(IndirectChannel channel,
     , interaction_(this)
 {
     this->setAttribute(Qt::WA_DeleteOnClose);
-    this->setWindowTitle(u"Chatterino - Overlay"_s);
+    this->setWindowTitle(u"Leafyrino - Overlay"_s);
 
     auto *grid = new QGridLayout(this);
     grid->addWidget(&this->channelView_, 0, 0);
@@ -461,13 +461,13 @@ void OverlayWindow::triggerFirstActivation()
         welcomeText +=
             u"To toggle the click-through mode, "
             "add a hotkey for \"Toggle overlay click-through\" in the split "
-            "category to press while any Chatterino window is focused."_s;
+            "category to press while any Leafyrino window is focused."_s;
     }
     else
     {
         welcomeText +=
             u"To toggle the click-through mode, press %1 (customizable "_s
-            "in the settings) while any Chatterino window is focused.".arg(
+            "in the settings) while any Leafyrino window is focused.".arg(
                 actualShortcut.toString());
     }
 
@@ -478,7 +478,7 @@ void OverlayWindow::triggerFirstActivation()
                    "discussions\">on GitHub</a>.";
 
     auto *box =
-        new QMessageBox(QMessageBox::Information, u"Chatterino - Overlay"_s,
+        new QMessageBox(QMessageBox::Information, u"Leafyrino - Overlay"_s,
                         welcomeText, QMessageBox::Ok, this);
     box->open();
 }

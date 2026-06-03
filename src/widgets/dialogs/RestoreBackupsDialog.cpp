@@ -61,7 +61,7 @@ RestoreBackupsDialog::RestoreBackupsDialog(backup::FileData fileData,
           u"Some backups are damaged or otherwise unreadable."_s)
 {
     this->setAttribute(Qt::WA_DeleteOnClose);
-    this->setWindowTitle(u"Chatterino - Restore Backup of " %
+    this->setWindowTitle(u"Leafyrino - Restore Backup of " %
                          this->fileData.fileKind % '?');
 
     auto *layout = new QVBoxLayout(this);
@@ -129,7 +129,7 @@ RestoreBackupsDialog::RestoreBackupsDialog(backup::FileData fileData,
     });
     QObject::connect(ignoreBtn, &QAbstractButton::clicked, this, [this] {
         auto res = QMessageBox::question(
-            this, u"Chatterino - Discard Backup?"_s,
+            this, u"Leafyrino - Discard Backup?"_s,
             u"Are you sure you want to discard the backup? Doing so will "_s
             "overwrite and discard any previous settings.");
         if (res == QMessageBox::Yes)

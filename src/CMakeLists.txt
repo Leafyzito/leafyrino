@@ -1164,7 +1164,7 @@ if (BUILD_APP)
     target_link_libraries(${EXECUTABLE_PROJECT} PUBLIC ${LIBRARY_PROJECT})
 
     set_target_directory_hierarchy(${EXECUTABLE_PROJECT})
-    set_target_properties(${EXECUTABLE_PROJECT} PROPERTIES OUTPUT_NAME "Moltorino7")
+    set_target_properties(${EXECUTABLE_PROJECT} PROPERTIES OUTPUT_NAME "Leafyrino7")
 
     if (WIN32)
         if (WINDEPLOYQT_PATH)
@@ -1251,12 +1251,12 @@ if (BUILD_APP)
                 )
 
         install(FILES ${CMAKE_SOURCE_DIR}/resources/com.chatterino.chatterino.desktop
-                RENAME com.moltobenne.moltorino.desktop
+                RENAME com.leafyzito.leafyrino.desktop
                 DESTINATION share/applications
                 )
 
         install(FILES ${CMAKE_SOURCE_DIR}/resources/icon.png
-                RENAME com.moltobenne.moltorino.png
+                RENAME com.leafyzito.leafyrino.png
                 DESTINATION share/icons/hicolor/256x256/apps
                 )
     endif ()
@@ -1288,34 +1288,8 @@ set_target_properties(${LIBRARY_PROJECT}
 # this is its own project.
 set(VERSION_SOURCE_FILES common/Version.cpp common/Version.hpp)
 add_library(${VERSION_PROJECT} STATIC ${VERSION_SOURCE_FILES})
-set(_moltorino_internal_version "__AUTO__")
-
-if (DEFINED MOLTORINO_INTERNAL_VERSION_OVERRIDE)
-    string(STRIP "${MOLTORINO_INTERNAL_VERSION_OVERRIDE}" _moltorino_provided_internal_version)
-    if (NOT _moltorino_provided_internal_version STREQUAL "" AND NOT _moltorino_provided_internal_version STREQUAL "__AUTO__")
-        set(_moltorino_internal_version "${_moltorino_provided_internal_version}")
-    endif ()
-endif ()
-
-if (_moltorino_internal_version STREQUAL "__AUTO__")
-    set(_moltorino_counter_file "${CMAKE_SOURCE_DIR}/releases/internal-build-counter.txt")
-    if (EXISTS "${_moltorino_counter_file}")
-        file(READ "${_moltorino_counter_file}" _moltorino_counter_raw)
-        string(STRIP "${_moltorino_counter_raw}" _moltorino_counter_raw)
-        if (_moltorino_counter_raw MATCHES "^[0-9]+$")
-            set(_moltorino_counter_padded "0000${_moltorino_counter_raw}")
-            string(LENGTH "${_moltorino_counter_padded}" _moltorino_counter_len)
-            math(EXPR _moltorino_counter_start "${_moltorino_counter_len} - 4")
-            string(SUBSTRING "${_moltorino_counter_padded}" ${_moltorino_counter_start} 4 _moltorino_counter_last4)
-            set(_moltorino_internal_version "mb${_moltorino_counter_last4}")
-        endif ()
-    endif ()
-endif ()
-set(MOLTORINO_INTERNAL_VERSION "${_moltorino_internal_version}" CACHE STRING "Moltorino internal build identifier" FORCE)
-message(STATUS "Moltorino internal build: ${MOLTORINO_INTERNAL_VERSION}")
 target_compile_definitions(${VERSION_PROJECT} PRIVATE
     CHATTERINO_EXTRA_BUILD_STRING=${CHATTERINO_EXTRA_BUILD_STRING}
-    MOLTORINO_INTERNAL_VERSION="${MOLTORINO_INTERNAL_VERSION}"
     $<$<BOOL:${WIN32}>:USEWINSDK>
     $<$<BOOL:${BUILD_WITH_CRASHPAD}>:CHATTERINO_WITH_CRASHPAD>
 )
@@ -1383,8 +1357,8 @@ if (APPLE AND BUILD_APP)
     set_target_properties(${EXECUTABLE_PROJECT} PROPERTIES MACOSX_BUNDLE TRUE)
     set_target_properties(${EXECUTABLE_PROJECT}
         PROPERTIES
-        MACOSX_BUNDLE_BUNDLE_NAME "Moltorino"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "app.moltobenne.moltorino7"
+        MACOSX_BUNDLE_BUNDLE_NAME "Leafyrino"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.leafyzito.leafyrino"
         MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"

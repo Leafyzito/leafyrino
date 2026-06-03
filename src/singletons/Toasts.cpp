@@ -556,7 +556,7 @@ void Toasts::ensureInitialized()
     {
         return;
     }
-    auto result = notify_init("Chatterino");
+    auto result = notify_init("Leafyrino");
 
     if (result == 0)
     {

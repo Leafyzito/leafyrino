@@ -1391,7 +1391,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
             .assign(&this->ui_.notesAdd);
         auto usercard = user.emplace<LabelButton>("&Usercard", this)
                             .assign(&this->ui_.usercardLabel);
-        auto userlogs = user.emplace<LabelButton>("Logs", this)
+        auto userlogs = user.emplace<LabelButton>("&Logs", this)
                             .assign(&this->ui_.userlogsLabel);
         userlogs->hide();
         auto sevenTVUser = user.emplace<LabelButton>("7TV", this)
@@ -2394,7 +2394,7 @@ void UserInfoPopup::fetchMoreUsercardMessages(int emptyPageSkipsLeft,
     {
         this->usercardMessagesError_ =
             authError.isEmpty()
-                ? QStringLiteral("No saved Moltorino moderator login found.")
+                ? QStringLiteral("No saved Leafyrino moderator login found.")
                 : authError;
         this->usercardMessagesLazyLoadEnabled_ = false;
         this->usercardMessagesLoading_ = false;

@@ -57,17 +57,12 @@ AboutPage::AboutPage()
             auto vbox = versionInfo.emplace<QVBoxLayout>();
             const auto &version = Version::instance();
 
-            QString buildString = "Chatterino " % version.version();
-            buildString +=
-                " (<a href=\"https://www.twitch.tv/leafyzito\">leafyzito's "
-                "version</a>)";
-            buildString += " built with " % version.buildTags().join(", ");
-
-            QString string = buildString % "<br>" % version.runningString();
+            QString string =
+                version.buildString() % "<br>" % version.runningString();
 
             if (!version.extraString().isEmpty())
             {
-                string += "<br>" % version.extraString();
+                string += " " % version.extraString();
             }
 
             auto label = vbox.emplace<QLabel>(string);
@@ -292,7 +287,7 @@ void AboutPage::addLicense(QFormLayout *form, const QString &name,
                     BaseWindow::BoundsCheckOnShow,
                 },
                 parent);
-            window->setWindowTitle("Chatterino - License for " + name);
+            window->setWindowTitle("Leafyrino - License for " + name);
             window->setAttribute(Qt::WA_DeleteOnClose);
             auto *layout = new QVBoxLayout();
             auto *edit = new QTextEdit;

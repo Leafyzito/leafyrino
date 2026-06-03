@@ -339,21 +339,21 @@ private:
 };
 
 MoltorinoPresence::MoltorinoPresence()
-    : clientInstanceId_(savedClientId())
+//    : clientInstanceId_(savedClientId())
 {
-    this->heartbeatTimer_.setInterval(HEARTBEAT_INTERVAL_MS);
-    this->heartbeatTimer_.setTimerType(Qt::VeryCoarseTimer);
+    // this->heartbeatTimer_.setInterval(HEARTBEAT_INTERVAL_MS);
+    // this->heartbeatTimer_.setTimerType(Qt::VeryCoarseTimer);
 
-    QObject::connect(&this->heartbeatTimer_, &QTimer::timeout, this, [this] {
-        this->sendHeartbeat();
-    });
+    // QObject::connect(&this->heartbeatTimer_, &QTimer::timeout, this, [this] {
+    //     this->sendHeartbeat();
+    // });
 
-    this->badgeSocketReconnectTimer_.setSingleShot(true);
-    this->badgeSocketReconnectTimer_.setTimerType(Qt::VeryCoarseTimer);
-    QObject::connect(&this->badgeSocketReconnectTimer_, &QTimer::timeout, this,
-                     [this] {
-                         this->connectBadgeSocket(true);
-                     });
+    // this->badgeSocketReconnectTimer_.setSingleShot(true);
+    // this->badgeSocketReconnectTimer_.setTimerType(Qt::VeryCoarseTimer);
+    // QObject::connect(&this->badgeSocketReconnectTimer_, &QTimer::timeout, this,
+    //                  [this] {
+    //                      this->connectBadgeSocket(true);
+    //                  });
 }
 
 MoltorinoPresence &MoltorinoPresence::instance()
@@ -364,29 +364,29 @@ MoltorinoPresence &MoltorinoPresence::instance()
 
 void MoltorinoPresence::init()
 {
-    if (this->initialized_)
-    {
-        return;
-    }
+    // if (this->initialized_)
+    // {
+    //     return;
+    // }
 
-    this->initialized_ = true;
-    this->accountChangedConnection_ =
-        getApp()->getAccounts()->twitch.currentUserChanged.connect([this] {
-            this->sendHeartbeat(true);
-        });
+    // this->initialized_ = true;
+    // this->accountChangedConnection_ =
+    //     getApp()->getAccounts()->twitch.currentUserChanged.connect([this] {
+    //         this->sendHeartbeat(true);
+    //     });
 
-    this->connectBadgeSocket();
+    // this->connectBadgeSocket();
 }
 
 void MoltorinoPresence::startHeartbeat()
 {
-    if (!this->heartbeatTimer_.isActive())
-    {
-        this->heartbeatTimer_.start();
-    }
+    // if (!this->heartbeatTimer_.isActive())
+    // {
+    //     this->heartbeatTimer_.start();
+    // }
 
-    this->sendHeartbeat(true);
-    this->connectBadgeSocket();
+    // this->sendHeartbeat(true);
+    // this->connectBadgeSocket();
 }
 
 bool MoltorinoPresence::shouldShowUpdateButton() const
@@ -433,38 +433,40 @@ void MoltorinoPresence::installAvailableUpdate()
 
 void MoltorinoPresence::sendHeartbeat(bool force)
 {
-    if (this->heartbeatInFlight_)
-    {
-        this->heartbeatQueued_ = this->heartbeatQueued_ || force;
-        return;
-    }
+    Q_UNUSED(force);
 
-    this->heartbeatInFlight_ = true;
-    this->heartbeatQueued_ = false;
+    // if (this->heartbeatInFlight_)
+    // {
+    //     this->heartbeatQueued_ = this->heartbeatQueued_ || force;
+    //     return;
+    // }
 
-    NetworkRequest(apiUrl(HEARTBEAT_PATH), NetworkRequestType::Post)
-        .timeout(15000)
-        .json(this->makePayload())
-        .onSuccess([this](const NetworkResult &result) {
-            this->heartbeatInFlight_ = false;
-            this->handleServerReply(result.parseJson());
+    // this->heartbeatInFlight_ = true;
+    // this->heartbeatQueued_ = false;
 
-            if (this->heartbeatQueued_)
-            {
-                this->sendHeartbeat(true);
-            }
-        })
-        .onError([this](const NetworkResult &result) {
-            this->heartbeatInFlight_ = false;
-            qCWarning(chatterinoMoltorinoPresence)
-                << "presence heartbeat failed:" << result.formatError();
+    // NetworkRequest(apiUrl(HEARTBEAT_PATH), NetworkRequestType::Post)
+    //     .timeout(15000)
+    //     .json(this->makePayload())
+    //     .onSuccess([this](const NetworkResult &result) {
+    //         this->heartbeatInFlight_ = false;
+    //         this->handleServerReply(result.parseJson());
 
-            if (this->heartbeatQueued_)
-            {
-                this->sendHeartbeat(true);
-            }
-        })
-        .execute();
+    //         if (this->heartbeatQueued_)
+    //         {
+    //             this->sendHeartbeat(true);
+    //         }
+    //     })
+    //     .onError([this](const NetworkResult &result) {
+    //         this->heartbeatInFlight_ = false;
+    //         qCWarning(chatterinoMoltorinoPresence)
+    //             << "presence heartbeat failed:" << result.formatError();
+
+    //         if (this->heartbeatQueued_)
+    //         {
+    //             this->sendHeartbeat(true);
+    //         }
+    //     })
+    //     .execute();
 }
 
 void MoltorinoPresence::handleServerReply(const QJsonObject &root)
@@ -509,39 +511,41 @@ bool MoltorinoPresence::setAvailableUpdate(
 
 void MoltorinoPresence::connectBadgeSocket(bool force)
 {
-    if (!badgeSocketConfigured())
-    {
-        return;
-    }
+    Q_UNUSED(force);
 
-    if (!force && (this->badgeSocketConnecting_ || this->badgeSocketOpen_))
-    {
-        return;
-    }
+    // if (!badgeSocketConfigured())
+    // {
+    //     return;
+    // }
 
-    if (force && (this->badgeSocketConnecting_ || this->badgeSocketOpen_))
-    {
-        this->disconnectBadgeSocket();
-    }
+    // if (!force && (this->badgeSocketConnecting_ || this->badgeSocketOpen_))
+    // {
+    //     return;
+    // }
 
-    if (!this->badgeSocketPool_)
-    {
-        this->badgeSocketPool_ =
-            std::make_unique<WebSocketPool>(QStringLiteral("Leafyrino badges"));
-    }
+    // if (force && (this->badgeSocketConnecting_ || this->badgeSocketOpen_))
+    // {
+    //     this->disconnectBadgeSocket();
+    // }
 
-    this->badgeSocketReconnectTimer_.stop();
-    this->badgeSocketClosing_ = false;
-    this->badgeSocketConnecting_ = true;
-    this->badgeSocketOpen_ = false;
+    // if (!this->badgeSocketPool_)
+    // {
+    //     this->badgeSocketPool_ =
+    //         std::make_unique<WebSocketPool>(QStringLiteral("Leafyrino badges"));
+    // }
 
-    const auto generation = ++this->badgeSocketGeneration_;
-    this->badgeSocket_ = this->badgeSocketPool_->createSocket(
-        WebSocketOptions{
-            .url = badgeSocketUrl(),
-            .headers = {},
-        },
-        std::make_unique<MoltorinoBadgeSocketListener>(this, generation));
+    // this->badgeSocketReconnectTimer_.stop();
+    // this->badgeSocketClosing_ = false;
+    // this->badgeSocketConnecting_ = true;
+    // this->badgeSocketOpen_ = false;
+
+    // const auto generation = ++this->badgeSocketGeneration_;
+    // this->badgeSocket_ = this->badgeSocketPool_->createSocket(
+    //     WebSocketOptions{
+    //         .url = badgeSocketUrl(),
+    //         .headers = {},
+    //     },
+    //     std::make_unique<MoltorinoBadgeSocketListener>(this, generation));
 }
 
 void MoltorinoPresence::disconnectBadgeSocket()
@@ -649,8 +653,6 @@ QJsonObject MoltorinoPresence::makePayload() const
     payload.insert(QStringLiteral("clientInstanceId"), this->clientInstanceId_);
     payload.insert(QStringLiteral("platform"), platformKey());
     payload.insert(QStringLiteral("appVersion"), Version::instance().version());
-    payload.insert(QStringLiteral("internalBuild"),
-                   Version::instance().internalVersion());
     payload.insert(QStringLiteral("sentAt"), now.toString(Qt::ISODate));
     payload.insert(QStringLiteral("status"),
                    QGuiApplication::applicationState() == Qt::ApplicationActive

@@ -284,12 +284,12 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->addTo(layout);
 
     SettingWidget::checkbox("Always on top", s.windowTopMost)
-        ->setTooltip("Always keep Moltorino as the top window.")
+        ->setTooltip("Always keep Leafyrino as the top window.")
         ->addTo(layout);
 
 #ifdef USEWINSDK
     SettingWidget::checkbox("Start with Windows", s.autorun)
-        ->setTooltip("Start Moltorino when your computer starts.")
+        ->setTooltip("Start Leafyrino when your computer starts.")
         ->addTo(layout);
 #endif
     if (!BaseWindow::supportsCustomWindowFrame())
@@ -415,7 +415,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             return static_cast<MessageOverflow>(args.index);
         },
         false,
-        "Specify how Moltorino will handle messages that exceed Twitch "
+        "Specify how Leafyrino will handle messages that exceed Twitch "
         "message limits");
     layout.addDropdown<std::underlying_type_t<UsernameRightClickBehavior>>(
         "Username right-click behavior",
@@ -432,7 +432,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             return static_cast<UsernameRightClickBehavior>(args.index);
         },
         false,
-        "Specify how Moltorino will handle right-clicking a username in "
+        "Specify how Leafyrino will handle right-clicking a username in "
         "chat when not holding the modifier.");
     layout.addDropdown<std::underlying_type_t<UsernameRightClickBehavior>>(
         "Username right-click with modifier behavior",
@@ -449,7 +449,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             return static_cast<UsernameRightClickBehavior>(args.index);
         },
         false,
-        "Specify how Moltorino will handle right-clicking a username in "
+        "Specify how Leafyrino will handle right-clicking a username in "
         "chat when holding down the modifier.");
     layout.addDropdown<std::underlying_type_t<Qt::KeyboardModifier>>(
         "Modifier for alternate right-click action",
@@ -519,7 +519,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
     SettingWidget::checkbox("Reduce opacity of message history",
                             s.fadeMessageHistory)
         ->setTooltip(
-            "Reduce opacity of messages that were posted before Moltorino "
+            "Reduce opacity of messages that were posted before Leafyrino "
             "was started or while re-connection.")
         ->addTo(layout);
 
@@ -578,7 +578,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                             "switching applications.",
                             s.showLastMessageIndicator)
         ->setTooltip("Adds an underline below the most recent message "
-                     "sent before you tabbed out of Moltorino.")
+                     "sent before you tabbed out of Leafyrino.")
         ->addTo(layout);
 
     SettingWidget::dropdown("Line style", s.lastMessagePattern)->addTo(layout);
@@ -591,7 +591,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     SettingWidget::checkbox("Animate", s.animateEmotes)->addTo(layout);
 
-    SettingWidget::checkbox("Animate only when Moltorino is focused",
+    SettingWidget::checkbox("Animate only when Leafyrino is focused",
                             s.animationsWhenFocused)
         ->addTo(layout);
 

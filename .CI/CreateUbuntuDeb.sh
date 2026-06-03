@@ -63,12 +63,12 @@ cat >> "$packaging_dir/DEBIAN/control" << EOF
 Package: chatterino
 Version: $chatterino_version
 Architecture: amd64
-Maintainer: Mm2PL <mm2pl@kotmisia.pl>
+Maintainer: Leafyzito <https://github.com/leafyzito>
 Depends: $dependencies
 Section: net
 Priority: optional
-Homepage: https://github.com/Chatterino/chatterino2
-Description: Ubuntu package built for $ubuntu_release
+Homepage: https://github.com/leafyzito/leafyrino
+Description: Leafyrino - chat client for Twitch (built for $ubuntu_release)
 EOF
 cat "$packaging_dir/DEBIAN/control"
 breakline

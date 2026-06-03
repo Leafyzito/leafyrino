@@ -85,7 +85,7 @@ BasicLoginWidget::BasicLoginWidget()
     this->ui_.loginButton.setText("Log in (Opens in browser)");
     this->ui_.pasteCodeButton.setText("Paste login info");
     this->ui_.unableToOpenBrowserHelper.setWindowTitle(
-        "Chatterino - unable to open in browser");
+        "Leafyrino - unable to open in browser");
     this->ui_.unableToOpenBrowserHelper.setWordWrap(true);
     this->ui_.unableToOpenBrowserHelper.hide();
     this->ui_.unableToOpenBrowserHelper.setText(

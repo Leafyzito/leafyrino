@@ -464,7 +464,7 @@ QString chatWarningAuthFallbackText(const QString &channelName)
     return QString(
                "You have an active warning in this channel. "
                "Authenticate in Settings -> Moltorino -> Authentication to "
-               "view and acknowledge it in Moltorino, or open "
+               "view and acknowledge it in Leafyrino, or open "
                "https://www.twitch.tv/%1 in your browser.")
         .arg(channelName);
 }
@@ -473,7 +473,7 @@ QString chatWarningMissingDetailsText(const QString &channelName)
 {
     return QString(
                "Your message was blocked because of an active warning, but "
-               "Moltorino could not load the warning details yet. Try again in "
+               "Leafyrino could not load the warning details yet. Try again in "
                "a moment, or open https://www.twitch.tv/%1 in your browser to "
                "acknowledge it.")
         .arg(channelName);
@@ -497,7 +497,7 @@ MessagePtr makeChatWarningMessage(const TwitchChannel &channel,
 {
     const auto reason = sanitizeChatWarningReason(warning.reason);
     const auto text =
-        QStringLiteral("Moltorino: You received a warning: \"%1\" Acknowledge")
+        QStringLiteral("Leafyrino: You received a warning: \"%1\" Acknowledge")
             .arg(reason);
     const auto timestamp =
         warning.createdAt.isValid()
@@ -507,9 +507,9 @@ MessagePtr makeChatWarningMessage(const TwitchChannel &channel,
     MessageBuilder builder;
     builder.message().id = chatWarningMessageId(warning);
     builder.message().channelName = channel.getName();
-    builder.message().loginName = QStringLiteral("moltorino");
-    builder.message().displayName = QStringLiteral("Moltorino");
-    builder.message().localizedName = QStringLiteral("Moltorino");
+    builder.message().loginName = QStringLiteral("leafyrino");
+    builder.message().displayName = QStringLiteral("Leafyrino");
+    builder.message().localizedName = QStringLiteral("Leafyrino");
     builder.message().usernameColor = QColor("#FFA500");
     builder.message().serverReceivedTime =
         warning.createdAt.isValid() ? warning.createdAt
@@ -522,7 +522,7 @@ MessagePtr makeChatWarningMessage(const TwitchChannel &channel,
     builder.message().flags.set(MessageFlag::DoNotTriggerNotification);
 
     builder.emplace<TimestampElement>(timestamp);
-    builder.emplace<TextElement>("Moltorino:", MessageElementFlag::Text,
+    builder.emplace<TextElement>("Leafyrino:", MessageElementFlag::Text,
                                  MessageColor(QColor("#FFA500")),
                                  FontStyle::ChatMediumBold);
     builder.emplace<TextElement>("You received a warning:",

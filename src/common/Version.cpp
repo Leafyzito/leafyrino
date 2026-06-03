@@ -15,34 +15,6 @@ namespace chatterino {
 
 using namespace Qt::Literals::StringLiterals;
 
-namespace {
-
-QString makeDefaultInternalVersion(const QString &commitHash, bool isModified,
-                                   const QString &dateOfBuild)
-{
-    QString normalizedDate = dateOfBuild;
-    normalizedDate.remove('-');
-    if (normalizedDate.isEmpty())
-    {
-        normalizedDate = "unknown";
-    }
-
-    QString shortHash = commitHash.left(7);
-    if (shortHash.isEmpty())
-    {
-        shortHash = "local";
-    }
-
-    auto internal = "leaf-" + normalizedDate + "-" + shortHash;
-    if (isModified)
-    {
-        internal += "-dirty";
-    }
-    return internal;
-}
-
-}
-
 Version::Version()
     : version_(CHATTERINO_VERSION)
     , commitHash_(QStringLiteral(CHATTERINO_GIT_HASH))
@@ -57,21 +29,6 @@ Version::Version()
     }
 
     this->fullVersion_ += this->version_;
-
-    const auto configuredInternalVersion =
-        QStringLiteral(STRINGIFY2(LEAFYRINO_INTERNAL_VERSION))
-            .trimmed()
-            .remove(u'"');
-    if (!configuredInternalVersion.isEmpty() &&
-        configuredInternalVersion != "__AUTO__")
-    {
-        this->internalVersion_ = configuredInternalVersion;
-    }
-    else
-    {
-        this->internalVersion_ = makeDefaultInternalVersion(
-            this->commitHash_, this->isModified_, this->dateOfBuild_);
-    }
 
 #ifndef NDEBUG
     this->fullVersion_ += " DEBUG";
@@ -102,11 +59,6 @@ const Version &Version::instance()
 const QString &Version::version() const
 {
     return this->version_;
-}
-
-const QString &Version::internalVersion() const
-{
-    return this->internalVersion_;
 }
 
 const QString &Version::fullVersion() const
@@ -210,7 +162,6 @@ void Version::generateBuildString()
     }
 
     s += " with " + this->buildTags().join(", ");
-    s += " [internal " + this->internalVersion() + "]";
 
     this->buildString_ = s;
 }
@@ -219,11 +170,6 @@ void Version::generateRunningString()
 {
     auto s = QString("Running on %1, kernel: %2")
                  .arg(QSysInfo::prettyProductName(), QSysInfo::kernelVersion());
-
-    if (!this->internalVersion().isEmpty())
-    {
-        s += ", build: " + this->internalVersion();
-    }
 
     if (!this->isSupportedOS())
     {

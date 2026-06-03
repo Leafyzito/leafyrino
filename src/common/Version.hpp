@@ -20,7 +20,6 @@ public:
     static const Version &instance();
 
     const QString &version() const;
-    const QString &internalVersion() const;
     const QString &commitHash() const;
 
     const bool &isModified() const;
@@ -50,7 +49,6 @@ private:
     Version();
 
     QString version_;
-    QString internalVersion_;
     QString commitHash_;
     bool isModified_{false};
     QString dateOfBuild_;

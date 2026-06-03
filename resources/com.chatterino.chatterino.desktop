@@ -1,11 +1,11 @@
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=Moltorino
-GenericName=Moltorino
+Name=Leafyrino
+GenericName=Leafyrino
 Comment=Chat client for Twitch
-Exec=Moltorino7
-Icon=com.moltobenne.moltorino
+Exec=Leafyrino7
+Icon=com.leafyzito.leafyrino
 Terminal=false
 Categories=Network;InstantMessaging;
-StartupWMClass=Moltorino7
+StartupWMClass=Leafyrino7
