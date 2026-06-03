@@ -14,10 +14,13 @@
 
 #ifdef USEWINSDK
 
+// clang-format off
+#    include <Windows.h>
 #    include <Ole2.h>
 #    include <ShellScalingApi.h>
 #    include <Shlwapi.h>
 #    include <VersionHelpers.h>
+// clang-format on
 
 namespace chatterino {
 

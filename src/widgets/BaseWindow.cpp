@@ -27,11 +27,13 @@
 #include <functional>
 
 #ifdef USEWINSDK
+// clang-format off
+#    include <Windows.h>
 #    include <dwmapi.h>
 #    include <shellapi.h>
 #    include <VersionHelpers.h>
-#    include <Windows.h>
 #    include <windowsx.h>
+// clang-format on
 
 #    pragma comment(lib, "Dwmapi.lib")
 
