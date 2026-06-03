@@ -285,11 +285,6 @@ public:
                                      false};
     BoolSetting headerGame = {"/appearance/splitheader/showGame", false};
     BoolSetting headerUptime = {"/appearance/splitheader/showUptime", false};
-    BoolSetting showPredictionPanel = {"/appearance/splits/showPredictionPanel",
-                                       true};
-    BoolSetting showPinnedMessagePanel = {
-        "/appearance/splits/showPinnedMessagePanel", true};
-    BoolSetting showPollPanel = {"/appearance/splits/showPollPanel", true};
     BoolSetting showSplitMps = {"/appearance/splits/showMps", false};
     EnumStringSetting<SplitMpsCorner> splitMpsCorner = {
         "/appearance/splits/mpsCorner",
@@ -297,8 +292,6 @@ public:
     };
     BoolSetting showSplitMpsWhenZero = {"/appearance/splits/showMpsWhenZero",
                                         false};
-    FloatSetting customThemeMultiplier = {"/appearance/customThemeMultiplier",
-                                          -0.5f};
     // BoolSetting useCustomWindowFrame = {"/appearance/useCustomWindowFrame",
     // false};
 
@@ -373,7 +366,6 @@ public:
     /// Behaviour
     BoolSetting allowDuplicateMessages = {"/behaviour/allowDuplicateMessages",
                                           true};
-    BoolSetting mentionUsersWithAt = {"/behaviour/mentionUsersWithAt", false};
     BoolSetting showJoins = {"/behaviour/showJoins", false};
     BoolSetting showParts = {"/behaviour/showParts", false};
     FloatSetting mouseScrollMultiplier = {"/behaviour/mouseScrollMultiplier",
@@ -475,8 +467,6 @@ public:
     };
 
     /// Emotes
-    BoolSetting scaleEmotesByLineHeight = {"/emotes/scaleEmotesByLineHeight",
-                                           false};
     BoolSetting enableEmoteImages = {"/emotes/enableEmoteImages", true};
     BoolSetting animateEmotes = {"/emotes/enableGifAnimations", true};
     BoolSetting enableZeroWidthEmotes = {"/emotes/enableZeroWidthEmotes", true};
@@ -564,7 +554,6 @@ public:
     IntSetting showBlockedUsersMessages = {"/ignore/showBlockedUsers", 0};
 
     /// Moderation
-    QStringSetting timeoutAction = {"/moderation/timeoutAction", "Disable"};
     IntSetting timeoutStackStyle = {
         "/moderation/timeoutStackStyle",
         static_cast<int>(TimeoutStackStyle::Default)};
@@ -742,19 +731,6 @@ public:
     BoolSetting suppressInitialLiveNotification = {
         "/notifications/suppressInitialLive", false};
 
-    BoolSetting predictionStartPlaySound = {
-        "/notifications/predictionStart/enablePlaySound",
-        false,
-    };
-    BoolSetting predictionStartCustomSound = {
-        "/notifications/predictionStart/customPlaySound",
-        false,
-    };
-    QStringSetting predictionStartSoundPath = {
-        "/notifications/predictionStart/soundPath",
-        "",
-    };
-
     BoolSetting notificationToast = {"/notifications/enableToast", false};
     BoolSetting createShortcutForToasts = {
         "/notifications/createShortcutForToasts",
@@ -810,7 +786,6 @@ public:
     BoolSetting useKeyring = {"/misc/useKeyring", true};
 #endif
 
-    IntSetting startUpNotification = {"/misc/startUpNotification", 0};
     QStringSetting currentVersion = {"/misc/currentVersion", ""};
     IntSetting overlayKnowledgeLevel = {"/misc/overlayKnowledgeLevel", 0};
 
