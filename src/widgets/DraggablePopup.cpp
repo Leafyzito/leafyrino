@@ -6,6 +6,7 @@
 
 #include "buttons/SvgButton.hpp"
 
+#include <QKeyEvent>
 #include <QMouseEvent>
 #include <QWindow>
 
@@ -64,6 +65,17 @@ DraggablePopup::DraggablePopup(bool closeAutomatically, QWidget *parent)
 
             this->move(this->requestedDragPos_);
         });
+}
+
+void DraggablePopup::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Escape)
+    {
+        this->close();
+        return;
+    }
+
+    BaseWindow::keyPressEvent(event);
 }
 
 void DraggablePopup::mousePressEvent(QMouseEvent *event)

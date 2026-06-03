@@ -3045,7 +3045,10 @@ void MessageBuilder::appendHomiesBadges(const QString &userID)
             continue;
         }
 
-        this->emplace<BadgeElement>(badge, MessageElementFlag::BadgeHomies);
+        const auto badgeFlag = isSupporterBadge
+                                   ? MessageElementFlag::BadgeHomiesSupporter
+                                   : MessageElementFlag::BadgeHomiesCustom;
+        this->emplace<BadgeElement>(badge, badgeFlag);
         this->message().externalBadges.emplace_back(badge->name.string);
     }
 }
