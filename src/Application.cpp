@@ -56,7 +56,7 @@
 #include "singletons/Fonts.hpp"
 #include "singletons/helper/LoggingChannel.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
-#include "providers/moltorino/MoltorinoPresence.hpp"
+// #include "providers/moltorino/MoltorinoPresence.hpp"
 #include "providers/moltorino/MoltorinoSupporterBadges.hpp"
 #include "singletons/Logging.hpp"
 #include "singletons/Paths.hpp"
@@ -299,7 +299,7 @@ void Application::initialize(Settings &settings, const Paths &paths)
 
     this->streamerMode->start();
 
-    getMoltorinoPresence()->init();
+    // getMoltorinoPresence()->init();
 
     {
         auto &s = *getSettings();
@@ -396,9 +396,9 @@ int Application::run()
         },
         false);
 
-    QTimer::singleShot(2500, qApp, [] {
-        getMoltorinoPresence()->startHeartbeat();
-    });
+    // QTimer::singleShot(2500, qApp, [] {
+    //     getMoltorinoPresence()->startHeartbeat();
+    // });
 
     MoltorinoAuth::scheduleStartupRefresh();
 
