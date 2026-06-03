@@ -39,7 +39,17 @@ namespace chatterino {
 
 void TwitchBadges::loadTwitchBadges(std::optional<ChannelPtr> messageChannel)
 {
-    assert(this->loaded_ == false);
+    if (this->loaded_)
+    {
+        {
+            auto badgeSets = this->badgeSets_.access();
+            badgeSets->clear();
+        }
+        {
+            std::unique_lock lock(this->badgesMutex_);
+            this->badgesMap_.clear();
+        }
+    }
 
     getHelix()->getGlobalBadges(
         [this, messageChannel](auto globalBadges) {
@@ -151,9 +161,13 @@ void TwitchBadges::loaded()
 {
     std::unique_lock loadedLock(this->loadedMutex_);
 
-    assert(this->loaded_ == false);
-
+    const bool firstLoad = !this->loaded_;
     this->loaded_ = true;
+
+    if (!firstLoad)
+    {
+        return;
+    }
 
     std::unique_lock queueLock(this->queueMutex_);
 

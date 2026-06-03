@@ -32,6 +32,7 @@
 #include "providers/folhinha/FolhinhaBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
+#include "providers/moltorino/MoltorinoSupporterBadges.hpp"
 #include "providers/recentmessages/Api.hpp"
 #include "providers/seventv/eventapi/Dispatch.hpp"
 #include "providers/seventv/SeventvAPI.hpp"
@@ -1053,6 +1054,11 @@ void TwitchChannel::refreshBadgesProviders()
     this->addSystemMessage("Homies badges reloaded.");
     getApp()->getFolhinhaBadges()->loadFolhinhaBadges();
     this->addSystemMessage("FolhinhaBot badges reloaded.");
+    if (auto *badges = getApp()->getMoltorinoSupporterBadges())
+    {
+        badges->refreshNow();
+        this->addSystemMessage("Moltorino badges reloaded.");
+    }
 }
 
 void TwitchChannel::refreshSevenTVChannelEmotes(bool manualRefresh)
