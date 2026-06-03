@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 
 class QJsonObject;
@@ -540,6 +541,10 @@ public:
 
     EmotePtr getEmote() const;
 
+    void setTwitchBadge(QString slug, QString version);
+    std::optional<QString> twitchBadgeSlug() const;
+    std::optional<QString> twitchBadgeVersion() const;
+
     std::unique_ptr<MessageElement> clone() const override;
 
     QJsonObject toJson() const override;
@@ -549,6 +554,8 @@ protected:
     virtual MessageLayoutElement *makeImageLayoutElement(const ImagePtr &image,
                                                          QSizeF size);
     EmotePtr emote_;
+    std::optional<QString> twitchBadgeSlug_;
+    std::optional<QString> twitchBadgeVersion_;
 };
 
 class ModBadgeElement : public BadgeElement

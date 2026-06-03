@@ -4086,6 +4086,12 @@ void UserInfoPopup::appendCommonProfileActions(QMenu *menu)
             [url = chatVaultTwitchChannelUrl(this->userName_)] {
                 QDesktopServices::openUrl(QUrl(url));
             });
+
+        menu->addAction("Open channel &logs in browser", this,
+                        [username = this->userName_] {
+                            QDesktopServices::openUrl(
+                                QUrl("https://tv.supa.sh/logs?c=" + username));
+                        });
     }
 
     if (!this->seventvUserID_.isEmpty())
