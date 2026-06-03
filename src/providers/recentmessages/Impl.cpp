@@ -16,7 +16,6 @@
 
 namespace chatterino::recentmessages::detail {
 
-// Parse the IRC messages returned in JSON form into Communi messages
 std::vector<Communi::IrcMessage *> parseRecentMessages(
     const QJsonObject &jsonRoot)
 {
@@ -28,7 +27,7 @@ std::vector<Communi::IrcMessage *> parseRecentMessages(
         return messages;
     }
 
-    for (const auto jsonMessage : jsonMessages)
+    for (const auto &jsonMessage : jsonMessages)
     {
         auto content = unescapeZeroWidthJoiner(jsonMessage.toString());
 
@@ -41,8 +40,6 @@ std::vector<Communi::IrcMessage *> parseRecentMessages(
     return messages;
 }
 
-// Build Communi messages retrieved from the recent messages API into
-// proper chatterino messages.
 std::vector<MessagePtr> buildRecentMessages(
     std::vector<Communi::IrcMessage *> &messages, Channel *channel)
 {
@@ -63,7 +60,6 @@ std::vector<MessagePtr> buildRecentMessages(
                     message->tags().value("rm-received-ts").toLongLong())
                     .date();
 
-            // Check if we need to insert a message stating that a new day began
             if (msgDate != channel->lastDate_)
             {
                 channel->lastDate_ = msgDate;
@@ -82,8 +78,6 @@ std::vector<MessagePtr> buildRecentMessages(
     return std::move(sink).takeMessages();
 }
 
-// Returns the URL to be used for querying the Recent Messages API for the
-// given channel.
 QUrl constructRecentMessagesUrl(
     const QString &name, const int limit,
     const std::optional<std::chrono::time_point<std::chrono::system_clock>>
@@ -117,4 +111,4 @@ QUrl constructRecentMessagesUrl(
     return url;
 }
 
-}  // namespace chatterino::recentmessages::detail
+}

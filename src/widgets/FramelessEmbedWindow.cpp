@@ -32,8 +32,13 @@ FramelessEmbedWindow::FramelessEmbedWindow()
 }
 
 #ifdef USEWINSDK
+#    if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 bool FramelessEmbedWindow::nativeEvent(const QByteArray &eventType,
                                        void *message, qintptr *result)
+#    else
+bool FramelessEmbedWindow::nativeEvent(const QByteArray &eventType,
+                                       void *message, long *result)
+#    endif
 {
     MSG *msg = reinterpret_cast<MSG *>(message);
 
@@ -41,7 +46,6 @@ bool FramelessEmbedWindow::nativeEvent(const QByteArray &eventType,
     {
         auto data = reinterpret_cast<COPYDATASTRUCT *>(msg->lParam);
 
-        // no idea why I have to read it to a string and then encode it back to utf-8
         auto str = QString::fromUtf8(reinterpret_cast<char *>(data->lpData),
                                      int(data->cbData));
         auto doc = QJsonDocument::fromJson(str.toUtf8());
@@ -98,4 +102,4 @@ void FramelessEmbedWindow::showEvent(QShowEvent *)
 }
 #endif
 
-}  // namespace chatterino
+}

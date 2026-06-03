@@ -53,4 +53,4 @@ void ScalingSpacerItem::refresh()
     this->invalidate();
 }
 
-}  // namespace chatterino
+}

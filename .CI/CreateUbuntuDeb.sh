@@ -37,8 +37,12 @@ esac
 echo "Building Ubuntu .deb file on '$ubuntu_release'"
 echo "Dependencies: $dependencies"
 
-if [ ! -f ./bin/chatterino ] || [ ! -x ./bin/chatterino ]; then
-    echo "ERROR: No chatterino binary file found. This script must be run in the build folder, and chatterino must be built first."
+if [ -f ./bin/Moltorino7 ] && [ -x ./bin/Moltorino7 ]; then
+    app_executable="Moltorino7"
+elif [ -f ./bin/chatterino ] && [ -x ./bin/chatterino ]; then
+    app_executable="chatterino"
+else
+    echo "ERROR: No Moltorino7 or chatterino binary file found. This script must be run in the build folder, and the app must be built first."
     exit 1
 fi
 
@@ -79,6 +83,26 @@ breakline
 echo "Merge install into packaging dir"
 cp -rv "$install_prefix/" "$packaging_dir/"
 find "$packaging_dir"
+breakline
+
+if ! command -v strip >/dev/null 2>&1; then
+    echo "ERROR: strip was not found; refusing to package an unstripped .deb."
+    exit 1
+fi
+main_binary="$packaging_dir/usr/bin/$app_executable"
+if [ ! -f "$main_binary" ]; then
+    echo "ERROR: Installed binary '$main_binary' was not found; refusing to package without stripping it."
+    exit 1
+fi
+strip --strip-unneeded "$main_binary"
+for strip_dir in "$packaging_dir/usr/bin" "$packaging_dir/usr/lib"; do
+    if [ -d "$strip_dir" ]; then
+        find "$strip_dir" \
+            -type f ! -path "$main_binary" \
+            \( -perm -111 -o -name '*.so' -o -name '*.so.*' \) \
+            -exec strip --strip-unneeded {} + 2>/dev/null || true
+    fi
+done
 breakline
 
 

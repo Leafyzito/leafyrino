@@ -7,7 +7,7 @@
 #include "common/Common.hpp"
 #include "common/QLogging.hpp"
 #include "common/Version.hpp"
-#include "util/Expected.hpp"  // IWYU pragma: keep - this is being used to see if we're using the expected_lite library
+#include "util/Expected.hpp"
 #include "util/LayoutCreator.hpp"
 #include "util/RemoveScrollAreaBackground.hpp"
 #include "widgets/BasePopup.hpp"
@@ -21,7 +21,7 @@
 #include <QTextEdit>
 #include <QTextStream>
 #include <QVBoxLayout>
-#include <twitch-eventsub-ws/chrono.hpp>  // IWYU pragma: keep - this is being used to see if we're using Howard Hinnant's date library
+#include <twitch-eventsub-ws/chrono.hpp>
 
 namespace chatterino {
 
@@ -52,14 +52,18 @@ AboutPage::AboutPage()
         }
         logo->setScaledContents(true);
 
-        // Version
         auto versionInfo = layout.emplace<QGroupBox>("Version");
         {
             auto vbox = versionInfo.emplace<QVBoxLayout>();
             const auto &version = Version::instance();
 
-            QString string =
-                version.buildString() % "<br>" % version.runningString();
+            QString buildString = "Chatterino " % version.version();
+            buildString +=
+                " (<a href=\"https://www.twitch.tv/moltobenne_\">MoltoBenne's "
+                "version</a>)";
+            buildString += " built with " % version.buildTags().join(", ");
+
+            QString string = buildString % "<br>" % version.runningString();
 
             if (!version.extraString().isEmpty())
             {
@@ -72,20 +76,17 @@ AboutPage::AboutPage()
             label->setTextInteractionFlags(Qt::TextBrowserInteraction);
         }
 
-        // About Chatterino
         auto aboutChatterino = layout.emplace<QGroupBox>("About Chatterino...");
         {
             auto l = aboutChatterino.emplace<QVBoxLayout>();
 
-            // clang-format off
             l.emplace<QLabel>("Chatterino Wiki can be found <a href=\"" % LINK_CHATTERINO_WIKI % "\">here</a>")->setOpenExternalLinks(true);
             l.emplace<QLabel>("All about Chatterino's <a href=\"" % LINK_CHATTERINO_FEATURES % "\">features</a>")->setOpenExternalLinks(true);
             l.emplace<QLabel>("Join the official Chatterino <a href=\"" % LINK_CHATTERINO_DISCORD % "\">Discord</a>")->setOpenExternalLinks(true);
             l.emplace<QLabel>("Join the official 7TV <a href=\"" % LINK_SEVENTV_DISCORD % "\">Discord</a>")->setOpenExternalLinks(true);
-            // clang-format on
+
         }
 
-        // Licenses
         auto licenses =
             layout.emplace<QGroupBox>("Open source software used...");
         {
@@ -167,12 +168,10 @@ AboutPage::AboutPage()
 #endif
         }
 
-        // Attributions
         auto attributions = layout.emplace<QGroupBox>("Attributions...");
         {
             auto l = attributions.emplace<QVBoxLayout>();
 
-            // clang-format off
             l.emplace<QLabel>("Twemoji emojis provided by <a href=\"https://github.com/twitter/twemoji\">Twitter's Twemoji</a>")->setOpenExternalLinks(true);
             l.emplace<QLabel>("Facebook emojis provided by <a href=\"https://facebook.com\">Facebook</a>")->setOpenExternalLinks(true);
             l.emplace<QLabel>("Apple emojis provided by <a href=\"https://apple.com\">Apple</a>")->setOpenExternalLinks(true);
@@ -183,7 +182,6 @@ AboutPage::AboutPage()
             // clang-format on
         }
 
-        // Contributors
         auto contributors = layout.emplace<QGroupBox>("People");
         {
             auto l = contributors.emplace<FlowLayout>();
@@ -196,6 +194,11 @@ AboutPage::AboutPage()
             }
 
             QTextStream stream(&contributorsFile);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+
+#else
+            stream.setCodec("UTF-8");
+#endif
 
             QString line;
 
@@ -244,7 +247,7 @@ AboutPage::AboutPage()
                     QPixmap avatarPixmap;
                     if (avatarUrl.isEmpty())
                     {
-                        // TODO: or anon.png
+
                         avatarPixmap.load(":/avatars/anon.png");
                     }
                     else
@@ -313,4 +316,4 @@ void AboutPage::addLicense(QFormLayout *form, const QString &name,
     form->addRow(a, b);
 }
 
-}  // namespace chatterino
+}

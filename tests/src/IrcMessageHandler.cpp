@@ -673,37 +673,60 @@ TEST(TestIrcMessageHandlerP, Integrity)
     ASSERT_FALSE(UPDATE_SNAPSHOTS);  // make sure fixtures are actually tested
 }
 
-TEST_P(TestIrcMessageHandlerP, CloneElements)
+TEST(IrcMessageHandler, DuplicateChannelPointRewardIrcMessageIgnored)
 {
-    auto channel = makeMockTwitchChannel(u"pajlada"_s, *this->snapshot);
+    MockApplication app;
+    auto channel = std::make_shared<TwitchChannel>("pajlada");
+    channel->setRoomId("11148817");
 
-    VectorMessageSink sink;
+    const auto rewardRedemption = QJsonObject{{
+        {u"channel_id"_s, u"11148817"_s},
+        {u"id"_s, u"redemption-1"_s},
+        {u"user"_s,
+         QJsonObject{
+             {u"id"_s, u"129546453"_s},
+             {u"login"_s, u"nerixyz"_s},
+             {u"display_name"_s, u"nerixyz"_s},
+         }},
+        {u"reward"_s,
+         {{
+             {u"channel_id"_s, u"11148817"_s},
+             {u"cost"_s, 1},
+             {u"id"_s, u"31a2344e-0fce-4229-9453-fb2e8b6dd02c"_s},
+             {u"is_user_input_required"_s, true},
+             {u"title"_s, u"my reward"_s},
+         }}},
+    }};
 
-    for (auto prevInput : this->snapshot->param("prevMessages").toArray())
-    {
-        auto *ircMessage = Communi::IrcMessage::fromData(
-            prevInput.toString().toUtf8(), nullptr);
+    const QByteArray raw =
+        "@tmi-sent-ts=1726662938032;subscriber=1;"
+        "id=87af876f-5591-4a63-924f-46f465ecd3c4;"
+        "room-id=11148817;user-id=129546453;display-name=nerixyz;"
+        "badges=subscriber/24;badge-info=subscriber/27;color=#FF0000;"
+        "flags=;user-type=;emotes=;"
+        "custom-reward-id=31a2344e-0fce-4229-9453-fb2e8b6dd02c "
+        ":nerixyz!nerixyz@nerixyz.tmi.twitch.tv PRIVMSG #pajlada "
+        ":reward 1";
+
+    auto parse = [&] {
+        auto *ircMessage = Communi::IrcMessage::fromData(raw, nullptr);
         ASSERT_NE(ircMessage, nullptr);
-        IrcMessageHandler::parseMessageInto(ircMessage, sink, channel.get());
+        IrcMessageHandler::parseMessageInto(ircMessage, *channel,
+                                            channel.get());
         delete ircMessage;
-    }
+    };
 
-    auto *ircMessage =
-        Communi::IrcMessage::fromData(this->snapshot->inputUtf8(), nullptr);
-    ASSERT_NE(ircMessage, nullptr);
-    IrcMessageHandler::parseMessageInto(ircMessage, sink, channel.get());
-    delete ircMessage;
+    parse();
+    EXPECT_EQ(channel->countMessages(), 1);
+    ASSERT_NE(channel->getLastMessage(), nullptr);
+    EXPECT_EQ(channel->getLastMessage()->reward, nullptr);
 
-    for (const auto &message : sink.messages())
-    {
-        for (const auto &original : message->elements)
-        {
-            auto originalObj = original->toJson();
-            auto clonedObj = original->clone()->toJson();
-            ASSERT_EQ(originalObj, clonedObj)
-                << "\noriginal:\n"
-                << QJsonDocument(originalObj).toJson() << "\ncloned:\n"
-                << QJsonDocument(clonedObj).toJson();
-        }
-    }
+    parse();
+    EXPECT_EQ(channel->countMessages(), 1);
+
+    channel->addChannelPointReward(ChannelPointReward(rewardRedemption));
+    EXPECT_EQ(channel->countMessages(), 1);
+    ASSERT_NE(channel->getLastMessage(), nullptr);
+    ASSERT_NE(channel->getLastMessage()->reward, nullptr);
+    EXPECT_EQ(channel->getLastMessage()->reward->title, "my reward");
 }

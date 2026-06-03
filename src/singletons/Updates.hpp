@@ -16,10 +16,6 @@ namespace chatterino {
 class Paths;
 class Settings;
 
-/**
- * To check for updates, use the `checkForUpdates` method.
- * The class by itself does not start any automatic updates.
- */
 class Updates
 {
     const Paths &paths;
@@ -42,9 +38,6 @@ public:
 
     static bool isDowngradeOf(const QString &online, const QString &current);
 
-    /**
-     * @brief Delete old files that belong to the update process
-     */
     void deleteOldFiles();
 
     void checkForUpdates();
@@ -58,9 +51,6 @@ public:
     bool shouldShowUpdateButton() const;
     bool isError() const;
     bool isDowngrade() const;
-
-    /// Generates the string that the update dialog will show.
-    QString buildUpdateAvailableText() const;
 
     pajlada::Signals::Signal<Status> statusUpdated;
 
@@ -80,4 +70,4 @@ private:
         managedConnections;
 };
 
-}  // namespace chatterino
+}

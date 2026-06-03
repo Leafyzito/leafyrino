@@ -12,4 +12,4 @@ namespace chatterino {
 
 Url parseFfzUrl(const QString &ffzUrl);
 
-}  // namespace chatterino
+}

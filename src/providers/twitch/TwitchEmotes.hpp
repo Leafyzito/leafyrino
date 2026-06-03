@@ -18,10 +18,6 @@
 
 namespace chatterino {
 
-// NB: "default" can be replaced with "static" to always get a non-animated
-// variant
-/// %1 <-> {id}
-/// %2 <-> {scale} (1.0, 2.0, 3.0)
 inline constexpr QStringView TWITCH_EMOTE_TEMPLATE =
     u"https://static-cdn.jtvnw.net/emoticons/v2/%1/default/dark/%2";
 
@@ -43,24 +39,15 @@ struct CheerEmoteSet {
 };
 
 struct TwitchEmoteSet {
-    /// @brief The owner of this set
-    ///
-    /// This owner might not be resolved yet
+
     std::shared_ptr<TwitchUser> owner;
 
     std::vector<EmotePtr> emotes;
 
-    /// If this is a bitstier emote set
     bool isBits = false;
 
-    /// @brief If this emote set is a subscriber or similar emote set
-    ///
-    /// This includes sub and bit emotes
     bool isSubLike = false;
 
-    /// @brief The title of this set
-    ///
-    /// We generate this based on the emote set's flags & owner
     QString title() const;
 };
 using TwitchEmoteSetMap = boost::unordered_flat_map<EmoteSetId, TwitchEmoteSet>;
@@ -73,9 +60,8 @@ inline constexpr QStringView TWITCH_BIT_EMOTE_SET_PREFIX = u"x-c2-b-";
 struct TwitchEmoteSetMeta {
     QString setID;
 
-    /// See TwitchEmoteSet::isBits
     bool isBits = false;
-    /// See TwitchEmoteSet::isSubLike
+
     bool isSubLike = false;
 };
 
@@ -104,4 +90,4 @@ private:
         twitchEmotesCache_;
 };
 
-}  // namespace chatterino
+}

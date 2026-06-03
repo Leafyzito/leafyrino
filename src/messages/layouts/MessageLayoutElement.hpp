@@ -50,9 +50,6 @@ public:
 
     MessageLayoutElement *setTrailingSpace(bool value);
 
-    /// @brief Overwrites the link for this layout element
-    ///
-    /// @sa #getLink()
     MessageLayoutElement *setLink(const Link &link);
 
     MessageLayoutElement *setText(const QString &text_);
@@ -62,16 +59,11 @@ public:
     virtual size_t getSelectionIndexCount() const = 0;
     virtual void paint(QPainter &painter,
                        const MessageColors &messageColors) = 0;
-    /// @returns true if anything was painted
+
     virtual bool paintAnimated(QPainter &painter, qreal yOffset) = 0;
     virtual int getMouseOverIndex(QPointF abs) const = 0;
     virtual qreal getXFromIndex(size_t index) = 0;
 
-    /// @brief Returns the link this layout element has
-    ///
-    /// If there isn't any, an empty link is returned (type: None).
-    /// The link is sourced from the creator, but can be overwritten with
-    /// #setLink().
     Link getLink() const;
     const QString &getText() const;
     FlagsEnum<MessageElementFlag> getFlags() const;
@@ -87,20 +79,12 @@ private:
     QRectF rect_;
     std::optional<Link> link_;
     MessageElement &creator_;
-    /**
-     * The line of the container this element is laid out at
-     */
+
     size_t line_{};
 
-    /// @brief ID of a word inside its container
-    ///
-    /// One word has exactly one ID that is used to identify elements created
-    /// from the same word (due to wrapping).
-    /// IDs are unique in a MessageLayoutContainer.
     int wordId_ = -1;
 };
 
-// IMAGE
 class ImageLayoutElement : public MessageLayoutElement
 {
 public:
@@ -168,7 +152,6 @@ private:
     const int padding_;
 };
 
-// TEXT
 class TextLayoutElement : public MessageLayoutElement
 {
 public:
@@ -188,15 +171,12 @@ protected:
 
     QColor color_;
     FontStyle style_;
-    // 7tv: this is used to check for system messages - it doesn't take extra
-    // space (fits in the padding of `style_`)
+
     MessageColor::Type messageColor_;
     float scale_;
-    float dpr_ = 1.0F;  // for 7tv paints
+    float dpr_ = 1.0F;
 };
 
-// TEXT ICON
-// two lines of text (characters) in the size of a normal chat badge
 class TextIconLayoutElement : public MessageLayoutElement
 {
 public:
@@ -239,4 +219,4 @@ private:
     const float neededMargin_;
 };
 
-}  // namespace chatterino
+}

@@ -8,11 +8,6 @@
 
 namespace chatterino {
 
-/// Check if the owner of two weak pointers is equal.
-///
-/// Like `std::weak_ptr::owner_before`, this compares the control blocks,
-/// not the objects themselves.
-/// Equivalent to the C++ 26 `std::weak_ptr::owner_equal`.
 template <typename T>
 bool weakOwnerEquals(const std::weak_ptr<T> &a,
                      const std::weak_ptr<T> &b) noexcept
@@ -20,4 +15,4 @@ bool weakOwnerEquals(const std::weak_ptr<T> &a,
     return !a.owner_before(b) && !b.owner_before(a);
 }
 
-}  // namespace chatterino
+}

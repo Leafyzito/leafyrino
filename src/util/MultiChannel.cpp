@@ -11,6 +11,7 @@
 #include <QUuid>
 #include <QVarLengthArray>
 
+#include <algorithm>
 #include <set>
 
 namespace {
@@ -162,8 +163,6 @@ MultiChannel::MultiChannel(std::span<const Spec> channels,
         connections.emplace_back(channel->displayNameChanged.connect([this] {
             this->refreshDisplayName();
         }));
-        // Ignore messagesCleared - we'd need to figure out which messages to clear.
-
         this->channels_.emplace_back(ChildChannel{
             .platform = spec.platform,
             .channel = std::move(channel),
@@ -213,11 +212,16 @@ size_t MultiChannel::activeChannelIndex() const
 
 void MultiChannel::setActiveChannelIndex(size_t index)
 {
-    if (this->activeChannel_ == index)
+    const auto boundedIndex = this->channels_.empty()
+                                  ? size_t{0}
+                                  : std::min(index, this->channels_.size() - 1);
+
+    if (this->activeChannel_ == boundedIndex)
     {
         return;
     }
-    this->activeChannel_ = std::clamp<size_t>(index, 0, this->channels_.size());
+
+    this->activeChannel_ = boundedIndex;
     this->activeChannelChanged.invoke();
 }
 

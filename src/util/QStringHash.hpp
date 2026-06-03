@@ -18,4 +18,4 @@ struct hash<QString> {
     }
 };
 
-}  // namespace boost
+}

@@ -15,7 +15,7 @@
 #include "messages/MessageBuilder.hpp"
 #include "providers/colors/ColorProvider.hpp"
 #include "providers/kick/KickAccount.hpp"
-#include "providers/twitch/TwitchAccount.hpp"  // IWYU pragma: keep
+#include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchBadge.hpp"
 #include "singletons/Settings.hpp"
 
@@ -30,14 +30,14 @@ auto highlightPhraseCheck(const HighlightPhrase &highlight) -> HighlightCheck
                     const auto &senderName, const auto &originalMessage,
                     const auto &flags,
                     const auto self) -> std::optional<HighlightResult> {
-            (void)args;          // unused
-            (void)twitchBadges;  // unused
-            (void)senderName;    // unused
-            (void)flags;         // unused
+            (void)args;
+            (void)twitchBadges;
+            (void)senderName;
+            (void)flags;
 
             if (self)
             {
-                // Phrase checks should ignore highlights from the user
+
                 return std::nullopt;
             }
 
@@ -74,18 +74,16 @@ void rebuildSubscriptionHighlights(Settings &settings,
             highlightSoundUrl = highlightSoundUrlValue;
         }
 
-        // The custom sub highlight color is handled in ColorProvider
-
         checks.emplace_back(HighlightCheck{
             [=](const auto &args, const auto &twitchBadges,
                 const auto &senderName, const auto &originalMessage,
                 const auto &flags,
                 const auto self) -> std::optional<HighlightResult> {
-                (void)twitchBadges;     // unused
-                (void)senderName;       // unused
-                (void)originalMessage;  // unused
-                (void)flags;            // unused
-                (void)self;             // unused
+                (void)twitchBadges;
+                (void)senderName;
+                (void)originalMessage;
+                (void)flags;
+                (void)self;
 
                 if (!args.isSubscriptionMessage)
                 {
@@ -96,11 +94,11 @@ void rebuildSubscriptionHighlights(Settings &settings,
                     ColorProvider::instance().color(ColorType::Subscription);
 
                 return HighlightResult{
-                    highlightAlert,     // alert
-                    highlightSound,     // playSound
-                    highlightSoundUrl,  // customSoundUrl
-                    highlightColor,     // color
-                    false,              // showInMentions
+                    highlightAlert,
+                    highlightSound,
+                    highlightSoundUrl,
+                    highlightColor,
+                    false,
                 };
             }});
     }
@@ -121,18 +119,16 @@ void rebuildWhisperHighlights(Settings &settings,
             highlightSoundUrl = highlightSoundUrlValue;
         }
 
-        // The custom whisper highlight color is handled in ColorProvider
-
         checks.emplace_back(HighlightCheck{
             [=](const auto &args, const auto &twitchBadges,
                 const auto &senderName, const auto &originalMessage,
                 const auto &flags,
                 const auto self) -> std::optional<HighlightResult> {
-                (void)twitchBadges;     // unused
-                (void)senderName;       // unused
-                (void)originalMessage;  // unused
-                (void)flags;            // unused
-                (void)self;             // unused
+                (void)twitchBadges;
+                (void)senderName;
+                (void)originalMessage;
+                (void)flags;
+                (void)self;
 
                 if (!args.isReceivedWhisper)
                 {
@@ -167,8 +163,8 @@ void rebuildReplyThreadHighlight(Settings &settings,
         auto highlightInMentions =
             settings.showThreadHighlightInMentions.getValue();
         checks.emplace_back(HighlightCheck{
-            [=](const auto & /*args*/, const auto & /*twitchBadges*/,
-                const auto & /*senderName*/, const auto & /*originalMessage*/,
+            [=](const auto & , const auto & ,
+                const auto & , const auto & ,
                 const auto &flags,
                 const auto self) -> std::optional<HighlightResult> {
                 if (flags.has(MessageFlag::SubscribedThread) && !self)
@@ -240,10 +236,10 @@ void rebuildMessageHighlights(Settings &settings,
             ColorProvider::instance().color(ColorType::AutomodHighlight);
 
         checks.emplace_back(HighlightCheck{
-            [=](const auto & /*args*/, const auto & /*twitchBadges*/,
-                const auto & /*senderName*/, const auto & /*originalMessage*/,
+            [=](const auto & , const auto & ,
+                const auto & , const auto & ,
                 const auto &flags,
-                const auto /*self*/) -> std::optional<HighlightResult> {
+                const auto ) -> std::optional<HighlightResult> {
                 if (!flags.has(MessageFlag::AutoModOffendingMessage))
                 {
                     return std::nullopt;
@@ -256,11 +252,11 @@ void rebuildMessageHighlights(Settings &settings,
                 }
 
                 return HighlightResult{
-                    highlightAlert,     // alert
-                    highlightSound,     // playSound
-                    highlightSoundUrl,  // customSoundUrl
-                    highlightColor,     // color
-                    false,              // showInMentions
+                    highlightAlert,
+                    highlightSound,
+                    highlightSoundUrl,
+                    highlightColor,
+                    false,
                 };
             }});
     }
@@ -281,18 +277,17 @@ void rebuildUserHighlights(Settings &settings,
                 const auto &senderName, const auto &originalMessage,
                 const auto &flags,
                 const auto self) -> std::optional<HighlightResult> {
-                (void)args;             //unused
-                (void)twitchBadges;     //unused
-                (void)senderName;       //unused
-                (void)flags;            //unused
-                (void)originalMessage;  //unused
+                (void)args;
+                (void)twitchBadges;
+                (void)senderName;
+                (void)flags;
+                (void)originalMessage;
 
                 if (!self)
                 {
                     return std::nullopt;
                 }
 
-                // Highlight color is provided by the ColorProvider and will be updated accordingly
                 auto highlightColor = ColorProvider::instance().color(
                     ColorType::SelfMessageHighlight);
 
@@ -308,11 +303,11 @@ void rebuildUserHighlights(Settings &settings,
                         const auto &senderName, const auto &originalMessage,
                         const auto &flags,
                         const auto self) -> std::optional<HighlightResult> {
-                (void)args;             // unused
-                (void)twitchBadges;     // unused
-                (void)originalMessage;  // unused
-                (void)flags;            // unused
-                (void)self;             // unused
+                (void)args;
+                (void)twitchBadges;
+                (void)originalMessage;
+                (void)flags;
+                (void)self;
 
                 if (!highlight.isMatch(senderName))
                 {
@@ -326,11 +321,11 @@ void rebuildUserHighlights(Settings &settings,
                 }
 
                 return HighlightResult{
-                    highlight.hasAlert(),        //
-                    highlight.hasSound(),        //
-                    highlightSoundUrl,           //
-                    highlight.getColor(),        //
-                    highlight.showInMentions(),  //
+                    highlight.hasAlert(),
+                    highlight.hasSound(),
+                    highlightSoundUrl,
+                    highlight.getColor(),
+                    highlight.showInMentions(),
                 };
             }});
     }
@@ -348,11 +343,11 @@ void rebuildBadgeHighlights(Settings &settings,
                         const auto &senderName, const auto &originalMessage,
                         const auto &flags,
                         const auto self) -> std::optional<HighlightResult> {
-                (void)args;             // unused
-                (void)senderName;       // unused
-                (void)originalMessage;  // unused
-                (void)flags;            // unused
-                (void)self;             // unused
+                (void)args;
+                (void)senderName;
+                (void)originalMessage;
+                (void)flags;
+                (void)self;
 
                 for (const TwitchBadge &badge : twitchBadges)
                 {
@@ -365,11 +360,11 @@ void rebuildBadgeHighlights(Settings &settings,
                         }
 
                         return HighlightResult{
-                            highlight.hasAlert(),        //
-                            highlight.hasSound(),        //
-                            highlightSoundUrl,           //
-                            highlight.getColor(),        //
-                            highlight.showInMentions(),  //
+                            highlight.hasAlert(),
+                            highlight.hasSound(),
+                            highlightSoundUrl,
+                            highlight.getColor(),
+                            highlight.showInMentions(),
                         };
                     }
                 }
@@ -379,7 +374,7 @@ void rebuildBadgeHighlights(Settings &settings,
     }
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -405,8 +400,7 @@ HighlightController::HighlightController(Settings &settings,
     this->rebuildListener_.addSetting(settings.enableSelfMessageHighlight);
     this->rebuildListener_.addSetting(
         settings.showSelfMessageHighlightInMentions);
-    // We do not need to rebuild the listener for the selfMessagesHighlightColor
-    // The color is dynamically fetched any time the self message highlight is triggered
+
     this->rebuildListener_.addSetting(settings.subHighlightSoundUrl);
 
     this->rebuildListener_.addSetting(settings.enableThreadHighlight);
@@ -450,12 +444,12 @@ HighlightController::HighlightController(Settings &settings,
             this->rebuildChecks(settings);
         });
 
-    this->signalHolder_.managedConnect(
-        accounts->twitch.currentUserChanged, [this, &settings] {
+    this->bConnections.emplace_back(
+        accounts->twitch.currentUserChanged.connect([this, &settings] {
             qCDebug(chatterinoHighlights)
                 << "Rebuild checks because user swapped accounts";
             this->rebuildChecks(settings);
-        });
+        }));
 
     this->signalHolder_.managedConnect(
         accounts->twitch.currentUserNameChanged, [this, &settings] {
@@ -476,12 +470,9 @@ HighlightController::HighlightController(Settings &settings,
 
 void HighlightController::rebuildChecks(Settings &settings)
 {
-    // Access checks for modification
+
     auto checks = this->checks_.access();
     checks->clear();
-
-    // CURRENT ORDER:
-    // Subscription -> Whisper -> Message -> User -> Reply Threads -> Badge
 
     rebuildSubscriptionHighlights(settings, *checks);
 
@@ -504,7 +495,6 @@ std::pair<bool, HighlightResult> HighlightController::check(
     bool highlighted = false;
     auto result = HighlightResult::emptyResult();
 
-    // Access for checking
     const auto checks = this->checks_.accessConst();
 
     bool self = false;
@@ -573,7 +563,7 @@ std::pair<bool, HighlightResult> HighlightController::check(
 
             if (result.full())
             {
-                // The final highlight result does not have room to add any more parameters, early out
+
                 break;
             }
         }
@@ -582,4 +572,4 @@ std::pair<bool, HighlightResult> HighlightController::check(
     return {highlighted, result};
 }
 
-}  // namespace chatterino
+}

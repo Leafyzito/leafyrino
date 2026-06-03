@@ -31,7 +31,6 @@ void initFileMode()
 #endif
 }
 
-// TODO(Qt6): Use QUtf8String
 void sendToBrowser(QLatin1String str)
 {
     auto len = static_cast<uint32_t>(str.size());
@@ -93,7 +92,7 @@ void runLoop()
         R"({"type":"status","status":"exiting-host","reason":"received EOF"})"});
     _Exit(0);
 }
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -104,4 +103,4 @@ void runBrowserExtensionHost()
     runLoop();
 }
 
-}  // namespace chatterino
+}

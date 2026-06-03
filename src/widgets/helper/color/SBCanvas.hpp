@@ -8,7 +8,6 @@
 
 namespace chatterino {
 
-/// 2D canvas for saturation (x-axis) and brightness (y-axis)
 class SBCanvas : public QWidget
 {
     Q_OBJECT
@@ -57,4 +56,4 @@ private:
     void emitUpdatedColor();
 };
 
-}  // namespace chatterino
+}

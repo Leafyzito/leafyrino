@@ -27,8 +27,6 @@ class MessageLayoutElement;
 class TooltipWidget;
 class LinkInfo;
 
-/// MessageView is a fixed-width widget that displays a single message.
-/// For the message to be rendered, you must call setWidth.
 class MessageView : public BaseWidget
 {
     Q_OBJECT
@@ -104,4 +102,4 @@ private:
     QTimer clickTimer_;
 };
 
-}  // namespace chatterino
+}

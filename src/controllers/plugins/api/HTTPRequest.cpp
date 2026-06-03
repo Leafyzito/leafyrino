@@ -36,20 +36,20 @@ namespace chatterino::lua::api {
 
 void HTTPRequest::createUserType(sol::table &c2)
 {
-    c2.new_usertype<HTTPRequest>(                              //
-        "HTTPRequest", sol::no_constructor,                    //
-        sol::meta_method::to_string, &HTTPRequest::to_string,  //
+    c2.new_usertype<HTTPRequest>(
+        "HTTPRequest", sol::no_constructor,
+        sol::meta_method::to_string, &HTTPRequest::to_string,
 
-        "on_success", &HTTPRequest::on_success,  //
-        "on_error", &HTTPRequest::on_error,      //
-        "finally", &HTTPRequest::finally,        //
+        "on_success", &HTTPRequest::on_success,
+        "on_error", &HTTPRequest::on_error,
+        "finally", &HTTPRequest::finally,
 
-        "set_timeout", &HTTPRequest::set_timeout,  //
-        "set_payload", &HTTPRequest::set_payload,  //
-        "set_header", &HTTPRequest::set_header,    //
-        "execute", &HTTPRequest::execute,          //
+        "set_timeout", &HTTPRequest::set_timeout,
+        "set_payload", &HTTPRequest::set_payload,
+        "set_header", &HTTPRequest::set_header,
+        "execute", &HTTPRequest::execute,
 
-        "create", &HTTPRequest::create  //
+        "create", &HTTPRequest::create
     );
 }
 
@@ -78,7 +78,6 @@ void HTTPRequest::set_payload(QByteArray payload)
     this->req_ = std::move(this->req_).payload(payload);
 }
 
-// name and value may be random bytes
 void HTTPRequest::set_header(QByteArray name, QByteArray value)
 {
     this->req_ = std::move(this->req_).header(name, value);
@@ -115,7 +114,6 @@ void HTTPRequest::execute(sol::this_state L)
     }
     this->done = true;
 
-    // this keeps the object alive even if Lua were to forget about it,
     auto hack = this->weak_from_this();
     auto *pl = getApp()->getPlugins()->getPluginByStatePtr(L);
     pl->httpRequests.push_back(this->shared_from_this());
@@ -154,7 +152,7 @@ void HTTPRequest::execute(sol::this_state L)
             auto self = hack.lock();
             if (!self)
             {
-                // this could happen if the plugin was deleted
+
                 return;
             }
             for (auto it = pl->httpRequests.begin();
@@ -178,7 +176,7 @@ void HTTPRequest::execute(sol::this_state L)
         .execute();
 }
 
-HTTPRequest::HTTPRequest(HTTPRequest::ConstructorAccessTag /*ignored*/,
+HTTPRequest::HTTPRequest(HTTPRequest::ConstructorAccessTag ,
                          NetworkRequest req)
     : req_(std::move(req))
 {
@@ -195,5 +193,5 @@ QString HTTPRequest::to_string()
     return "<HTTPRequest>";
 }
 
-}  // namespace chatterino::lua::api
+}
 #endif

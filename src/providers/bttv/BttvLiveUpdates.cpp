@@ -14,7 +14,7 @@
 
 namespace chatterino {
 
-using namespace Qt::StringLiterals;
+using namespace Qt::Literals::StringLiterals;
 
 class BttvLiveUpdatesPrivate
     : public BasicPubSubManager<BttvLiveUpdatesPrivate, BttvLiveUpdateClient>
@@ -30,7 +30,6 @@ public:
     std::shared_ptr<BttvLiveUpdateClient> makeClient();
     std::shared_ptr<BttvLiveUpdateClient> anyClient();
 
-    // Contains all joined Twitch channel-ids
     std::unordered_set<QString> joinedChannels;
     BttvLiveUpdates &parent;
 
@@ -111,4 +110,4 @@ const liveupdates::Diag &BttvLiveUpdates::diag() const
     return this->private_->diag;
 }
 
-}  // namespace chatterino
+}

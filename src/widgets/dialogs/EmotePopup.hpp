@@ -40,10 +40,7 @@ private:
     ChannelView *channelEmotesView_{};
     ChannelView *subEmotesView_{};
     ChannelView *viewEmojis_{};
-    /**
-     * @brief Visible only when the user has specified a search query into the `search_` input.
-     * Otherwise the `notebook_` and all other views are visible.
-     */
+
     ChannelView *searchView_{};
 
     ChannelPtr channel_;
@@ -64,4 +61,4 @@ private:
     void saveBounds() const;
 };
 
-}  // namespace chatterino
+}

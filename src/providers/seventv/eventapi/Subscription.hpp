@@ -14,7 +14,6 @@
 
 namespace chatterino::seventv::eventapi {
 
-// https://github.com/SevenTV/EventAPI/tree/ca4ff15cc42b89560fa661a76c5849047763d334#subscription-types
 enum class SubscriptionType {
     AnyEmoteSet,
     CreateEmoteSet,
@@ -36,7 +35,6 @@ enum class SubscriptionType {
     INVALID,
 };
 
-// https://github.com/SevenTV/EventAPI/tree/ca4ff15cc42b89560fa661a76c5849047763d334#opcodes
 enum class Opcode {
     Dispatch = 0,
     Hello = 1,
@@ -61,6 +59,7 @@ struct ObjectIDCondition {
 
     friend QDebug &operator<<(QDebug &dbg, const ObjectIDCondition &condition);
     bool operator==(const ObjectIDCondition &rhs) const;
+    bool operator!=(const ObjectIDCondition &rhs) const;
 };
 
 struct ChannelCondition {
@@ -73,12 +72,14 @@ struct ChannelCondition {
 
     friend QDebug &operator<<(QDebug &dbg, const ChannelCondition &condition);
     bool operator==(const ChannelCondition &rhs) const;
+    bool operator!=(const ChannelCondition &rhs) const;
 };
 
 using Condition = std::variant<ObjectIDCondition, ChannelCondition>;
 
 struct Subscription {
     bool operator==(const Subscription &rhs) const;
+    bool operator!=(const Subscription &rhs) const;
     Condition condition;
     SubscriptionType type;
 
@@ -88,7 +89,7 @@ struct Subscription {
     friend QDebug &operator<<(QDebug &dbg, const Subscription &subscription);
 };
 
-}  // namespace chatterino::seventv::eventapi
+}
 
 template <>
 constexpr magic_enum::customize::customize_t magic_enum::customize::enum_name<
@@ -162,4 +163,4 @@ struct hash<chatterino::seventv::eventapi::Subscription> {
     }
 };
 
-}  // namespace std
+}

@@ -14,7 +14,6 @@ NicknamesModel::NicknamesModel(QObject *parent)
 {
 }
 
-// turn a vector item into a model row
 Nickname NicknamesModel::getItemFromRow(std::vector<QStandardItem *> &row,
                                         const Nickname &original)
 {
@@ -24,7 +23,6 @@ Nickname NicknamesModel::getItemFromRow(std::vector<QStandardItem *> &row,
                     row[3]->data(Qt::CheckStateRole).toBool()};
 }
 
-// turns a row in the model into a vector item
 void NicknamesModel::getRowFromItem(const Nickname &item,
                                     std::vector<QStandardItem *> &row)
 {
@@ -34,4 +32,4 @@ void NicknamesModel::getRowFromItem(const Nickname &item,
     setBoolItem(row[3], item.isCaseSensitive());
 }
 
-}  // namespace chatterino
+}

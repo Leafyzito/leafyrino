@@ -6,7 +6,7 @@
 
 namespace {
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 bool tryParseChannelId(QString &channelId)
 {
@@ -15,11 +15,11 @@ bool tryParseChannelId(QString &channelId)
         return false;
     }
 
-    channelId.remove(0, 7);  // "twitch:"
+    channelId.remove(0, 7);
     return true;
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -35,8 +35,7 @@ BttvLiveUpdateEmoteUpdateAddMessage::BttvLiveUpdateEmoteUpdateAddMessage(
 
 bool BttvLiveUpdateEmoteUpdateAddMessage::validate() const
 {
-    // We don't need to check for jsonEmote["code"]/["id"],
-    // because these are this->emoteID and this->emoteName.
+
     return !this->badChannelID_ && !this->channelID.isEmpty() &&
            !this->emoteID.isEmpty() && !this->emoteName.isEmpty();
 }
@@ -72,4 +71,4 @@ bool BttvLiveUpdateUserUpdateMessage::hasBadge() const
     return !this->badgeObject.isEmpty();
 }
 
-}  // namespace chatterino
+}

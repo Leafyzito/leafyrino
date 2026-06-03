@@ -27,4 +27,4 @@ private:
     const std::vector<PaintDropShadow> dropShadows_;
 };
 
-}  // namespace chatterino
+}

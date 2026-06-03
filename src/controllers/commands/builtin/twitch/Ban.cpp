@@ -45,25 +45,21 @@ QString formatBanTimeoutError(const char *operation, HelixBanUserError error,
         break;
 
         case Error::TargetBanned: {
-            // Equivalent IRC error
+
             errorMessage += QString("%1 is already banned in this channel.")
                                 .arg(userTarget);
         }
         break;
 
         case Error::CannotBanUser: {
-            // We can't provide the identical error as in IRC,
-            // because we don't have enough information about the user.
-            // The messages from IRC are formatted like this:
-            // "You cannot {op} moderator {mod} unless you are the owner of this channel."
-            // "You cannot {op} the broadcaster."
+
             errorMessage +=
                 QString("You cannot %1 %2.").arg(operation, userTarget);
         }
         break;
 
         case Error::UserMissingScope: {
-            // TODO(pajlada): Phrase MISSING_REQUIRED_SCOPE
+
             errorMessage += "Missing required scope. "
                             "Re-login with your "
                             "account and try again.";
@@ -71,7 +67,7 @@ QString formatBanTimeoutError(const char *operation, HelixBanUserError error,
         break;
 
         case Error::UserNotAuthorized: {
-            // TODO(pajlada): Phrase MISSING_PERMISSION
+
             errorMessage += "You don't have permission to "
                             "perform that action.";
         }
@@ -92,7 +88,7 @@ void banUserByID(const ChannelPtr &channel, const QString &channelID,
     getHelix()->banUser(
         channelID, sourceUserID, targetUserID, std::nullopt, reason,
         [] {
-            // No response for bans, they're emitted over pubsub/IRC instead
+
         },
         [channel, displayName](auto error, auto message) {
             auto errorMessage =
@@ -109,7 +105,7 @@ void timeoutUserByID(const ChannelPtr &channel, const QString &channelID,
     getHelix()->banUser(
         channelID, sourceUserID, targetUserID, duration, reason,
         [] {
-            // No response for timeouts, they're emitted over pubsub/IRC instead
+
         },
         [channel, displayName](auto error, auto message) {
             auto errorMessage =
@@ -118,7 +114,7 @@ void timeoutUserByID(const ChannelPtr &channel, const QString &channelID,
         });
 }
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -173,7 +169,7 @@ QString sendBan(const CommandContext &ctx)
         }
         else
         {
-            // For hydration
+
             userIDs.append(action.target.id);
         }
         if (action.channel.id.isEmpty())
@@ -185,14 +181,13 @@ QString sendBan(const CommandContext &ctx)
         }
         else
         {
-            // For hydration
+
             userIDs.append(action.channel.id);
         }
 
         if (!userLoginsToFetch.isEmpty())
         {
-            // At least 1 user ID needs to be resolved before we can take action
-            // userIDs is filled up with the data we already have to hydrate the action channel & action target
+
             getHelix()->fetchUsers(
                 userIDs, userLoginsToFetch,
                 [channel{ctx.channel}, actionChannel{action.channel},
@@ -225,7 +220,7 @@ QString sendBan(const CommandContext &ctx)
         }
         else
         {
-            // If both IDs are available, we do no hydration & just use the id as the display name
+
             banUserByID(ctx.channel, action.channel.id,
                         currentUser->getUserId(), action.target.id, reason,
                         action.target.id);
@@ -330,7 +325,7 @@ QString sendTimeout(const CommandContext &ctx)
         }
         else
         {
-            // For hydration
+
             userIDs.append(action.target.id);
         }
         if (action.channel.id.isEmpty())
@@ -342,14 +337,13 @@ QString sendTimeout(const CommandContext &ctx)
         }
         else
         {
-            // For hydration
+
             userIDs.append(action.channel.id);
         }
 
         if (!userLoginsToFetch.isEmpty())
         {
-            // At least 1 user ID needs to be resolved before we can take action
-            // userIDs is filled up with the data we already have to hydrate the action channel & action target
+
             getHelix()->fetchUsers(
                 userIDs, userLoginsToFetch,
                 [channel{ctx.channel}, duration{action.duration},
@@ -383,7 +377,7 @@ QString sendTimeout(const CommandContext &ctx)
         }
         else
         {
-            // If both IDs are available, we do no hydration & just use the id as the display name
+
             timeoutUserByID(ctx.channel, action.channel.id,
                             currentUser->getUserId(), action.target.id,
                             action.duration, reason, action.target.id);
@@ -393,4 +387,4 @@ QString sendTimeout(const CommandContext &ctx)
     return "";
 }
 
-}  // namespace chatterino::commands
+}

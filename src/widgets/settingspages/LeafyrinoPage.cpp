@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #include "widgets/settingspages/LeafyrinoPage.hpp"
 
 #include "singletons/Settings.hpp"
@@ -6,10 +10,12 @@
 #include "widgets/settingspages/SettingWidget.hpp"
 
 #include <QFileDialog>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QUrl>
+#include <QVBoxLayout>
 
 namespace chatterino {
 
@@ -50,7 +56,7 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->addTo(layout);
     SettingWidget::checkbox("Folhinha", s.showBadgesFolhinha)
         ->addKeywords({"folhinha", "folhinhabot"})
-        ->setTooltip("FolhinhaBot Plus and Founder badges")
+        ->setTooltip("FolhinhaBot Plus, Founder, and Supporter badges")
         ->addTo(layout);
 
     layout.addTitle("Userinfo popup");

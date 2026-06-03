@@ -39,13 +39,13 @@ QColor ColorButton::color() const
     return this->currentColor_;
 }
 
-void ColorButton::resizeEvent(QResizeEvent * /*event*/)
+void ColorButton::resizeEvent(QResizeEvent * )
 {
     this->checkerboardCacheValid_ = false;
     this->repaint();
 }
 
-void ColorButton::paintEvent(QPaintEvent * /*event*/)
+void ColorButton::paintEvent(QPaintEvent * )
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -82,4 +82,4 @@ void ColorButton::paintEvent(QPaintEvent * /*event*/)
                             rect.height() - 2, 5, 5);
 }
 
-}  // namespace chatterino
+}

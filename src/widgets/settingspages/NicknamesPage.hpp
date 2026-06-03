@@ -20,4 +20,4 @@ private:
     EditableModelView *view_;
 };
 
-}  // namespace chatterino
+}

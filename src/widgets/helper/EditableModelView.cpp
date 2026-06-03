@@ -25,7 +25,7 @@ EditableModelView::EditableModelView(QAbstractTableModel *model, bool movable)
 {
     this->model_->setParent(this);
     this->tableView_->setModel(this->model_);
-    // disabling word-wrap somehow prevent '/'-prefixed commands from being elided
+
     this->tableView_->setWordWrap(false);
     this->tableView_->setSelectionMode(QAbstractItemView::SingleSelection);
     this->tableView_->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -37,29 +37,24 @@ EditableModelView::EditableModelView(QAbstractTableModel *model, bool movable)
 
     TableRowDragStyle::applyTo(this->tableView_);
 
-    // create layout
     QVBoxLayout *vbox = new QVBoxLayout(this);
     vbox->setContentsMargins(0, 0, 0, 0);
 
-    // create button layout
     auto *buttons = new QHBoxLayout();
     this->buttons_ = buttons;
     vbox->addLayout(buttons);
 
-    // add
     QPushButton *add = new QPushButton("Add");
     buttons->addWidget(add);
     QObject::connect(add, &QPushButton::clicked, [this] {
         this->addButtonPressed.invoke();
     });
 
-    // remove
     QPushButton *remove = new QPushButton("Remove");
     buttons->addWidget(remove);
     QObject::connect(remove, &QPushButton::clicked, [this] {
         auto selected = this->getTableView()->selectionModel()->selectedRows(0);
 
-        // Remove rows backwards so indices don't shift.
         std::vector<int> rows;
         for (auto &&index : selected)
         {
@@ -76,14 +71,13 @@ EditableModelView::EditableModelView(QAbstractTableModel *model, bool movable)
 
     if (movable)
     {
-        // move up
+
         QPushButton *moveUp = new QPushButton("Move up");
         buttons->addWidget(moveUp);
         QObject::connect(moveUp, &QPushButton::clicked, this, [this] {
             this->moveRow(-1);
         });
 
-        // move down
         QPushButton *moveDown = new QPushButton("Move down");
         buttons->addWidget(moveDown);
         QObject::connect(moveDown, &QPushButton::clicked, this, [this] {
@@ -99,16 +93,13 @@ EditableModelView::EditableModelView(QAbstractTableModel *model, bool movable)
                          this->tableView_->selectRow(row);
                      });
 
-    // select freshly added row
     QObject::connect(this->model_, &QAbstractTableModel::rowsInserted, this,
                      [this](const QModelIndex &parent, int first, int last) {
                          this->tableView_->selectRow(last);
                      });
 
-    // add tableview
     vbox->addWidget(this->tableView_);
 
-    // finish button layout
     buttons->addStretch(1);
 }
 void EditableModelView::setValidationRegexp(QRegularExpression regexp)
@@ -162,8 +153,6 @@ bool EditableModelView::filterSearchResults(const QString &query,
     bool searchFoundSomething = false;
     auto rowAmount = this->model_->rowCount();
 
-    // make sure to show the page even if the table is empty,
-    // but only if we aren't search something
     if (rowAmount == 0 && query.isEmpty())
     {
         return true;
@@ -202,8 +191,6 @@ void EditableModelView::filterSearchResultsHotkey(
         QVariant a = this->model_->data(idx);
         auto seq = qvariant_cast<QKeySequence>(a);
 
-        // todo: Make this fuzzy match, right now only exact matches happen
-        // so ctrl+f won't match ctrl+shift+f shortcuts
         if (keySequenceQuery.matches(seq) != QKeySequence::NoMatch)
         {
             this->tableView_->showRow(i);
@@ -233,4 +220,4 @@ void EditableModelView::moveRow(int dir)
     this->tableView_->selectRow(row + dir);
 }
 
-}  // namespace chatterino
+}

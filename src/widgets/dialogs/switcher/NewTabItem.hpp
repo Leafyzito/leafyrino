@@ -13,17 +13,9 @@ class Window;
 class NewTabItem : public AbstractSwitcherItem
 {
 public:
-    /**
-     * @brief   Construct a new NewTabItem that opens a passed channel in a new
-     *          tab.
-     *
-     * @param   channelName name of channel to open
-     */
+
     NewTabItem(Window *window_, const QString &channelName);
 
-    /**
-     * @brief   Open the channel passed in the constructor in a new tab.
-     */
     void action() override;
 
     void paint(QPainter *painter, const QRect &rect) const override;
@@ -36,4 +28,4 @@ private:
     Window *window{};
 };
 
-}  // namespace chatterino
+}

@@ -292,7 +292,7 @@ public:
 
     /**
      * @brief Inserts the given item before another item
-     * 
+     *
      * @param[in] needle the item to use as positional reference
      * @param[in] item the item to insert before needle
      * @tparam Equality function object to use for comparison
@@ -318,7 +318,7 @@ public:
 
     /**
      * @brief Inserts the given item after another item
-     * 
+     *
      * @param[in] needle the item to use as positional reference
      * @param[in] item the item to insert after needle
      * @tparam Equality function object to use for comparison
@@ -383,12 +383,12 @@ public:
 
     /**
      * @brief Returns the first item matching a predicate
-     * 
-     * The contents of the LimitedQueue are iterated over from front to back 
-     * until the first element that satisfies `pred(item)`. If no item 
+     *
+     * The contents of the LimitedQueue are iterated over from front to back
+     * until the first element that satisfies `pred(item)`. If no item
      * satisfies the predicate, or if the queue is empty, then std::nullopt
      * is returned.
-     * 
+     *
      * @param[in] pred predicate that will be applied to items
      * @return the first item found or std::nullopt
      */
@@ -436,12 +436,12 @@ public:
 
     /**
      * @brief Returns the first item matching a predicate, checking in reverse
-     * 
-     * The contents of the LimitedQueue are iterated over from back to front 
-     * until the first element that satisfies `pred(item)`. If no item 
+     *
+     * The contents of the LimitedQueue are iterated over from back to front
+     * until the first element that satisfies `pred(item)`. If no item
      * satisfies the predicate, or if the queue is empty, then std::nullopt
      * is returned.
-     * 
+     *
      * @param[in] pred predicate that will be applied to items
      * @return the first item found or std::nullopt
      */

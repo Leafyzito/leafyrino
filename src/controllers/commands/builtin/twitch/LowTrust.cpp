@@ -21,7 +21,7 @@ void addSuspiciousTreatment(const CommandContext &ctx, const QString &command,
 {
     if (ctx.twitchChannel == nullptr)
     {
-        // This action must be performed with a twitch channel as a context
+
         const QString error =
             "The " % command % " command only works in Twitch channels";
         if (ctx.channel != nullptr)
@@ -57,7 +57,7 @@ void addSuspiciousTreatment(const CommandContext &ctx, const QString &command,
             getHelix()->addSuspiciousUser(
                 roomId, modId, u.id, restrict,
                 [] {
-                    // treatment notification is handled by eventsub
+
                 },
                 [chan, command](const auto &err) {
                     chan->addSystemMessage("Failed to " % command % " user - " %
@@ -74,7 +74,7 @@ void removeSuspiciousTreatment(const CommandContext &ctx,
 {
     if (ctx.twitchChannel == nullptr)
     {
-        // This action must be performed with a twitch channel as a context
+
         const QString error =
             "The " % command % " command only works in Twitch channels";
         if (ctx.channel != nullptr)
@@ -110,7 +110,7 @@ void removeSuspiciousTreatment(const CommandContext &ctx,
             getHelix()->removeSuspiciousUser(
                 roomId, modId, user.id,
                 [] {
-                    // treatment notification is handled by eventsub
+
                 },
                 [chan, command](const auto &err) {
                     chan->addSystemMessage("Failed to " % command % " user - " %
@@ -122,7 +122,7 @@ void removeSuspiciousTreatment(const CommandContext &ctx,
         });
 }
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -170,4 +170,4 @@ QString unrestrictUser(const CommandContext &ctx)
     return "";
 }
 
-}  // namespace chatterino::commands
+}

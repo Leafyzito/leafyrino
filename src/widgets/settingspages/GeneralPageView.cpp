@@ -22,7 +22,7 @@ const auto MAX_TOOLTIP_LINE_LENGTH_PATTERN =
     QStringLiteral(R"(.{%1}\S*\K(\s+))").arg(MAX_TOOLTIP_LINE_LENGTH);
 const QRegularExpression MAX_TOOLTIP_LINE_LENGTH_REGEX(
     MAX_TOOLTIP_LINE_LENGTH_PATTERN);
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -116,19 +116,17 @@ void GeneralPageView::addStretch()
 
 TitleLabel *GeneralPageView::addTitle(const QString &title)
 {
-    // space
+
     if (!this->groups_.empty())
     {
         this->addWidget(this->groups_.back().space = new Space);
     }
 
-    // title
     auto *label = new TitleLabel(title + ":");
     this->addWidget(label);
 
     NavigationLabel *navLabel = nullptr;
 
-    // navigation item
     if (this->navigationLayout_ != nullptr)
     {
         navLabel = new NavigationLabel(title);
@@ -142,7 +140,6 @@ TitleLabel *GeneralPageView::addTitle(const QString &title)
             });
     }
 
-    // groups
     this->groups_.push_back(Group{title, label, navLabel, nullptr, {}});
 
     if (this->groups_.size() == 1)
@@ -180,7 +177,6 @@ ComboBox *GeneralPageView::addDropdown(const QString &text,
     this->addToolTip(*label, toolTipText);
     this->addLayout(layout);
 
-    // groups
     this->groups_.back().widgets.push_back({combo, {text}});
     this->groups_.back().widgets.push_back({label, {text}});
 
@@ -206,7 +202,6 @@ DescriptionLabel *GeneralPageView::addDescription(const QString &text)
 
     this->addWidget(label);
 
-    // groups
     this->groups_.back().widgets.push_back({label, {text}});
 
     return label;
@@ -223,7 +218,7 @@ bool GeneralPageView::filterElements(const QString &query)
 
     for (auto &&group : this->groups_)
     {
-        // if a description in a group matches `query` then show the entire group
+
         bool descriptionMatches{};
         for (auto &&widget : group.widgets)
         {
@@ -237,7 +232,6 @@ bool GeneralPageView::filterElements(const QString &query)
             }
         }
 
-        // if group name matches then all should be visible
         if (group.name.contains(query, Qt::CaseInsensitive) ||
             descriptionMatches)
         {
@@ -257,7 +251,7 @@ bool GeneralPageView::filterElements(const QString &query)
             }
             any = true;
         }
-        // check if any match
+
         else
         {
             auto groupAny = false;
@@ -288,7 +282,7 @@ bool GeneralPageView::filterElements(const QString &query)
 
                 if (auto *x = dynamic_cast<Line *>(widget.element))
                 {
-                    // Hide lines in search when not searching for full categories
+
                     x->hide();
                 }
 
@@ -371,13 +365,11 @@ void GeneralPageView::addToolTip(QWidget &widget, QString text) const
 
     if (text.length() > MAX_TOOLTIP_LINE_LENGTH)
     {
-        // match MAX_TOOLTIP_LINE_LENGTH characters, any remaining
-        // non-space, and then capture the following space for
-        // replacement with newline
+
         text.replace(MAX_TOOLTIP_LINE_LENGTH_REGEX, "\n");
     }
 
     widget.setToolTip(text);
 }
 
-}  // namespace chatterino
+}

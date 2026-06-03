@@ -21,4 +21,4 @@ public:
     static void deinit();
 };
 
-}  // namespace chatterino
+}

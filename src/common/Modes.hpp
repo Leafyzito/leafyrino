@@ -15,11 +15,7 @@ public:
 
     bool isPortable{};
 
-    /// Marked by the line `externally-packaged`
-    ///
-    /// The externally packaged mode comes with the following changes:
-    ///  - No shortcuts are created by default
     bool isExternallyPackaged{};
 };
 
-}  // namespace chatterino
+}

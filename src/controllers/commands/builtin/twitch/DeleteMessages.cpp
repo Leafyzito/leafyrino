@@ -26,7 +26,6 @@ QString deleteMessages(TwitchChannel *twitchChannel, const QString &messageID)
 
     auto user = getApp()->getAccounts()->twitch.getCurrent();
 
-    // Avoid Helix calls without Client ID and/or OAuth Token
     if (user->isAnon())
     {
         twitchChannel->addSystemMessage(
@@ -40,7 +39,7 @@ QString deleteMessages(TwitchChannel *twitchChannel, const QString &messageID)
     return "";
 }
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -73,8 +72,6 @@ QString deleteOneMessage(const CommandContext &ctx)
         return doKickDelete(ctx);
     }
 
-    // This is a wrapper over the Helix delete messages endpoint
-    // We use this to ensure the user gets better error messages for missing or malformed arguments
     if (ctx.twitchChannel == nullptr)
     {
         ctx.channel->addSystemMessage(
@@ -93,7 +90,7 @@ QString deleteOneMessage(const CommandContext &ctx)
     auto uuid = QUuid(messageID);
     if (uuid.isNull())
     {
-        // The message id must be a valid UUID
+
         ctx.channel->addSystemMessage(
             QString("Invalid msg-id: \"%1\"").arg(messageID));
         return "";
@@ -115,4 +112,4 @@ QString deleteOneMessage(const CommandContext &ctx)
     return deleteMessages(ctx.twitchChannel, messageID);
 }
 
-}  // namespace chatterino::commands
+}

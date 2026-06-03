@@ -25,4 +25,4 @@ UserPronouns::operator bool() const
     return !this->isUnspecified();
 }
 
-}  // namespace chatterino::pronouns
+}

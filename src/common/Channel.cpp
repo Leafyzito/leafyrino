@@ -74,7 +74,7 @@ Channel::Channel(const QString &name, Type type, bool watching)
 Channel::~Channel()
 {
     auto *app = tryGetApp();
-    if (app && !isAppAboutToQuit() && this->anythingLogged_)
+    if (app && this->anythingLogged_)
     {
         app->getChatLogger()->closeChannel(this->name_, this->platform_);
     }
@@ -165,12 +165,6 @@ MessagePtr Channel::getLastMessage() const
 void Channel::addMessage(MessagePtr message, MessageContext context,
                          std::optional<MessageFlags> overridingFlags)
 {
-    RecursionGuard g{&this->recursionCount_};
-    if (!this->canRecurse())
-    {
-        return;
-    }
-
     message->freeze();
 
     MessagePtr deleted;
@@ -247,12 +241,6 @@ void Channel::disableAllMessages()
 
 void Channel::addMessagesAtStart(const std::vector<MessagePtr> &_messages)
 {
-    RecursionGuard g{&this->recursionCount_};
-    if (!this->canRecurse())
-    {
-        return;
-    }
-
     for (const auto &msg : _messages)
     {
         msg->freeze();
@@ -273,13 +261,6 @@ void Channel::fillInMissingMessages(const std::vector<MessagePtr> &messages)
     {
         return;
     }
-
-    RecursionGuard g{&this->recursionCount_};
-    if (!this->canRecurse())
-    {
-        return;
-    }
-
     for (const auto &msg : messages)
     {
         msg->freeze();
@@ -368,12 +349,6 @@ void Channel::fillInMissingMessages(const std::vector<MessagePtr> &messages)
 void Channel::replaceMessage(const MessagePtr &message,
                              const MessagePtr &replacement)
 {
-    RecursionGuard g{&this->recursionCount_};
-    if (!this->canRecurse())
-    {
-        return;
-    }
-
     replacement->freeze();
     int index = this->messages_.replaceItem(message, replacement);
 
@@ -385,12 +360,6 @@ void Channel::replaceMessage(const MessagePtr &message,
 
 void Channel::replaceMessage(size_t index, const MessagePtr &replacement)
 {
-    RecursionGuard g{&this->recursionCount_};
-    if (!this->canRecurse())
-    {
-        return;
-    }
-
     replacement->freeze();
 
     MessagePtr prev;
@@ -403,12 +372,6 @@ void Channel::replaceMessage(size_t index, const MessagePtr &replacement)
 void Channel::replaceMessage(size_t hint, const MessagePtr &message,
                              const MessagePtr &replacement)
 {
-    RecursionGuard g{&this->recursionCount_};
-    if (!this->canRecurse())
-    {
-        return;
-    }
-
     replacement->freeze();
 
     auto index = this->messages_.replaceItem(hint, message, replacement);
@@ -458,18 +421,17 @@ void Channel::mergeFrom(const std::span<std::span<const MessagePtr>> sources)
 
 void Channel::clearMessages()
 {
-    RecursionGuard g{&this->recursionCount_};
-    if (!this->canRecurse())
-    {
-        return;
-    }
-
     this->messages_.clear();
     this->messagesCleared.invoke();
 }
 
 MessagePtr Channel::findMessageByID(QStringView messageID)
 {
+    if (messageID.isEmpty())
+    {
+        return nullptr;
+    }
+
     MessagePtr res;
 
     if (auto msg = this->messages_.rfind([messageID](const MessagePtr &msg) {
@@ -585,11 +547,6 @@ void Channel::messageRemovedFromStart(const MessagePtr &msg)
 {
 }
 
-bool Channel::canRecurse() const noexcept
-{
-    return this->recursionCount_ < MAX_RECURSION;
-}
-
 void Channel::upsertPersonalSeventvEmotes(
     const QString &userLogin, const std::shared_ptr<const EmoteMap> &emoteMap)
 {
@@ -645,8 +602,8 @@ void Channel::upsertPersonalSeventvEmotes(
         /// @pre @a words must not be empty
         const auto flush = [&]() {
             elements.emplace_back(std::make_unique<TextElement>(
-                TextElement::CLONE, std::move(words), textElement->getFlags(),
-                textElement->color(), textElement->fontStyle()));
+                std::move(words), textElement->getFlags(), textElement->color(),
+                textElement->fontStyle()));
             words.clear();
         };
 

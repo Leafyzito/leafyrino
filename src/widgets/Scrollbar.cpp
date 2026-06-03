@@ -20,7 +20,6 @@ namespace {
 
 constexpr int MIN_THUMB_HEIGHT = 10;
 
-/// Amount of messages to move by when clicking on the track
 constexpr qreal SCROLL_DELTA = 5.0;
 
 bool areClose(auto a, auto b)
@@ -28,7 +27,7 @@ bool areClose(auto a, auto b)
     return std::abs(a - b) <= 0.0001;
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -171,12 +170,11 @@ void Scrollbar::setPageSize(qreal value)
 
 void Scrollbar::setDesiredValue(qreal value, bool animated)
 {
-    // this can't use std::clamp, because minimum_ < getBottom() isn't always
-    // true, which is a precondition for std::clamp
+
     value = std::max(this->minimum_, std::min(this->getBottom(), value));
     if (areClose(this->currentValue_, value))
     {
-        // value has not changed
+
         return;
     }
 
@@ -188,7 +186,7 @@ void Scrollbar::setDesiredValue(qreal value, bool animated)
 
     if (animated && getSettings()->enableSmoothScrolling)
     {
-        // stop() does not emit QAbstractAnimation::finished().
+
         this->currentValueAnimation_.stop();
         this->currentValueAnimation_.setStartValue(this->currentValue_);
         this->currentValueAnimation_.setEndValue(value);
@@ -240,8 +238,7 @@ qreal Scrollbar::getCurrentValue() const
 
 qreal Scrollbar::getRelativeCurrentValue() const
 {
-    // currentValue - minimum can be negative if minimum is incremented while
-    // scrolling up to or down from the top when smooth scrolling is enabled.
+
     return std::clamp(this->currentValue_ - this->minimum_, 0.0,
                       this->currentValue_);
 }
@@ -266,7 +263,7 @@ void Scrollbar::setCurrentValue(qreal value)
     value = std::max(this->minimum_, std::min(this->getBottom(), value));
     if (areClose(this->currentValue_, value))
     {
-        // value has not changed
+
         return;
     }
 
@@ -279,16 +276,16 @@ void Scrollbar::setCurrentValue(qreal value)
 void Scrollbar::printCurrentState(const QString &prefix) const
 {
     qCDebug(chatterinoWidget).nospace().noquote()
-        << prefix                                          //
-        << " { currentValue: " << this->getCurrentValue()  //
-        << ", desiredValue: " << this->getDesiredValue()   //
-        << ", maximum: " << this->getMaximum()             //
-        << ", minimum: " << this->getMinimum()             //
-        << ", pageSize: " << this->getPageSize()           //
+        << prefix
+        << " { currentValue: " << this->getCurrentValue()
+        << ", desiredValue: " << this->getDesiredValue()
+        << ", maximum: " << this->getMaximum()
+        << ", minimum: " << this->getMinimum()
+        << ", pageSize: " << this->getPageSize()
         << " }";
 }
 
-void Scrollbar::paintEvent(QPaintEvent * /*event*/)
+void Scrollbar::paintEvent(QPaintEvent * )
 {
     bool mouseOver = this->mouseOverLocation_ != MouseLocation::Outside;
     int xOffset =
@@ -307,13 +304,12 @@ void Scrollbar::paintEvent(QPaintEvent * /*event*/)
     {
         this->thumbRect_.setX(xOffset);
 
-        // mouse over thumb
         if (this->mouseDownLocation_ == MouseLocation::InsideThumb)
         {
             painter.fillRect(this->thumbRect_,
                              this->theme->scrollbars.thumbSelected);
         }
-        // mouse not over thumb
+
         else
         {
             painter.fillRect(this->thumbRect_, this->theme->scrollbars.thumb);
@@ -378,7 +374,7 @@ void Scrollbar::paintEvent(QPaintEvent * /*event*/)
     }
 }
 
-void Scrollbar::resizeEvent(QResizeEvent * /*event*/)
+void Scrollbar::resizeEvent(QResizeEvent * )
 {
     this->resize(static_cast<int>(16 * this->scale()), this->height());
 }
@@ -434,9 +430,7 @@ void Scrollbar::mouseReleaseEvent(QMouseEvent *event)
     auto releaseLocation = this->locationOfMouseEvent(event);
     if (this->mouseDownLocation_ != releaseLocation)
     {
-        // Ignore event. User released the mouse from a different spot than
-        // they first clicked. For example, they clicked above the thumb,
-        // changed their mind, dragged the mouse below the thumb, and released.
+
         this->mouseDownLocation_ = MouseLocation::Outside;
         return;
     }
@@ -444,11 +438,11 @@ void Scrollbar::mouseReleaseEvent(QMouseEvent *event)
     switch (releaseLocation)
     {
         case MouseLocation::AboveThumb:
-            // Move scrollbar up a small bit.
+
             this->setDesiredValue(this->desiredValue_ - SCROLL_DELTA, true);
             break;
         case MouseLocation::BelowThumb:
-            // Move scrollbar down a small bit.
+
             this->setDesiredValue(this->desiredValue_ + SCROLL_DELTA, true);
             break;
         default:
@@ -459,7 +453,7 @@ void Scrollbar::mouseReleaseEvent(QMouseEvent *event)
     this->update();
 }
 
-void Scrollbar::leaveEvent(QEvent * /*event*/)
+void Scrollbar::leaveEvent(QEvent * )
 {
     this->mouseOverLocation_ = MouseLocation::Outside;
     this->update();
@@ -539,4 +533,4 @@ Scrollbar::MouseLocation Scrollbar::locationOfMouseEvent(
     return MouseLocation::BelowThumb;
 }
 
-}  // namespace chatterino
+}

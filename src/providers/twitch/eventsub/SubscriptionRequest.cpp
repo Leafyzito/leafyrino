@@ -42,4 +42,9 @@ bool operator==(const SubscriptionRequest &lhs, const SubscriptionRequest &rhs)
                                                 rhs.conditions);
 }
 
-}  // namespace chatterino::eventsub
+bool operator!=(const SubscriptionRequest &lhs, const SubscriptionRequest &rhs)
+{
+    return !(lhs == rhs);
+}
+
+}

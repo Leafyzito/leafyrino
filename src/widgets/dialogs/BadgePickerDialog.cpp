@@ -41,7 +41,6 @@ BadgePickerDialog::BadgePickerDialog(QList<DisplayBadge> badges,
         (this->windowFlags() & ~(Qt::WindowContextHelpButtonHint)) |
         Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 
-    // Add items.
     for (const auto &item : badges)
     {
         this->dropdown_->addItem(item.displayName(), item.badgeName());
@@ -61,7 +60,6 @@ BadgePickerDialog::BadgePickerDialog(QList<DisplayBadge> badges,
                      updateBadge);
     updateBadge(0);
 
-    // Set icons.
     getApp()->getTwitchBadges()->getBadgeIcons(
         badges,
         [&dropdown = this->dropdown_](QString identifier, const QIconPtr icon) {
@@ -78,4 +76,4 @@ BadgePickerDialog::BadgePickerDialog(QList<DisplayBadge> badges,
         });
 }
 
-}  // namespace chatterino
+}

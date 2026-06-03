@@ -34,7 +34,7 @@ public:
     }
 
     template <typename ConstBufferSequence>
-    // NOLINTNEXTLINE(readability-identifier-naming)
+
     size_t write_some(ConstBufferSequence cb)
     {
         boost::beast::error_code ec;
@@ -42,7 +42,7 @@ public:
     }
 
     template <typename ConstBufferSequence>
-    // NOLINTNEXTLINE(readability-identifier-naming)
+
     size_t write_some(ConstBufferSequence cb, boost::beast::error_code &ec)
     {
         ec = {};
@@ -132,7 +132,6 @@ private:
 
                 boost::beast::write(*this, std::move(gen), ec);
 
-                // reset parser
                 std::destroy_at(&this->parser);
                 std::construct_at(&this->parser);
 
@@ -158,12 +157,12 @@ private:
     Parser parser;
 };
 
-std::pair<unsigned, QByteArray> defaultHandler(const QString & /* req */)
+std::pair<unsigned, QByteArray> defaultHandler(const QString & )
 {
     return {404, {}};
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -197,4 +196,4 @@ const HttpServer::HandlerCb &HttpServer::handler() const
     return this->handler_;
 }
 
-}  // namespace chatterino
+}

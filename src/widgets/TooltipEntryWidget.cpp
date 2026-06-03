@@ -124,4 +124,4 @@ bool TooltipEntryWidget::attemptRefresh() const
     return this->attemptRefresh_;
 }
 
-}  // namespace chatterino
+}

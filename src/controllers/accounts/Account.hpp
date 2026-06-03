@@ -27,4 +27,4 @@ private:
     QString category_;
 };
 
-}  // namespace chatterino
+}

@@ -18,6 +18,7 @@ namespace chatterino {
 class ColorProvider;
 class Theme;
 class Settings;
+class Channel;
 struct Selection;
 struct Message;
 
@@ -57,13 +58,16 @@ struct MessagePreferences {
     bool enableSubHighlight{};
     bool enableWatchStreakHighlight{};
     bool enableAutomodHighlight{};
-    bool enableAnnouncementHighlight{};
-    bool enableColoredAnnouncementHighlight{};
+    bool enableClientDetectionHighlight{};
 
     bool alternateMessages{};
     bool separateMessages{};
 
     bool fadeMessageHistory{};
+
+    QColor clientDetectionWebColor;
+    QColor clientDetectionAndroidColor;
+    QColor clientDetectionIosColor;
 
     void connectSettings(Settings *settings,
                          pajlada::Signals::SignalHolder &holder);
@@ -91,6 +95,7 @@ struct MessagePaintContext {
     size_t messageIndex{};
 
     bool isLastReadMessage{};
+    bool isCollapsed{};
 };
 
 struct MessageLayoutContext {
@@ -100,6 +105,9 @@ struct MessageLayoutContext {
     int width = 1;
     float scale = 1;
     float imageScale = 1;
+    float emoteScale = 1;
+    float badgeScale = 1;
+    bool centerBadges = false;
 
     Channel *selectedChannel = nullptr;
     const Message &message;

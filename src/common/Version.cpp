@@ -7,9 +7,41 @@
 #include <QFileInfo>
 #include <QStringBuilder>
 
+#define STRINGIFY(x) #x
+
+#define STRINGIFY2(x) STRINGIFY(x)
+
 namespace chatterino {
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
+
+namespace {
+
+QString makeDefaultInternalVersion(const QString &commitHash, bool isModified,
+                                   const QString &dateOfBuild)
+{
+    QString normalizedDate = dateOfBuild;
+    normalizedDate.remove('-');
+    if (normalizedDate.isEmpty())
+    {
+        normalizedDate = "unknown";
+    }
+
+    QString shortHash = commitHash.left(7);
+    if (shortHash.isEmpty())
+    {
+        shortHash = "local";
+    }
+
+    auto internal = "molto-" + normalizedDate + "-" + shortHash;
+    if (isModified)
+    {
+        internal += "-dirty";
+    }
+    return internal;
+}
+
+}
 
 Version::Version()
     : version_(CHATTERINO_VERSION)
@@ -18,13 +50,28 @@ Version::Version()
     , dateOfBuild_(QStringLiteral(CHATTERINO_CMAKE_GEN_DATE))
     , isNightly_(CHATTERINO_NIGHTLY_BUILD == 1)
 {
-    this->fullVersion_ = "Leafyrino ";
+    this->fullVersion_ = "Moltorino ";
     if (this->isNightly())
     {
         this->fullVersion_ += "Nightly ";
     }
 
     this->fullVersion_ += this->version_;
+
+    const auto configuredInternalVersion =
+        QStringLiteral(STRINGIFY2(MOLTORINO_INTERNAL_VERSION))
+            .trimmed()
+            .remove(u'"');
+    if (!configuredInternalVersion.isEmpty() &&
+        configuredInternalVersion != "__AUTO__")
+    {
+        this->internalVersion_ = configuredInternalVersion;
+    }
+    else
+    {
+        this->internalVersion_ = makeDefaultInternalVersion(
+            this->commitHash_, this->isModified_, this->dateOfBuild_);
+    }
 
 #ifndef NDEBUG
     this->fullVersion_ += " DEBUG";
@@ -41,8 +88,8 @@ Version::Version()
     this->generateExtraString();
 
 #ifdef Q_OS_WIN
-    // keep in sync with .CI/chatterino-installer.iss
-    this->appUserModelID_ = L"SevenTV.Chatterino7";
+
+    this->appUserModelID_ = L"MoltoBenne.Moltorino7";
 #endif
 }
 
@@ -55,6 +102,11 @@ const Version &Version::instance()
 const QString &Version::version() const
 {
     return this->version_;
+}
+
+const QString &Version::internalVersion() const
+{
+    return this->internalVersion_;
 }
 
 const QString &Version::fullVersion() const
@@ -134,13 +186,12 @@ bool Version::isNightly() const
 
 void Version::generateBuildString()
 {
-    // e.g. Chatterino 2.3.5 or Chatterino Nightly 2.3.5
+
     auto s = this->fullVersion();
 
-    // Add commit information
     s +=
         QString(
-            R"( (commit <a href="https://github.com/leafyzito/leafyrino/commit/%1">%1</a>)")
+            R"( (commit <a href="https://github.com/MoltoBenne/Moltorino/commit/%1">%1</a>)")
             .arg(this->commitHash());
     if (this->isModified())
     {
@@ -153,14 +204,13 @@ void Version::generateBuildString()
 
     s += " built";
 
-    // If the build is a nightly build (decided with modes atm), include build date information
     if (this->isNightly())
     {
         s += " on " + this->dateOfBuild();
     }
 
-    // Append build tags (e.g. compiler, qt version etc)
     s += " with " + this->buildTags().join(", ");
+    s += " [internal " + this->internalVersion() + "]";
 
     this->buildString_ = s;
 }
@@ -170,6 +220,11 @@ void Version::generateRunningString()
     auto s = QString("Running on %1, kernel: %2")
                  .arg(QSysInfo::prettyProductName(), QSysInfo::kernelVersion());
 
+    if (!this->internalVersion().isEmpty())
+    {
+        s += ", build: " + this->internalVersion();
+    }
+
     if (!this->isSupportedOS())
     {
         s += " (unsupported OS)";
@@ -177,10 +232,6 @@ void Version::generateRunningString()
 
     this->runningString_ = s;
 }
-
-#define STRINGIFY(x) #x
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define STRINGIFY2(x) STRINGIFY(x)
 
 void Version::generateExtraString()
 {
@@ -198,4 +249,4 @@ const std::wstring &Version::appUserModelID() const
 }
 #endif
 
-}  // namespace chatterino
+}

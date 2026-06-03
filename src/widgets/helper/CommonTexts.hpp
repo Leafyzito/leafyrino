@@ -21,4 +21,4 @@ inline const QString DONT_OPEN = QStringLiteral("Don't open");
 inline const QString OPEN_WHISPERS_IN_BROWSER =
     QStringLiteral("Open &whispers in browser");
 
-}  // namespace chatterino
+}

@@ -5,7 +5,7 @@
 #include "widgets/settingspages/CommandPage.hpp"
 
 #include "Application.hpp"
-#include "common/Literals.hpp"  // IWYU pragma: keep
+#include "common/Literals.hpp"
 #include "controllers/commands/Command.hpp"
 #include "controllers/commands/CommandController.hpp"
 #include "controllers/commands/CommandModel.hpp"
@@ -27,9 +27,7 @@ namespace {
 using namespace chatterino;
 using namespace literals;
 
-// clang-format off
 inline const QString HELP_TEXT = u"{1} => first word &nbsp;&nbsp;&nbsp; {1+} => first word and after &nbsp;&nbsp;&nbsp; {{ => { &nbsp;&nbsp;&nbsp; <a href='https://chatterino.com/help/commands'>more info</a>"_s;
-// clang-format on
 
 QString c1settingsPath()
 {
@@ -40,7 +38,6 @@ void checkCommandDuplicates(EditableModelView *view, QLabel *duplicateWarning)
 {
     bool foundDuplicateTrigger = false;
 
-    // Maps command triggers to model row indices
     std::unordered_map<QString, std::vector<int>> commands;
 
     for (int i = 0; i < view->getModel()->rowCount(); i++)
@@ -81,7 +78,7 @@ void checkCommandDuplicates(EditableModelView *view, QLabel *duplicateWarning)
     }
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -98,13 +95,12 @@ CommandPage::CommandPage()
     this->view->setTitles({"Trigger", "Command", "Show In\nMessage Menu"});
     this->view->getTableView()->horizontalHeader()->setSectionResizeMode(
         1, QHeaderView::Stretch);
-    // We can safely ignore this signal connection since we own the view
+
     std::ignore = this->view->addButtonPressed.connect([] {
         getApp()->getCommands()->items.append(
             Command{"/command", "I made a new command HeyGuys"});
     });
 
-    // TODO: asyncronously check path
     if (QFile(c1settingsPath()).exists())
     {
         auto *button = new QPushButton("Import commands from Chatterino 1");
@@ -144,8 +140,6 @@ CommandPage::CommandPage()
             .getElement();
     duplicateWarning->setStyleSheet("color: yellow");
 
-    // NOTE: These signals mean that the duplicate check happens in the middle of a row being moved, where he index can be wrong.
-    // This should be reconsidered, or potentially changed in the signalvectormodel. Or maybe we rely on a SignalVectorModel signal instead
     QObject::connect(this->view->getModel(), &QAbstractItemModel::rowsInserted,
                      this, [this, duplicateWarning]() {
                          checkCommandDuplicates(this->view, duplicateWarning);
@@ -171,7 +165,6 @@ CommandPage::CommandPage()
 
     checkCommandDuplicates(this->view, duplicateWarning);
 
-    // ---- end of layout
     this->commandsEditTimer_.setSingleShot(true);
 }
 
@@ -182,4 +175,4 @@ bool CommandPage::filterElements(const QString &query)
     return this->view->filterSearchResults(query, fields);
 }
 
-}  // namespace chatterino
+}

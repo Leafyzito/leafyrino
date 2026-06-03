@@ -13,7 +13,6 @@ namespace chatterino {
 
 namespace {
 
-/// Gets a list of available font families available on this system
 QStringList getFontFamilies()
 {
     QStringList families = QFontDatabase::families();
@@ -21,7 +20,7 @@ QStringList getFontFamilies()
     return families;
 }
 
-}  // namespace
+}
 
 FontFamilyWidget::FontFamilyWidget(const QFont &startFont, QWidget *parent)
     : QWidget(parent)
@@ -90,4 +89,4 @@ QString FontFamilyWidget::getSelected() const
     return this->model->data(modelIndex).toString();
 }
 
-}  // namespace chatterino
+}

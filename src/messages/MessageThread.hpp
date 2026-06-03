@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <pajlada/signals/signal.hpp>
+#include <boost/signals2.hpp>
 #include <QString>
 
 #include <memory>
@@ -30,10 +30,8 @@ public:
     void addToThread(const std::shared_ptr<const Message> &message);
     void addToThread(const std::weak_ptr<const Message> &message);
 
-    /// Returns the number of live reply references
     size_t liveCount() const;
 
-    /// Returns the number of live reply references
     size_t liveCount(const std::shared_ptr<const Message> &exclude) const;
 
     bool subscribed() const
@@ -41,16 +39,13 @@ public:
         return this->subscription_ == Subscription::Subscribed;
     }
 
-    /// Returns true if and only if the user manually unsubscribed from the thread
-    /// @see #markUnsubscribed()
     bool unsubscribed() const
     {
         return this->subscription_ == Subscription::Unsubscribed;
     }
 
-    /// Subscribe to this thread.
     void markSubscribed();
-    /// Unsubscribe from this thread.
+
     void markUnsubscribed();
 
     const QString &rootId() const
@@ -70,7 +65,7 @@ public:
 
     QJsonObject toJson() const;
 
-    pajlada::Signals::NoArgSignal subscriptionUpdated;
+    boost::signals2::signal<void()> subscriptionUpdated;
 
 private:
     const QString rootMessageId_;
@@ -80,4 +75,4 @@ private:
     Subscription subscription_ = Subscription::None;
 };
 
-}  // namespace chatterino
+}

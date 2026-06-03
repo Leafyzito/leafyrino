@@ -25,4 +25,4 @@ void TwitchUser::update(const HelixUser &user) const
     this->profilePictureUrl = user.profileImageUrl;
 }
 
-}  // namespace chatterino
+}

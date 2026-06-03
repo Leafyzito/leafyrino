@@ -15,6 +15,26 @@ namespace {
 
 using namespace chatterino;
 
+QString targetChannelLogin(const CommandContext &ctx)
+{
+    if (ctx.words.size() > 1)
+    {
+        auto login = ctx.words.at(1).trimmed();
+        if (login.startsWith('#'))
+        {
+            login.remove(0, 1);
+        }
+        return login.toLower();
+    }
+
+    if (ctx.twitchChannel != nullptr)
+    {
+        return ctx.twitchChannel->getName().toLower();
+    }
+
+    return {};
+}
+
 QString formatModsError(HelixGetModeratorsError error, const QString &message)
 {
     using Error = HelixGetModeratorsError;
@@ -51,7 +71,7 @@ QString formatModsError(HelixGetModeratorsError error, const QString &message)
     return errorMessage;
 }
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -62,25 +82,28 @@ QString getModerators(const CommandContext &ctx)
         return "";
     }
 
-    if (ctx.twitchChannel == nullptr)
+    const auto channelLogin = targetChannelLogin(ctx);
+    if (channelLogin.isEmpty())
     {
         ctx.channel->addSystemMessage(
             "The /mods command only works in Twitch Channels.");
         return "";
     }
 
-    if (ctx.twitchChannel->isBroadcaster())
+    if (ctx.words.size() <= 1 && ctx.twitchChannel != nullptr &&
+        ctx.twitchChannel->isBroadcaster())
     {
         getHelix()->getModerators(
             ctx.twitchChannel->roomId(), 500,
-            [channel{ctx.channel},
-             twitchChannel{ctx.twitchChannel}](auto result) {
+            [channel{ctx.channel}, twitchChannel{ctx.twitchChannel}](
+                auto result) {
                 if (result.empty())
                 {
                     channel->addSystemMessage(
                         "This channel does not have any moderators.");
                     return;
                 }
+
                 // TODO: sort results?
 
                 channel->addMessage(
@@ -94,48 +117,34 @@ QString getModerators(const CommandContext &ctx)
                 auto errorMessage = formatModsError(error, message);
                 channel->addSystemMessage(errorMessage);
             });
+        return "";
     }
-    else
-    {
-        QString target = ctx.channel->getName();
-        getIvr()->getModVip(
-            target,
-            [channel{ctx.channel}, twitchChannel{ctx.twitchChannel},
-             target](auto result) {
-                if (result.mods.isEmpty())
-                {
-                    channel->addSystemMessage(
-                        "This channel does not have any moderators.");
-                    return;
-                }
 
-                std::vector<HelixModerator> mods;
-                for (int i = 0; i < result.mods.size(); i++)
-                {
-                    QJsonObject modJson;
-                    auto obj = result.mods.at(i).toObject();
+    getIvr()->getModVip(
+        channelLogin,
+        [channel{ctx.channel}, twitchChannel{ctx.twitchChannel}](
+            const std::vector<HelixModerator> &mods,
+            const std::vector<HelixVip> &) {
+            if (mods.empty())
+            {
+                channel->addSystemMessage(
+                    "This channel does not have any moderators.");
+                return;
+            }
 
-                    modJson.insert("user_id", obj.value("id"));
-                    modJson.insert("user_name", obj.value("displayName"));
-                    modJson.insert("user_login", obj.value("login"));
-
-                    HelixModerator moderator(modJson);
-
-                    mods.push_back(moderator);
-                }
-
-                channel->addMessage(
-                    MessageBuilder::makeListOfUsersMessage(
-                        QString("The moderators (%1) of this channel are")
-                            .arg(mods.size()),
-                        mods, twitchChannel),
-                    MessageContext::Original);
-            },
-            [channel{ctx.channel}]() {
-                channel->addSystemMessage("Could not get moderators list!");
-            });
-    }
+            channel->addMessage(MessageBuilder::makeListOfUsersMessage(
+                                    QString(
+                                        "The moderators (%1) of this channel are")
+                                        .arg(mods.size()),
+                                    mods,
+                                    twitchChannel != nullptr ? twitchChannel
+                                                            : channel.get()),
+                                MessageContext::Original);
+        },
+        [channel{ctx.channel}] {
+            channel->addSystemMessage("Could not get moderator list!");
+        });
     return "";
 }
 
-}  // namespace chatterino::commands
+}

@@ -24,4 +24,4 @@ void attachToConsole()
 #endif
 }
 
-}  // namespace chatterino
+}

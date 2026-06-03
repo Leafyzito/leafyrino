@@ -19,14 +19,14 @@ namespace chatterino::lua::api {
 
 void HTTPResponse::createUserType(sol::table &c2)
 {
-    c2.new_usertype<HTTPResponse>(  //
+    c2.new_usertype<HTTPResponse>(
         "HTTPResponse", sol::no_constructor,
-        // metamethods
-        sol::meta_method::to_string, &HTTPResponse::to_string,  //
 
-        "data", &HTTPResponse::data,      //
-        "status", &HTTPResponse::status,  //
-        "error", &HTTPResponse::error     //
+        sol::meta_method::to_string, &HTTPResponse::to_string,
+
+        "data", &HTTPResponse::data,
+        "status", &HTTPResponse::status,
+        "error", &HTTPResponse::error
     );
 }
 
@@ -60,5 +60,5 @@ QString HTTPResponse::to_string()
     return "<c2.HTTPResponse no status>";
 }
 
-}  // namespace chatterino::lua::api
+}
 #endif

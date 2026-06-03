@@ -16,4 +16,4 @@ class ClassicUserStrategy : public Strategy<UserItem>
                const QString &query) const override;
 };
 
-}  // namespace chatterino::completion
+}

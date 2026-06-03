@@ -36,7 +36,7 @@ QColor blendColors(const QColor &base, const QColor &apply)
                    base.blueF() * (1 - alpha) + apply.blueF() * alpha);
     return result;
 }
-}  // namespace
+}
 
 MessageLayout::MessageLayout(MessagePtr message)
     : message_(std::move(message))
@@ -59,10 +59,14 @@ const MessagePtr &MessageLayout::getMessagePtr() const
     return this->message_;
 }
 
-// Height
 int MessageLayout::getHeight() const
 {
     return static_cast<int>(this->container_.getHeight());
+}
+
+int MessageLayout::getFirstLineHeight() const
+{
+    return this->container_.getFirstLineHeight();
 }
 
 int MessageLayout::getWidth() const
@@ -70,21 +74,21 @@ int MessageLayout::getWidth() const
     return static_cast<int>(this->container_.getWidth());
 }
 
-// Layout
-// return true if redraw is required
+size_t MessageLayout::getLineCount() const
+{
+    return this->container_.getLineCount();
+}
+
 bool MessageLayout::layout(const MessageLayoutContext &ctx,
                            bool shouldInvalidateBuffer)
 {
-    //    BenchmarkGuard benchmark("MessageLayout::layout()");
 
     bool layoutRequired = false;
 
-    // check if width changed
     bool widthChanged = ctx.width != this->currentLayoutWidth_;
     layoutRequired |= widthChanged;
     this->currentLayoutWidth_ = ctx.width;
 
-    // check if layout state changed
     const auto layoutGeneration = getApp()->getWindows()->getGeneration();
     if (this->layoutState_ != layoutGeneration)
     {
@@ -93,19 +97,23 @@ bool MessageLayout::layout(const MessageLayoutContext &ctx,
         this->layoutState_ = layoutGeneration;
     }
 
-    // check if work mask changed
     layoutRequired |= this->currentWordFlags_ != ctx.flags;
-    this->currentWordFlags_ = ctx.flags;  // getSettings()->getWordTypeMask();
+    this->currentWordFlags_ = ctx.flags;
 
-    // check if layout was requested manually
     layoutRequired |= this->flags.has(MessageLayoutFlag::RequiresLayout);
     this->flags.unset(MessageLayoutFlag::RequiresLayout);
 
-    // check if dpi changed
-    layoutRequired |= this->scale_ != ctx.scale;
+    bool scaleChanged = this->scale_ != ctx.scale ||
+                        this->imageScale_ != ctx.imageScale ||
+                        this->emoteScale_ != ctx.emoteScale ||
+                        this->badgeScale_ != ctx.badgeScale ||
+                        this->centerBadges_ != ctx.centerBadges;
+    layoutRequired |= scaleChanged;
     this->scale_ = ctx.scale;
-    layoutRequired |= this->imageScale_ != ctx.imageScale;
     this->imageScale_ = ctx.imageScale;
+    this->emoteScale_ = ctx.emoteScale;
+    this->badgeScale_ = ctx.badgeScale;
+    this->centerBadges_ = ctx.centerBadges;
 
     if (!layoutRequired)
     {
@@ -152,7 +160,8 @@ void MessageLayout::actuallyLayout(const MessageLayoutContext &ctx)
     bool hideReplies = !ctx.flags.has(MessageElementFlag::RepliedMessage);
 
     this->container_.beginLayout(ctx.width, this->scale_, this->imageScale_,
-                                 messageFlags);
+                                 this->emoteScale_, this->badgeScale_,
+                                 this->centerBadges_, messageFlags);
 
     for (const auto &element : this->message_->elements)
     {
@@ -164,9 +173,7 @@ void MessageLayout::actuallyLayout(const MessageLayoutContext &ctx)
         if (hideBlockedTermAutomodMessages &&
             this->message_->flags.has(MessageFlag::AutoModBlockedTerm))
         {
-            // NOTE: This hides the message but it will make the message re-appear if moderation message hiding is no longer active, and the layout is re-laid-out.
-            // This is only the case for the moderation messages that don't get filtered during creation.
-            // We should decide which is the correct method & apply that everywhere
+
             continue;
         }
 
@@ -174,8 +181,7 @@ void MessageLayout::actuallyLayout(const MessageLayoutContext &ctx)
         {
             if (getApp()->getStreamerMode()->shouldHideRestrictedUsers())
             {
-                // Message is being hidden because the source is a
-                // restricted user
+
                 continue;
             }
         }
@@ -185,9 +191,7 @@ void MessageLayout::actuallyLayout(const MessageLayoutContext &ctx)
             if (hideModerationActions ||
                 getApp()->getStreamerMode()->shouldHideModActions())
             {
-                // Message is being hidden because we consider the message
-                // a moderation action (something a streamer is unlikely to
-                // want to share if they briefly show their chat on stream)
+
                 continue;
             }
         }
@@ -214,7 +218,6 @@ void MessageLayout::actuallyLayout(const MessageLayoutContext &ctx)
     this->container_.endLayout();
     this->height_ = this->container_.getHeight();
 
-    // collapsed state
     this->flags.unset(MessageLayoutFlag::Collapsed);
     if (this->container_.isCollapsed())
     {
@@ -222,7 +225,6 @@ void MessageLayout::actuallyLayout(const MessageLayoutContext &ctx)
     }
 }
 
-// Painting
 MessagePaintResult MessageLayout::paint(const MessagePaintContext &ctx)
 {
     MessagePaintResult result;
@@ -239,14 +241,11 @@ MessagePaintResult MessageLayout::paint(const MessagePaintContext &ctx)
         this->updateBuffer(pixmap, ctx);
     }
 
-    // draw on buffer
     ctx.painter.drawPixmap(QPoint{0, ctx.y}, *pixmap);
 
-    // draw gif emotes
     result.hasAnimatedElements =
-        this->container_.paintAnimatedElements(ctx.painter, ctx.y);
+        this->container_.paintAnimatedElements(ctx.painter, ctx.y, ctx.isCollapsed);
 
-    // draw disabled
     if (this->message_->flags.has(MessageFlag::Disabled))
     {
         ctx.painter.fillRect(
@@ -287,14 +286,12 @@ MessagePaintResult MessageLayout::paint(const MessagePaintContext &ctx)
             *ColorProvider::instance().color(ColorType::RedeemedHighlight));
     }
 
-    // draw selection
     if (!ctx.selection.isEmpty())
     {
         this->container_.paintSelection(ctx.painter, ctx.messageIndex,
                                         ctx.selection, ctx.y);
     }
 
-    // draw message seperation line
     if (ctx.preferences.separateMessages)
     {
         ctx.painter.fillRect(
@@ -307,7 +304,6 @@ MessagePaintResult MessageLayout::paint(const MessagePaintContext &ctx)
             ctx.messageColors.messageSeperator);
     }
 
-    // draw last read message line
     if (ctx.isLastReadMessage)
     {
         QColor color;
@@ -346,7 +342,6 @@ QPixmap *MessageLayout::ensureBuffer(QPainter &painter, qreal width, bool clear)
         return this->buffer_.get();
     }
 
-    // Create new buffer
     this->buffer_ = std::make_unique<QPixmap>(
         static_cast<int>(width * painter.device()->devicePixelRatioF()),
         static_cast<int>(this->container_.getHeight() *
@@ -374,7 +369,6 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
     QPainter painter(buffer);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
-    // draw background
     QColor backgroundColor = [&] {
         if (ctx.preferences.alternateMessages &&
             this->flags.has(MessageLayoutFlag::AlternateBackground))
@@ -413,24 +407,15 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
         assert(this->message_->highlightColor);
         if (this->message_->highlightColor)
         {
-            // Blend highlight color with usual background color
+
             backgroundColor =
                 blendColors(backgroundColor, *this->message_->highlightColor);
         }
     }
-    else if (this->message_->flags.has(MessageFlag::Announcement) &&
-             ctx.preferences.enableAnnouncementHighlight)
-    {
-        backgroundColor = blendColors(
-            backgroundColor,
-            *ctx.colorProvider.color(colorTypeFromHelixAnnouncementColor(
-                this->message_->announcementColor,
-                ctx.preferences.enableColoredAnnouncementHighlight)));
-    }
     else if (this->message_->flags.has(MessageFlag::Subscription) &&
              ctx.preferences.enableSubHighlight)
     {
-        // Blend highlight color with usual background color
+
         backgroundColor = blendColors(
             backgroundColor, *ctx.colorProvider.color(ColorType::Subscription));
     }
@@ -439,10 +424,17 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
                   MessageFlag::RedeemedChannelPointReward)) &&
              ctx.preferences.enableRedeemedHighlight)
     {
-        // Blend highlight color with usual background color
+
         backgroundColor =
             blendColors(backgroundColor,
                         *ctx.colorProvider.color(ColorType::RedeemedHighlight));
+    }
+    else if (this->message_->flags.has(MessageFlag::ChatWarning) &&
+             ctx.preferences.enableAutomodHighlight)
+    {
+        backgroundColor = blendColors(
+            backgroundColor,
+            *ctx.colorProvider.color(ColorType::AutomodHighlight));
     }
     else if (this->message_->flags.has(MessageFlag::AutoMod) ||
              this->message_->flags.has(MessageFlag::LowTrustUsers))
@@ -465,37 +457,44 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
     {
         backgroundColor = QColor("#4A273D");
     }
-    else if (getSettings()->normalNonceDetection)
+    else if (ctx.preferences.enableClientDetectionHighlight ||
+             getSettings()->normalNonceDetection)
     {
         switch (this->message_->clientDetection)
         {
-            using enum Message::ClientDetectionStatus;
-            case Webchat:
+            case Message::ClientDetectionStatus::Web:
                 backgroundColor = blendColors(
-                    backgroundColor, QColor(getSettings()->webchatColor));
+                    backgroundColor,
+                    ctx.preferences.enableClientDetectionHighlight
+                        ? ctx.preferences.clientDetectionWebColor
+                        : QColor(getSettings()->webchatColor));
                 break;
-            case Android:
+            case Message::ClientDetectionStatus::Android:
                 backgroundColor = blendColors(
-                    backgroundColor, QColor(getSettings()->androidColor));
+                    backgroundColor,
+                    ctx.preferences.enableClientDetectionHighlight
+                        ? ctx.preferences.clientDetectionAndroidColor
+                        : QColor(getSettings()->androidColor));
                 break;
-            case IOS:
-                backgroundColor = blendColors(backgroundColor,
-                                              QColor(getSettings()->iosColor));
+            case Message::ClientDetectionStatus::IOS:
+                backgroundColor = blendColors(
+                    backgroundColor,
+                    ctx.preferences.enableClientDetectionHighlight
+                        ? ctx.preferences.clientDetectionIosColor
+                        : QColor(getSettings()->iosColor));
                 break;
-
-            case Unknown:
-            case Abnormal:
+            case Message::ClientDetectionStatus::Unknown:
+            case Message::ClientDetectionStatus::Abnormal:
                 break;
         }
     }
 
     painter.fillRect(buffer->rect(), backgroundColor);
 
-    // draw message
     this->container_.paintElements(painter, ctx);
 
 #ifdef FOURTF
-    // debug
+
     painter.setPen(QColor(255, 0, 0));
     painter.drawRect(buffer->rect().x(), buffer->rect().y(),
                      buffer->rect().width() - 1, buffer->rect().height() - 1);
@@ -534,23 +533,16 @@ void MessageLayout::deleteCache()
 #endif
 }
 
-// Elements
-//    assert(QThread::currentThread() == QApplication::instance()->thread());
-
-// returns nullptr if none was found
-
-// fourtf: this should return a MessageLayoutItem
 const MessageLayoutElement *MessageLayout::getElementAt(QPointF point) const
 {
-    // go through all words and return the first one that contains the point.
+
     return this->container_.getElementAt(point);
 }
 
 std::pair<int, int> MessageLayout::getWordBounds(
     const MessageLayoutElement *hoveredElement, QPointF relativePos) const
 {
-    // An element with wordId != -1 can be multiline, so we need to check all
-    // elements in the container
+
     if (hoveredElement->getWordId() != -1)
     {
         return this->container_.getWordBounds(hoveredElement);
@@ -586,4 +578,4 @@ void MessageLayout::addSelectionText(QString &str, uint32_t from, uint32_t to,
     this->container_.addSelectionText(str, from, to, copymode);
 }
 
-}  // namespace chatterino
+}

@@ -23,14 +23,13 @@ public:
         const std::function<void()> &callbackFail);
 
 private:
-    // Retrieve cached pronouns for user.
+
     std::optional<UserPronouns> getCachedUserPronoun(const QString &username);
 
-    // mutex for editing the saved map.
     std::shared_mutex mutex;
-    // Login name -> Pronouns
+
     std::unordered_map<QString, UserPronouns> saved;
     AlejoApi alejoApi;
 };
 
-}  // namespace chatterino::pronouns
+}

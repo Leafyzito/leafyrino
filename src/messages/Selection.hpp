@@ -40,6 +40,11 @@ struct SelectionItem {
         return this->messageIndex == b.messageIndex &&
                this->charIndex == b.charIndex;
     }
+
+    bool operator!=(const SelectionItem &b) const
+    {
+        return !this->operator==(b);
+    }
 };
 
 struct Selection {
@@ -67,7 +72,11 @@ struct Selection {
         return this->start == b.start && this->end == b.end;
     }
 
-    //union of both selections
+    bool operator!=(const Selection &b) const
+    {
+        return !this->operator==(b);
+    }
+
     Selection operator|(const Selection &b) const
     {
         return {std::min(this->selectionMin, b.selectionMin),
@@ -85,7 +94,6 @@ struct Selection {
                this->selectionMax.messageIndex;
     }
 
-    // Shift all message selection indices `offset` back
     void shiftMessageIndex(size_t offset)
     {
         if (offset > this->selectionMin.messageIndex)
@@ -129,4 +137,4 @@ struct Selection {
         }
     }
 };
-}  // namespace chatterino
+}

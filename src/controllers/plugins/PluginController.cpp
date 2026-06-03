@@ -17,12 +17,10 @@
 #    include "controllers/plugins/api/DebugLibrary.hpp"
 #    include "controllers/plugins/api/HTTPRequest.hpp"
 #    include "controllers/plugins/api/HTTPResponse.hpp"
-#    include "controllers/plugins/api/Images.hpp"
 #    include "controllers/plugins/api/IOWrapper.hpp"
 #    include "controllers/plugins/api/JSON.hpp"
 #    include "controllers/plugins/api/Message.hpp"
 #    include "controllers/plugins/api/WebSocket.hpp"
-#    include "controllers/plugins/api/WindowManager.hpp"
 #    include "controllers/plugins/LuaAPI.hpp"
 #    include "controllers/plugins/LuaUtilities.hpp"
 #    include "controllers/plugins/SolTypes.hpp"
@@ -30,9 +28,6 @@
 #    include "messages/MessageElement.hpp"
 #    include "singletons/Paths.hpp"
 #    include "singletons/Settings.hpp"
-#    include "singletons/WindowManager.hpp"
-#    include "widgets/splits/SplitContainer.hpp"
-#    include "widgets/Window.hpp"
 
 #    include <lauxlib.h>
 #    include <lua.h>
@@ -58,7 +53,7 @@ PluginController::PluginController(const Paths &paths_)
 
 void PluginController::initialize(Settings &settings)
 {
-    // actuallyInitialize will be called by this connection
+
     settings.pluginsEnabled.connect([this](bool enabled) {
         if (enabled)
         {
@@ -66,7 +61,7 @@ void PluginController::initialize(Settings &settings)
         }
         else
         {
-            // uninitialize plugins
+
             this->plugins_.clear();
         }
     });
@@ -87,7 +82,7 @@ void PluginController::loadPlugins()
 
 bool PluginController::tryLoadFromDir(const QDir &pluginDir)
 {
-    // look for init.lua
+
     auto index = QFileInfo(pluginDir.filePath("init.lua"));
     qCDebug(chatterinoLua) << "Looking for init.lua and info.json in"
                            << pluginDir.path();
@@ -144,25 +139,18 @@ void PluginController::openLibrariesFor(Plugin *plugin)
     auto *L = plugin->state_;
     lua::StackGuard guard(L);
     sol::state_view lua(L);
-    // Stuff to change, remove or hide behind a permission system:
+
     static const std::vector<luaL_Reg> loadedlibs = {
         luaL_Reg{LUA_GNAME, luaopen_base},
-        // - load - don't allow in release mode
 
         luaL_Reg{LUA_COLIBNAME, luaopen_coroutine},
         luaL_Reg{LUA_TABLIBNAME, luaopen_table},
-        // luaL_Reg{LUA_OSLIBNAME, luaopen_os},
-        // - fs access
-        // - environ access
-        // - exit
+
         luaL_Reg{LUA_STRLIBNAME, luaopen_string},
         luaL_Reg{LUA_MATHLIBNAME, luaopen_math},
         luaL_Reg{LUA_UTF8LIBNAME, luaopen_utf8},
         luaL_Reg{LUA_LOADLIBNAME, luaopen_package},
     };
-    // Warning: Do not add debug library to this, it would make the security of
-    // this a living nightmare due to stuff like registry access
-    // - Mm2PL
 
     for (const auto &reg : loadedlibs)
     {
@@ -177,18 +165,13 @@ void PluginController::openLibrariesFor(Plugin *plugin)
     auto c2 = lua.create_table();
     g["c2"] = c2;
 
-    // ban functions
-    // Note: this might not be fully secure? some kind of metatable fuckery might come up?
-
 #    ifndef NDEBUG
     lua.registry()["real_load"] = lua.globals()["load"];
 #    endif
-    // See chatterino::lua::api::g_load implementation
 
     g["loadfile"] = sol::nil;
     g["dofile"] = sol::nil;
 
-    // set up package lib
     {
         auto package = g["package"];
         package["cpath"] = "";
@@ -196,7 +179,6 @@ void PluginController::openLibrariesFor(Plugin *plugin)
 
         sol::protected_function tbremove = g["table"]["remove"];
 
-        // remove searcher_Croot, searcher_C and searcher_Lua leaving only searcher_preload
         sol::table searchers = package["searchers"];
         for (int i = 0; i < 3; i++)
         {
@@ -205,20 +187,19 @@ void PluginController::openLibrariesFor(Plugin *plugin)
         searchers.add(&lua::api::searcherRelative);
         searchers.add(&lua::api::searcherAbsolute);
     }
-    // set up io lib
+
     {
         auto c2io = lua.create_table();
         auto realio = r[lua::api::REG_REAL_IO_NAME];
         c2io["type"] = realio["type"];
         g["io"] = c2io;
-        // prevent plugins getting direct access to realio
+
         r[LUA_LOADED_TABLE]["io"] = c2io;
 
-        // Don't give plugins the option to shit into our stdio
         r["_IO_input"] = sol::nil;
         r["_IO_output"] = sol::nil;
     }
-    // set up debug lib
+
     {
         auto debuglib = lua.create_table();
         g["debug"] = debuglib;
@@ -228,12 +209,10 @@ void PluginController::openLibrariesFor(Plugin *plugin)
     PluginController::initSol(lua, plugin);
 }
 
-// TODO: investigate if `plugin` can ever point to an invalid plugin,
-// especially in cases when the plugin is errored.
 void PluginController::initSol(sol::state_view &lua, Plugin *plugin)
 {
     auto g = lua.globals();
-    // Do not capture plugin->state_ in lambdas, this makes the functions unusable in callbacks
+
     g.set_function("print", &lua::api::g_print);
     g.set_function("load", &lua::api::g_load);
 
@@ -252,9 +231,7 @@ void PluginController::initSol(sol::state_view &lua, Plugin *plugin)
     lua::api::WebSocket::createUserType(c2, plugin);
     lua::api::ConnectionHandle::createUserType(c2);
     lua::api::message::createUserType(c2);
-    lua::api::images::createUserTypes(c2);
     lua::api::createAccounts(c2);
-    lua::api::windowmanager::createUserTypes(c2);
     c2["ChannelType"] = lua::createEnumTable<Channel::Type>(lua);
     c2["HTTPMethod"] = lua::createEnumTable<NetworkRequestType>(lua);
     c2["EventType"] = lua::createEnumTable<lua::api::EventType>(lua);
@@ -266,11 +243,6 @@ void PluginController::initSol(sol::state_view &lua, Plugin *plugin)
     c2["MessageContext"] = lua::createEnumTable<MessageContext>(lua);
     c2["LinkType"] =
         lua::createEnumTable<lua::api::message::ExposedLinkType>(lua);
-    c2["SplitContainerNodeType"] =
-        lua::createEnumTable<SplitContainer::Node::Type>(lua);
-    c2["WindowType"] = lua::createEnumTable<WindowType>(lua);
-
-    c2["windows"] = getApp()->getWindows();
 
     sol::table io = g["io"];
     io.set_function(
@@ -315,7 +287,7 @@ void PluginController::load(const QFileInfo &index, const QDir &pluginDir,
 
     if (getApp()->getArgs().safeMode)
     {
-        // This isn't done earlier to ensure the user can disable a misbehaving plugin
+
         qCWarning(chatterinoLua) << "Skipping loading plugin " << meta.name
                                  << " because safe mode is enabled.";
         return;
@@ -331,8 +303,7 @@ void PluginController::load(const QFileInfo &index, const QDir &pluginDir,
     }
     temp->dataDirectory().mkpath(".");
 
-    // make sure we capture log messages during load
-    this->onPluginLoaded.invoke(temp);
+    this->onPluginLoaded(temp);
     qCDebug(chatterinoLua) << "Running lua file:" << index;
     int err = luaL_dofile(l, index.absoluteFilePath().toStdString().c_str());
     if (err != 0)
@@ -359,7 +330,7 @@ bool PluginController::reload(const QString &id)
         getApp()->getCommands()->unregisterPluginCommand(cmd);
     }
     QDir loadDir = it->second->loadDirectory_;
-    // Since Plugin owns the state, it will clean up everything related to it
+
     this->plugins_.erase(id);
     this->tryLoadFromDir(loadDir);
     return true;
@@ -375,8 +346,8 @@ QString PluginController::tryExecPluginCommand(const QString &commandName,
         {
             sol::state_view lua(plugin->state_);
             sol::table args = lua.create_table_with(
-                "words", ctx.words,                           //
-                "channel", lua::api::ChannelRef(ctx.channel)  //
+                "words", ctx.words,
+                "channel", lua::api::ChannelRef(ctx.channel)
             );
 
             auto result =
@@ -415,7 +386,7 @@ bool PluginController::isPluginEnabled(const QString &id)
 Plugin *PluginController::getPluginByStatePtr(lua_State *L)
 {
     lua_geti(L, LUA_REGISTRYINDEX, LUA_RIDX_MAINTHREAD);
-    // Use the main thread for identification, not a coroutine instance
+
     auto *mainL = lua_tothread(L, -1);
     lua_pop(L, 1);
     L = mainL;
@@ -490,5 +461,5 @@ WebSocketPool &PluginController::webSocketPool()
     return this->webSocketPool_;
 }
 
-}  // namespace chatterino
+}
 #endif

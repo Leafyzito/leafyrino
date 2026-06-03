@@ -25,9 +25,6 @@ public:
 
     AccountModel *createModel(QObject *parent);
 
-    /**
-     * Load current user & send off a signal to subscribers about any potential changes
-     */
     void load();
 
     TwitchAccountManager twitch;
@@ -37,4 +34,4 @@ private:
     SignalVector<std::shared_ptr<Account>> accounts_;
 };
 
-}  // namespace chatterino
+}

@@ -115,6 +115,6 @@ TitleBarButton *TitleBarButtons::buttonForHt(size_t ht) const
     }
 }
 
-}  // namespace chatterino
+}
 
 #endif

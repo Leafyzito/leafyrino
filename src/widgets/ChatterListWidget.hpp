@@ -23,4 +23,4 @@ public:
     Q_SIGNAL void userClicked(QString userLogin);
 };
 
-}  // namespace chatterino
+}

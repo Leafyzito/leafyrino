@@ -92,6 +92,8 @@ QString localizeNumbers(T number)
 }
 
 QString kFormatNumbers(const int &number);
+QString formatCompactNumber(qint64 number);
+QString formatChannelPoints(qint64 points);
 
 QColor getRandomColor(const QString &userId);
 

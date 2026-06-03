@@ -16,4 +16,4 @@ public:
     AccountsPage();
 };
 
-}  // namespace chatterino
+}

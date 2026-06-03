@@ -15,20 +15,16 @@
 
 namespace chatterino {
 
-// commandmodel
 BadgeHighlightModel::BadgeHighlightModel(QObject *parent)
     : SignalVectorModel<HighlightBadge>(6, parent)
 {
 }
 
-// turn vector item into model row
 HighlightBadge BadgeHighlightModel::getItemFromRow(
     std::vector<QStandardItem *> &row, const HighlightBadge &original)
 {
     using Column = BadgeHighlightModel::Column;
 
-    // In order for old messages to update their highlight color, we need to
-    // update the highlight color here.
     auto highlightColor = original.getColor();
     *highlightColor =
         row[Column::Color]->data(Qt::DecorationRole).value<QColor>();
@@ -43,7 +39,6 @@ HighlightBadge BadgeHighlightModel::getItemFromRow(
         highlightColor};
 }
 
-// row into vector item
 void BadgeHighlightModel::getRowFromItem(const HighlightBadge &item,
                                          std::vector<QStandardItem *> &row)
 {
@@ -58,9 +53,9 @@ void BadgeHighlightModel::getRowFromItem(const HighlightBadge &item,
     setColorItem(row[Column::Color], *item.getColor());
 
     getApp()->getTwitchBadges()->getBadgeIcon(
-        item.badgeName(), [item, row](QString /*name*/, const QIconPtr pixmap) {
+        item.badgeName(), [item, row](QString , const QIconPtr pixmap) {
             row[Column::Badge]->setData(QVariant(*pixmap), Qt::DecorationRole);
         });
 }
 
-}  // namespace chatterino
+}

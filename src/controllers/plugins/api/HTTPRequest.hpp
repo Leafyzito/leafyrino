@@ -15,27 +15,19 @@
 
 namespace chatterino {
 class PluginController;
-}  // namespace chatterino
+}
 
 namespace chatterino::lua::api {
-// NOLINTBEGIN(readability-identifier-naming)
 
-/**
- * @lua@alias c2.HTTPCallback fun(result: c2.HTTPResponse): nil
- */
-
-/**
- * @lua@class c2.HTTPRequest
- */
 class HTTPRequest : public std::enable_shared_from_this<HTTPRequest>
 {
-    // This type is private to prevent the accidental construction of HTTPRequest without a shared pointer
+
     struct ConstructorAccessTag {
     };
 
 public:
     HTTPRequest(HTTPRequest::ConstructorAccessTag, NetworkRequest req);
-    HTTPRequest(HTTPRequest &&other) = default;  // TODO: this breaks DebugCount
+    HTTPRequest(HTTPRequest &&other) = default;
     HTTPRequest &operator=(HTTPRequest &&) = default;
     HTTPRequest &operator=(HTTPRequest &) = delete;
     HTTPRequest(const HTTPRequest &other) = delete;
@@ -47,9 +39,6 @@ private:
     static void createUserType(sol::table &c2);
     friend class chatterino::PluginController;
 
-    // This is the key in the registry the private table it held at (if it exists)
-    // This might be a null QString if the request has already been executed or
-    // the table wasn't created yet.
     int timeout_ = 10'000;
     bool done = false;
 

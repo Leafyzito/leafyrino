@@ -23,4 +23,4 @@ class SmartTabEmoteStrategy : public Strategy<EmoteItem>
                const QString &query) const override;
 };
 
-}  // namespace chatterino::completion
+}

@@ -13,9 +13,7 @@ namespace chatterino::filters {
 class FilterParser
 {
 public:
-    /**
-     * Take input text & attempt to parse it into a filter
-     **/
+
     FilterParser(const QString &text);
 
     bool valid() const;
@@ -23,7 +21,7 @@ public:
     ExpressionPtr release();
 
     const QStringList &errors() const;
-    QString debugString() const;
+    const QString debugString() const;
 
 private:
     ExpressionPtr parseExpression(bool top = false);
@@ -45,4 +43,4 @@ private:
     Type returnType_ = Type::Bool;
 };
 
-}  // namespace chatterino::filters
+}

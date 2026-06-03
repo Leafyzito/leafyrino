@@ -22,20 +22,10 @@ class HighlightPhrase
 public:
     bool operator==(const HighlightPhrase &other) const;
 
-    /**
-     * @brief Create a new HighlightPhrase.
-     *
-     * Use this constructor when creating a new HighlightPhrase.
-     */
     HighlightPhrase(const QString &pattern, bool showInMentions, bool hasAlert,
                     bool hasSound, bool isRegex, bool isCaseSensitive,
                     const QString &soundUrl, QColor color);
 
-    /**
-     * @brief Create a new HighlightPhrase.
-     *
-     * Use this constructor when updating an existing HighlightPhrase's color.
-     */
     HighlightPhrase(const QString &pattern, bool showInMentions, bool hasAlert,
                     bool hasSound, bool isRegex, bool isCaseSensitive,
                     const QString &soundUrl, std::shared_ptr<QColor> color);
@@ -44,31 +34,8 @@ public:
     bool showInMentions() const;
     bool hasAlert() const;
 
-    /**
-     * @brief Check if this highlight phrase should play a sound when
-     *        triggered.
-     *
-     * In distinction from `HighlightPhrase::hasCustomSound`, this method only
-     * checks whether or not ANY sound should be played when the phrase is
-     * triggered.
-     * 
-     * To check whether a custom sound is set, use
-     * `HighlightPhrase::hasCustomSound` instead.
-     *
-     * @return true, if this highlight phrase should play a sound when
-     *         triggered, false otherwise
-     */
     bool hasSound() const;
 
-    /**
-     * @brief Check if this highlight phrase has a custom sound set.
-     *
-     * Note that this method only checks whether the path to the custom sound
-     * is not empty. It does not check whether the file still exists, is a
-     * sound file, or anything else.
-     *
-     * @return true, if the custom sound file path is not empty, false otherwise
-     */
     bool hasCustomSound() const;
 
     bool isRegex() const;
@@ -78,12 +45,8 @@ public:
     const QUrl &getSoundUrl() const;
     const std::shared_ptr<QColor> getColor() const;
 
-    /*
-     * XXX: Use the constexpr constructor here once we are building with
-     * Qt>=5.13.
-     */
     static QColor FALLBACK_HIGHLIGHT_COLOR;
-    // Used for automatic self messages highlighing
+
     static QColor FALLBACK_SELF_MESSAGE_HIGHLIGHT_COLOR;
     static QColor FALLBACK_REDEEMED_HIGHLIGHT_COLOR;
     static QColor FALLBACK_SUB_COLOR;
@@ -92,11 +55,6 @@ public:
     static QColor FALLBACK_ELEVATED_MESSAGE_HIGHLIGHT_COLOR;
     static QColor FALLBACK_THREAD_HIGHLIGHT_COLOR;
     static QColor FALLBACK_AUTOMOD_HIGHLIGHT_COLOR;
-    static QColor FALLBACK_ANNOUNCEMENT_HIGHLIGHT_COLOR;
-    static QColor ANNOUNCEMENT_BLUE_HIGHLIGHT_COLOR;
-    static QColor ANNOUNCEMENT_GREEN_HIGHLIGHT_COLOR;
-    static QColor ANNOUNCEMENT_ORANGE_HIGHLIGHT_COLOR;
-    static QColor ANNOUNCEMENT_PURPLE_HIGHLIGHT_COLOR;
 
 private:
     QString pattern_;
@@ -110,7 +68,7 @@ private:
     QRegularExpression regex_;
 };
 
-}  // namespace chatterino
+}
 
 namespace pajlada {
 
@@ -120,7 +78,7 @@ chatterino::HighlightPhrase constructError()
     return chatterino::HighlightPhrase(QString(), false, false, false, false,
                                        false, QString(), QColor());
 }
-}  // namespace
+}
 
 template <>
 struct Serialize<chatterino::HighlightPhrase> {
@@ -185,4 +143,4 @@ struct Deserialize<chatterino::HighlightPhrase> {
     }
 };
 
-}  // namespace pajlada
+}

@@ -5,7 +5,7 @@
 #include "widgets/settingspages/GeneralPage.hpp"
 
 #include "Application.hpp"
-#include "common/Literals.hpp"  // IWYU pragma: keep
+#include "common/Literals.hpp"
 #include "common/Version.hpp"
 #include "controllers/hotkeys/HotkeyCategory.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
@@ -92,7 +92,7 @@ void addKeyboardModifierSetting(GeneralPageView &layout, const QString &title,
         },
         false);
 }
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -134,11 +134,14 @@ void GeneralPage::initLayout(GeneralPageView &layout)
     {
         auto *themes = getApp()->getThemes();
         auto available = themes->availableThemes();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         available.emplace_back("System", "System");
+#endif
 
         SettingWidget::dropdown("Theme", themes->themeName, available)
             ->addTo(layout);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         SettingWidget::dropdown("Dark system theme",
                                 themes->darkSystemThemeName,
                                 themes->availableThemes())
@@ -154,6 +157,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                          "theme and you enabled the adaptive 'System' theme.")
             ->conditionallyEnabledBy(themes->themeName, "System")
             ->addTo(layout);
+#endif
     }
 
     layout.addDropdown<float>(
@@ -214,7 +218,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                 }
                 else
                 {
-                    // default to top
+
                     return NotebookTabLocation::Top;
                 }
             },
@@ -280,12 +284,12 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->addTo(layout);
 
     SettingWidget::checkbox("Always on top", s.windowTopMost)
-        ->setTooltip("Always keep Chatterino as the top window.")
+        ->setTooltip("Always keep Moltorino as the top window.")
         ->addTo(layout);
 
 #ifdef USEWINSDK
     SettingWidget::checkbox("Start with Windows", s.autorun)
-        ->setTooltip("Start Chatterino when your computer starts.")
+        ->setTooltip("Start Moltorino when your computer starts.")
         ->addTo(layout);
 #endif
     if (!BaseWindow::supportsCustomWindowFrame())
@@ -293,7 +297,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         auto settingsSeq = getApp()->getHotkeys()->getDisplaySequence(
             HotkeyCategory::Window, "openSettings");
         QString shortcut = " (no key bound to open them otherwise)";
-        // TODO: maybe prevent the user from locking themselves out of the settings?
+
         if (!settingsSeq.isEmpty())
         {
             shortcut = QStringLiteral(" (%1 to show)")
@@ -405,13 +409,13 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         "Message overflow", {"Highlight", "Prevent", "Allow"},
         s.messageOverflow,
         [](auto index) {
-            return static_cast<int>(index);
+            return index;
         },
         [](auto args) {
             return static_cast<MessageOverflow>(args.index);
         },
         false,
-        "Specify how Chatterino will handle messages that exceed Twitch "
+        "Specify how Moltorino will handle messages that exceed Twitch "
         "message limits");
     layout.addDropdown<std::underlying_type_t<UsernameRightClickBehavior>>(
         "Username right-click behavior",
@@ -422,13 +426,13 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         },
         s.usernameRightClickBehavior,
         [](auto index) {
-            return static_cast<int>(index);
+            return index;
         },
         [](auto args) {
             return static_cast<UsernameRightClickBehavior>(args.index);
         },
         false,
-        "Specify how Chatterino will handle right-clicking a username in "
+        "Specify how Moltorino will handle right-clicking a username in "
         "chat when not holding the modifier.");
     layout.addDropdown<std::underlying_type_t<UsernameRightClickBehavior>>(
         "Username right-click with modifier behavior",
@@ -439,13 +443,13 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         },
         s.usernameRightClickModifierBehavior,
         [](auto index) {
-            return static_cast<int>(index);
+            return index;
         },
         [](auto args) {
             return static_cast<UsernameRightClickBehavior>(args.index);
         },
         false,
-        "Specify how Chatterino will handle right-clicking a username in "
+        "Specify how Moltorino will handle right-clicking a username in "
         "chat when holding down the modifier.");
     layout.addDropdown<std::underlying_type_t<Qt::KeyboardModifier>>(
         "Modifier for alternate right-click action",
@@ -515,17 +519,13 @@ void GeneralPage::initLayout(GeneralPageView &layout)
     SettingWidget::checkbox("Reduce opacity of message history",
                             s.fadeMessageHistory)
         ->setTooltip(
-            "Reduce opacity of messages that were posted before Chatterino "
+            "Reduce opacity of messages that were posted before Moltorino "
             "was started or while re-connection.")
         ->addTo(layout);
 
     SettingWidget::checkbox("Hide deleted messages", s.hideModerated)
         ->setTooltip(
             "When enabled, messages deleted by moderators will be hidden.")
-        ->addTo(layout);
-
-    SettingWidget::checkbox("Hide message timestamps when channel is live",
-                            s.hideMessageTimestampsWhenLive)
         ->addTo(layout);
 
     layout.addDropdown<QString>(
@@ -578,7 +578,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                             "switching applications.",
                             s.showLastMessageIndicator)
         ->setTooltip("Adds an underline below the most recent message "
-                     "sent before you tabbed out of Chatterino.")
+                     "sent before you tabbed out of Moltorino.")
         ->addTo(layout);
 
     SettingWidget::dropdown("Line style", s.lastMessagePattern)->addTo(layout);
@@ -591,7 +591,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     SettingWidget::checkbox("Animate", s.animateEmotes)->addTo(layout);
 
-    SettingWidget::checkbox("Animate only when Chatterino is focused",
+    SettingWidget::checkbox("Animate only when Moltorino is focused",
                             s.animationsWhenFocused)
         ->addTo(layout);
 
@@ -640,9 +640,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                             s.showUnlistedSevenTVEmotes)
         ->addKeywords({"seventv"})
         ->addTo(layout);
-    // TODO: Add a tooltip explaining what an unlisted 7TV emote is
-    // but wait until https://github.com/Chatterino/wiki/pull/255 is resolved,
-    // as an official description from 7TV devs is best
+
     s.showUnlistedSevenTVEmotes.connect(
         []() {
             getApp()->getTwitch()->forEachChannelAndSpecialChannels(
@@ -684,7 +682,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->addTo(layout);
     SettingWidget::checkbox("Send activity to BetterTTV", s.sendBTTVActivity)
         ->setTooltip(
-            "When enabled, Chatterino will signal an activity to BetterTTV "
+            "When enabled, Moltorino will signal an activity to BetterTTV "
             "when you send a chat message. This is used for badges, "
             " and personal emotes. When disabled, no activity "
             "is sent and others won't see your cosmetics.")
@@ -721,7 +719,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                      "(badges/paints/personal emotes) will get updated.")
         ->addTo(layout);
     SettingWidget::checkbox("Send activity to 7TV", s.sendSevenTVActivity)
-        ->setTooltip("When enabled, Chatterino will signal an activity to 7TV "
+        ->setTooltip("When enabled, Moltorino will signal an activity to 7TV "
                      "when you send a chat message. This is used for badges, "
                      "paints, and personal emotes. When disabled, no activity "
                      "is sent and others won't see your cosmetics.")
@@ -730,7 +728,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     layout.addTitle("Streamer Mode");
     layout.addDescription(
-        "Chatterino can automatically change behavior if it detects that any "
+        "Moltorino can automatically change behavior if it detects that any "
         "streaming software is running.\nSelect which things you want to "
         "change while streaming");
 
@@ -771,10 +769,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             "Hide blocked terms from showing up in places like AutoMod "
             "messages. This can be useful in case you have some blocked terms "
             "that you don't want to show on stream.")
-        ->addTo(layout);
-
-    SettingWidget::checkbox("Hide user notes", s.streamerModeHideUserNotes)
-        ->setTooltip("Hide user notes from showing in usercards.")
         ->addTo(layout);
 
     SettingWidget::checkbox("Mute mention sounds", s.streamerModeMuteMentions)
@@ -967,33 +961,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             ->addTo(layout, form);
     }
 
-#ifndef Q_OS_WIN
-    {
-        auto *note = layout.addDescription(
-            "A path to write the native messaging manifest to. The manifest is "
-            "already automatically created for Firefox and Google Chrome if "
-            "they are installed."
-#    ifdef Q_OS_LINUX
-            "\nYou may use $XDG_CONFIG_HOME or $XDG_DATA_HOME in the path."
-#    endif
-        );
-        note->setWordWrap(true);
-        note->setStyleSheet("color: #bbb");
-        layout.addWidget(note);
-
-        auto *form = new QFormLayout();
-        layout.addLayout(form);
-        SettingWidget::lineEdit("Custom manifest path",
-                                s.customNativeMessagingManifestPath,
-                                "/full/path/to/native/messaging/manifest.json")
-            ->addTo(layout, form);
-
-        SettingWidget::dropdown("Custom manifest format",
-                                s.customNativeMessagingManifestFormat)
-            ->addTo(layout);
-    }
-#endif
-
     layout.addTitle("AppData & Cache");
 
     layout.addSubtitle("Application Data");
@@ -1025,7 +992,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         cachePathLabel->setToolTip(newPath);
     });
 
-    // Choose and reset buttons
     {
         auto *box = new QHBoxLayout;
 
@@ -1103,8 +1069,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     SettingWidget::checkbox("Enable similarity checks", s.similarityEnabled)
         ->addTo(layout);
-
-    // SettingWidget::checkbox("Gray out matches", s.colorSimilarDisabled)->addTo(layout);
 
     SettingWidget::checkbox("Only if by the same user", s.hideSimilarBySameUser)
         ->setTooltip(
@@ -1194,6 +1158,19 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->addTo(layout);
     SettingWidget::checkbox("BetterTTV", s.showBadgesBttv)
         ->addKeywords({"bttv"})
+        ->addTo(layout);
+    SettingWidget::checkbox("Homies Supporter", s.showBadgesHomiesSupporter)
+        ->addKeywords({"homies", "supporter"})
+        ->setTooltip("Badges from the Homies supporter badge list")
+        ->addTo(layout);
+    SettingWidget::checkbox("Homies Custom", s.showBadgesHomiesCustom)
+        ->addKeywords({"homies", "custom"})
+        ->setTooltip("Custom Homies badges")
+        ->addTo(layout);
+    SettingWidget::checkbox("Moltorino", s.showBadgesMoltorino)
+        ->addKeywords({"moltorino", "supporter", "top donor", "developer"})
+        ->setTooltip(
+            "Badges for Moltorino supporters, top donors, and developers")
         ->addTo(layout);
     layout.addSeparator();
     SettingWidget::checkbox("Use custom FrankerFaceZ moderator badges",
@@ -1304,23 +1281,21 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                 "the right-click context menu.")
             ->addTo(layout);
 
-        // Preset dropdown
         QStringList presetList = {"DuckDuckGo", "Bing", "Google"};
         auto *presetCombo =
             layout.addDropdown("Search engine preset", presetList,
                                "Select a search engine preset");
         presetCombo->setPlaceholderText("Select...");
         presetCombo->setCurrentIndex(-1);
-        // Make placeholder text more visible
+
         QPalette palette = presetCombo->palette();
         palette.setColor(QPalette::PlaceholderText,
-                         QColor(255, 255, 255));  // white
+                         QColor(255, 255, 255));
         presetCombo->setPalette(palette);
         s.searchEnabled.connect([presetCombo](bool value) {
             presetCombo->setEnabled(value);
         });
 
-        // Connect preset dropdown to update URL and name settings
         QObject::connect(
             presetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             [&s, presetCombo](int index) {
@@ -1343,14 +1318,13 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                     s.searchEngineUrl = "https://www.google.com/search?q=";
                     s.searchEngineName = "Google";
                 }
-                // Reset to -1 after selection
+
                 {
                     QSignalBlocker blocker(presetCombo);
                     presetCombo->setCurrentIndex(-1);
                 }
             });
 
-        // URL and Name text inputs
         SettingWidget::lineEdit("Search engine URL", s.searchEngineUrl)
             ->conditionallyEnabledBy(s.searchEnabled)
             ->addTo(layout);
@@ -1519,7 +1493,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             "Username style", usernameDisplayModes, s.usernameDisplayMode,
             [usernameDisplayModes](auto val) {
                 return usernameDisplayModes.at(val - 1);
-                // UsernameDisplayMode enum indexes from 1
+
             },
             [](auto args) {
                 return args.index + 1;
@@ -1601,7 +1575,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                             s.loadTwitchMessageHistoryOnConnect)
         ->addTo(layout);
 
-    // TODO: Change phrasing to use better english once we can tag settings, right now it's kept as history instead of historical so that the setting shows up when the user searches for history
     SettingWidget::intInput("Max number of history messages to load on connect",
                             s.twitchMessageHistoryLimit,
                             {
@@ -1651,7 +1624,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                      "message) into one cheermote.")
         ->addTo(layout);
 
-    // update this tooltip if https://github.com/Chatterino/chatterino2/pull/1557 is ever merged
     SettingWidget::checkbox("Messages in /mentions highlights tab",
                             s.highlightMentions)
         ->setTooltip("When disabled, the /mentions tab will not highlight in "
@@ -1676,6 +1648,11 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                      "clicked to send the message")
         ->addTo(layout);
 
+    SettingWidget::checkbox(
+        "Enable experimental Twitch EventSub support (requires restart)",
+        s.enableExperimentalEventSub)
+        ->addTo(layout);
+
     SettingWidget::checkbox("Disable renaming of tabs on double-click",
                             s.disableTabRenamingOnClick)
         ->setTooltip("Prevents the rename dialog from opening when a tab is "
@@ -1684,15 +1661,14 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     layout.addStretch();
 
-    // invisible element for width
     auto *inv = new BaseWidget(this);
-    //    inv->setScaleIndependentWidth(600);
+
     layout.addWidget(inv);
 }
 
 void GeneralPage::initExtra()
 {
-    /// update cache path
+
     if (this->cachePath_)
     {
         getSettings()->cachePath.connect(
@@ -1709,4 +1685,4 @@ void GeneralPage::initExtra()
     }
 }
 
-}  // namespace chatterino
+}

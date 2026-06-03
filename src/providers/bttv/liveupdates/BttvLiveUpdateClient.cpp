@@ -117,4 +117,4 @@ void BttvLiveUpdateClient::broadcastMe(const QString &channelID,
     this->sendText(doc.toJson(QJsonDocument::Compact));
 }
 
-}  // namespace chatterino
+}

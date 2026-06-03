@@ -48,4 +48,4 @@ private:
     friend class Logging;
 };
 
-}  // namespace chatterino
+}

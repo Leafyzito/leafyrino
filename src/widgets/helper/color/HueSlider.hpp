@@ -49,4 +49,4 @@ private:
     void setHue(int hue);
 };
 
-}  // namespace chatterino
+}

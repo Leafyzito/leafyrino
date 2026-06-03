@@ -18,6 +18,12 @@
 
 namespace chatterino::seventv::eventapi {
 
+namespace {
+
+constexpr int MIN_HEARTBEAT_INTERVAL_MS = 1000;
+
+}  // namespace
+
 Client::Client(SeventvEventAPI &manager,
                std::chrono::milliseconds heartbeatInterval)
     : BasicPubSubClient(100)
@@ -48,9 +54,17 @@ void Client::onMessage(const QByteArray &msg)
     switch (message.op)
     {
         case Opcode::Hello: {
+            auto heartbeatIntervalMs =
+                message.data["heartbeat_interval"].toInt();
+            if (heartbeatIntervalMs < MIN_HEARTBEAT_INTERVAL_MS)
+            {
+                qCDebug(chatterinoSeventvEventAPI)
+                    << "Ignoring malformed heartbeat interval"
+                    << heartbeatIntervalMs;
+                return;
+            }
             this->heartbeatInterval_.store(
-                std::chrono::milliseconds{
-                    message.data["heartbeat_interval"].toInt()},
+                std::chrono::milliseconds{heartbeatIntervalMs},
                 std::memory_order::relaxed);
         }
         break;
@@ -75,7 +89,7 @@ void Client::onMessage(const QByteArray &msg)
         }
         break;
         case Opcode::Ack: {
-            // unhandled
+
         }
         break;
         default: {
@@ -157,7 +171,7 @@ void Client::handleDispatch(const Dispatch &dispatch)
         }
         break;
         case SubscriptionType::ResetEntitlement: {
-            // unhandled (not clear what we'd do here yet)
+
         }
         break;
         default: {
@@ -172,11 +186,7 @@ void Client::handleDispatch(const Dispatch &dispatch)
 
 void Client::onEmoteSetUpdate(const Dispatch &dispatch)
 {
-    // dispatchBody: {
-    //   pushed:  Array<{ key, value            }>,
-    //   pulled:  Array<{ key,        old_value }>,
-    //   updated: Array<{ key, value, old_value }>,
-    // }
+
     auto pushedArray = dispatch.body["pushed"].toArray();
     auto pulledArray = dispatch.body["pulled"].toArray();
     auto updatedArray = dispatch.body["updated"].toArray();
@@ -278,9 +288,7 @@ void Client::onEmoteSetUpdate(const Dispatch &dispatch)
 
 void Client::onUserUpdate(const Dispatch &dispatch)
 {
-    // dispatchBody: {
-    //   updated: Array<{ key, value: Array<{key, value}> }>
-    // }
+
     for (const auto updatedRef : dispatch.body["updated"].toArray())
     {
         auto updated = updatedRef.toObject();
@@ -312,13 +320,12 @@ void Client::onUserUpdate(const Dispatch &dispatch)
     }
 }
 
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void Client::onCosmeticCreate(const CosmeticCreateDispatch &cosmetic)
 {
     auto *app = tryGetApp();
     if (!app)
     {
-        return;  // shutting down
+        return;
     }
 
     auto *badges = app->getSeventvBadges();
@@ -343,7 +350,7 @@ void Client::onEntitlementCreate(
     auto *app = tryGetApp();
     if (!app)
     {
-        return;  // shutting down
+        return;
     }
 
     auto *badges = app->getSeventvBadges();
@@ -400,7 +407,7 @@ void Client::onEntitlementDelete(
     auto *app = tryGetApp();
     if (!app)
     {
-        return;  // shutting down
+        return;
     }
 
     auto *badges = app->getSeventvBadges();
@@ -434,10 +441,9 @@ void Client::onEmoteSetCreate(const Dispatch &dispatch)
     auto *app = tryGetApp();
     if (!app)
     {
-        return;  // shutting down
+        return;
     }
 
-    // other flags are "immutable" and "privileged"
     if (createDispatch.isPersonalOrCommercial)
     {
         qCDebug(chatterinoSeventvEventAPI)
@@ -452,6 +458,5 @@ void Client::onEmoteSetCreate(const Dispatch &dispatch)
             << "because it doesn't have the expected flags";
     }
 }
-// NOLINTEND(readability-convert-member-functions-to-static)
 
-}  // namespace chatterino::seventv::eventapi
+}

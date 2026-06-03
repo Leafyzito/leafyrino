@@ -53,6 +53,7 @@ public:
     }
 
     using pajlada::Settings::Setting<Type>::operator==;
+    using pajlada::Settings::Setting<Type>::operator!=;
 
     using pajlada::Settings::Setting<Type>::operator Type;
 };
@@ -66,9 +67,6 @@ using StringSetting = ChatterinoSetting<std::string>;
 using QStringSetting = ChatterinoSetting<QString>;
 using QSizeSetting = ChatterinoSetting<QSize>;
 
-/// Accepts any enum and saves the enum value as an integer
-///
-/// e.g. for enum class {Foo = 2, Bar = 6}, Foo would be saved as 2 and Bar would be saved as 6
 template <typename Enum>
 class EnumSetting : public ChatterinoSetting<std::underlying_type_t<Enum>>
 {
@@ -101,11 +99,6 @@ public:
     }
 };
 
-/**
- * Setters in this class allow for bad values, it's only the enum-specific getters that are protected.
- * If you get a QString from this setting, it will be the raw value from the settings file.
- * Use the explicit Enum conversions or getEnum to get a typed check with a default
- **/
 template <typename Enum>
 class EnumStringSetting : public pajlada::Settings::Setting<QString>
 {
@@ -147,6 +140,7 @@ public:
     Enum defaultValue;
 
     using pajlada::Settings::Setting<QString>::operator==;
+    using pajlada::Settings::Setting<QString>::operator!=;
 
     using pajlada::Settings::Setting<QString>::operator QString;
 };
@@ -164,4 +158,4 @@ struct IsChatterinoSettingT<EnumStringSetting<T>> : std::true_type {
 template <typename T>
 concept IsChatterinoSetting = IsChatterinoSettingT<T>::value;
 
-}  // namespace chatterino
+}

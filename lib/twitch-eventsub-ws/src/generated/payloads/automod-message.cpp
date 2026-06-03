@@ -71,9 +71,7 @@ boost::json::result_for<AutomodReason, boost::json::value>::type tag_invoke(
         EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
     }
 
-    auto category =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvcategory);
+    auto category = boost::json::try_value_to<String>(*jvcategory);
 
     if (category.has_error())
     {

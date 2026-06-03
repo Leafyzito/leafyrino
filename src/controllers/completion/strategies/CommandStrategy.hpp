@@ -22,4 +22,4 @@ private:
     bool startsWithOnly_;
 };
 
-}  // namespace chatterino::completion
+}

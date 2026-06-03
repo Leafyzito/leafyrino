@@ -12,7 +12,7 @@ namespace {
 constexpr int SLIDER_WIDTH = 256;
 constexpr int SLIDER_HEIGHT = 12;
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -125,7 +125,7 @@ void HueSlider::updatePixmap()
                             cornerRadius);
 }
 
-void HueSlider::paintEvent(QPaintEvent * /*event*/)
+void HueSlider::paintEvent(QPaintEvent * )
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -154,7 +154,7 @@ void HueSlider::setHue(int hue)
         return;
     }
     this->hue_ = hue;
-    // ugh
+
     int h{};
     int s{};
     int v{};
@@ -166,4 +166,4 @@ void HueSlider::setHue(int hue)
     this->update();
 }
 
-}  // namespace chatterino
+}

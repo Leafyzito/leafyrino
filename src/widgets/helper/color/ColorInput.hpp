@@ -53,4 +53,4 @@ private:
     void emitUpdate();
 };
 
-}  // namespace chatterino
+}

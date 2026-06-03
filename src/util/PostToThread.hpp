@@ -36,4 +36,4 @@ inline void postToGuiThread(auto &&fun)
     postToThread(std::forward<decltype(fun)>(fun));
 }
 
-}  // namespace chatterino
+}

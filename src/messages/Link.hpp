@@ -27,6 +27,7 @@ public:
         ReplyToMessage,
         ViewThread,
         JumpToMessage,
+        AcknowledgeChatWarning,
     };
 
     Link();
@@ -39,4 +40,4 @@ public:
     bool isUrl() const;
 };
 
-}  // namespace chatterino
+}

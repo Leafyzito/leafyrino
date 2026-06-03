@@ -18,9 +18,13 @@ class Channel;
 struct Message;
 using MessagePtr = std::shared_ptr<const Message>;
 
-}  // namespace chatterino
+}
 
 namespace chatterino::filters {
+
+extern const QMap<QString, Type> MESSAGE_TYPING_CONTEXT;
+
+ContextMap buildContextMap(const MessagePtr &m, chatterino::Channel *channel);
 
 class Filter;
 struct FilterError {
@@ -35,10 +39,10 @@ public:
     static FilterResult fromString(const QString &str);
 
     Type returnType() const;
-    QVariant execute(RunContext context) const;
+    QVariant execute(const ContextMap &context) const;
 
     QString filterString() const;
-    QString debugString() const;
+    QString debugString(const TypingContext &context) const;
 
 private:
     Filter(ExpressionPtr expression, Type returnType);
@@ -47,4 +51,4 @@ private:
     Type returnType_;
 };
 
-}  // namespace chatterino::filters
+}

@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2018 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include "util/BadgeRegistry.hpp"
@@ -26,4 +22,4 @@ protected:
                          const QJsonObject &badgeJson) const override;
 };
 
-}  // namespace chatterino
+}

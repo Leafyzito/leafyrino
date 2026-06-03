@@ -8,7 +8,7 @@
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "providers/twitch/api/Helix.hpp"
-#include "providers/twitch/TwitchAccount.hpp"  // IWYU pragma: keep
+#include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
@@ -43,7 +43,7 @@ QString formatVIPListError(HelixListVIPsError error, const QString &message)
         break;
 
         case Error::UserMissingScope: {
-            // TODO(pajlada): Phrase MISSING_REQUIRED_SCOPE
+
             errorMessage += "Missing required scope. "
                             "Re-login with your "
                             "account and try again.";
@@ -51,7 +51,7 @@ QString formatVIPListError(HelixListVIPsError error, const QString &message)
         break;
 
         case Error::UserNotAuthorized: {
-            // TODO(pajlada): Phrase MISSING_PERMISSION
+
             errorMessage += "You don't have permission to "
                             "perform that action.";
         }
@@ -145,7 +145,7 @@ QString formatChattersError(HelixGetChattersError error, const QString &message)
     return errorMessage;
 }
 
-}  // namespace
+}
 
 ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
                                      QWidget *parent)
@@ -294,10 +294,9 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
     QObject::connect(searchBar, &QLineEdit::textEdited, this,
                      performListSearch);
 
-    // Only broadcaster can get vips, mods can get chatters
     if (twitchChannel->isBroadcaster())
     {
-        // Add moderators
+
         getHelix()->getModerators(
             twitchChannel->roomId(), 1000,
             [=](const auto &mods) {
@@ -307,7 +306,6 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
                     modList.insert(mod.userName.toLower());
                 }
 
-                // Add vips
                 getHelix()->getChannelVIPs(
                     twitchChannel->roomId(),
                     [=](const auto &vips) {
@@ -317,7 +315,6 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
                             vipList.insert(vip.userName.toLower());
                         }
 
-                        // Add chatters
                         loadChatters(modList, vipList, true);
                     },
                     [chattersList, formatListItemText](auto error,
@@ -397,4 +394,4 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
     this->setLayout(dockVbox);
 }
 
-}  // namespace chatterino
+}

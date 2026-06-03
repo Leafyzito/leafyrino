@@ -120,7 +120,7 @@ bool ButtonEventFilter::eventFilter(QObject *watched, QEvent *event)
     return QObject::eventFilter(watched, event);
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -297,10 +297,6 @@ void SplitOverlay::mouseMoveEvent(QMouseEvent *event)
 {
     BaseWidget::mouseMoveEvent(event);
 
-    //    if ((QGuiApplication::queryKeyboardModifiers() & Qt::AltModifier) ==
-    //    Qt::AltModifier) {
-    //        this->hide();
-    //    }
 }
 
-}  // namespace chatterino
+}

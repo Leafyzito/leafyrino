@@ -5,28 +5,66 @@
 #include "common/WindowDescriptors.hpp"
 
 #include "common/QLogging.hpp"
+#include "util/Backup.hpp"
+#include "util/Expected.hpp"
 #include "util/QMagicEnum.hpp"
 #include "widgets/Window.hpp"
 
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonParseError>
 
 namespace chatterino {
 
 namespace {
 
-QJsonArray loadWindowArray(const QString &settingsPath)
+ExpectedStr<QJsonArray> loadWindowArray(const QString &settingsPath)
 {
     QFile file(settingsPath);
+    if (!file.exists())
+    {
+        return QJsonArray{};
+    }
+
     if (!file.open(QIODevice::ReadOnly))
     {
-        return {};
+        return makeUnexpected(
+            QStringLiteral("Failed to open '%1'").arg(settingsPath));
     }
+
     QByteArray data = file.readAll();
-    QJsonDocument document = QJsonDocument::fromJson(data);
-    QJsonArray windows_arr = document.object().value("windows").toArray();
-    return windows_arr;
+    QJsonParseError error;
+    QJsonDocument document = QJsonDocument::fromJson(data, &error);
+    if (error.error != QJsonParseError::NoError)
+    {
+        return makeUnexpected(QStringLiteral("Malformed JSON at offset %1: %2")
+                                  .arg(error.offset)
+                                  .arg(error.errorString()));
+    }
+
+    if (!document.isObject())
+    {
+        return makeUnexpected(
+            QStringLiteral("Window layout root is not a JSON object"));
+    }
+
+    const auto windowsValue = document.object().value("windows");
+    if (!windowsValue.isArray())
+    {
+        return makeUnexpected(
+            QStringLiteral("Window layout is missing the windows array"));
+    }
+
+    auto windows = windowsValue.toArray();
+    if (windows.isEmpty())
+    {
+        return makeUnexpected(
+            QStringLiteral("Window layout does not contain any windows"));
+    }
+
+    return windows;
 }
 
 template <typename T>
@@ -89,7 +127,7 @@ const QList<QUuid> loadFilters(QJsonValue val)
     {
         const auto array = val.toArray();
         filterIds.reserve(array.size());
-        for (const auto id : array)
+        for (const auto &id : array)
         {
             filterIds.append(QUuid::fromString(id.toString()));
         }
@@ -122,6 +160,7 @@ void SplitDescriptor::loadFromJSON(SplitDescriptor &descriptor,
 {
     descriptor.type_ = data.value("type").toString();
     descriptor.server_ = data.value("server").toInt(-1);
+    descriptor.anonymous_ = data.value("anonymous").toBool(false);
     descriptor.moderationMode_ = root.value("moderationMode").toBool();
     if (data.contains("channel"))
     {
@@ -213,11 +252,40 @@ TabDescriptor TabDescriptor::loadFromJSON(const QJsonObject &tabObj)
 WindowLayout WindowLayout::loadFromFile(const QString &path)
 {
     WindowLayout layout;
+    QJsonArray windowsArr;
+    bool loaded = false;
+
+    const QFileInfo fileInfo(path);
+    backup::loadWithBackups(
+        backup::FileData{
+            .fileName = fileInfo.fileName(),
+            .directory = fileInfo.absolutePath(),
+            .fileKind = QStringLiteral("Window layout"),
+            .fileDescription =
+                QStringLiteral("This file contains your open windows, tabs, "
+                               "splits, and split sizes."),
+        },
+        [&]() -> ExpectedStr<void> {
+            auto maybeWindows = loadWindowArray(path);
+            if (!maybeWindows)
+            {
+                return makeUnexpected(maybeWindows.error());
+            }
+
+            windowsArr = maybeWindows.value();
+            loaded = true;
+            return {};
+        });
+
+    if (!loaded)
+    {
+        return layout;
+    }
 
     bool hasSetAMainWindow = false;
 
     // "deserialize"
-    for (const auto windowVal : loadWindowArray(path))
+    for (const QJsonValue &windowVal : windowsArr)
     {
         QJsonObject windowObj = windowVal.toObject();
 

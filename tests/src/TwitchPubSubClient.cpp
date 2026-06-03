@@ -7,6 +7,8 @@
 #include "providers/twitch/PubSubManager.hpp"
 #include "Test.hpp"
 
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QString>
 #include <QtCore/qtestsupport_core.h>
 
@@ -84,8 +86,7 @@ class FTest : public PubSub
 {
 public:
     explicit FTest(const char *path, std::chrono::seconds pingInterval)
-        : PubSub(QString("wss://%1%2").arg(PUBSUB_WSS_ADDR).arg(path),
-                 pingInterval)
+        : PubSub(QString("wss://127.0.0.1:9050%1").arg(path), pingInterval)
     {
     }
 };
@@ -147,6 +148,29 @@ TEST(TwitchPubSubClient, ServerRespondsToPings)
     ASSERT_EQ(pubSub.wsDiag().connectionsFailed, 0);
     ASSERT_EQ(pubSub.diag.messagesReceived, 3);
     ASSERT_EQ(pubSub.diag.listenResponses, 1);
+}
+
+TEST(TwitchPubSubClient, UnlistenResponseIsTrackedSeparately)
+{
+    PubSub pubSub("wss://127.0.0.1:9050", 1s);
+    PubSubClient client(pubSub, 1s);
+
+    const auto unlisten = client.encodeUnsubscription(
+        TopicData{.topic = "pinned-chat-updates-v1.123456"});
+    const auto unlistenObject = QJsonDocument::fromJson(unlisten).object();
+    const auto nonce = unlistenObject.value("nonce").toString();
+    ASSERT_FALSE(nonce.isEmpty());
+
+    client.onMessage(QJsonDocument(QJsonObject{
+                         {"type", "RESPONSE"},
+                         {"nonce", nonce},
+                         {"error", ""},
+                     })
+                         .toJson());
+
+    EXPECT_EQ(pubSub.diag.listenResponses, 0);
+    EXPECT_EQ(pubSub.diag.failedListenResponses, 0);
+    EXPECT_EQ(pubSub.diag.unlistenResponses, 1);
 }
 
 TEST(TwitchPubSubClient, ServerDoesntRespondToPings)

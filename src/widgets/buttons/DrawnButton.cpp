@@ -16,10 +16,8 @@ DrawnButton::DrawnButton(Symbol symbol_, Options options, BaseWidget *parent)
 {
     this->setContentCacheEnabled(true);
 
-    // Set user-defined options
     this->setOptions(options);
 
-    // Ensure symbol-specific options are initially set
     this->themeChangedEvent();
 }
 
@@ -53,12 +51,12 @@ void DrawnButton::themeChangedEvent()
 
             if (this->theme->isLightTheme())
             {
-                // TODO: This should use its own theme color (e.g. theme->button->regular)
+
                 o.foreground = QColor("#424242");
             }
             else
             {
-                // TODO: This should use its own theme color (e.g. theme->button->regular)
+
                 o.foreground = QColor("#c0c0c0");
             }
             o.foregroundHover = this->theme->messages.textColors.regular;
@@ -113,11 +111,6 @@ void DrawnButton::paintContent(QPainter &painter)
             inner.moveCenter(this->rect().center());
             inner = inner.marginsRemoved({padding, padding, padding, padding});
 
-            // make sure that the inner size is always odd:
-            // (width): [====outer====][|inner|][====outer====]
-            // -> 2 * outer_w + inner_w
-            // -> 2 * outer_w + 1dp
-            // -> odd
             if ((inner.width() % 2) == 0)
             {
                 inner.setRight(inner.right() + 1);
@@ -152,11 +145,9 @@ void DrawnButton::paintContent(QPainter &painter)
 
             painter.fillRect(centerBox, fg);
 
-            // NOTE: Technically a misuse of padding
             auto bottomBox = centerBox.translated(0, thickness + padding);
             painter.fillRect(bottomBox, fg);
 
-            // NOTE: Technically a misuse of padding
             auto topBox = centerBox.translated(0, -(thickness + padding));
             painter.fillRect(topBox, fg);
         }
@@ -217,4 +208,4 @@ QColor DrawnButton::getForegroundHover() const
     return v;
 }
 
-}  // namespace chatterino
+}

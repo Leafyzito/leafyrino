@@ -24,14 +24,13 @@ public:
     };
 
 protected:
-    // turn a vector item into a model row
+
     HighlightBlacklistUser getItemFromRow(
         std::vector<QStandardItem *> &row,
         const HighlightBlacklistUser &original) override;
 
-    // turns a row in the model into a vector item
     void getRowFromItem(const HighlightBlacklistUser &item,
                         std::vector<QStandardItem *> &row) override;
 };
 
-}  // namespace chatterino
+}

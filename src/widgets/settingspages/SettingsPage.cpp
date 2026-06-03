@@ -98,14 +98,12 @@ QCheckBox *SettingsPage::createCheckBox(
     QCheckBox *checkbox = new SCheckBox(text);
     checkbox->setToolTip(toolTipText);
 
-    // update when setting changes
     setting.connect(
         [checkbox](const bool &value, auto) {
             checkbox->setChecked(value);
         },
         this->managedConnections_);
 
-    // update setting on toggle
     QObject::connect(checkbox, &QCheckBox::toggled, this,
                      [&setting](bool state) {
                          setting = state;
@@ -120,10 +118,8 @@ QComboBox *SettingsPage::createComboBox(
 {
     QComboBox *combo = new SComboBox();
 
-    // update setting on toogle
     combo->addItems(items);
 
-    // update when setting changes
     setting.connect(
         [combo](const QString &value, auto) {
             combo->setCurrentText(value);
@@ -159,4 +155,4 @@ QSpinBox *SettingsPage::createSpinBox(pajlada::Settings::Setting<int> &setting,
     return w;
 }
 
-}  // namespace chatterino
+}

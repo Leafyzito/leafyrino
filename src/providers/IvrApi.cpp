@@ -99,6 +99,100 @@ void IvrApi::getUserRoles(QString userName,
         .execute();
 }
 
+void IvrApi::getModVip(
+    QString channelName,
+    ResultCallback<std::vector<HelixModerator>, std::vector<HelixVip>>
+        successCallback,
+    IvrFailureCallback failureCallback)
+{
+    this->getModVip(
+        std::move(channelName),
+        [successCallback = std::move(successCallback)](
+            const IvrModVip &modVip) mutable {
+            std::vector<HelixModerator> mods;
+            mods.reserve(modVip.mods.size());
+            for (const auto &entry : modVip.mods)
+            {
+                const auto obj = entry.toObject();
+                mods.emplace_back(QJsonObject{
+                    {"user_id", obj.value("id").toString()},
+                    {"user_login", obj.value("login").toString()},
+                    {"user_name", obj.value("displayName").toString()},
+                });
+            }
+
+            std::vector<HelixVip> vips;
+            vips.reserve(modVip.vips.size());
+            for (const auto &entry : modVip.vips)
+            {
+                const auto obj = entry.toObject();
+                vips.emplace_back(QJsonObject{
+                    {"user_id", obj.value("id").toString()},
+                    {"user_login", obj.value("login").toString()},
+                    {"user_name", obj.value("displayName").toString()},
+                });
+            }
+
+            successCallback(std::move(mods), std::move(vips));
+        },
+        std::move(failureCallback));
+}
+
+void IvrApi::getFounders(QString channelName,
+                         ResultCallback<std::vector<HelixModerator>>
+                             successCallback,
+                         IvrFailureCallback failureCallback)
+{
+    this->getFounders(
+        std::move(channelName),
+        [successCallback = std::move(successCallback)](
+            const QJsonArray &foundersArray) mutable {
+            std::vector<HelixModerator> founders;
+            founders.reserve(foundersArray.size());
+            for (const auto &entry : foundersArray)
+            {
+                const auto obj = entry.toObject();
+                founders.emplace_back(QJsonObject{
+                    {"user_id", obj.value("id").toString()},
+                    {"user_login", obj.value("login").toString()},
+                    {"user_name", obj.value("displayName").toString()},
+                });
+            }
+
+            successCallback(std::move(founders));
+        },
+        std::move(failureCallback));
+}
+
+void IvrApi::getUser(QString userName,
+                     ResultCallback<IvrUserProfile> successCallback,
+                     IvrFailureCallback failureCallback)
+{
+    assert(!userName.isEmpty());
+
+    QUrlQuery query;
+    query.addQueryItem("login", userName);
+
+    this->makeRequest("twitch/user", query)
+        .onSuccess([successCallback, failureCallback](auto result) {
+            const auto root = result.parseJsonArray();
+            if (root.isEmpty() || !root.first().isObject())
+            {
+                failureCallback();
+                return;
+            }
+
+            successCallback(IvrUserProfile(root.first().toObject()));
+        })
+        .onError([failureCallback](auto result) {
+            qCWarning(chatterinoIvr)
+                << "Failed IVR user API call!" << result.formatError()
+                << QString(result.getData());
+            failureCallback();
+        })
+        .execute();
+}
+
 NetworkRequest IvrApi::makeRequest(QString url, QUrlQuery urlQuery)
 {
     assert(!url.startsWith("/"));
@@ -125,4 +219,4 @@ IvrApi *getIvr()
     return instance;
 }
 
-}  // namespace chatterino
+}

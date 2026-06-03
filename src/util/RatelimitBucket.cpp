@@ -46,4 +46,4 @@ void RatelimitBucket::handleOne()
     });
 }
 
-}  // namespace chatterino
+}

@@ -50,7 +50,6 @@ FiltersPage::FiltersPage()
         view->getTableView()->setColumnWidth(2, 125);
     });
 
-    // We can safely ignore this signal connection since we own the view
     std::ignore = view->addButtonPressed.connect([this] {
         ChannelFilterEditorDialog d(this->window());
         if (d.exec() == QDialog::Accepted)
@@ -92,7 +91,7 @@ void FiltersPage::onShow()
 void FiltersPage::tableCellClicked(const QModelIndex &clicked,
                                    EditableModelView *view)
 {
-    // valid column
+
     if (clicked.column() == 2)
     {
         QMessageBox popup(this->window());
@@ -143,4 +142,4 @@ bool FiltersPage::filterElements(const QString &query)
     return this->view_->filterSearchResults(query, fields);
 }
 
-}  // namespace chatterino
+}

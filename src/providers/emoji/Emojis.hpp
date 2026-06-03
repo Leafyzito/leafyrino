@@ -21,18 +21,14 @@ struct Emote;
 using EmotePtr = std::shared_ptr<const Emote>;
 
 struct EmojiData {
-    // actual byte-representation of the emoji (i.e. \154075\156150 which is
-    // :male:)
+
     QString value;
 
-    // actual byte-representation of the non qualified emoji
     QString nonQualified;
 
-    // i.e. 204e-50a2
     QString unifiedCode;
     QString nonQualifiedCode;
 
-    // i.e. thinking
     std::vector<QString> shortCodes;
 
     QString category;
@@ -81,17 +77,13 @@ private:
 
     std::vector<EmojiPtr> emojis;
 
-    /// Emojis
     QRegularExpression findShortCodesRegex_{R"((?<!\w):(?:[-+\w]+):(?!\w))"};
 
-    // shortCodeToEmoji maps strings like "sunglasses" to its emoji
     QMap<QString, std::shared_ptr<EmojiData>> emojiShortCodeToEmoji_;
 
-    // Maps the first character of the emoji unicode string to a vector of
-    // possible emojis
     QMap<QChar, QVector<std::shared_ptr<EmojiData>>> emojiFirstByte_;
 
     bool loaded_ = false;
 };
 
-}  // namespace chatterino
+}

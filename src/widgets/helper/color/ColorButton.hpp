@@ -19,7 +19,6 @@ public:
 
     QColor color() const;
 
-    // NOLINTNEXTLINE(readability-redundant-access-specifiers)
 public Q_SLOTS:
     void setColor(const QColor &color);
 
@@ -34,4 +33,4 @@ private:
     bool checkerboardCacheValid_ = false;
 };
 
-}  // namespace chatterino
+}

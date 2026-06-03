@@ -75,7 +75,7 @@ bool logInWithCredentials(QWidget *parent, const QString &userID,
     return true;
 }
 
-}  // namespace
+}
 
 BasicLoginWidget::BasicLoginWidget()
 {
@@ -127,7 +127,6 @@ BasicLoginWidget::BasicLoginWidget()
         QStringList parameters = getClipboardText().split(";");
         QString oauthToken, clientID, username, userID;
 
-        // Removing clipboard content to prevent accidental paste of credentials into somewhere
         crossPlatformCopy("");
 
         for (const auto &param : parameters)
@@ -186,7 +185,6 @@ AdvancedLoginWidget::AdvancedLoginWidget()
 
     this->refreshButtons();
 
-    /// Form
     this->ui_.formLayout.addRow("Username", &this->ui_.usernameInput);
     this->ui_.formLayout.addRow("User ID", &this->ui_.userIDInput);
     this->ui_.formLayout.addRow("Client ID", &this->ui_.clientIDInput);
@@ -206,8 +204,6 @@ AdvancedLoginWidget::AdvancedLoginWidget()
     connect(&this->ui_.oauthTokenInput, &QLineEdit::textChanged, [this]() {
         this->refreshButtons();
     });
-
-    /// Upper button row
 
     this->ui_.buttonUpperRow.addUserButton.setText("Add user");
     this->ui_.buttonUpperRow.clearFieldsButton.setText("Clear fields");
@@ -281,4 +277,4 @@ LoginDialog::LoginDialog(QWidget *parent)
     this->ui_.mainLayout.addWidget(&this->ui_.buttonBox);
 }
 
-}  // namespace chatterino
+}

@@ -15,40 +15,26 @@ class Paths
 public:
     Paths();
 
-    // Root directory for the configuration files. %APPDATA%/chatterino or
-    // ExecutablePath for portable mode
     QString rootAppDataDirectory;
 
-    // Directory for settings files. Same as <appDataDirectory>/Settings
     QString settingsDirectory;
 
-    // Directory for message log files. Same as <appDataDirectory>/Logs
     QString messageLogDirectory;
 
-    // Directory for miscellaneous files. Same as <appDataDirectory>/Misc
     QString miscDirectory;
 
-    // Directory for crashdumps. Same as <appDataDirectory>/Crashes
     QString crashdumpDirectory;
 
-    // Hash of QCoreApplication::applicationFilePath()
     QString applicationFilePathHash;
 
-    // Profile avatars for Twitch <appDataDirectory>/ProfileAvatars/twitch
     QString twitchProfileAvatars;
 
-    // Plugin files live here. <appDataDirectory>/Plugins
     QString pluginsDirectory;
 
-    // Custom themes live here. <appDataDirectory>/Themes
     QString themesDirectory;
 
-    // Spell checking dictionaries <appDataDirectory>/Dictionaries
     QString dictionariesDirectory;
 
-    // Directory for shared memory files.
-    // <appDataDirectory>/IPC   on Windows
-    // /tmp                     elsewhere
     QString ipcDirectory;
 
     bool createFolder(const QString &folderPath);
@@ -57,9 +43,6 @@ public:
 
     QString cacheDirectory() const;
 
-    /// Returns the full file path for a file in the cache directory
-    ///
-    /// e.g. cacheFilePath("foo") will return <cacheDirectory>/foo
     QString cacheFilePath(const QString &fileName) const;
 
 private:
@@ -70,8 +53,7 @@ private:
 
     std::optional<bool> portable_;
 
-    // Directory for cache files. Same as <appDataDirectory>/Misc
     QString cacheDirectory_;
 };
 
-}  // namespace chatterino
+}

@@ -32,10 +32,6 @@ public:
 
     void removeConnection(WebSocketConnection *conn);
 
-    /// Attempts to shut down all connections by gracefully closing them.
-    ///
-    /// If the connections don't close within `timeout`, `false` is returned and
-    /// this pool should be leaked.
     bool tryShutdown(std::chrono::milliseconds timeout);
 
     std::unique_ptr<std::thread> ioThread;
@@ -53,4 +49,4 @@ public:
     OnceFlag shutdownFlag;
 };
 
-}  // namespace chatterino::ws::detail
+}

@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2018 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include "common/Aliases.hpp"
@@ -34,14 +30,9 @@ public:
 class ChatterinoBadges : public IChatterinoBadges
 {
 public:
-    /**
-     * Makes a network request to load Chatterino user badges
-     */
+
     ChatterinoBadges();
 
-    /**
-     * Returns the Chatterino badge for the given user
-     */
     std::optional<EmotePtr> getBadge(const UserId &id) override;
 
 private:
@@ -49,17 +40,9 @@ private:
 
     std::shared_mutex mutex_;
 
-    /**
-     * Maps Twitch user IDs to their badge index
-     * Guarded by mutex_
-     */
     std::unordered_map<QString, int> badgeMap;
 
-    /**
-     * Keeps a list of badges.
-     * Indexes in here are referred to by badgeMap
-     */
     std::vector<EmotePtr> emotes;
 };
 
-}  // namespace chatterino
+}

@@ -47,4 +47,4 @@ bool OnceFlag::isSet()
     return this->flag.load(std::memory_order::relaxed);
 }
 
-}  // namespace chatterino
+}

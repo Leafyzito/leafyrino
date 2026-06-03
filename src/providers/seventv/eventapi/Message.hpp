@@ -34,4 +34,4 @@ std::optional<InnerClass> Message::toInner()
 
 std::optional<Message> parseBaseMessage(const QByteArray &blob);
 
-}  // namespace chatterino::seventv::eventapi
+}

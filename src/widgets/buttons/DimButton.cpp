@@ -37,4 +37,4 @@ qreal DimButton::currentContentOpacity() const noexcept
     return 0.15;
 }
 
-}  // namespace chatterino
+}

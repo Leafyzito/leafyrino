@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2023 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include "controllers/completion/sources/Source.hpp"
@@ -13,11 +9,16 @@
 #include <memory>
 #include <vector>
 
+namespace chatterino {
+class Channel;
+}
+
 namespace chatterino::completion {
 
 struct CommandItem {
     QString name{};
     QString prefix{};
+    QString usage{};
 };
 
 class CommandSource : public Source
@@ -26,12 +27,9 @@ public:
     using ActionCallback = std::function<void(const QString &)>;
     using CommandStrategy = Strategy<CommandItem>;
 
-    /// @brief Initializes a source for CommandItems.
-    /// @param strategy Strategy to apply
-    /// @param callback ActionCallback to invoke upon InputCompletionItem selection.
-    /// See InputCompletionItem::action(). Can be nullptr.
     CommandSource(std::unique_ptr<CommandStrategy> strategy,
-                  ActionCallback callback = nullptr);
+                  ActionCallback callback = nullptr,
+                  const Channel *channel = nullptr);
 
     void update(const QString &query) override;
     void addToListModel(GenericListModel &model,
@@ -46,9 +44,10 @@ private:
 
     std::unique_ptr<CommandStrategy> strategy_;
     ActionCallback callback_;
+    const Channel *channel_ = nullptr;
 
     std::vector<CommandItem> items_{};
     std::vector<CommandItem> output_{};
 };
 
-}  // namespace chatterino::completion
+}

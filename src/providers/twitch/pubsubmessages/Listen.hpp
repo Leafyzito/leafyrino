@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2022 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include <QString>
@@ -10,7 +6,6 @@
 
 namespace chatterino {
 
-// PubSubListenMessage is an outgoing LISTEN message that is sent for the client to subscribe to a list of topics
 struct PubSubListenMessage {
     const std::vector<QString> topics;
 
@@ -25,4 +20,4 @@ struct PubSubListenMessage {
     QByteArray toJson() const;
 };
 
-}  // namespace chatterino
+}

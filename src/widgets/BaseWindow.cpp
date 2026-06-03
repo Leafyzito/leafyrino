@@ -46,14 +46,12 @@ using namespace chatterino;
 
 #ifdef USEWINSDK
 
-// From kHiddenTaskbarSize in Firefox
 constexpr UINT HIDDEN_TASKBAR_SIZE = 2;
 
 bool isWindows11OrGreater()
 {
     static const bool result = [] {
-        // This calls RtlGetVersion under the hood so we don't have to.
-        // The micro version corresponds to dwBuildNumber.
+
         auto version = QOperatingSystemVersion::current();
         return (version.majorVersion() > 10) ||
                (version.microVersion() >= 22000);
@@ -62,12 +60,11 @@ bool isWindows11OrGreater()
     return result;
 }
 
-/// Finds the taskbar HWND on a specific monitor (or any)
 HWND findTaskbarWindow(LPRECT rcMon = nullptr)
 {
     HWND taskbar = nullptr;
     RECT taskbarRect;
-    // return value of IntersectRect, unused
+
     RECT intersectionRect;
 
     while ((taskbar = FindWindowEx(nullptr, taskbar, L"Shell_TrayWnd",
@@ -75,13 +72,13 @@ HWND findTaskbarWindow(LPRECT rcMon = nullptr)
     {
         if (!rcMon)
         {
-            // no monitor was specified, return the first encountered window
+
             break;
         }
         if (GetWindowRect(taskbar, &taskbarRect) != 0 &&
             IntersectRect(&intersectionRect, &taskbarRect, rcMon) != 0)
         {
-            // taskbar intersects with the monitor - this is the one
+
             break;
         }
     }
@@ -89,7 +86,6 @@ HWND findTaskbarWindow(LPRECT rcMon = nullptr)
     return taskbar;
 }
 
-/// Gets the edge of the taskbar if it's automatically hidden
 std::optional<UINT> hiddenTaskbarEdge(LPRECT rcMon = nullptr)
 {
     HWND taskbar = findTaskbarWindow(rcMon);
@@ -117,11 +113,6 @@ std::optional<UINT> hiddenTaskbarEdge(LPRECT rcMon = nullptr)
     return pos.uEdge;
 }
 
-/// @brief Gets the window borders for @a hwnd
-///
-/// Each side of the returned RECT has the correct sign, so they can be added
-/// to a window rect.
-/// Shrinking by 1px would return {left: 1, top: 1, right: -1, left: -1}.
 RECT windowBordersFor(HWND hwnd, bool isMaximized)
 {
     RECT margins{0, 0, 0, 0};
@@ -129,15 +120,18 @@ RECT windowBordersFor(HWND hwnd, bool isMaximized)
     auto addBorders = isMaximized || isWindows11OrGreater();
     if (addBorders)
     {
-        // GetDpiForWindow and GetSystemMetricsForDpi are only supported on
-        // Windows 10 and later. Qt 6 requires Windows 10.
+
+#    if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         auto dpi = GetDpiForWindow(hwnd);
+#    endif
 
         auto systemMetric = [&](auto index) {
+#    if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             if (dpi != 0)
             {
                 return GetSystemMetricsForDpi(index, dpi);
             }
+#    endif
             return GetSystemMetrics(index);
         };
 
@@ -219,7 +213,7 @@ Qt::WindowFlags windowFlagsFor(FlagsEnum<BaseWindow::Flags> flags)
     return out;
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -305,7 +299,7 @@ void BaseWindow::init()
 #ifdef USEWINSDK
     if (this->hasCustomWindowFrame())
     {
-        // CUSTOM WINDOW FRAME
+
         auto *layout = new QVBoxLayout(this);
         this->ui_.windowLayout = layout;
         layout->setContentsMargins(0, 0, 0, 0);
@@ -318,7 +312,6 @@ void BaseWindow::init()
             buttonLayout->setContentsMargins(0, 0, 0, 0);
             layout->addLayout(buttonLayout);
 
-            // title
             Label *title = new Label;
             QObject::connect(this, &QWidget::windowTitleChanged,
                              [title](const QString &text) {
@@ -331,7 +324,6 @@ void BaseWindow::init()
             buttonLayout->addWidget(title);
             this->ui_.titleLabel = title;
 
-            // buttons
             auto *minButton = new TitleBarButton;
             minButton->setButtonStyle(TitleBarButtonStyle::Minimize);
             auto *maxButton = new TitleBarButton;
@@ -383,7 +375,6 @@ void BaseWindow::init()
     }
 #endif
 
-    // TopMost flag overrides setting
     if (!this->flags_.has(TopMost))
     {
         getSettings()->windowTopMost.connect(
@@ -440,8 +431,7 @@ void BaseWindow::tryApplyTopMost()
 
     if (this->parent())
     {
-        // Don't change the topmost value of child windows. This would apply
-        // to the top-level window too.
+
         return;
     }
 
@@ -547,10 +537,7 @@ bool BaseWindow::event(QEvent *event)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
     if (this->flags_.hasAny(DontFocus, Dialog, FramelessDraggable))
     {
-        // This certain windows (e.g. TooltipWidget, input completion widget, and the search popup) retains their nullptr parent
-        // NOTE that this currently does not retain their original transient parent (which is the window it was created under)
-        // For now, we haven't noticed that this creates any issues, and I don't know of a good place to store the previous transient
-        // parent to restore it.
+
         if (event->type() == QEvent::ParentWindowChange)
         {
             assert(this->windowHandle() != nullptr);
@@ -567,7 +554,7 @@ bool BaseWindow::event(QEvent *event)
 
 void BaseWindow::wheelEvent(QWheelEvent *event)
 {
-    // ignore horizontal mouse wheels
+
     if (event->angleDelta().x() != 0)
     {
         return;
@@ -750,7 +737,7 @@ bool BaseWindow::applyLastBoundsCheck()
 
 void BaseWindow::resizeEvent(QResizeEvent *)
 {
-    // Queue up save because: Window resized
+
     if (!this->flags_.has(DisableLayoutSave))
     {
         getApp()->getWindows()->queueSave();
@@ -764,7 +751,7 @@ void BaseWindow::resizeEvent(QResizeEvent *)
 
 void BaseWindow::moveEvent(QMoveEvent *event)
 {
-    // Queue up save because: Window position changed
+
 #ifdef CHATTERINO
     if (!this->flags_.has(DisableLayoutSave))
     {
@@ -800,8 +787,13 @@ void BaseWindow::showEvent(QShowEvent *)
 #endif
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 bool BaseWindow::nativeEvent(const QByteArray &eventType, void *message,
                              qintptr *result)
+#else
+bool BaseWindow::nativeEvent(const QByteArray &eventType, void *message,
+                             long *result)
+#endif
 {
 #ifdef USEWINSDK
     MSG *msg = reinterpret_cast<MSG *>(message);
@@ -838,14 +830,10 @@ bool BaseWindow::nativeEvent(const QByteArray &eventType, void *message,
 
         case WM_NCMOUSEHOVER:
         case WM_NCMOUSEMOVE: {
-            // WM_NCMOUSEMOVE/WM_NCMOUSEHOVER gets sent when the mouse is
-            // moving/hovering in the non-client area
-            // - (mostly) the edges and the titlebar.
-            // We only need to handle the event for the titlebar buttons,
-            // as Qt doesn't create mouse events for these events.
+
             if (!this->ui_.titlebarButtons)
             {
-                // we don't consume the event if we don't have custom buttons
+
                 break;
             }
 
@@ -861,7 +849,6 @@ bool BaseWindow::nativeEvent(const QByteArray &eventType, void *message,
                 globalPos /= this->devicePixelRatio();
                 globalPos = this->mapToGlobal(globalPos);
 
-                // TODO(nerix): use TrackMouseEvent here
                 this->ui_.titlebarButtons->hover(msg->wParam, globalPos);
                 this->lastEventWasNcMouseMove_ = true;
             }
@@ -878,14 +865,11 @@ bool BaseWindow::nativeEvent(const QByteArray &eventType, void *message,
                 break;
             }
             this->lastEventWasNcMouseMove_ = false;
-            // Windows doesn't send WM_NCMOUSELEAVE in some cases,
-            // so the buttons show as hovered even though they're not hovered.
+
             [[fallthrough]];
         }
         case WM_NCMOUSELEAVE: {
-            // WM_NCMOUSELEAVE gets sent when the mouse leaves any
-            // non-client area. In case we have titlebar buttons,
-            // we want to ensure they're deselected.
+
             if (this->ui_.titlebarButtons)
             {
                 this->ui_.titlebarButtons->leave();
@@ -896,7 +880,7 @@ bool BaseWindow::nativeEvent(const QByteArray &eventType, void *message,
         case WM_DPICHANGED: {
             if (this->flags_.has(ClearBuffersOnDpiChange))
             {
-                // wait for Qt to process this message
+
                 postToThread([] {
                     getApp()->getWindows()->invalidateChannelViewBuffers();
                 });
@@ -906,10 +890,7 @@ bool BaseWindow::nativeEvent(const QByteArray &eventType, void *message,
 
         case WM_NCLBUTTONDOWN:
         case WM_NCLBUTTONUP: {
-            // WM_NCLBUTTON{DOWN, UP} gets called when the left mouse button
-            // was pressed in a non-client area.
-            // We simulate a mouse down/up event for the titlebar buttons
-            // as Qt doesn't create an event in that case.
+
             if (!this->ui_.titlebarButtons || !isHoveringTitlebarButton())
             {
                 break;
@@ -990,7 +971,6 @@ void BaseWindow::updateScale()
     BaseWindow::applyScaleRecursive(this, scale);
 }
 
-// NOLINTNEXTLINE(misc-no-recursion)
 void BaseWindow::applyScaleRecursive(QObject *root, float scale)
 {
     for (QObject *obj : root->children())
@@ -1001,7 +981,7 @@ void BaseWindow::applyScaleRecursive(QObject *root, float scale)
             auto *window = dynamic_cast<BaseWindow *>(obj);
             if (window)
             {
-                // stop here, the window will get the event as well (via uiScale)
+
                 continue;
             }
             base->setScale(scale);
@@ -1064,10 +1044,7 @@ void BaseWindow::drawCustomWindowFrame(QPainter &painter)
         }
         else
         {
-            // Draw a border that's exactly 1px wide
-            //
-            // There is a bug where the border can get <dpr>px wide while dragging.
-            // this "fixes" itself when deselecting the window.
+
             auto dpr = this->devicePixelRatio();
             if (dpr != 1)
             {
@@ -1092,7 +1069,7 @@ void BaseWindow::drawCustomWindowFrame(QPainter &painter)
 bool BaseWindow::handleSHOWWINDOW(MSG *msg)
 {
 #ifdef USEWINSDK
-    // ignore window hide event
+
     if (!msg->wParam)
     {
         return true;
@@ -1104,7 +1081,7 @@ bool BaseWindow::handleSHOWWINDOW(MSG *msg)
 
         if (this->hasCustomWindowFrame())
         {
-            // disable OS window border
+
             const MARGINS margins = {-1};
             DwmExtendFrameIntoClientArea(msg->hwnd, &margins);
         }
@@ -1125,7 +1102,11 @@ bool BaseWindow::handleSHOWWINDOW(MSG *msg)
 #endif
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 bool BaseWindow::handleNCCALCSIZE(MSG *msg, qintptr *result)
+#else
+bool BaseWindow::handleNCCALCSIZE(MSG *msg, long *result)
+#endif
 {
 #ifdef USEWINSDK
     if (!this->hasCustomWindowFrame())
@@ -1156,20 +1137,11 @@ bool BaseWindow::handleNCCALCSIZE(MSG *msg, qintptr *result)
     if (borders.left != 0 || borders.top != 0 || borders.right != 0 ||
         borders.bottom != 0)
     {
-        // We added borders -> we changed the rect, so we can't return
-        // WVR_VALIDRECTS
+
         *result = 0;
         return true;
     }
 
-    // This is an attempt at telling Windows to not redraw (or at least to do a
-    // better job at redrawing) the window. There is a long list of tricks
-    // people tried to prevent this at
-    // https://stackoverflow.com/q/53000291/16300717
-    //
-    // We set the source and destination rectangles to a 1x1 rectangle at the
-    // top left. Windows is instructed by WVR_VALIDRECTS to copy and preserve
-    // some parts of the window image.
     QPoint fixed = {r->left, r->top};
     params->rgrc[1] = {fixed.x(), fixed.y(), fixed.x() + 1, fixed.y() + 1};
     params->rgrc[2] = {fixed.x(), fixed.y(), fixed.x() + 1, fixed.y() + 1};
@@ -1188,7 +1160,7 @@ bool BaseWindow::handleSIZE(MSG *msg)
     {
         if (this->frameless_)
         {
-            //
+
         }
         else if (this->hasCustomWindowFrame())
         {
@@ -1196,8 +1168,7 @@ bool BaseWindow::handleSIZE(MSG *msg)
 
             if (this->isNotMinimizedOrMaximized_)
             {
-                // Wait for WM_SIZE to be processed by Qt and update the current
-                // bounds afterwards.
+
                 postToThread([this] {
                     this->currentBounds_ = this->geometry();
                 });
@@ -1206,8 +1177,7 @@ bool BaseWindow::handleSIZE(MSG *msg)
 
             if (msg->wParam == SIZE_MINIMIZED && this->ui_.titlebarButtons)
             {
-                // Windows doesn't send a WM_NCMOUSELEAVE event when clicking
-                // the minimize button, so we have to emulate it.
+
                 this->ui_.titlebarButtons->leave();
             }
 
@@ -1229,18 +1199,21 @@ bool BaseWindow::handleMOVE(MSG *msg)
 #ifdef USEWINSDK
     if (this->isNotMinimizedOrMaximized_)
     {
-        // Wait for WM_SIZE (in case the window was maximized, we don't want to
-        // save the bounds but keep the old ones)
+
         this->useNextBounds_.start(10);
     }
 #endif
     return false;
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 bool BaseWindow::handleNCHITTEST(MSG *msg, qintptr *result)
+#else
+bool BaseWindow::handleNCHITTEST(MSG *msg, long *result)
+#endif
 {
 #ifdef USEWINSDK
-    const LONG borderWidth = 8;  // in device independent pixels
+    const LONG borderWidth = 8;
 
     auto rect = this->rect();
 
@@ -1264,12 +1237,12 @@ bool BaseWindow::handleNCHITTEST(MSG *msg, qintptr *result)
 
         if (resizeWidth)
         {
-            // left border
+
             if (x < rect.left() + borderWidth)
             {
                 *result = HTLEFT;
             }
-            // right border
+
             if (x >= rect.right() - borderWidth)
             {
                 *result = HTRIGHT;
@@ -1277,12 +1250,12 @@ bool BaseWindow::handleNCHITTEST(MSG *msg, qintptr *result)
         }
         if (resizeHeight)
         {
-            // bottom border
+
             if (y >= rect.bottom() - borderWidth)
             {
                 *result = HTBOTTOM;
             }
-            // top border
+
             if (y < rect.top() + borderWidth)
             {
                 *result = HTTOP;
@@ -1290,25 +1263,25 @@ bool BaseWindow::handleNCHITTEST(MSG *msg, qintptr *result)
         }
         if (resizeWidth && resizeHeight)
         {
-            // bottom left corner
+
             if (x >= rect.left() && x < rect.left() + borderWidth &&
                 y < rect.bottom() && y >= rect.bottom() - borderWidth)
             {
                 *result = HTBOTTOMLEFT;
             }
-            // bottom right corner
+
             if (x < rect.right() && x >= rect.right() - borderWidth &&
                 y < rect.bottom() && y >= rect.bottom() - borderWidth)
             {
                 *result = HTBOTTOMRIGHT;
             }
-            // top left corner
+
             if (x >= rect.left() && x < rect.left() + borderWidth &&
                 y >= rect.top() && y < rect.top() + borderWidth)
             {
                 *result = HTTOPLEFT;
             }
-            // top right corner
+
             if (x < rect.right() && x >= rect.right() - borderWidth &&
                 y >= rect.top() && y < rect.top() + borderWidth)
             {
@@ -1318,13 +1291,12 @@ bool BaseWindow::handleNCHITTEST(MSG *msg, qintptr *result)
 
         if (*result == 0)
         {
-            // Check the main layout first, as it's the largest area
+
             if (this->ui_.layoutBase->geometry().contains(point))
             {
                 *result = HTCLIENT;
             }
 
-            // Check the titlebar buttons
             if (*result == 0 &&
                 this->ui_.titlebarBox->geometry().contains(point))
             {
@@ -1420,7 +1392,6 @@ bool BaseWindow::handleNCHITTEST(MSG *msg, qintptr *result)
         return true;
     }
 
-    // don't handle the message
     return false;
 #else
     return false;
@@ -1438,4 +1409,4 @@ std::optional<HWND> BaseWindow::safeHWND() const
 }
 #endif
 
-}  // namespace chatterino
+}

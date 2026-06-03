@@ -8,7 +8,7 @@
 
 namespace chatterino {
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 Account::Account(ProviderId providerId)
     : providerId_(providerId)
@@ -45,4 +45,4 @@ bool Account::operator<(const Account &other) const
     return std::tie(this->category_, a) < std::tie(other.category_, b);
 }
 
-}  // namespace chatterino
+}

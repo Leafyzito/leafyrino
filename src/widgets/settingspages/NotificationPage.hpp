@@ -19,4 +19,4 @@ private:
     QComboBox *createToastReactionComboBox();
 };
 
-}  // namespace chatterino
+}

@@ -42,4 +42,4 @@ private:
     QSize customSize;
 };
 
-}  // namespace chatterino
+}

@@ -22,7 +22,6 @@ namespace chatterino {
 
 namespace {
 
-/// Returns a list of available dictionaries in the given directory
 std::vector<DictionaryInfo> loadDictionariesFromDirectory(
     const QDir &searchDirectory, bool isSystem)
 {
@@ -75,7 +74,7 @@ QString resolveDictionaryPath(const QString &path)
     return combinePath(getApp()->getPaths().dictionariesDirectory, path);
 }
 
-}  // namespace
+}
 
 class SpellCheckerPrivate
 {
@@ -83,7 +82,6 @@ public:
     static std::unique_ptr<SpellCheckerPrivate> tryLoad(
         const QString &path = {});
 
-    /// NOTE: To support multiple dictionaries at the same time, it seems like we need to store a list of Hunspell instances, each supporting a single dictionary, and then during the spell checking process check each hunspell instance.
     Hunspell hunspell;
 
 private:
@@ -155,7 +153,6 @@ bool SpellChecker::isLoaded() const
     return this->private_ != nullptr;
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 bool SpellChecker::check(const QString &word)
 {
 #ifdef CHATTERINO_WITH_SPELLCHECK
@@ -171,7 +168,6 @@ bool SpellChecker::check(const QString &word)
 #endif
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 std::vector<std::string> SpellChecker::suggestions(const QString &word)
 {
 #ifdef CHATTERINO_WITH_SPELLCHECK
@@ -193,7 +189,6 @@ std::vector<std::string> SpellChecker::suggestions(const QString &word)
 #endif
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 std::vector<DictionaryInfo> SpellChecker::getAvailableDictionaries() const
 {
 #ifdef CHATTERINO_WITH_SPELLCHECK
@@ -202,9 +197,6 @@ std::vector<DictionaryInfo> SpellChecker::getAvailableDictionaries() const
     };
 
 #    if defined(Q_OS_UNIX) and !defined(Q_OS_DARWIN)
-    // For each XDG data directory, search in hunspell, myspell, and myspell/dicts.
-    // This somewhat matches where dictionaries are stored on Ubuntu & Fedora
-    // if we want to support defaulting to your LC_ALL language.
 
     auto dataDirs = getXDGBaseDirectories(XDGDirectoryType::Data);
     for (const auto &dataDir : dataDirs)
@@ -228,12 +220,7 @@ std::vector<DictionaryInfo> SpellChecker::getAvailableDictionaries() const
         {
             if (dict.isSymbolicLink && dict.isSystem)
             {
-                // NOTE: We currently filter out symbolic links from system-loaded dictionaries.
-                // Without this, the list of dictionaries we "support" would be too high on Linux distros.
-                // As an example, this is the symlinks the installation of `hunspell-en-gb` creates on Arch Linux:
-                // - en_AG.aff -> en_GB-large.aff
-                // -  ...
-                // - en_GB-large.aff
+
                 continue;
             }
             auto name = [&] -> QString {
@@ -265,4 +252,4 @@ std::vector<DictionaryInfo> SpellChecker::getAvailableDictionaries() const
 #endif
 }
 
-}  // namespace chatterino
+}

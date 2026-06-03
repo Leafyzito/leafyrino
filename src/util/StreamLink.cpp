@@ -88,14 +88,14 @@ QProcess *createStreamlinkProcess()
         p,
         static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(
             &QProcess::finished),
-        [=](int /*exitCode*/, QProcess::ExitStatus /*exitStatus*/) {
+        [=](int , QProcess::ExitStatus ) {
             p->deleteLater();
         });
 
     return p;
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -108,11 +108,11 @@ void getStreamQualities(const QString &channelURL,
         p,
         static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(
             &QProcess::finished),
-        [=](int exitCode, QProcess::ExitStatus /*exitStatus*/) {
+        [=](int exitCode, QProcess::ExitStatus ) {
             if (exitCode != 0)
             {
                 qCWarning(chatterinoStreamlink) << "Got error code" << exitCode;
-                // return;
+
             }
             QString lastLine = QString(p->readAllStandardOutput());
             lastLine = lastLine.trimmed().split('\n').last().trimmed();
@@ -127,12 +127,9 @@ void getStreamQualities(const QString &channelURL,
                     QString option = split.at(i);
                     if (option == "best)")
                     {
-                        // As it turns out, sometimes, one quality option can
-                        // be the best and worst quality at the same time.
-                        // Since we start loop from the end, we can check
-                        // that and act accordingly
+
                         option = split.at(--i);
-                        // "900p60 (worst"
+
                         options << option.left(option.length() - 7);
                     }
                     else if (option.endsWith(" (worst)"))
@@ -166,8 +163,6 @@ void openStreamlink(const QString &channelURL, const QString &quality,
     auto arguments = proc->arguments()
                      << std::move(extraArguments) << channelURL << quality;
 
-    // Remove empty arguments before appending additional streamlink options
-    // as the options might purposely contain empty arguments
     arguments.removeAll(QString());
 
     QString additionalOptions = getSettings()->streamlinkOpts.getValue();
@@ -216,9 +211,8 @@ void openStreamlinkForChannel(const QString &channel, QStringView prefixURL)
 
     QStringList args;
 
-    // Quality converted from Chatterino format to Streamlink format
     QString quality;
-    // Streamlink qualities to exclude
+
     QString exclude;
 
     if (preferredQuality == StreamLinkPreferredQuality::High)
@@ -252,4 +246,4 @@ void openStreamlinkForChannel(const QString &channel, QStringView prefixURL)
     openStreamlink(channelURL, quality, args);
 }
 
-}  // namespace chatterino
+}

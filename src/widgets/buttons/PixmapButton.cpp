@@ -6,15 +6,6 @@
 
 namespace {
 
-/**
- * Resizes a pixmap to a desired size.
- * Does nothing if the target pixmap is already sized correctly.
- * 
- * @param target The target pixmap.
- * @param source The unscaled pixmap.
- * @param size The desired device independent size.
- * @param dpr The device pixel ratio of the target area. The size of the target in pixels will be `size * dpr`.
- */
 void resizePixmap(QPixmap &target, const QPixmap &source, const QSize &size,
                   qreal dpr)
 {
@@ -29,7 +20,7 @@ void resizePixmap(QPixmap &target, const QPixmap &source, const QSize &size,
                             Qt::SmoothTransformation);
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -45,7 +36,7 @@ QPixmap PixmapButton::pixmap() const
 
 void PixmapButton::setPixmap(const QPixmap &pixmap)
 {
-    // Avoid updates if the pixmap didn't change
+
     if (pixmap.cacheKey() == this->pixmap_.cacheKey())
     {
         return;
@@ -99,4 +90,4 @@ void PixmapButton::paintContent(QPainter &painter)
     painter.setOpacity(1);
 }
 
-}  // namespace chatterino
+}

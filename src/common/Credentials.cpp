@@ -22,7 +22,11 @@
 
 #ifndef NO_QTKEYCHAIN
 #    ifdef CMAKE_BUILD
-#        include "qt6keychain/keychain.h"
+#        if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#            include "qt6keychain/keychain.h"
+#        else
+#            include "qt5keychain/keychain.h"
+#        endif
 #    else
 #        include <qtkeychain/keychain.h>
 #    endif
@@ -55,7 +59,6 @@ bool useKeyring()
 #endif
 }
 
-// Insecure storage:
 QString insecurePath()
 {
     return combinePath(getApp()->getPaths().settingsDirectory,
@@ -104,8 +107,6 @@ void queueInsecureSave()
     }
 }
 
-// QKeychain runs jobs asyncronously, so we have to assure that set/erase
-// jobs gets executed in order.
 struct SetJob {
     QString name;
     QString credential;
@@ -130,7 +131,6 @@ void runNextJob()
 
     if (!queue.empty())
     {
-        // we were gonna use std::visit here but macos is shit
 
         auto &&item = queue.front();
 
@@ -176,7 +176,7 @@ void queueJob(Job &&job)
     }
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -186,7 +186,6 @@ Credentials &Credentials::instance()
     return creds;
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void Credentials::get(const QString &provider, const QString &name_,
                       QObject *receiver,
                       std::function<void(const QString &)> &&onLoaded)
@@ -198,7 +197,7 @@ void Credentials::get(const QString &provider, const QString &name_,
     if (useKeyring())
     {
 #ifndef NO_QTKEYCHAIN
-        // if NO_QTKEYCHAIN is set, then this code is never used either way
+
         auto *job = new QKeychain::ReadPasswordJob("chatterino");
         job->setAutoDelete(true);
         job->setKey(name);
@@ -219,14 +218,10 @@ void Credentials::get(const QString &provider, const QString &name_,
     }
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void Credentials::set(const QString &provider, const QString &name_,
                       const QString &credential)
 {
     assertInGuiThread();
-
-    /// On linux, we try to use a keychain but show a message to disable it when it fails.
-    /// XXX: add said message
 
     auto name = formatName(provider, name_);
 
@@ -246,7 +241,6 @@ void Credentials::set(const QString &provider, const QString &name_,
     }
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void Credentials::erase(const QString &provider, const QString &name_)
 {
     assertInGuiThread();
@@ -271,4 +265,4 @@ void Credentials::erase(const QString &provider, const QString &name_)
     }
 }
 
-}  // namespace chatterino
+}

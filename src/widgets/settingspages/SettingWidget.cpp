@@ -5,10 +5,9 @@
 #include "widgets/settingspages/SettingWidget.hpp"
 
 #include "common/QLogging.hpp"
-#include "singletons/NativeMessaging.hpp"
-#include "singletons/Settings.hpp"  // IWYU pragma: keep
+#include "singletons/Settings.hpp"
 #include "util/QMagicEnumTagged.hpp"
-#include "util/RapidJsonSerializeQString.hpp"  // IWYU pragma: keep
+#include "util/RapidJsonSerializeQString.hpp"
 #include "widgets/dialogs/ColorPickerDialog.hpp"
 #include "widgets/helper/color/ColorButton.hpp"
 #include "widgets/settingspages/CustomWidgets.hpp"
@@ -20,12 +19,6 @@
 #include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
-#include <QPixmap>
-#include <QSvgRenderer>
-#include <QSvgWidget>
-#include <Qt>
-
-#include <algorithm>
 
 namespace {
 
@@ -35,13 +28,12 @@ const auto MAX_TOOLTIP_LINE_LENGTH_PATTERN =
 const QRegularExpression MAX_TOOLTIP_LINE_LENGTH_REGEX(
     MAX_TOOLTIP_LINE_LENGTH_PATTERN);
 
-}  // namespace
+}
 
 namespace chatterino {
 
 SettingWidget::SettingWidget(const QString &mainKeyword)
-    : tooltipIcon(new QSvgWidget(this))
-    , vLayout(new QVBoxLayout(this))
+    : vLayout(new QVBoxLayout(this))
     , hLayout(new QHBoxLayout)
 {
     this->vLayout->setContentsMargins(0, 0, 0, 0);
@@ -50,7 +42,6 @@ SettingWidget::SettingWidget(const QString &mainKeyword)
     this->vLayout->addLayout(this->hLayout);
 
     this->keywords.append(mainKeyword);
-    this->tooltipIcon->setVisible(false);
 }
 
 SettingWidget *SettingWidget::checkbox(const QString &label,
@@ -61,17 +52,13 @@ SettingWidget *SettingWidget::checkbox(const QString &label,
     auto *check = new SCheckBox(label);
 
     widget->hLayout->addWidget(check);
-    widget->hLayout->addWidget(widget->tooltipIcon);
-    widget->hLayout->addStretch(1);
 
-    // update when setting changes
     setting.connect(
         [check](const bool &value) {
             check->setChecked(value);
         },
         widget->managedConnections);
 
-    // update setting on toggle
     QObject::connect(check, &QCheckBox::toggled, widget,
                      [&setting](bool state) {
                          setting = state;
@@ -91,17 +78,13 @@ SettingWidget *SettingWidget::inverseCheckbox(const QString &label,
     auto *check = new SCheckBox(label);
 
     widget->hLayout->addWidget(check);
-    widget->hLayout->addWidget(widget->tooltipIcon);
-    widget->hLayout->addStretch(1);
 
-    // update when setting changes
     setting.connect(
         [check](const bool &value) {
             check->setChecked(!value);
         },
         widget->managedConnections);
 
-    // update setting on toggle
     QObject::connect(check, &QCheckBox::toggled, widget,
                      [&setting](bool state) {
                          setting = !state;
@@ -122,8 +105,6 @@ SettingWidget *SettingWidget::customCheckbox(
     auto *check = new SCheckBox(label);
 
     widget->hLayout->addWidget(check);
-    widget->hLayout->addWidget(widget->tooltipIcon);
-    widget->hLayout->addStretch(1);
 
     check->setChecked(initialValue);
 
@@ -162,18 +143,15 @@ SettingWidget *SettingWidget::intInput(const QString &label,
     }
 
     widget->hLayout->addWidget(lbl);
-    widget->hLayout->addWidget(widget->tooltipIcon);
     widget->hLayout->addStretch(1);
     widget->hLayout->addWidget(input);
 
-    // update when setting changes
     setting.connect(
         [input](const int &value, const auto &) {
             input->setValue(value);
         },
         widget->managedConnections);
 
-    // update setting on value changed
     QObject::connect(input, QOverload<int>::of(&QSpinBox::valueChanged), widget,
                      [&setting](int newValue) {
                          setting = newValue;
@@ -201,14 +179,12 @@ SettingWidget *SettingWidget::dropdown(const QString &label,
                        QVariant(static_cast<std::underlying_type_t<T>>(value)));
     }
 
-    // TODO: this can probably use some other size hint/size strategy
     combo->setMinimumWidth(combo->minimumSizeHint().width() + 30);
 
     widget->actionWidget = combo;
     widget->label = lbl;
 
     widget->hLayout->addWidget(lbl);
-    widget->hLayout->addWidget(widget->tooltipIcon);
     widget->hLayout->addStretch(1);
     widget->hLayout->addWidget(combo);
 
@@ -279,14 +255,12 @@ SettingWidget *SettingWidget::dropdown(const QString &label,
                        QVariant(static_cast<std::underlying_type_t<T>>(value)));
     }
 
-    // TODO: this can probably use some other size hint/size strategy
     combo->setMinimumWidth(combo->minimumSizeHint().width() + 30);
 
     widget->actionWidget = combo;
     widget->label = lbl;
 
     widget->hLayout->addWidget(lbl);
-    widget->hLayout->addWidget(widget->tooltipIcon);
     widget->hLayout->addStretch(1);
     widget->hLayout->addWidget(combo);
 
@@ -358,14 +332,12 @@ SettingWidget *SettingWidget::dropdown(
         combo->addItem(itemText, itemData);
     }
 
-    // TODO: this can probably use some other size hint/size strategy
     combo->setMinimumWidth(combo->minimumSizeHint().width() + 30);
 
     widget->actionWidget = combo;
     widget->label = lbl;
 
     widget->hLayout->addWidget(lbl);
-    widget->hLayout->addWidget(widget->tooltipIcon);
     widget->hLayout->addStretch(1);
     widget->hLayout->addWidget(combo);
 
@@ -398,7 +370,7 @@ SettingWidget *SettingWidget::dropdown(
         widget->managedConnections);
 
     QObject::connect(combo, &QComboBox::currentTextChanged,
-                     [label, combo, &setting](const auto & /*newText*/) {
+                     [label, combo, &setting](const auto & ) {
                          auto stringValue = combo->currentData().toString();
 
                          setting.setValue(stringValue);
@@ -418,11 +390,9 @@ SettingWidget *SettingWidget::colorButton(const QString &label,
     auto *colorButton = new ColorButton(color);
 
     widget->hLayout->addWidget(lbl);
-    widget->hLayout->addWidget(widget->tooltipIcon);
     widget->hLayout->addStretch(1);
     widget->hLayout->addWidget(colorButton);
 
-    // update when setting changes
     setting.connect(
         [colorButton](const QString &value, const auto &) {
             colorButton->setColor(QColor(value));
@@ -431,8 +401,7 @@ SettingWidget *SettingWidget::colorButton(const QString &label,
 
     QObject::connect(colorButton, &ColorButton::clicked, [widget, &setting]() {
         auto *dialog = new ColorPickerDialog(QColor(setting), widget);
-        // colorButton & setting are never deleted and the signal is deleted
-        // once the dialog is closed
+
         QObject::connect(
             dialog, &ColorPickerDialog::colorConfirmed, widget,
             [&setting](auto selected) {
@@ -466,18 +435,13 @@ SettingWidget *SettingWidget::lineEdit(const QString &label,
     }
 
     widget->hLayout->addWidget(lbl);
-    widget->hLayout->addWidget(widget->tooltipIcon);
     widget->hLayout->addWidget(edit);
 
-    // Update the setting when the widget changes.
     QObject::connect(edit, &QLineEdit::textChanged,
                      [&setting](const QString &newValue) {
                          setting = newValue;
                      });
 
-    // Update the widget to reflect the new setting value if the setting changes
-    // This _will_ fire every time the widget changes, so we are being conservative
-    // with the `setText` call to ensure the user doesn't get their cursor bounced around.
     setting.connect(
         [edit](const QString &value) {
             if (edit->text() != value)
@@ -505,7 +469,6 @@ SettingWidget *SettingWidget::fontButton(const QString &label,
     auto *button = new SPushButton(currentFont().family());
 
     widget->hLayout->addWidget(lbl);
-    widget->hLayout->addWidget(widget->tooltipIcon);
     widget->hLayout->addStretch(1);
     widget->hLayout->addWidget(button);
 
@@ -539,33 +502,19 @@ SettingWidget *SettingWidget::setTooltip(QString tooltip)
 
     if (tooltip.length() > MAX_TOOLTIP_LINE_LENGTH)
     {
-        // match MAX_TOOLTIP_LINE_LENGTH characters, any remaining
-        // non-space, and then capture the following space for
-        // replacement with newline
+
         tooltip.replace(MAX_TOOLTIP_LINE_LENGTH_REGEX, "\n");
     }
 
-    int sz = 0;
     if (this->label != nullptr)
     {
         this->label->setToolTip(tooltip);
-        sz = this->label->sizeHint().height();
     }
 
     if (this->actionWidget != nullptr)
     {
         this->actionWidget->setToolTip(tooltip);
-        sz = std::max(sz, this->actionWidget->sizeHint().height());
     }
-
-    this->tooltipIcon->setVisible(true);
-    this->tooltipIcon->load(u":/settings/hint.svg"_qs);
-    this->tooltipIcon->setToolTip(tooltip);
-    auto *r = this->tooltipIcon->renderer();
-    auto vb = r->viewBox();
-    this->tooltipIcon->setFixedHeight(sz);
-    this->tooltipIcon->setFixedWidth(
-        int(double(sz) / double(vb.height()) * double(vb.width())));
 
     this->keywords.append(tooltip);
 
@@ -652,4 +601,4 @@ void SettingWidget::registerWidget(GeneralPageView &view)
     view.registerWidget(this->actionWidget, this->keywords, this);
 }
 
-}  // namespace chatterino
+}

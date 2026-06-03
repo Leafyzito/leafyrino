@@ -101,11 +101,9 @@ public:
 private:
     QString sessionID;
 
-    /// The Twitch User ID that's attached to all subscriptions of this connection.
-    /// If no subscriptions are attached yet, this is an empty string, meaning it's open for any subscription.
     QString twitchUserID;
 
     std::unordered_set<SubscriptionRequest> subscriptions;
 };
 
-}  // namespace chatterino::eventsub
+}

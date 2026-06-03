@@ -24,7 +24,7 @@ struct Command {
     QString toString() const;
 };
 
-}  // namespace chatterino
+}
 
 namespace pajlada {
 
@@ -81,4 +81,4 @@ struct Deserialize<chatterino::Command> {
     }
 };
 
-}  // namespace pajlada
+}

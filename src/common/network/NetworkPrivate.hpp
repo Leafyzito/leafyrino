@@ -45,7 +45,7 @@ public:
     QPointer<QObject> caller;
     bool cache{};
     bool executeConcurrently{};
-    /// Hide the request body in logs
+
     bool hideRequestBody = false;
 
     NetworkSuccessCallback onSuccess;
@@ -57,11 +57,9 @@ public:
     QByteArray payload;
     std::unique_ptr<QHttpMultiPart, DeleteLater> multiPartPayload;
 
-    /// By default, there's no explicit timeout for the request.
-    /// To set a timeout, use NetworkRequest's timeout method
     std::optional<std::chrono::milliseconds> timeout{};
 #ifndef NDEBUG
-    bool ignoreSslErrors = false;  // for local eventsub
+    bool ignoreSslErrors = false;
 #endif
 
     QString getHash();
@@ -78,4 +76,4 @@ private:
 
 void load(std::shared_ptr<NetworkData> &&data);
 
-}  // namespace chatterino
+}

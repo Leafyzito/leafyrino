@@ -56,22 +56,11 @@ public:
         return bool(this->itemCompare_);
     }
 
-    /// A read-only version of the vector which can be used concurrently.
     std::shared_ptr<const std::vector<T>> readOnly()
     {
         return this->readOnly_;
     }
 
-    /// This may only be called from the GUI thread.
-    ///
-    ///	@param item
-    /// 	Item to be inserted.
-    /// @param proposedIndex
-    /// 	Index to insert at. `-1` will append at the end.
-    ///		Will be ignored if the vector is sorted.
-    /// @param caller
-    ///     Caller id which will be passed in the itemInserted and itemRemoved
-    /// 	signals.
     int insert(const T &item, int index = -1, void *caller = nullptr)
     {
         assertInGuiThread();
@@ -105,13 +94,6 @@ public:
         return index;
     }
 
-    /// This may only be called from the GUI thread.
-    ///
-    ///	@param item
-    /// 	Item to be appended.
-    /// @param caller
-    ///     Caller id which will be passed in the itemInserted and itemRemoved
-    /// 	signals.
     int append(const T &item, void *caller = nullptr)
     {
         assertInGuiThread();
@@ -165,7 +147,6 @@ public:
         return *this->readOnly();
     }
 
-    // mirror vector functions
     auto begin() const
     {
         assertInGuiThread();
@@ -193,13 +174,12 @@ public:
 private:
     void itemsChanged_()
     {
-        // emit delayed event
+
         if (!this->itemsChangedTimer_.isActive())
         {
             this->itemsChangedTimer_.start();
         }
 
-        // update concurrent version
         this->readOnly_ = std::make_shared<const std::vector<T>>(this->items_);
     }
 
@@ -209,4 +189,4 @@ private:
     std::function<bool(const T &, const T &)> itemCompare_;
 };
 
-}  // namespace chatterino
+}

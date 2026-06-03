@@ -56,7 +56,7 @@ void addEmojis(std::vector<EmoteItem> &out, const std::vector<EmojiPtr> &map)
     };
 }
 
-}  // namespace
+}
 
 EmoteSource::EmoteSource(const Channel *channel,
                          std::unique_ptr<EmoteStrategy> strategy,
@@ -87,7 +87,7 @@ void EmoteSource::addToListModel(GenericListModel &model, size_t maxCount) const
 }
 
 void EmoteSource::addToStringList(QStringList &list, size_t maxCount,
-                                  bool /* isFirstWord */) const
+                                  bool ) const
 {
     addVecToStringList(this->output_, list, maxCount, [](const EmoteItem &e) {
         return e.tabCompletionName + " ";
@@ -100,7 +100,7 @@ void EmoteSource::initializeFromChannel(const Channel *channel)
 
     std::vector<EmoteItem> emotes;
     const auto *tc = dynamic_cast<const TwitchChannel *>(channel);
-    // returns true also for special Twitch channels (/live, /mentions, /whispers, etc.)
+
     if (channel->isTwitchChannel())
     {
         if (tc)
@@ -120,7 +120,6 @@ void EmoteSource::initializeFromChannel(const Channel *channel)
                 addEmotes(emotes, *map, "Personal 7TV");
             }
 
-            // TODO extract "Channel {BetterTTV,7TV,FrankerFaceZ}" text into a #define.
             if (auto bttv = tc->bttvEmotes())
             {
                 addEmotes(emotes, *bttv, "Channel BetterTTV");
@@ -178,4 +177,4 @@ const std::vector<EmoteItem> &EmoteSource::output() const
     return this->output_;
 }
 
-}  // namespace chatterino::completion
+}

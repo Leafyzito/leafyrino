@@ -19,13 +19,11 @@ struct HelixBlock;
 struct HelixUser;
 
 struct TwitchUser {
-    /// The Twitch User ID (e.g. `117166826`)
+
     QString id;
 
-    /// The Twitch User Login (e.g. `testaccount_420`)
     mutable QString name;
 
-    // The Twitch User Display Name (e.g. `테스트계정420`)
     mutable QString displayName;
 
     mutable QString profilePictureUrl;
@@ -52,9 +50,14 @@ struct TwitchUser {
     {
         return this->id == rhs.id;
     }
+
+    bool operator!=(const TwitchUser &rhs) const
+    {
+        return !(*this == rhs);
+    }
 };
 
-}  // namespace chatterino
+}
 
 namespace pajlada {
 
@@ -95,7 +98,7 @@ struct Deserialize<chatterino::TwitchUser> {
     }
 };
 
-}  // namespace pajlada
+}
 
 template <>
 struct std::hash<chatterino::TwitchUser> {

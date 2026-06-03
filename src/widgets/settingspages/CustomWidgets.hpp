@@ -35,11 +35,9 @@
 
 namespace chatterino {
 
-// S* widgets are the same as their Q* counterparts,
-// but they can be greyed out and will be if you search.
 SETTINGS_PAGE_WIDGET_BOILERPLATE(SCheckBox, QCheckBox)
 SETTINGS_PAGE_WIDGET_BOILERPLATE(SLabel, QLabel)
 SETTINGS_PAGE_WIDGET_BOILERPLATE(SComboBox, QComboBox)
 SETTINGS_PAGE_WIDGET_BOILERPLATE(SPushButton, QPushButton)
 
-}  // namespace chatterino
+}

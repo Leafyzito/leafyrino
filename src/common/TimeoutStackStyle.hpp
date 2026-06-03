@@ -12,4 +12,4 @@ enum class TimeoutStackStyle : int {
     Default = DontStackBeyondUserMessage,
 };
 
-}  // namespace chatterino
+}

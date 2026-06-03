@@ -16,7 +16,7 @@ namespace seventv::eventapi {
 struct TwitchUser;
 struct KickUser;
 using User = std::variant<TwitchUser, KickUser>;
-}  // namespace seventv::eventapi
+}
 
 class SeventvPaints
 {
@@ -32,15 +32,14 @@ public:
     std::shared_ptr<Paint> getPaint(const QString &userName, bool kick) const;
 
 private:
-    // Mutex for both `paintMap_` and `knownPaints_`
+
     mutable std::shared_mutex mutex_;
 
-    // user-name => paint
     std::unordered_map<QString, std::shared_ptr<Paint>> kickPaintMap_;
-    // user-name => paint
+
     std::unordered_map<QString, std::shared_ptr<Paint>> twitchPaintMap_;
-    // paint-id => paint
+
     std::unordered_map<QString, std::shared_ptr<Paint>> knownPaints_;
 };
 
-}  // namespace chatterino
+}

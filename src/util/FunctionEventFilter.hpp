@@ -26,4 +26,4 @@ private:
     std::function<bool(QObject *, QEvent *)> function_;
 };
 
-}  // namespace chatterino
+}

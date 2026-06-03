@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2022 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #include "providers/twitch/pubsubmessages/Unlisten.hpp"
 
 #include "util/Helpers.hpp"
@@ -41,4 +37,4 @@ QByteArray PubSubUnlistenMessage::toJson() const
     return QJsonDocument(root).toJson();
 }
 
-}  // namespace chatterino
+}

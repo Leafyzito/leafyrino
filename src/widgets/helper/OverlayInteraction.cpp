@@ -87,7 +87,7 @@ bool OverlayInteraction::isInteracting() const
     return this->interacting_;
 }
 
-void OverlayInteraction::paintEvent(QPaintEvent * /*event*/)
+void OverlayInteraction::paintEvent(QPaintEvent * )
 {
     if (this->interactionProgress() <= 0.0)
     {
@@ -99,7 +99,7 @@ void OverlayInteraction::paintEvent(QPaintEvent * /*event*/)
         255, 255, 255, std::max(int(255.0 * this->interactionProgress()), 50));
 
     painter.setPen({highlightColor, 2});
-    // outline
+
     auto bounds = this->rect();
     painter.drawRect(bounds);
 
@@ -107,7 +107,6 @@ void OverlayInteraction::paintEvent(QPaintEvent * /*event*/)
     painter.setBrush(highlightColor);
     painter.setPen(Qt::transparent);
 
-    // close button
     auto buttonSize = this->closeButton_.size();
     painter.drawRect(
         QRect{bounds.topRight() - QPoint{buttonSize.width(), 0}, buttonSize});
@@ -124,4 +123,4 @@ void OverlayInteraction::setInteractionProgress(double progress)
     this->update();
 }
 
-}  // namespace chatterino
+}

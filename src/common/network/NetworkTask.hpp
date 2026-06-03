@@ -15,7 +15,7 @@ namespace chatterino {
 
 class NetworkData;
 
-}  // namespace chatterino
+}
 
 namespace chatterino::network::detail {
 
@@ -32,7 +32,6 @@ public:
     NetworkTask &operator=(const NetworkTask &) = delete;
     NetworkTask &operator=(NetworkTask &&) = delete;
 
-    // NOLINTNEXTLINE(readability-redundant-access-specifiers)
 public Q_SLOTS:
     void run();
 
@@ -43,13 +42,12 @@ private:
     void writeToCache(const QByteArray &bytes) const;
 
     std::shared_ptr<NetworkData> data_;
-    QNetworkReply *reply_{};  // parent: default (accessManager)
-    QTimer *timer_{};         // parent: this
+    QNetworkReply *reply_{};
+    QTimer *timer_{};
 
-    // NOLINTNEXTLINE(readability-redundant-access-specifiers)
 private Q_SLOTS:
     void timeout();
     void finished();
 };
 
-}  // namespace chatterino::network::detail
+}

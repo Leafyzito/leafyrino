@@ -17,11 +17,10 @@ namespace {
 
 using namespace chatterino::literals;
 
-// lossy image from https://developers.google.com/speed/webp/faq#in_your_own_javascript
 const QByteArray WEBP_IMAGE =
     "RIFF\x22\0\0\0WEBPVP8\x20\x16\0\0\0\x30\x01\0\x9d\x01\x2a\x01\0\x01\0\x0e\xc0\xfe\x25\xa4\0\x03p\0\0\0\0"_ba;
 
-}  // namespace
+}
 
 namespace chatterino::selfcheck {
 
@@ -71,4 +70,4 @@ void checkWebp()
     }
 }
 
-}  // namespace chatterino::selfcheck
+}

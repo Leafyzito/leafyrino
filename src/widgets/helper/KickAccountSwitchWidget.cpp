@@ -52,7 +52,6 @@ void KickAccountSwitchWidget::refresh()
         return;
     }
 
-    // Select the currently logged in user
     auto currentUser = getApp()->getAccounts()->kick.current();
 
     if (currentUser->isAnonymous())
@@ -86,4 +85,4 @@ void KickAccountSwitchWidget::refreshItems()
     }
 }
 
-}  // namespace chatterino
+}

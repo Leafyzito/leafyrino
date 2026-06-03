@@ -1,4 +1,6 @@
 __pycache__/
+node_modules/
+scratch/
 
 # C++ objects and libs
 
@@ -11,6 +13,15 @@ __pycache__/
 *.so
 *.dll
 *.dylib
+*.exe
+*.pdb
+*.ilk
+*.obj
+*.lib
+*.exp
+
+!tools/support/7zip/7z.exe
+!tools/support/7zip/7z.dll
 
 # Qt-es
 
@@ -129,3 +140,15 @@ aqtinstall.log
 # nix files
 result
 *-source/
+
+# flatpak-builder
+.flatpak-builder/
+
+# local packaged artifacts
+/dist/
+/releases/
+/build*/
+/build-*/
+/build_*/
+/cmake-build-*/
+/out/

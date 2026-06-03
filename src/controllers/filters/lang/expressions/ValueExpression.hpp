@@ -15,9 +15,9 @@ public:
     ValueExpression(QVariant value, TokenType type);
     TokenType type();
 
-    QVariant execute(RunContext context) const override;
-    PossibleType synthesizeType() const override;
-    QString debug() const override;
+    QVariant execute(const ContextMap &context) const override;
+    PossibleType synthesizeType(const TypingContext &context) const override;
+    QString debug(const TypingContext &context) const override;
     QString filterString() const override;
 
 private:
@@ -25,4 +25,4 @@ private:
     TokenType type_;
 };
 
-}  // namespace chatterino::filters
+}

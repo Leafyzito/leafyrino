@@ -14,4 +14,4 @@ public:
     DebugPopup();
 };
 
-}  // namespace chatterino
+}

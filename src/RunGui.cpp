@@ -14,14 +14,20 @@
 #include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/Updates.hpp"
+#include "singletons/WindowManager.hpp"
 #include "util/CombinePath.hpp"
 #include "util/SelfCheck.hpp"
 #include "util/UnixSignalHandler.hpp"
 #include "widgets/dialogs/LastRunCrashDialog.hpp"
 
 #include <QApplication>
+#include <QCryptographicHash>
 #include <QFile>
+#include <QGuiApplication>
+#include <QLocalServer>
+#include <QLocalSocket>
 #include <QPalette>
+#include <QSessionManager>
 #include <QStyleFactory>
 #include <Qt>
 #include <QtConcurrent>
@@ -42,16 +48,79 @@
 #    include "corefoundation/CFBundle.h"
 #endif
 
-// Forward declaration (Qt doesn't declare this in headers)
-// NOLINTNEXTLINE(readability-identifier-naming)
 extern void qt_set_sequence_auto_mnemonic(bool b);
 
 namespace chatterino {
 namespace {
+QString guiActivationServerName(const Paths &paths)
+{
+    const auto hash = QCryptographicHash::hash(
+        paths.rootAppDataDirectory.toUtf8(), QCryptographicHash::Sha256);
+    return QStringLiteral("moltorino-gui-activate-%1")
+        .arg(QString::fromLatin1(hash.toHex().left(24)));
+}
+
+void restoreGuiInstance()
+{
+    if (isAppAboutToQuit())
+    {
+        return;
+    }
+
+    auto *app = dynamic_cast<Application *>(tryGetApp());
+    if (app == nullptr || app->getWindows() == nullptr)
+    {
+        return;
+    }
+
+    app->getWindows()->showMainWindow();
+}
+
+std::unique_ptr<QLocalServer> createGuiActivationServer(const Paths &paths)
+{
+    auto server = std::make_unique<QLocalServer>();
+    const auto serverName = guiActivationServerName(paths);
+
+    if (!server->listen(serverName))
+    {
+        QLocalSocket socket;
+        socket.connectToServer(serverName);
+        if (!socket.waitForConnected(100))
+        {
+            QLocalServer::removeServer(serverName);
+            if (!server->listen(serverName))
+            {
+                qCWarning(chatterinoApp)
+                    << "Failed to listen for Moltorino activation requests:"
+                    << server->errorString();
+                return nullptr;
+            }
+        }
+        else
+        {
+            qCDebug(chatterinoApp)
+                << "Moltorino activation server already exists.";
+            return nullptr;
+        }
+    }
+
+    QObject::connect(server.get(), &QLocalServer::newConnection, qApp,
+                     [server = server.get()] {
+                         while (auto *socket = server->nextPendingConnection())
+                         {
+                             socket->deleteLater();
+                         }
+                         restoreGuiInstance();
+                     });
+    QObject::connect(qApp, &QApplication::aboutToQuit, server.get(),
+                     &QLocalServer::close);
+
+    return server;
+}
+
 void installCustomPalette()
 {
-    // borrowed from
-    // https://stackoverflow.com/questions/15035767/is-the-qt-5-dark-fusion-theme-available-for-windows
+
     auto dark = QApplication::palette();
 
     dark.setColor(QPalette::Window, QColor(22, 22, 22));
@@ -92,9 +161,7 @@ void initQt(const Args &args, Settings &settings)
     }
 
 #ifdef Q_OS_WIN32
-    // Avoid promoting child widgets to child windows
-    // This causes bugs with frameless windows as not all child events
-    // get sent to the parent - effectively making the window immovable.
+
     QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 #endif
 
@@ -105,11 +172,9 @@ void initQt(const Args &args, Settings &settings)
 #endif
 
 #ifdef Q_OS_MAC
-    // On the Mac/Cocoa platform this attribute is enabled by default
-    // We override it to ensure shortcuts show in context menus on that platform
+
     QApplication::setAttribute(Qt::AA_DontShowShortcutsInContextMenus, false);
 
-    // Enable mnemonics (menu hotkeys) on macOS - they are disabled by default
     qt_set_sequence_auto_mnemonic(true);
 #endif
 
@@ -119,8 +184,7 @@ void initQt(const Args &args, Settings &settings)
 void showLastCrashDialog(const Args &args, const Paths &paths)
 {
     auto *dialog = new LastRunCrashDialog(args, paths);
-    // Use exec() over open() to block the app from being loaded
-    // and to be able to set the safe mode.
+
     dialog->exec();
 }
 
@@ -137,11 +201,7 @@ std::chrono::steady_clock::time_point signalsInitTime;
         QProcess proc;
 
 #    ifdef Q_OS_MAC
-        // On macOS, programs are bundled into ".app" Application bundles,
-        // when restarting Chatterino that bundle should be opened with the "open"
-        // terminal command instead of directly starting the underlying executable,
-        // as those are 2 different things for the OS and i.e. do not use
-        // the same dock icon (resulting in a second Chatterino icon on restarting)
+
         CFURLRef appUrlRef = CFBundleCopyBundleURL(CFBundleGetMainBundle());
         CFStringRef macPath =
             CFURLCopyFileSystemPath(appUrlRef, kCFURLPOSIXPathStyle);
@@ -165,8 +225,6 @@ std::chrono::steady_clock::time_point signalsInitTime;
 }
 #endif
 
-// We want to restart Chatterino when it crashes and the setting is set to
-// true.
 void initSignalHandler()
 {
 #if defined(NDEBUG) && !defined(CHATTERINO_WITH_CRASHPAD)
@@ -189,8 +247,20 @@ void initSignalHandler()
 #endif
 }
 
-// We delete cache files that haven't been modified in 14 days. This strategy may be
-// improved in the future.
+#ifndef QT_NO_SESSIONMANAGER
+void saveSessionState(Settings &settings)
+{
+    auto *app = dynamic_cast<Application *>(tryGetApp());
+    if (app == nullptr || app->getWindows() == nullptr)
+    {
+        return;
+    }
+
+    app->getWindows()->save();
+    settings.requestSave();
+}
+#endif
+
 void clearCache(const QDir &dir)
 {
     size_t deletedCount = 0;
@@ -209,21 +279,19 @@ void clearCache(const QDir &dir)
         << "Deleted" << deletedCount << "files in" << dir.path();
 }
 
-// We delete all but the five most recent crashdumps. This strategy may be
-// improved in the future.
 void clearCrashes(QDir dir)
 {
-    // crashpad crashdumps are stored inside the Crashes/report directory
+
     if (!dir.cd("reports"))
     {
-        // no reports directory exists = no files to delete
+
         return;
     }
 
     dir.setNameFilters({"*.dmp"});
 
     size_t deletedCount = 0;
-    // TODO: use std::views::drop once supported by all compilers
+
     size_t filesToSkip = 5;
     for (auto &&info : dir.entryInfoList(QDir::Files, QDir::Time))
     {
@@ -240,7 +308,23 @@ void clearCrashes(QDir dir)
     }
     qCDebug(chatterinoApp) << "Deleted" << deletedCount << "crashdumps";
 }
-}  // namespace
+}
+
+bool activateExistingGuiInstance(const Paths &paths)
+{
+    QLocalSocket socket;
+    socket.connectToServer(guiActivationServerName(paths));
+    if (!socket.waitForConnected(150))
+    {
+        return false;
+    }
+
+    socket.write("activate\n");
+    socket.flush();
+    socket.waitForBytesWritten(150);
+    socket.disconnectFromServer();
+    return true;
+}
 
 void runGui(QApplication &a, const Paths &paths, Settings &settings,
             const Args &args, Updates &updates)
@@ -258,9 +342,6 @@ void runGui(QApplication &a, const Paths &paths, Settings &settings,
 
     selfcheck::checkWebp();
 
-    updates.deleteOldFiles();
-
-    // Clear the cache 1 minute after start.
     QTimer::singleShot(60 * 1000, [cachePath = paths.cacheDirectory(),
                                    crashDirectory = paths.crashdumpDirectory,
                                    avatarPath = paths.twitchProfileAvatars] {
@@ -276,7 +357,6 @@ void runGui(QApplication &a, const Paths &paths, Settings &settings,
     });
 
     chatterino::NetworkManager::init();
-    updates.checkForUpdates();
 
     QObject::connect(qApp, &QApplication::aboutToQuit, [] {
         auto *app = dynamic_cast<Application *>(tryGetApp());
@@ -291,14 +371,31 @@ void runGui(QApplication &a, const Paths &paths, Settings &settings,
 
     Application app(settings, paths, args, updates);
     app.initialize(settings, paths);
+
+#ifndef QT_NO_SESSIONMANAGER
+    QObject::connect(qApp, &QGuiApplication::commitDataRequest, qApp,
+                     [&settings](QSessionManager &) {
+                         saveSessionState(settings);
+                     });
+    QObject::connect(qApp, &QGuiApplication::saveStateRequest, qApp,
+                     [&settings](QSessionManager &) {
+                         saveSessionState(settings);
+                     });
+#endif
+
+    std::unique_ptr<QLocalServer> activationServer;
+    if (!args.isFramelessEmbed)
+    {
+        activationServer = createGuiActivationServer(paths);
+    }
     app.run();
 
     chatterino::NetworkManager::deinit();
 
 #ifdef USEWINSDK
-    // flushing windows clipboard to keep copied messages
+
     flushClipboard();
 #endif
 }
 
-}  // namespace chatterino
+}

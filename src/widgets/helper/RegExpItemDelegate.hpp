@@ -23,4 +23,4 @@ private:
     const QRegularExpression regexp_;
 };
 
-}  // namespace chatterino
+}

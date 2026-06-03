@@ -28,4 +28,4 @@ private:
     QColor color_;
 };
 
-}  // namespace chatterino
+}

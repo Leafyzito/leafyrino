@@ -17,6 +17,26 @@ namespace {
 
 using namespace chatterino;
 
+QString targetChannelLogin(const CommandContext &ctx)
+{
+    if (ctx.words.size() > 1)
+    {
+        auto login = ctx.words.at(1).trimmed();
+        if (login.startsWith('#'))
+        {
+            login.remove(0, 1);
+        }
+        return login.toLower();
+    }
+
+    if (ctx.twitchChannel != nullptr)
+    {
+        return ctx.twitchChannel->getName().toLower();
+    }
+
+    return {};
+}
+
 QString formatGetVIPsError(HelixListVIPsError error, const QString &message)
 {
     using Error = HelixListVIPsError;
@@ -37,7 +57,7 @@ QString formatGetVIPsError(HelixListVIPsError error, const QString &message)
         break;
 
         case Error::UserMissingScope: {
-            // TODO(pajlada): Phrase MISSING_REQUIRED_SCOPE
+
             errorMessage += "Missing required scope. "
                             "Re-login with your "
                             "account and try again.";
@@ -45,7 +65,7 @@ QString formatGetVIPsError(HelixListVIPsError error, const QString &message)
         break;
 
         case Error::UserNotAuthorized: {
-            // TODO(pajlada): Phrase MISSING_PERMISSION
+
             errorMessage += "You don't have permission to "
                             "perform that action.";
         }
@@ -67,7 +87,7 @@ QString formatGetVIPsError(HelixListVIPsError error, const QString &message)
     return errorMessage;
 }
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -78,7 +98,8 @@ QString getVIPs(const CommandContext &ctx)
         return "";
     }
 
-    if (ctx.twitchChannel == nullptr)
+    const auto channelLogin = targetChannelLogin(ctx);
+    if (channelLogin.isEmpty())
     {
         ctx.channel->addSystemMessage(
             "The /vips command only works in Twitch channels.");
@@ -86,7 +107,9 @@ QString getVIPs(const CommandContext &ctx)
     }
 
     auto currentUser = getApp()->getAccounts()->twitch.getCurrent();
-    if (ctx.twitchChannel->isBroadcaster())
+    if (ctx.words.size() <= 1 && ctx.twitchChannel != nullptr &&
+        ctx.twitchChannel->isBroadcaster() &&
+        !currentUser->isAnon())
     {
         getHelix()->getChannelVIPs(
             ctx.twitchChannel->roomId(),
@@ -113,49 +136,34 @@ QString getVIPs(const CommandContext &ctx)
                 auto errorMessage = formatGetVIPsError(error, message);
                 channel->addSystemMessage(errorMessage);
             });
+        return "";
     }
-    else
-    {
-        QString target = ctx.channel->getName();
-        getIvr()->getModVip(
-            target,
-            [channel{ctx.channel}, twitchChannel{ctx.twitchChannel},
-             target](auto result) {
-                if (result.vips.isEmpty())
-                {
-                    channel->addSystemMessage(
-                        "This channel does not have any VIPs.");
-                    return;
-                }
 
-                std::vector<HelixVip> vips;
-                for (int i = 0; i < result.vips.size(); i++)
-                {
-                    QJsonObject vipJson;
-                    auto obj = result.vips.at(i).toObject();
+    getIvr()->getModVip(
+        channelLogin,
+        [channel{ctx.channel}, twitchChannel{ctx.twitchChannel}](
+            const std::vector<HelixModerator> &,
+            const std::vector<HelixVip> &vips) {
+            if (vips.empty())
+            {
+                channel->addSystemMessage(
+                    "This channel does not have any VIPs.");
+                return;
+            }
 
-                    vipJson.insert("user_id", obj.value("id"));
-                    vipJson.insert("user_name", obj.value("displayName"));
-                    vipJson.insert("user_login", obj.value("login"));
-
-                    HelixVip vip(vipJson);
-
-                    vips.push_back(vip);
-                }
-
-                channel->addMessage(
-                    MessageBuilder::makeListOfUsersMessage(
-                        QString("The VIPs (%1) of this channel are")
-                            .arg(vips.size()),
-                        vips, twitchChannel),
-                    MessageContext::Original);
-            },
-            [channel{ctx.channel}]() {
-                channel->addSystemMessage("Could not get VIPs list!");
-            });
-    }
+            auto messagePrefix =
+                QString("The VIPs (%1) of this channel are").arg(vips.size());
+            channel->addMessage(MessageBuilder::makeListOfUsersMessage(
+                                    messagePrefix, vips,
+                                    twitchChannel != nullptr ? twitchChannel
+                                                            : channel.get()),
+                                MessageContext::Original);
+        },
+        [channel{ctx.channel}] {
+            channel->addSystemMessage("Could not get VIP list!");
+        });
 
     return "";
 }
 
-}  // namespace chatterino::commands
+}

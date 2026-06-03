@@ -28,8 +28,6 @@ namespace {
 using namespace chatterino;
 using namespace literals;
 
-/// The name of the crashpad handler executable.
-/// This varies across platforms
 #if defined(Q_OS_UNIX)
 const QString CRASHPAD_EXECUTABLE_NAME = QStringLiteral("crashpad-handler");
 #elif defined(Q_OS_WINDOWS)
@@ -38,7 +36,6 @@ const QString CRASHPAD_EXECUTABLE_NAME = QStringLiteral("crashpad-handler.exe");
 #    error Unsupported platform
 #endif
 
-/// Converts a QString into the platform string representation.
 #if defined(Q_OS_UNIX)
 [[maybe_unused]] std::string nativeString(const QString &s)
 {
@@ -55,10 +52,6 @@ const QString CRASHPAD_EXECUTABLE_NAME = QStringLiteral("crashpad-handler.exe");
 
 const QString RECOVERY_FILE = u"chatterino-recovery.json"_s;
 
-/// The recovery options are saved outside the settings
-/// to be able to read them without loading the settings.
-///
-/// The flags are saved in the `RECOVERY_FILE` as JSON.
 std::optional<bool> readRecoverySettings(const Paths &paths)
 {
     QFile file(QDir(paths.crashdumpDirectory).filePath(RECOVERY_FILE));
@@ -98,7 +91,7 @@ std::optional<bool> readRecoverySettings(const Paths &paths)
     auto settings = readRecoverySettings(paths);
     if (!settings)
     {
-        return false;  // default, no settings found
+        return false;
     }
     return *settings;
 #else
@@ -107,12 +100,6 @@ std::optional<bool> readRecoverySettings(const Paths &paths)
 #endif
 }
 
-/// This encodes the arguments into a single string.
-///
-/// The command line arguments are joined by '+'. A plus is escaped by an
-/// additional plus ('++' -> '+').
-///
-/// The decoding happens in crash-handler/src/CommandLine.cpp
 [[maybe_unused]] std::string encodeArguments(const Args &appArgs)
 {
     std::string args;
@@ -127,7 +114,7 @@ std::optional<bool> readRecoverySettings(const Paths &paths)
     return args;
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -143,7 +130,7 @@ CrashHandler::CrashHandler(const Paths &paths_)
     }
     else
     {
-        // By default, we don't restart after a crash.
+
         this->saveShouldRecover(false);
     }
 }
@@ -169,12 +156,7 @@ void CrashHandler::saveShouldRecover(bool value)
 std::unique_ptr<crashpad::CrashpadClient> installCrashHandler(
     const Args &args, const Paths &paths)
 {
-    // Currently, the following directory layout is assumed:
-    // [applicationDirPath]
-    //  ├─chatterino(.exe)
-    //  ╰─[crashpad]
-    //     ╰─crashpad-handler(.exe)
-    // TODO: The location of the binary might vary across platforms
+
     auto crashpadBinDir = QDir(QApplication::applicationDirPath());
 
     if (!crashpadBinDir.cd("crashpad"))
@@ -192,9 +174,6 @@ std::unique_ptr<crashpad::CrashpadClient> installCrashHandler(
     auto handlerPath = base::FilePath(nativeString(
         crashpadBinDir.absoluteFilePath(CRASHPAD_EXECUTABLE_NAME)));
 
-    // Argument passed in --database
-    // > Crash reports are written to this database, and if uploads are enabled,
-    //   uploaded from this database to a crash report collection server.
     auto databaseDir = base::FilePath(nativeString(paths.crashdumpDirectory));
 
     auto client = std::make_unique<crashpad::CrashpadClient>();
@@ -218,8 +197,6 @@ std::unique_ptr<crashpad::CrashpadClient> installCrashHandler(
         },
     };
 
-    // See https://chromium.googlesource.com/crashpad/crashpad/+/HEAD/handler/crashpad_handler.md
-    // for documentation on available options.
     if (!client->StartHandler(handlerPath, databaseDir, {}, {}, {}, annotations,
                               {}, true, false))
     {
@@ -232,4 +209,4 @@ std::unique_ptr<crashpad::CrashpadClient> installCrashHandler(
 }
 #endif
 
-}  // namespace chatterino
+}

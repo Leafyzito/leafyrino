@@ -83,5 +83,7 @@ c2-make-universal-dylib lib/libcrypto.dylib
 echo "Relinking OpenSSL 3 libssl"
 c2-make-universal-dylib lib/libssl.dylib
 
-echo "Relinking Hunspell"
-c2-make-universal-dylib lib/libhunspell-1.7.0.dylib
+if [[ " $* " == *" hunspell "* ]]; then
+    echo "Relinking Hunspell"
+    c2-make-universal-dylib lib/libhunspell-1.7.0.dylib
+fi

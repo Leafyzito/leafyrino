@@ -35,7 +35,7 @@ QJsonObject createDataJson(const QString &typeName, const Condition &condition)
     return data;
 }
 
-}  // namespace
+}
 
 namespace chatterino::seventv::eventapi {
 
@@ -43,6 +43,11 @@ bool Subscription::operator==(const Subscription &rhs) const
 {
     return std::tie(this->condition, this->type) ==
            std::tie(rhs.condition, rhs.type);
+}
+
+bool Subscription::operator!=(const Subscription &rhs) const
+{
+    return !(rhs == *this);
 }
 
 QByteArray Subscription::encodeSubscribe() const
@@ -92,6 +97,11 @@ bool ObjectIDCondition::operator==(const ObjectIDCondition &rhs) const
     return this->objectID == rhs.objectID;
 }
 
+bool ObjectIDCondition::operator!=(const ObjectIDCondition &rhs) const
+{
+    return !(*this == rhs);
+}
+
 QDebug &operator<<(QDebug &dbg, const ObjectIDCondition &condition)
 {
     dbg << "{ objectID:" << condition.objectID << "}";
@@ -125,4 +135,9 @@ bool ChannelCondition::operator==(const ChannelCondition &rhs) const
     return this->userID == rhs.userID && this->platform == rhs.platform;
 }
 
-}  // namespace chatterino::seventv::eventapi
+bool ChannelCondition::operator!=(const ChannelCondition &rhs) const
+{
+    return !(*this == rhs);
+}
+
+}

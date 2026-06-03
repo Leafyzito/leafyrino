@@ -68,4 +68,4 @@ private:
     ExpressionSpecifier *expressionSpecifier_;
     QLineEdit *titleInput_;
 };
-}  // namespace chatterino
+}

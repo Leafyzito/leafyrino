@@ -20,13 +20,10 @@
 
 namespace chatterino::lua::api {
 
-// Note: Parsing and then serializing the mode ensures we understand it before
-// passing it to Lua
-
 struct LuaFileMode {
-    char major = 'r';  // 'r'|'w'|'a'
-    bool update{};     // '+'
-    bool binary{};     // 'b'
+    char major = 'r';
+    bool update{};
+    bool binary{};
     QString error;
 
     LuaFileMode() = default;
@@ -333,5 +330,5 @@ void io_tmpfile()
     throw std::runtime_error("io.tmpfile: This function is a stub!");
 }
 
-}  // namespace chatterino::lua::api
+}
 #endif

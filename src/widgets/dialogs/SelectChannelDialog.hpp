@@ -8,6 +8,7 @@
 
 #include <pajlada/signals/signal.hpp>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QFocusEvent>
 #include <QLabel>
 #include <QLineEdit>
@@ -74,6 +75,7 @@ private:
         detail::AutoCheckedRadioButton *channel;
         QLabel *channelLabel;
         QLineEdit *channelName;
+        QCheckBox *channelAnonymous;
 
         detail::AutoCheckedRadioButton *whispers;
         QLabel *whispersLabel;

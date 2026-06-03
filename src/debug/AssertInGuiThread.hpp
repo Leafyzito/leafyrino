@@ -23,4 +23,4 @@ inline void assertInGuiThread()
 #endif
 }
 
-}  // namespace chatterino
+}

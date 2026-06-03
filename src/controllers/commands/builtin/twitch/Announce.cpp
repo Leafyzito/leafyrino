@@ -67,7 +67,7 @@ QString sendAnnouncementColor(const CommandContext &ctx,
         ctx.twitchChannel->roomId(), user->getUserId(),
         ctx.words.mid(1).join(" "), color,
         []() {
-            // do nothing.
+
         },
         [channel{ctx.channel}](auto error, auto message) {
             using Error = HelixSendChatAnnouncementError;
@@ -76,7 +76,7 @@ QString sendAnnouncementColor(const CommandContext &ctx,
             switch (error)
             {
                 case Error::UserMissingScope: {
-                    // TODO(pajlada): Phrase MISSING_REQUIRED_SCOPE
+
                     errorMessage +=
                         "Missing required scope. Re-login with your "
                         "account and try again.";
@@ -100,7 +100,7 @@ QString sendAnnouncementColor(const CommandContext &ctx,
     return "";
 }
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -129,4 +129,4 @@ QString sendAnnouncementPurple(const CommandContext &ctx)
     return sendAnnouncementColor(ctx, HelixAnnouncementColor::Purple);
 }
 
-}  // namespace chatterino::commands
+}

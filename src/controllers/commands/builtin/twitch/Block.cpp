@@ -16,7 +16,7 @@ namespace {
 
 using namespace chatterino;
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -164,4 +164,4 @@ QString unignoreUser(const CommandContext &ctx)
     return unblockUser(ctx);
 }
 
-}  // namespace chatterino::commands
+}

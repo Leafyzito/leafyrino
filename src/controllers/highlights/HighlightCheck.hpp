@@ -31,4 +31,4 @@ struct HighlightCheck {
     Checker cb;
 };
 
-}  // namespace chatterino
+}

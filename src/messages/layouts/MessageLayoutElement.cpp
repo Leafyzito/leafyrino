@@ -16,6 +16,7 @@
 #include "util/DebugCount.hpp"
 
 #include <QDebug>
+#include <QFontMetricsF>
 #include <QGraphicsDropShadowEffect>
 #include <QGraphicsPixmapItem>
 #include <QLabel>
@@ -23,7 +24,23 @@
 #include <QPainterPath>
 #include <QPixmap>
 
+#include <algorithm>
+#include <cmath>
+
 namespace {
+
+QRectF snapRectToDevicePixels(const QRectF &rect, const QPainter &painter)
+{
+    const auto dpr = painter.device() ? painter.device()->devicePixelRatioF()
+                                      : 1.0;
+    const auto snap = [dpr](qreal value) {
+        return std::round(value * dpr) / dpr;
+    };
+
+    return QRectF(snap(rect.x()), snap(rect.y()),
+                  std::max(1.0 / dpr, snap(rect.width())),
+                  std::max(1.0 / dpr, snap(rect.height())));
+}
 
 const QChar RTL_EMBED(0x202B);
 
@@ -32,6 +49,30 @@ void alignRectBottomCenter(QRectF &rect, const QRectF &reference)
     QPointF newCenter(reference.center().x(),
                       reference.bottom() - (rect.height() / 2.0));
     rect.moveCenter(newCenter);
+}
+
+void drawPixmapWithOptionalSmoothing(QPainter &painter, const QRectF &target,
+                                     const QPixmap &pixmap,
+                                     chatterino::FlagsEnum<
+                                         chatterino::MessageElementFlag> flags)
+{
+    const bool smooth =
+        flags.has(chatterino::MessageElementFlag::BadgeMoltorino);
+    const bool wasSmooth =
+        painter.testRenderHint(QPainter::SmoothPixmapTransform);
+
+    if (smooth && !wasSmooth)
+    {
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    }
+
+    painter.drawPixmap(snapRectToDevicePixels(target, painter), pixmap,
+                       QRectF());
+
+    if (smooth && !wasSmooth)
+    {
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+    }
 }
 
 }  // namespace
@@ -172,8 +213,8 @@ void ImageLayoutElement::paint(QPainter &painter,
     auto pixmap = this->image_->pixmapOrLoad();
     if (pixmap && !this->image_->animated())
     {
-        // fourtf: make it use qreal values
-        painter.drawPixmap(QRectF(this->getRect()), *pixmap, QRectF());
+        drawPixmapWithOptionalSmoothing(painter, QRectF(this->getRect()),
+                                        *pixmap, this->getFlags());
     }
 }
 
@@ -190,7 +231,8 @@ bool ImageLayoutElement::paintAnimated(QPainter &painter, qreal yOffset)
         {
             auto rect = this->getRect();
             rect.moveTop(rect.y() + yOffset);
-            painter.drawPixmap(QRectF(rect), *pixmap, QRectF());
+            drawPixmapWithOptionalSmoothing(painter, QRectF(rect), *pixmap,
+                                            this->getFlags());
             return true;
         }
     }
@@ -286,7 +328,8 @@ void LayeredImageLayoutElement::paint(QPainter &painter,
             QRectF destRect(0, 0, size.width(), size.height());
             alignRectBottomCenter(destRect, fullRect);
 
-            painter.drawPixmap(destRect, *pixmap, QRectF());
+            painter.drawPixmap(snapRectToDevicePixels(destRect, painter), *pixmap,
+                               QRectF());
         }
     }
 }
@@ -318,7 +361,8 @@ bool LayeredImageLayoutElement::paintAnimated(QPainter &painter, qreal yOffset)
                 QRectF destRect(0, 0, size.width(), size.height());
                 alignRectBottomCenter(destRect, fullRect);
 
-                painter.drawPixmap(destRect, *pixmap, QRectF());
+                painter.drawPixmap(snapRectToDevicePixels(destRect, painter),
+                                   *pixmap, QRectF());
                 animatedFlag = true;
             }
         }
@@ -462,7 +506,6 @@ void TextLayoutElement::paint(QPainter &painter,
     }
 
     auto font = app->getFonts()->getFont(this->style_, this->scale_);
-    auto metrics = app->getFonts()->getFontMetrics(this->style_, this->scale_);
 
     bool isNametag = this->getLink().type == chatterino::Link::UserInfo ||
                      this->getLink().type == chatterino::Link::UserWhisper;
@@ -493,8 +536,19 @@ void TextLayoutElement::paint(QPainter &painter,
     painter.setPen(this->color_);
     painter.setFont(font);
 
-    QPointF pivot(this->getRect().x(), this->getRect().y() + metrics.ascent());
-    painter.drawText(pivot, text);
+    const QFontMetricsF metrics(font);
+    if (this->getRect().height() > std::ceil(metrics.height()))
+    {
+        const auto baseline =
+            this->getRect().bottom() - metrics.descent();
+        painter.drawText(QPointF(this->getRect().x(), baseline), text);
+    }
+    else
+    {
+        painter.drawText(
+            QRectF(this->getRect().x(), this->getRect().y(), 10000, 10000),
+            text, QTextOption(Qt::AlignLeft | Qt::AlignTop));
+    }
 }
 
 bool TextLayoutElement::paintAnimated(QPainter &painter, const qreal yOffset)
