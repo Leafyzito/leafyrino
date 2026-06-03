@@ -42,4 +42,4 @@ private:
     std::atomic<bool> waitingForPong_{false};
 };
 
-}
+}  // namespace chatterino

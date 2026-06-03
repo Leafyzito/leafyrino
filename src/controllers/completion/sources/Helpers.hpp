@@ -23,7 +23,7 @@ size_t sizeWithinLimit(size_t size, size_t limit)
     return std::min(size, limit);
 }
 
-}
+}  // namespace
 
 template <typename T, typename Mapper>
 void addVecToListModel(const std::vector<T> &input, GenericListModel &model,
@@ -51,4 +51,4 @@ void addVecToStringList(const std::vector<T> &input, QStringList &list,
     }
 }
 
-}
+}  // namespace chatterino::completion

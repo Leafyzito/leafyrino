@@ -259,12 +259,11 @@ QString formatCompactNumber(qint64 number)
 
     if (absolute < 10'000'000'000'000)
     {
-        return withSign(formatCompactWithSuffix(
-            absolute / 1'000'000'000'000.0, u'T', locale));
+        return withSign(formatCompactWithSuffix(absolute / 1'000'000'000'000.0,
+                                                u'T', locale));
     }
 
-    return withSign(locale.toString(absolute / 1'000'000'000'000) +
-                    QChar('T'));
+    return withSign(locale.toString(absolute / 1'000'000'000'000) + QChar('T'));
 }
 
 QString formatChannelPoints(qint64 points)
