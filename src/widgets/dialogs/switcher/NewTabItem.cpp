@@ -41,7 +41,6 @@ void NewTabItem::paint(QPainter *painter, const QRect &rect) const
 
     painter->setRenderHint(QPainter::Antialiasing, true);
 
-    // TODO(leon): Right pen/brush/font settings?
     painter->setPen(getApp()->getThemes()->splits.header.text);
     painter->setBrush(Qt::SolidPattern);
     painter->setFont(

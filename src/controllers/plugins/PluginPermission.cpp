@@ -28,7 +28,7 @@ PluginPermission::PluginPermission(const QJsonObject &obj)
     {
         this->errors.emplace_back(QString("permission type is an unknown (%1)")
                                       .arg(jsontype.toString()));
-        return;  // There is no more data to get, we don't know what to do
+        return;
     }
     this->type = opt.value();
 }

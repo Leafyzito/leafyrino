@@ -17,7 +17,6 @@ namespace chatterino {
 
 namespace {
 
-/// Get a list of weights available for the given font family
 QList<int> getWeights(const QString &family)
 {
     QList<int> weights;

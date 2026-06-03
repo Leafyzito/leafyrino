@@ -31,7 +31,6 @@ QString updateUserColor(const CommandContext &ctx)
     }
     auto user = getApp()->getAccounts()->twitch.getCurrent();
 
-    // Avoid Helix calls without Client ID and/or OAuth Token
     if (user->isAnon())
     {
         ctx.channel->addSystemMessage(

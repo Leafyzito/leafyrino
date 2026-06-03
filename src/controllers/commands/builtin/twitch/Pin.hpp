@@ -1,23 +1,27 @@
-// SPDX-FileCopyrightText: 2026 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
-class QString;
+#include <QString>
 
 namespace chatterino {
 
 struct CommandContext;
 
-}  // namespace chatterino
+}
 
 namespace chatterino::commands {
 
-/// /pin
-QString pin(const CommandContext &ctx);
+struct PinDurationParseResult {
+    bool matched = false;
+    QString error;
+    int durationSeconds = 0;
+};
 
-/// /unpin
-QString unpin(const CommandContext &ctx);
+PinDurationParseResult parsePinDuration(const QString &text);
+
+int normalizePinDuration(int durationSeconds);
+
+QString pinMessage(const CommandContext &ctx);
+
+QString unpinMessage(const CommandContext &ctx);
 
 }  // namespace chatterino::commands

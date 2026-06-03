@@ -128,7 +128,7 @@ void Button::dragEnterEvent(QDragEnterEvent *event)
     });
 }
 
-void Button::paintEvent(QPaintEvent * /*event*/)
+void Button::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     this->paintButton(painter);
@@ -169,7 +169,11 @@ void Button::setOpaqueContent(bool opaqueContent)
     this->opaqueContent_ = opaqueContent;
 }
 
-void Button::enterEvent(QEnterEvent * /*event*/)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+void Button::enterEvent(QEnterEvent *)
+#else
+void Button::enterEvent(QEvent *)
+#endif
 {
     if (!this->mouseOver_)
     {
@@ -179,7 +183,7 @@ void Button::enterEvent(QEnterEvent * /*event*/)
     }
 }
 
-void Button::leaveEvent(QEvent * /*event*/)
+void Button::leaveEvent(QEvent *)
 {
     if (this->mouseOver_)
     {
@@ -225,15 +229,13 @@ void Button::mousePressEvent(QMouseEvent *event)
         break;
 
         default:
-            // Unsupported button
+
             return;
     }
 }
 
 void Button::mouseReleaseEvent(QMouseEvent *event)
 {
-    // Reset the "mouse button down" state of the released button and store
-    // whether the button was in the down state when this event fired
     bool hadCorrectButtonPressed = false;
     switch (event->button())
     {
@@ -254,7 +256,7 @@ void Button::mouseReleaseEvent(QMouseEvent *event)
         break;
 
         default:
-            // Unsupported button
+
             return;
     }
 
@@ -360,7 +362,6 @@ void Button::showMenu()
 
     if (point.y() + menuSizeHint.height() > bounds.bottom())
     {
-        // Menu doesn't fit going down, flip it to go up instead
         point.setY(point.y() - menuSizeHint.height() - this->height());
     }
 

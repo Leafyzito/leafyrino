@@ -20,7 +20,6 @@ float relativeSimilarity(QStringView str1, QStringView str2)
 {
     using SizeType = QStringView::size_type;
 
-    // Longest Common Substring Problem
     std::vector<std::vector<int>> tree(str1.size(),
                                        std::vector<int>(str2.size(), 0));
     int z = 0;
@@ -48,7 +47,6 @@ float relativeSimilarity(QStringView str1, QStringView str2)
         }
     }
 
-    // ensure that no div by 0
     if (z == 0)
     {
         return 0.F;

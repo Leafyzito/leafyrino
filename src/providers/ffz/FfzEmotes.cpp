@@ -19,14 +19,11 @@ namespace {
 
 using namespace chatterino;
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 const auto &LOG = chatterinoFfzemotes;
 
 const QString CHANNEL_HAS_NO_EMOTES(
     "This channel has no FrankerFaceZ channel emotes.");
 
-// FFZ doesn't provide any data on the size for room badges,
-// so we assume 18x18 (same as a Twitch badge)
 constexpr QSize BASE_BADGE_SIZE(18, 18);
 
 Url getEmoteLink(const QJsonObject &urls, const QString &emoteScale)
@@ -51,7 +48,6 @@ void fillInEmoteData(const QJsonObject &emote, const QJsonObject &urls,
     auto url3x = getEmoteLink(urls, "4");
     QSize baseSize(emote["width"].toInt(28), emote["height"].toInt(28));
 
-    //, code, tooltip
     emoteData.name = name;
     emoteData.images = ImageSet{
         Image::fromUrl(url1x, 1, baseSize),
@@ -77,7 +73,6 @@ void parseEmoteSetInto(const QJsonObject &emoteSet, const QString &kind,
     {
         const auto emoteJson = emoteRef.toObject();
 
-        // margins
         auto id = EmoteId{QString::number(emoteJson["id"].toInt())};
         auto name = EmoteName{emoteJson["name"].toString()};
         auto author =
@@ -85,7 +80,6 @@ void parseEmoteSetInto(const QJsonObject &emoteSet, const QString &kind,
         auto urls = emoteJson["urls"].toObject();
         if (emoteJson["animated"].isObject())
         {
-            // prefer animated images if available
             urls = emoteJson["animated"].toObject();
         }
 
@@ -105,7 +99,6 @@ void parseEmoteSetInto(const QJsonObject &emoteSet, const QString &kind,
 
 EmoteMap parseGlobalEmotes(const QJsonObject &jsonRoot)
 {
-    // Load default sets from the `default_sets` object
     std::unordered_set<int> defaultSets{};
     auto jsonDefaultSets = jsonRoot["default_sets"].toArray();
     for (auto jsonDefaultSet : jsonDefaultSets)
@@ -189,10 +182,8 @@ FfzChannelBadgeMap ffz::detail::parseChannelBadges(const QJsonObject &badgeRoot)
     {
         const auto badgeID = it.key().toInt();
         const auto &jsonUserIDs = it.value().toArray();
-        for (const auto jsonUserID : jsonUserIDs)
+        for (const auto &jsonUserID : jsonUserIDs)
         {
-            // NOTE: The Twitch User IDs come through as ints right now, the code below
-            // tries to parse them as strings first since that's how we treat them anyway.
             if (jsonUserID.isString())
             {
                 channelBadges[jsonUserID.toString()].emplace_back(badgeID);
@@ -329,7 +320,6 @@ void FfzEmotes::loadChannel(
 
                 if (result.status() == 404)
                 {
-                    // User does not have any FFZ emotes
                     if (manualRefresh)
                     {
                         shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
@@ -337,7 +327,6 @@ void FfzEmotes::loadChannel(
                 }
                 else
                 {
-                    // TODO: Auto retry in case of a timeout, with a delay
                     auto errorString = result.formatError();
                     qCWarning(LOG) << "Error fetching FFZ emotes for channel"
                                    << channelID << ", error" << errorString;

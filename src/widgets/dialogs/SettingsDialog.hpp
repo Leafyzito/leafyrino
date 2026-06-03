@@ -33,9 +33,9 @@ enum class SettingsDialogPreference {
     NoPreference,
     StreamerMode,
     Accounts,
-    Highlights,
     ModerationActions,
     About,
+    Moltorino,
 };
 
 class SettingsDialog : public BaseWindow

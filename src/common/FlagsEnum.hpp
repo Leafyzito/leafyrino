@@ -28,15 +28,27 @@ public:
     {
         return lhs.value_ == rhs.value_;
     }
+    friend constexpr bool operator!=(FlagsEnum lhs, FlagsEnum rhs) noexcept
+    {
+        return lhs.value_ != rhs.value_;
+    }
 
     friend constexpr bool operator==(FlagsEnum lhs, T rhs) noexcept
     {
         return lhs.value_ == rhs;
     }
+    friend constexpr bool operator!=(FlagsEnum lhs, T rhs) noexcept
+    {
+        return lhs.value_ != rhs;
+    }
 
     friend constexpr bool operator==(T lhs, FlagsEnum rhs) noexcept
     {
         return lhs == rhs.value_;
+    }
+    friend constexpr bool operator!=(T lhs, FlagsEnum rhs) noexcept
+    {
+        return lhs != rhs.value_;
     }
 
     constexpr void set(std::convertible_to<T> auto... flags) noexcept
@@ -46,7 +58,6 @@ public:
                            (static_cast<Int>(static_cast<T>(flags)) | ...));
     }
 
-    /** Adds the flags from `flags` in this enum. */
     constexpr void set(FlagsEnum flags) noexcept
     {
         this->value_ = static_cast<T>(static_cast<Int>(this->value_) |
@@ -124,7 +135,6 @@ public:
         return this->hasNone(FlagsEnum{flags...});
     }
 
-    /// Returns true if the enum has no flag set (i.e. its underlying value is 0)
     constexpr bool isEmpty() const noexcept
     {
         return static_cast<Int>(this->value_) == 0;

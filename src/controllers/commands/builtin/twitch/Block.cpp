@@ -16,7 +16,7 @@ namespace {
 
 using namespace chatterino;
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 

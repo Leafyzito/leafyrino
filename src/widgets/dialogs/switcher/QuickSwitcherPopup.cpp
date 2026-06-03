@@ -60,7 +60,7 @@ QuickSwitcherPopup::QuickSwitcherPopup(Window *parent)
     this->initWidgets();
 
     const QRect geom = parent->geometry();
-    // This places the popup in the middle of the parent widget
+
     this->setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter,
                                           this->size(), geom));
 
@@ -98,13 +98,11 @@ void QuickSwitcherPopup::updateSuggestions(const QString &text)
 {
     this->switcherModel_.clear();
 
-    // Add items for navigating to different splits
     for (auto *sc : openPages(this->window))
     {
         const QString &tabTitle = sc->getTab()->getTitle();
         const auto splits = sc->getSplits();
 
-        // First, check for splits on this page
         for (auto *split : splits)
         {
             if (split->getChannel()->getName().contains(text,
@@ -113,12 +111,10 @@ void QuickSwitcherPopup::updateSuggestions(const QString &text)
                 auto item = std::make_unique<SwitchSplitItem>(sc, split);
                 this->switcherModel_.addItem(std::move(item));
 
-                // We want to continue the outer loop so we need a goto
                 goto nextPage;
             }
         }
 
-        // Then check if tab title matches
         if (tabTitle.contains(text, Qt::CaseInsensitive))
         {
             auto item = std::make_unique<SwitchSplitItem>(sc);
@@ -129,7 +125,6 @@ void QuickSwitcherPopup::updateSuggestions(const QString &text)
     nextPage:;
     }
 
-    // Add item for opening a channel in a new tab or new popup
     if (!text.isEmpty())
     {
         auto newTabItem = std::make_unique<NewTabItem>(this->window, text);
@@ -142,10 +137,6 @@ void QuickSwitcherPopup::updateSuggestions(const QString &text)
     const auto &startIdx = this->switcherModel_.index(0);
     this->ui_.list->setCurrentIndex(startIdx);
 
-    /*
-     * Timeout interval 0 means the call will be delayed until all window events
-     * have been processed (cf. https://doc.qt.io/qt-5/qtimer.html#interval-prop).
-     */
     QTimer::singleShot(0, this, [this] {
         this->adjustSize();
     });

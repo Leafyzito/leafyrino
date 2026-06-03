@@ -16,12 +16,11 @@
 
 namespace chatterino::seventv::eventapi {
 
-// https://github.com/SevenTV/EventAPI/tree/ca4ff15cc42b89560fa661a76c5849047763d334#message-payload
 struct Dispatch {
     SubscriptionType type;
     QJsonObject body;
     QString id;
-    // it's okay for this to be empty
+
     QString actorName;
 
     Dispatch(QJsonObject obj);
@@ -102,7 +101,7 @@ using User = std::variant<TwitchUser, KickUser>;
 struct EntitlementCreateDeleteDispatch {
     QString seventvUsername;
     QVarLengthArray<User, 1> connections;
-    /** id of the entitlement */
+
     QString refID;
     CosmeticKind kind;
 

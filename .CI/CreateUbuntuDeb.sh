@@ -37,8 +37,12 @@ esac
 echo "Building Ubuntu .deb file on '$ubuntu_release'"
 echo "Dependencies: $dependencies"
 
-if [ ! -f ./bin/chatterino ] || [ ! -x ./bin/chatterino ]; then
-    echo "ERROR: No chatterino binary file found. This script must be run in the build folder, and chatterino must be built first."
+if [ -f ./bin/Leafyrino7 ] && [ -x ./bin/Leafyrino7 ]; then
+    app_executable="Leafyrino7"
+elif [ -f ./bin/chatterino ] && [ -x ./bin/chatterino ]; then
+    app_executable="chatterino"
+else
+    echo "ERROR: No Leafyrino7 or chatterino binary file found. This script must be run in the build folder, and the app must be built first."
     exit 1
 fi
 
@@ -59,12 +63,12 @@ cat >> "$packaging_dir/DEBIAN/control" << EOF
 Package: chatterino
 Version: $chatterino_version
 Architecture: amd64
-Maintainer: Mm2PL <mm2pl@kotmisia.pl>
+Maintainer: Leafyzito <https://github.com/leafyzito>
 Depends: $dependencies
 Section: net
 Priority: optional
-Homepage: https://github.com/Chatterino/chatterino2
-Description: Ubuntu package built for $ubuntu_release
+Homepage: https://github.com/leafyzito/leafyrino
+Description: Leafyrino - chat client for Twitch (built for $ubuntu_release)
 EOF
 cat "$packaging_dir/DEBIAN/control"
 breakline
@@ -79,6 +83,26 @@ breakline
 echo "Merge install into packaging dir"
 cp -rv "$install_prefix/" "$packaging_dir/"
 find "$packaging_dir"
+breakline
+
+if ! command -v strip >/dev/null 2>&1; then
+    echo "ERROR: strip was not found; refusing to package an unstripped .deb."
+    exit 1
+fi
+main_binary="$packaging_dir/usr/bin/$app_executable"
+if [ ! -f "$main_binary" ]; then
+    echo "ERROR: Installed binary '$main_binary' was not found; refusing to package without stripping it."
+    exit 1
+fi
+strip --strip-unneeded "$main_binary"
+for strip_dir in "$packaging_dir/usr/bin" "$packaging_dir/usr/lib"; do
+    if [ -d "$strip_dir" ]; then
+        find "$strip_dir" \
+            -type f ! -path "$main_binary" \
+            \( -perm -111 -o -name '*.so' -o -name '*.so.*' \) \
+            -exec strip --strip-unneeded {} + 2>/dev/null || true
+    fi
+done
 breakline
 
 

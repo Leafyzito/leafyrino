@@ -43,7 +43,6 @@ HighlightBadge::HighlightBadge(const QString &badgeName,
     , soundUrl_(soundUrl)
     , color_(color)
 {
-    // check badgeName at initialization to reduce cost per isMatch call
     this->hasVersions_ = badgeName.contains("/");
     this->isMulti_ = badgeName.contains(",");
     if (this->isMulti_)

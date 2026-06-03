@@ -12,7 +12,7 @@ UnaryOperation::UnaryOperation(TokenType op, ExpressionPtr right)
 {
 }
 
-QVariant UnaryOperation::execute(RunContext context) const
+QVariant UnaryOperation::execute(const ContextMap &context) const
 {
     auto right = this->right_->execute(context);
     switch (this->op_)
@@ -24,9 +24,9 @@ QVariant UnaryOperation::execute(RunContext context) const
     }
 }
 
-PossibleType UnaryOperation::synthesizeType() const
+PossibleType UnaryOperation::synthesizeType(const TypingContext &context) const
 {
-    auto rightSyn = this->right_->synthesizeType();
+    auto rightSyn = this->right_->synthesizeType(context);
     if (isIllTyped(rightSyn))
     {
         return rightSyn;
@@ -47,12 +47,12 @@ PossibleType UnaryOperation::synthesizeType() const
     }
 }
 
-QString UnaryOperation::debug() const
+QString UnaryOperation::debug(const TypingContext &context) const
 {
     return QString("UnaryOp[%1](%2 : %3)")
         .arg(tokenTypeToInfoString(this->op_))
-        .arg(this->right_->debug())
-        .arg(possibleTypeToString(this->right_->synthesizeType()));
+        .arg(this->right_->debug(context))
+        .arg(possibleTypeToString(this->right_->synthesizeType(context)));
 }
 
 QString UnaryOperation::filterString() const

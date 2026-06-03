@@ -35,7 +35,7 @@ void VectorMessageSink::addOrReplaceTimeout(MessagePtr clearchatMessage,
 {
     addOrReplaceChannelTimeout(
         this->messages_, std::move(clearchatMessage), now,
-        [&](auto idx, auto /*msg*/, auto &&replacement) {
+        [&](auto idx, auto, auto &&replacement) {
             replacement->flags.set(this->additionalFlags);
             this->messages_[idx] = replacement;
         },
@@ -50,7 +50,7 @@ void VectorMessageSink::addOrReplaceClearChat(MessagePtr clearchatMessage,
 {
     addOrReplaceChannelClear(
         this->messages_, std::move(clearchatMessage), now,
-        [&](auto idx, auto /*msg*/, auto &&replacement) {
+        [&](auto idx, auto, auto &&replacement) {
             replacement->flags.set(this->additionalFlags);
             this->messages_[idx] = replacement;
         },
@@ -63,7 +63,7 @@ void VectorMessageSink::disableAllMessages()
 {
     if (this->additionalFlags.has(MessageFlag::RecentMessage))
     {
-        return;  // don't disable recent messages
+        return;
     }
 
     for (const auto &msg : this->messages_)

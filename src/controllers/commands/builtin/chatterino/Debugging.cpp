@@ -14,12 +14,10 @@
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "messages/MessageElement.hpp"
-#include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/twitch/eventsub/Controller.hpp"
 #include "providers/twitch/PubSubManager.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
-#include "singletons/FileLogger.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/Theme.hpp"
 #include "singletons/Toasts.hpp"
@@ -29,57 +27,9 @@
 
 #include <QApplication>
 #include <QLoggingCategory>
-#include <QProcess>
-#include <QProcessEnvironment>
 #include <QString>
 
-using namespace Qt::StringLiterals;
-
-namespace {
-
-bool restartChatterino(const QProcessEnvironment &env)
-{
-    chatterino::getSettings()->requestSave();
-
-    QProcess proc;
-    proc.setProgram(qApp->applicationFilePath());
-    // https://doc.qt.io/qt-6/debug.html#environment-variables-recognized-by-qt
-    proc.setProcessEnvironment(env);
-    if (proc.startDetached())
-    {
-        chatterino::getSettings()
-            ->disableSave();  // only disable if the process started
-        QMetaObject::invokeMethod(
-            qApp,
-            [] {
-                QApplication::exit();
-            },
-            Qt::QueuedConnection);
-        return true;
-    }
-
-    return false;
-}
-
-QProcessEnvironment setUpEnvironmentForLogging(const QStringList &loggingRules)
-{
-    static constexpr QLatin1String loggingRulesEnv("QT_LOGGING_RULES");
-
-    auto env = QProcessEnvironment::systemEnvironment();
-    if (!loggingRules.isEmpty())
-    {
-        env.insert(loggingRulesEnv, loggingRules.join(';'));
-    }
-    else if (!env.contains(loggingRulesEnv))
-    {
-        // by default, enable all debug logging
-        env.insert(loggingRulesEnv, "chatterino.*.debug=true");
-    }
-
-    return env;
-}
-
-}  // namespace
+using namespace Qt::Literals::StringLiterals;
 
 namespace chatterino::commands {
 
@@ -198,25 +148,25 @@ QString forceImageUnload(const CommandContext &ctx)
     return "";
 }
 
-QString forceLayoutChannelViews(const CommandContext & /*ctx*/)
+QString forceLayoutChannelViews(const CommandContext &)
 {
     getApp()->getWindows()->forceLayoutChannelViews();
     return {};
 }
 
-QString incrementImageGeneration(const CommandContext & /*ctx*/)
+QString incrementImageGeneration(const CommandContext &)
 {
     getApp()->getWindows()->incGeneration();
     return {};
 }
 
-QString invalidateBuffers(const CommandContext & /*ctx*/)
+QString invalidateBuffers(const CommandContext &)
 {
     getApp()->getWindows()->invalidateChannelViewBuffers();
     return {};
 }
 
-QString eventsub(const CommandContext & /*ctx*/)
+QString eventsub(const CommandContext &)
 {
     getApp()->getEventSub()->debug();
     return {};
@@ -292,14 +242,6 @@ QString debugTest(const CommandContext &ctx)
     {
         getApp()->getTwitchPubSub()->reconnect();
     }
-    else if (command == "7tv-reconnect")
-    {
-        getApp()->getSeventvEventAPI()->reconnect();
-    }
-    else if (command == "7tv-reconnect-random")
-    {
-        getApp()->getSeventvEventAPI()->reconnectRandom();
-    }
     else
     {
         ctx.channel->addSystemMessage(
@@ -307,105 +249,6 @@ QString debugTest(const CommandContext &ctx)
     }
 
     return "";
-}
-
-#ifdef Q_OS_WIN
-QString relaunchWithConsole(const CommandContext &ctx)
-{
-    if (!ctx.channel)
-    {
-        return {};
-    }
-
-    const QString winDebugConsoleEnv = u"QT_WIN_DEBUG_CONSOLE"_s;
-    auto env = setUpEnvironmentForLogging(ctx.words.mid(1));
-    env.insert(winDebugConsoleEnv, "new");
-
-    bool success = restartChatterino(env);
-    if (!success)
-    {
-        ctx.channel->addSystemMessage("Failed to start process.");
-    }
-
-    return {};
-}
-#endif
-
-QString disableLogfile(const CommandContext &ctx)
-{
-    FileLogger::instance().disable();
-
-    ctx.channel->addSystemMessage("Logging to file disabled");
-
-    return {};
-}
-
-QString enableLogfile(const CommandContext &ctx)
-{
-    if (!ctx.channel)
-    {
-        return {};
-    }
-
-    if (ctx.words.size() < 2)
-    {
-        ctx.channel->addSystemMessage(
-            "Usage: /debug-enable-logfile <path-to-logfile>");
-
-        return {};
-    }
-
-    QString logFilePath = ctx.words.mid(1).join(" ");
-    auto result = FileLogger::instance().enable(logFilePath);
-    if (result.has_value())
-    {
-        ctx.channel->addSystemMessage("Logging to file enabled");
-    }
-    else
-    {
-        auto error = result.error();
-
-        MessageBuilder builder;
-        builder.emplace<TextElement>(
-            QString("Unable to open log file '%1'. Error reported by "
-                    "the system was: %2 (Hint: Do not quote the file path "
-                    "even if it contains spaces)")
-                .arg(error.absFilePath, error.errorDesc),
-            MessageElementFlags{MessageElementFlag::Text,
-                                MessageElementFlag::AlwaysShow},
-            MessageColor{QColor(230, 30, 30)});
-        ctx.channel->addMessage(builder.release(), MessageContext::Original);
-    }
-
-    return {};
-}
-
-QString relaunchWithLogfile(const CommandContext &ctx)
-{
-    if (!ctx.channel)
-    {
-        return {};
-    }
-
-    if (ctx.words.size() < 2)
-    {
-        ctx.channel->addSystemMessage(
-            "Usage: /debug-relaunch-with-logfile <path-to-logfile>");
-
-        return {};
-    }
-
-    auto env = setUpEnvironmentForLogging({});
-    QString logFilePath = ctx.words.mid(1).join(" ");
-    env.insert(env::LOG_TO_FILE, logFilePath);
-
-    bool success = restartChatterino(env);
-    if (!success)
-    {
-        ctx.channel->addSystemMessage("Failed to start process.");
-    }
-
-    return {};
 }
 
 }  // namespace chatterino::commands

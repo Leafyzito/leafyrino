@@ -8,7 +8,7 @@
 
 #    include "Application.hpp"
 #    include "controllers/accounts/AccountController.hpp"
-#    include "controllers/plugins/SolTypes.hpp"  // IWYU pragma: keep
+#    include "controllers/plugins/SolTypes.hpp"
 #    include "providers/twitch/TwitchAccount.hpp"
 #    include "util/WeakPtrHelpers.hpp"
 
@@ -84,15 +84,13 @@ namespace chatterino::lua::api {
 void createAccounts(sol::table &c2)
 {
     c2.new_usertype<WeakTwitchAccount>(
-        // clang-format off
-        "TwitchAccount", sol::no_constructor,
-        sol::meta_function::to_string, &WeakTwitchAccount::login,
-        "is_valid", &WeakTwitchAccount::isValid,
-        "login", &WeakTwitchAccount::login,
-        "id", &WeakTwitchAccount::id,
-        "color", &WeakTwitchAccount::color,
-        "is_anon", &WeakTwitchAccount::isAnon
-        // clang-format on
+
+        "TwitchAccount", sol::no_constructor, sol::meta_function::to_string,
+        &WeakTwitchAccount::login, "is_valid", &WeakTwitchAccount::isValid,
+        "login", &WeakTwitchAccount::login, "id", &WeakTwitchAccount::id,
+        "color", &WeakTwitchAccount::color, "is_anon",
+        &WeakTwitchAccount::isAnon
+
     );
 
     c2.set_function("current_account", [] {

@@ -33,9 +33,6 @@
 #    include <Windows.h>
 #    include <windowsx.h>
 
-// This definition can be used to test the move interaction for other platforms
-// on Windows by commenting it out. In a final build, Windows must always use
-// this, as it's much smoother.
 #    define OVERLAY_NATIVE_MOVE
 #endif
 
@@ -44,10 +41,9 @@ namespace {
 using namespace chatterino;
 using namespace literals;
 
-/// Progress the user has made in exploring the overlay
-enum class Knowledge : std::int32_t {  // NOLINT(performance-enum-size)
+enum class Knowledge : std::int32_t {
     None = 0,
-    // User opened the overlay at least once
+
     Activation = 1 << 0,
 };
 
@@ -67,7 +63,6 @@ void acquireKnowledge(Knowledge knowledge)
         static_cast<std::underlying_type_t<Knowledge>>(current.value());
 }
 
-/// Returns [seq?, toggleAllOverlays]
 std::pair<QKeySequence, bool> toggleIntertiaShortcut()
 {
     auto seq = getApp()->getHotkeys()->getDisplaySequence(
@@ -110,9 +105,8 @@ OverlayWindow::OverlayWindow(IndirectChannel channel,
     , interaction_(this)
 {
     this->setAttribute(Qt::WA_DeleteOnClose);
-    this->setWindowTitle(u"Chatterino - Overlay"_s);
+    this->setWindowTitle(u"Leafyrino - Overlay"_s);
 
-    // QGridLayout is (ab)used to stack widgets and position them
     auto *grid = new QGridLayout(this);
     grid->addWidget(&this->channelView_, 0, 0);
     this->interaction_.attach(grid);
@@ -121,7 +115,6 @@ OverlayWindow::OverlayWindow(IndirectChannel channel,
                     Qt::AlignBottom | Qt::AlignRight);
 #endif
 
-    // the interaction overlay currently captures all events
     this->interaction_.installEventFilter(this);
 
     this->shortInteraction_.setInterval(750ms);
@@ -132,7 +125,7 @@ OverlayWindow::OverlayWindow(IndirectChannel channel,
     this->channelView_.installEventFilter(this);
     this->channelView_.setFilters(filterIDs);
     this->channelView_.setChannel(this->channel_.get());
-    this->channelView_.setIsOverlay(true);  // use overlay colors
+    this->channelView_.setIsOverlay(true);
     this->channelView_.setAttribute(Qt::WA_TranslucentBackground);
     this->signalHolder_.managedConnect(
         this->channel_.getChannelChanged(), [this]() {
@@ -158,7 +151,7 @@ OverlayWindow::OverlayWindow(IndirectChannel channel,
             else
             {
                 this->channelView_.setGraphicsEffect(nullptr);
-                this->dropShadow_ = nullptr;  // deleted by setGraphicsEffect
+                this->dropShadow_ = nullptr;
             }
             this->applyTheme();
         },
@@ -170,7 +163,7 @@ OverlayWindow::OverlayWindow(IndirectChannel channel,
         },
         this->signalHolder_, false);
 
-    auto applyIt = [this](auto /*unused*/) {
+    auto applyIt = [this](auto) {
         this->applyTheme();
     };
     settings->overlayShadowOffsetX.connect(applyIt, this->signalHolder_, false);
@@ -191,7 +184,7 @@ OverlayWindow::OverlayWindow(IndirectChannel channel,
             this->updateScale();
         },
         this->signalHolder_, false);
-    std::ignore = this->scaleChanged.connect([this](float /*scale*/) {
+    std::ignore = this->scaleChanged.connect([this](float) {
         this->channelView_.queueLayout();
     });
     this->updateScale();
@@ -231,7 +224,7 @@ float OverlayWindow::desiredScale() const
            getSettings()->getClampedOverlayScale();
 }
 
-bool OverlayWindow::eventFilter(QObject * /*object*/, QEvent *event)
+bool OverlayWindow::eventFilter(QObject *, QEvent *event)
 {
 #ifndef OVERLAY_NATIVE_MOVE
     switch (event->type())
@@ -299,14 +292,14 @@ void OverlayWindow::toggleInertia()
     this->setInert(!this->inert_);
 }
 
-void OverlayWindow::enterEvent(QEnterEvent * /*event*/)
+void OverlayWindow::enterEvent(EnterEvent *)
 {
 #ifndef OVERLAY_NATIVE_MOVE
     this->startInteraction();
 #endif
 }
 
-void OverlayWindow::leaveEvent(QEvent * /*event*/)
+void OverlayWindow::leaveEvent(QEvent *)
 {
 #ifndef OVERLAY_NATIVE_MOVE
     this->endInteraction();
@@ -315,9 +308,8 @@ void OverlayWindow::leaveEvent(QEvent * /*event*/)
 
 #ifdef Q_OS_WIN
 bool OverlayWindow::nativeEvent(const QByteArray &eventType, void *message,
-                                qintptr *result)
+                                NativeResult *result)
 {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     MSG *msg = reinterpret_cast<MSG *>(message);
 
     bool returnValue = false;
@@ -337,13 +329,10 @@ bool OverlayWindow::nativeEvent(const QByteArray &eventType, void *message,
             this->startInteraction();
             break;
         case WM_EXITSIZEMOVE:
-            // wait a few seconds before hiding
+
             this->startShortInteraction();
             break;
         case WM_SETCURSOR: {
-            // When the window can be moved, the size-all cursor should be
-            // shown. Qt doesn't provide an interface to do this, so this
-            // manually sets the cursor.
             if (LOWORD(msg->lParam) == HTCAPTION)
             {
                 ::SetCursor(this->sizeAllCursor_);
@@ -354,7 +343,6 @@ bool OverlayWindow::nativeEvent(const QByteArray &eventType, void *message,
         break;
 #    endif
         case WM_DPICHANGED: {
-            // wait for Qt to process this message, same as in BaseWindow
             postToThread([] {
                 getApp()->getWindows()->invalidateChannelViewBuffers();
             });
@@ -368,14 +356,9 @@ bool OverlayWindow::nativeEvent(const QByteArray &eventType, void *message,
     return returnValue;
 }
 
-void OverlayWindow::handleNCHITTEST(MSG *msg, qintptr *result)
+void OverlayWindow::handleNCHITTEST(MSG *msg, NativeResult *result)
 {
-    // This implementation is similar to the one of BaseWindow, but has the
-    // following differences:
-    // - The window can always be resized (or: it can't be maximized)
-    // - The close button is advertised as HTCLIENT instead of HTCLOSE
-    // - There isn't any other client area (the entire window can be moved)
-    const LONG borderWidth = 8;  // in device independent pixels
+    const LONG borderWidth = 8;
 
     auto rect = this->rect();
 
@@ -390,47 +373,44 @@ void OverlayWindow::handleNCHITTEST(MSG *msg, qintptr *result)
 
     *result = 0;
 
-    // left border
     if (x < rect.left() + borderWidth)
     {
         *result = HTLEFT;
     }
-    // right border
+
     if (x >= rect.right() - borderWidth)
     {
         *result = HTRIGHT;
     }
 
-    // bottom border
     if (y >= rect.bottom() - borderWidth)
     {
         *result = HTBOTTOM;
     }
-    // top border
+
     if (y < rect.top() + borderWidth)
     {
         *result = HTTOP;
     }
 
-    // bottom left corner
     if (x >= rect.left() && x < rect.left() + borderWidth &&
         y < rect.bottom() && y >= rect.bottom() - borderWidth)
     {
         *result = HTBOTTOMLEFT;
     }
-    // bottom right corner
+
     if (x < rect.right() && x >= rect.right() - borderWidth &&
         y < rect.bottom() && y >= rect.bottom() - borderWidth)
     {
         *result = HTBOTTOMRIGHT;
     }
-    // top left corner
+
     if (x >= rect.left() && x < rect.left() + borderWidth && y >= rect.top() &&
         y < rect.top() + borderWidth)
     {
         *result = HTTOPLEFT;
     }
-    // top right corner
+
     if (x < rect.right() && x >= rect.right() - borderWidth &&
         y >= rect.top() && y < rect.top() + borderWidth)
     {
@@ -477,13 +457,13 @@ void OverlayWindow::triggerFirstActivation()
         welcomeText +=
             u"To toggle the click-through mode, "
             "add a hotkey for \"Toggle overlay click-through\" in the split "
-            "category to press while any Chatterino window is focused."_s;
+            "category to press while any Leafyrino window is focused."_s;
     }
     else
     {
         welcomeText +=
             u"To toggle the click-through mode, press %1 (customizable "_s
-            "in the settings) while any Chatterino window is focused.".arg(
+            "in the settings) while any Leafyrino window is focused.".arg(
                 actualShortcut.toString());
     }
 
@@ -494,7 +474,7 @@ void OverlayWindow::triggerFirstActivation()
                    "discussions\">on GitHub</a>.";
 
     auto *box =
-        new QMessageBox(QMessageBox::Information, u"Chatterino - Overlay"_s,
+        new QMessageBox(QMessageBox::Information, u"Leafyrino - Overlay"_s,
                         welcomeText, QMessageBox::Ok, this);
     box->open();
 }
@@ -623,7 +603,7 @@ void OverlayWindow::setInert(bool inert)
     }
 }
 
-void OverlayWindow::drawOutline(QPainter & /* painter */)
+void OverlayWindow::drawOutline(QPainter &)
 {
 }
 

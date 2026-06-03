@@ -11,13 +11,108 @@
 #include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDir>
+#include <QDirIterator>
+#include <QFile>
+#include <QFileInfo>
 #include <QStandardPaths>
 
 #include <cassert>
+#include <vector>
 
 using namespace std::literals;
 
 namespace chatterino {
+
+namespace {
+
+bool copyRecursively(const QString &sourcePath, const QString &destinationPath)
+{
+    const QDir sourceDir(sourcePath);
+    if (!sourceDir.exists())
+    {
+        return false;
+    }
+
+    if (!QDir().mkpath(destinationPath))
+    {
+        return false;
+    }
+
+    QDirIterator it(sourcePath, QDir::NoDotAndDotDot | QDir::AllEntries,
+                    QDirIterator::Subdirectories);
+    while (it.hasNext())
+    {
+        const auto sourceEntryPath = it.next();
+        const QFileInfo sourceInfo(sourceEntryPath);
+        const auto relativePath = sourceDir.relativeFilePath(sourceEntryPath);
+        const auto destinationEntryPath =
+            combinePath(destinationPath, relativePath);
+
+        if (sourceInfo.isDir())
+        {
+            if (!QDir().mkpath(destinationEntryPath))
+            {
+                return false;
+            }
+            continue;
+        }
+
+        const auto destinationDir = QFileInfo(destinationEntryPath).dir();
+        if (!destinationDir.exists() && !QDir().mkpath(destinationDir.path()))
+        {
+            return false;
+        }
+
+        if (QFile::exists(destinationEntryPath) &&
+            !QFile::remove(destinationEntryPath))
+        {
+            return false;
+        }
+
+        if (!QFile::copy(sourceEntryPath, destinationEntryPath))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void tryMigrateLinuxSettingsInto(const QString &destinationPath)
+{
+    const auto destinationSettings =
+        combinePath(destinationPath, "Settings/settings.json");
+    if (QFileInfo::exists(destinationSettings))
+    {
+        return;
+    }
+
+    std::vector<QString> candidatePaths;
+
+    if (qEnvironmentVariableIsSet("FLATPAK_ID"))
+    {
+        candidatePaths.emplace_back(
+            QDir::homePath() +
+            "/.var/app/com.chatterino.chatterino/data/chatterino");
+    }
+
+    candidatePaths.emplace_back(QDir::homePath() + "/.local/share/chatterino");
+
+    for (const auto &candidatePath : candidatePaths)
+    {
+        const auto candidateSettings =
+            combinePath(candidatePath, "Settings/settings.json");
+        if (!QFileInfo::exists(candidateSettings))
+        {
+            continue;
+        }
+
+        copyRecursively(candidatePath, destinationPath);
+        return;
+    }
+}
+
+}  // namespace
 
 Paths::Paths()
 {
@@ -90,17 +185,12 @@ void Paths::initRootDirectory()
 {
     assert(this->portable_.has_value());
 
-    // Root path = %APPDATA%/Chatterino or the folder that the executable
-    // resides in
-
     this->rootAppDataDirectory = [&]() -> QString {
-        // portable
         if (Modes::instance().isPortable)
         {
             return QCoreApplication::applicationDirPath();
         }
 
-        // permanent installation
         QString path =
             QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
         if (path.isEmpty())
@@ -109,8 +199,10 @@ void Paths::initRootDirectory()
                                      path.toStdString() + "\"");
         }
 
-// create directory Chatterino2 instead of Chatterino on windows because the
-// ladder one is takes by Chatterino 1 already
+#ifdef Q_OS_LINUX
+        tryMigrateLinuxSettingsInto(path);
+#endif
+
 #ifdef Q_OS_WIN
         path.replace("chatterino", "Chatterino");
 
@@ -122,11 +214,8 @@ void Paths::initRootDirectory()
 
 void Paths::initSubDirectories()
 {
-    // required the app data directory to be set first
     assert(!this->rootAppDataDirectory.isEmpty());
 
-    // create settings subdirectories and validate that they are created
-    // properly
     auto makePath = [&](const QString &name) -> QString {
         auto path = combinePath(this->rootAppDataDirectory, name);
 
@@ -153,8 +242,7 @@ void Paths::initSubDirectories()
 #ifdef Q_OS_WIN
     this->ipcDirectory = makePath("IPC");
 #else
-    // NOTE: We do *NOT* use IPC on non-Windows platforms.
-    // If we start, we should re-consider this directory.
+
     this->ipcDirectory = "/tmp";
 #endif
 }

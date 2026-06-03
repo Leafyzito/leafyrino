@@ -6,8 +6,6 @@
 
 #include <memory>
 
-// This file contains common forward declarations.
-
 namespace chatterino {
 class Channel;
 class ChannelView;

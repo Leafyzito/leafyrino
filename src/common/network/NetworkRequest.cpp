@@ -55,7 +55,6 @@ NetworkRequest NetworkRequest::caller(const QObject *caller) &&
 {
     if (caller)
     {
-        // Caller must be in gui thread
         assert(caller->thread() == QApplication::instance()->thread());
 
         this->data->caller = const_cast<QObject *>(caller);
@@ -113,6 +112,13 @@ NetworkRequest NetworkRequest::header(QNetworkRequest::KnownHeaders header,
                                       const QVariant &value) &&
 {
     this->data->request.setHeader(header, value);
+    return std::move(*this);
+}
+
+NetworkRequest NetworkRequest::attribute(QNetworkRequest::Attribute attribute,
+                                         const QVariant &value) &&
+{
+    this->data->request.setAttribute(attribute, value);
     return std::move(*this);
 }
 
@@ -185,14 +191,12 @@ void NetworkRequest::execute()
 {
     this->executed_ = true;
 
-    // Only allow caching for GET request
     if (this->data->cache && this->data->requestType != NetworkRequestType::Get)
     {
         qCDebug(chatterinoCommon) << "Can only cache GET requests!";
         this->data->cache = false;
     }
 
-    // Can not have a caller and be concurrent at the same time.
     assert(!(this->data->caller && this->data->executeConcurrently));
 
     load(std::move(this->data));

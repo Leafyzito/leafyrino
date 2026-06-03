@@ -26,7 +26,7 @@ void warnUserByID(const ChannelPtr &channel, const QString &channelID,
     getHelix()->warnUser(
         channelID, sourceUserID, targetUserID, reason,
         [] {
-            // No response for warns, they're emitted over pubsub instead
+
         },
         [channel, displayName](auto error, auto message) {
             QString errorMessage = QString("Failed to warn user - ");
@@ -56,7 +56,6 @@ void warnUserByID(const ChannelPtr &channel, const QString &channelID,
                 break;
 
                 case Error::UserMissingScope: {
-                    // TODO(pajlada): Phrase MISSING_REQUIRED_SCOPE
                     errorMessage += "Missing required scope. "
                                     "Re-login with your "
                                     "account and try again.";
@@ -64,7 +63,6 @@ void warnUserByID(const ChannelPtr &channel, const QString &channelID,
                 break;
 
                 case Error::UserNotAuthorized: {
-                    // TODO(pajlada): Phrase MISSING_PERMISSION
                     errorMessage += "You don't have permission to "
                                     "perform that action.";
                 }
@@ -136,7 +134,6 @@ QString sendWarn(const CommandContext &ctx)
         }
         else
         {
-            // For hydration
             userIDs.append(action.target.id);
         }
         if (action.channel.id.isEmpty())
@@ -148,14 +145,11 @@ QString sendWarn(const CommandContext &ctx)
         }
         else
         {
-            // For hydration
             userIDs.append(action.channel.id);
         }
 
         if (!userLoginsToFetch.isEmpty())
         {
-            // At least 1 user ID needs to be resolved before we can take action
-            // userIDs is filled up with the data we already have to hydrate the action channel & action target
             getHelix()->fetchUsers(
                 userIDs, userLoginsToFetch,
                 [channel{ctx.channel}, actionChannel{action.channel},
@@ -188,7 +182,6 @@ QString sendWarn(const CommandContext &ctx)
         }
         else
         {
-            // If both IDs are available, we do no hydration & just use the id as the display name
             warnUserByID(ctx.channel, action.channel.id,
                          currentUser->getUserId(), action.target.id, reason,
                          action.target.id);

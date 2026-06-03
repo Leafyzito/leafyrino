@@ -59,7 +59,6 @@ private:
 template <typename T>
 class Atomic<std::shared_ptr<T>>
 {
-    // Atomic<std::shared_ptr<T>> must be instantated with a const T
 };
 
 template <typename T>

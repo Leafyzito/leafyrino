@@ -12,13 +12,13 @@
 
 namespace chatterino {
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 LiveIndicator::LiveIndicator(QWidget *parent)
     : BaseWidget(parent)
 {
-    this->setMinimumHeight(5);     // fixed min height for the circle to fit
-    this->setMouseTracking(true);  // for hover and tooltip
+    this->setMinimumHeight(5);
+    this->setMouseTracking(true);
     this->updateScale();
 }
 
@@ -28,16 +28,16 @@ void LiveIndicator::setViewers(int viewers)
     this->updateScale();
 }
 
-void LiveIndicator::scaleChangedEvent(float /*newScale*/)
+void LiveIndicator::scaleChangedEvent(float)
 {
     this->updateScale();
 }
 
-void LiveIndicator::paintEvent(QPaintEvent * /*event*/)
+void LiveIndicator::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     QColor color = getTheme()->tabs.liveIndicator;
-    // Indicate that there's a tooltip here
+
     if (this->hovered)
     {
         if (getTheme()->isLightTheme())
@@ -59,12 +59,12 @@ void LiveIndicator::paintEvent(QPaintEvent * /*event*/)
     });
 }
 
-void LiveIndicator::enterEvent(QEnterEvent * /*event*/)
+void LiveIndicator::enterEvent(QEnterEvent *)
 {
     this->hovered = true;
     this->update();
 }
-void LiveIndicator::leaveEvent(QEvent * /*event*/)
+void LiveIndicator::leaveEvent(QEvent *)
 {
     this->hovered = false;
     this->update();

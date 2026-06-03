@@ -1,12 +1,9 @@
-// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include "widgets/BaseWidget.hpp"
 #include "widgets/TooltipWidget.hpp"
 
+#include <boost/signals2.hpp>
 #include <pajlada/settings/setting.hpp>
 #include <pajlada/signals/connection.hpp>
 #include <pajlada/signals/signalholder.hpp>
@@ -36,8 +33,7 @@ public:
 
     void updateChannelText();
     void updateIcons();
-    // Invoked when SplitHeader should update anything refering to a TwitchChannel's mode
-    // has changed (e.g. sub mode toggled)
+
     void updateRoomModes();
 
 protected:
@@ -48,7 +44,11 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     void enterEvent(QEnterEvent *event) override;
+#else
+    void enterEvent(QEvent *event) override;
+#endif
     void leaveEvent(QEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
@@ -57,13 +57,10 @@ private:
     std::unique_ptr<QMenu> createMainMenu();
     std::unique_ptr<QMenu> createChatModeMenu();
 
-    /**
-     * @brief   Reset the thumbnail data and timer so a new
-     *          thumbnail can be fetched
-     **/
     void resetThumbnail();
 
     void handleChannelChanged();
+    void toggleFollow();
 
     Split *const split_{};
     QString tooltipText_{};
@@ -74,7 +71,6 @@ private:
     std::chrono::steady_clock::time_point lastReloadedChannelEmotes_;
     std::chrono::steady_clock::time_point lastReloadedSubEmotes_;
 
-    // ui
     DrawnButton *dropdownButton_{};
     Label *titleLabel_{};
 
@@ -85,20 +81,19 @@ private:
     QAction *modeActionSetR9k{};
     QAction *modeActionSetFollowers{};
 
+    SvgButton *followButton_{};
     SvgButton *moderationButton_{};
     SvgButton *chattersButton_{};
     DrawnButton *addButton_{};
 
-    // states
     QPoint dragStart_{};
     bool dragging_{false};
     bool doubleClicked_{false};
     bool menuVisible_{false};
 
-    // managedConnections_ contains connections for signals that are not managed by us
-    // and don't change when the parent Split changes its underlying channel
     pajlada::Signals::SignalHolder managedConnections_;
     pajlada::Signals::SignalHolder channelConnections_;
+    std::vector<boost::signals2::scoped_connection> bSignals_;
 
 public Q_SLOTS:
     void reloadChannelEmotes();

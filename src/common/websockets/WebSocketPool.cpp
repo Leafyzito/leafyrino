@@ -23,12 +23,9 @@ WebSocketPool::~WebSocketPool()
         }
         else
         {
-            // Note: We can't detatch the IO-thread here but have to leak the
-            // pool, because the IO-thread still references the IO-context which
-            // is stored in the pool (otherwise we'd have a use-after-free).
             qCWarning(chatterinoWebsocket)
                 << "Failed to shutdown within 1s, leaking";
-            this->impl.release();  // NOLINT
+            this->impl.release();
         }
     }
 }
@@ -45,8 +42,6 @@ WebSocketHandle WebSocketPool::createSocket(
         }
         catch (const boost::system::system_error &err)
         {
-            // This will only happen if the SSL context failed to be constructed.
-            // The user likely runs an incompatible OpenSSL version.
             qCWarning(chatterinoWebsocket)
                 << "Failed to create WebSocket implementation" << err.what();
             return {{}};
@@ -88,8 +83,6 @@ WebSocketHandle WebSocketPool::createSocket(
 
     return {conn};
 }
-
-// MARK: WebSocketHandle
 
 WebSocketHandle::WebSocketHandle(
     std::weak_ptr<ws::detail::WebSocketConnection> conn)

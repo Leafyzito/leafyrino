@@ -16,7 +16,7 @@ namespace chatterino {
 #ifdef Q_OS_WIN
 namespace windows::detail {
 void renameThread(void *hThread, const QString &name);
-}  // namespace windows::detail
+}
 #endif
 
 template <typename T>

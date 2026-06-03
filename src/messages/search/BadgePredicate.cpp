@@ -12,10 +12,8 @@ namespace chatterino {
 BadgePredicate::BadgePredicate(const QString &badges, bool negate)
     : MessagePredicate(negate)
 {
-    // Check if any comma-seperated values were passed and transform those
     for (const auto &badge : badges.split(',', Qt::SkipEmptyParts))
     {
-        // convert short form name of certain badges to formal name
         if (badge.compare("mod", Qt::CaseInsensitive) == 0)
         {
             this->badges_ << "moderator";

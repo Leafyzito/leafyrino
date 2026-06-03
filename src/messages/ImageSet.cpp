@@ -97,10 +97,8 @@ const ImagePtr &ImageSet::getImageOrLoaded(float scale) const
 {
     auto &&result = getImagePriv(*this, scale);
 
-    // get best image based on scale
     result->load();
 
-    // prefer other image if selected image is not loaded yet
     if (result->loaded())
     {
         return result;
@@ -125,6 +123,35 @@ const ImagePtr &ImageSet::getImageOrLoaded(float scale) const
     }
 }
 
+const ImagePtr &ImageSet::getImageOrLoadedNoLoad(float scale) const
+{
+    auto &&result = getImagePriv(*this, scale);
+
+    if (!result->isEmpty() && result->loaded())
+    {
+        return result;
+    }
+    else if (this->imageX3_ && !this->imageX3_->isEmpty() &&
+             this->imageX3_->loaded())
+    {
+        return this->imageX3_;
+    }
+    else if (this->imageX2_ && !this->imageX2_->isEmpty() &&
+             this->imageX2_->loaded())
+    {
+        return this->imageX2_;
+    }
+    else if (this->imageX1_ && !this->imageX1_->isEmpty() &&
+             this->imageX1_->loaded())
+    {
+        return this->imageX1_;
+    }
+    else
+    {
+        return result;
+    }
+}
+
 const ImagePtr &ImageSet::getImage(float scale) const
 {
     return getImagePriv(*this, scale);
@@ -134,6 +161,11 @@ bool ImageSet::operator==(const ImageSet &other) const
 {
     return std::tie(this->imageX1_, this->imageX2_, this->imageX3_) ==
            std::tie(other.imageX1_, other.imageX2_, other.imageX3_);
+}
+
+bool ImageSet::operator!=(const ImageSet &other) const
+{
+    return !this->operator==(other);
 }
 
 QJsonObject ImageSet::toJson() const

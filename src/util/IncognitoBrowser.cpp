@@ -20,20 +20,18 @@ using namespace chatterino;
 QString getDefaultBrowserExecutable()
 {
 #ifdef USEWINSDK
-    // get default browser start command, by protocol if possible, falling back to extension if not
+
     QString command =
         getAssociatedExecutable(AssociationQueryType::Protocol, L"http");
 
     if (command.isNull())
     {
-        // failed to fetch default browser by protocol, try by file extension instead
         command = getAssociatedExecutable(AssociationQueryType::FileExtension,
                                           L".html");
     }
 
     if (command.isNull())
     {
-        // also try the equivalent .htm extension
         command = getAssociatedExecutable(AssociationQueryType::FileExtension,
                                           L".htm");
     }
@@ -61,7 +59,6 @@ QString getDefaultBrowserExecutable()
 }
 
 }  // namespace
-//
 
 namespace chatterino::incognitobrowser::detail {
 
@@ -80,8 +77,6 @@ QString getPrivateSwitch(const QString &browserExecutable)
         {"brave", "-incognito"},
     };
 
-    // the browser executable may be a full path, strip it to its basename and
-    // compare case insensitively
     auto lowercasedBrowserExecutable =
         QFileInfo(browserExecutable).baseName().toLower();
 
@@ -100,13 +95,11 @@ QString getPrivateSwitch(const QString &browserExecutable)
         }
     }
 
-    // catch all mozilla distributed variants
     if (lowercasedBrowserExecutable.startsWith("firefox"))
     {
         return "-private-window";
     }
 
-    // couldn't match any browser -> unknown browser
     return {};
 }
 

@@ -8,14 +8,10 @@
 
 namespace {
 
-/// Loosely compares `lhs` with `rhs`.
-/// This attempts to convert both variants to a common type if they're not equal.
 bool looselyCompareVariants(QVariant &lhs, QVariant &rhs)
 {
-    // Qt 6 and later don't convert types as much as Qt 5 did when comparing.
-    //
-    // Based on QVariant::cmp from Qt 5.15
-    // https://github.com/qt/qtbase/blob/29400a683f96867133b28299c0d0bd6bcf40df35/src/corelib/kernel/qvariant.cpp#L4039-L4071
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+
     if (lhs.metaType() != rhs.metaType())
     {
         if (rhs.canConvert(lhs.metaType()))
@@ -27,7 +23,6 @@ bool looselyCompareVariants(QVariant &lhs, QVariant &rhs)
         }
         else
         {
-            // try the opposite conversion, it might work
             qSwap(lhs, rhs);
             if (!rhs.convert(lhs.metaType()))
             {
@@ -35,6 +30,7 @@ bool looselyCompareVariants(QVariant &lhs, QVariant &rhs)
             }
         }
     }
+#endif
 
     return lhs == rhs;
 }
@@ -51,7 +47,7 @@ BinaryOperation::BinaryOperation(TokenType op, ExpressionPtr left,
 {
 }
 
-QVariant BinaryOperation::execute(RunContext context) const
+QVariant BinaryOperation::execute(const ContextMap &context) const
 {
     auto left = this->left_->execute(context);
     auto right = this->right_->execute(context);
@@ -150,6 +146,12 @@ QVariant BinaryOperation::execute(RunContext context) const
                                                     Qt::CaseInsensitive);
             }
 
+            if (variantIs(left, QMetaType::QVariantMap) &&
+                right.canConvert<QString>())
+            {
+                return left.toMap().contains(right.toString());
+            }
+
             if (variantIs(left, QMetaType::QVariantList))
             {
                 return left.toList().contains(right);
@@ -215,7 +217,11 @@ QVariant BinaryOperation::execute(RunContext context) const
 
             auto matching = left.toString();
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             switch (static_cast<QMetaType::Type>(right.typeId()))
+#else
+            switch (static_cast<QMetaType::Type>(right.type()))
+#endif
             {
                 case QMetaType::QRegularExpression: {
                     return right.toRegularExpression()
@@ -225,13 +231,11 @@ QVariant BinaryOperation::execute(RunContext context) const
                 case QMetaType::QVariantList: {
                     auto list = right.toList();
 
-                    // list must be two items
                     if (list.size() != 2)
                     {
                         return false;
                     }
 
-                    // list must be a regular expression and an int
                     if (variantIsNot(list.at(0),
                                      QMetaType::QRegularExpression) ||
                         variantIsNot(list.at(1), QMetaType::Int))
@@ -242,7 +246,6 @@ QVariant BinaryOperation::execute(RunContext context) const
                     auto match =
                         list.at(0).toRegularExpression().match(matching);
 
-                    // if matched, return nth capture group. Otherwise, return ""
                     if (match.hasMatch())
                     {
                         return match.captured(list.at(1).toInt());
@@ -261,12 +264,11 @@ QVariant BinaryOperation::execute(RunContext context) const
     }
 }
 
-PossibleType BinaryOperation::synthesizeType() const
+PossibleType BinaryOperation::synthesizeType(const TypingContext &context) const
 {
-    auto leftSyn = this->left_->synthesizeType();
-    auto rightSyn = this->right_->synthesizeType();
+    auto leftSyn = this->left_->synthesizeType(context);
+    auto rightSyn = this->right_->synthesizeType(context);
 
-    // Return if either operand is ill-typed
     if (isIllTyped(leftSyn))
     {
         return leftSyn;
@@ -284,7 +286,7 @@ PossibleType BinaryOperation::synthesizeType() const
         case PLUS:
             if (left == Type::String)
             {
-                return TypeClass{Type::String};  // String concatenation
+                return TypeClass{Type::String};
             }
             else if (left == Type::Int && right == Type::Int)
             {
@@ -313,7 +315,7 @@ PossibleType BinaryOperation::synthesizeType() const
                             "Can only perform logical operations with Bools"};
         case EQ:
         case NEQ:
-            // equals/not equals always produces a valid output
+
             return TypeClass{Type::Bool};
         case LT:
         case GT:
@@ -340,7 +342,7 @@ PossibleType BinaryOperation::synthesizeType() const
                 this,
                 "Can only perform starts/ends with a List or two Strings"};
         case CONTAINS:
-            if (isList(left))
+            if (isList(left) || left == Type::Map)
             {
                 return TypeClass{Type::Bool};
             }
@@ -350,7 +352,8 @@ PossibleType BinaryOperation::synthesizeType() const
             }
 
             return IllTyped{
-                this, "Can only perform contains with a List or two Strings"};
+                this,
+                "Can only perform contains with a List, a Map, or two Strings"};
         case MATCH: {
             if (left != Type::String)
             {
@@ -363,7 +366,7 @@ PossibleType BinaryOperation::synthesizeType() const
                 return TypeClass{Type::Bool};
             }
             if (right == Type::MatchingSpecifier)
-            {  // group capturing
+            {
                 return TypeClass{Type::String};
             }
 
@@ -375,14 +378,14 @@ PossibleType BinaryOperation::synthesizeType() const
     }
 }
 
-QString BinaryOperation::debug() const
+QString BinaryOperation::debug(const TypingContext &context) const
 {
     return QString("BinaryOp[%1](%2 : %3, %4 : %5)")
         .arg(tokenTypeToInfoString(this->op_))
-        .arg(this->left_->debug())
-        .arg(possibleTypeToString(this->left_->synthesizeType()))
-        .arg(this->right_->debug())
-        .arg(possibleTypeToString(this->right_->synthesizeType()));
+        .arg(this->left_->debug(context))
+        .arg(possibleTypeToString(this->left_->synthesizeType(context)))
+        .arg(this->right_->debug(context))
+        .arg(possibleTypeToString(this->right_->synthesizeType(context)));
 }
 
 QString BinaryOperation::filterString() const

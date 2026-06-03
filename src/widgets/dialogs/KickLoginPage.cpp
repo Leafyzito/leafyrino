@@ -28,7 +28,7 @@
 
 #include <utility>
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 namespace {
 
@@ -332,11 +332,10 @@ KickLoginPage::KickLoginPage()
     });
 }
 
-void KickLoginPage::paintEvent(QPaintEvent * /*event*/)
+void KickLoginPage::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
-    // The default QFrame background in the fusion theme has very poor contrast
-    // on links, because it's bright gray.
+
     painter.setBrush(getTheme()->window.background);
     painter.setPen({});
     painter.drawRect(this->rect());

@@ -23,14 +23,13 @@ EditHotkeyDialog::EditHotkeyDialog(const std::shared_ptr<Hotkey> hotkey,
     , data_(hotkey)
 {
     this->ui_->setupUi(this);
-    // normalize Key_Enter (numpad) to Key_Return so both Enter keys display and behave identically
+
     QObject::connect(
         this->ui_->keyComboEdit, &QKeySequenceEdit::keySequenceChanged, this,
         [this](const QKeySequence &keySequence) {
             auto normalized = normalizeKeySequence(keySequence);
             if (normalized != keySequence)
             {
-                // Block signals to prevent infinite loop
                 QSignalBlocker blocker(this->ui_->keyComboEdit);
                 this->ui_->keyComboEdit->setKeySequence(normalized);
             }
@@ -43,7 +42,7 @@ EditHotkeyDialog::EditHotkeyDialog(const std::shared_ptr<Hotkey> hotkey,
 })");
     this->ui_->easyArgsPicker->setVisible(false);
     this->ui_->easyArgsLabel->setVisible(false);
-    // dynamically add category names to the category picker
+
     for (const auto &[_, hotkeyCategory] : hotkeyCategories())
     {
         this->ui_->categoryPicker->addItem(hotkeyCategory.displayName,
@@ -58,7 +57,6 @@ EditHotkeyDialog::EditHotkeyDialog(const std::shared_ptr<Hotkey> hotkey,
     }
     else
     {
-        // adding a new hotkey
         this->setWindowTitle("Add hotkey");
         this->ui_->categoryPicker->setCurrentIndex(
             size_t(HotkeyCategory::SplitInput));
@@ -73,9 +71,6 @@ void EditHotkeyDialog::setFromHotkey(std::shared_ptr<Hotkey> hotkey)
                             "correct action before saving.");
     }
 
-    // editing a hotkey
-
-    // update pickers/input boxes to values from Hotkey object
     this->ui_->categoryPicker->setCurrentIndex(size_t(hotkey->category()));
     this->ui_->keyComboEdit->setKeySequence(
         QKeySequence::fromString(hotkey->keySequence().toString()));
@@ -102,7 +97,6 @@ void EditHotkeyDialog::setFromHotkey(std::shared_ptr<Hotkey> hotkey)
             const auto &[displayText, argData] = def->possibleArguments.at(i);
             this->ui_->easyArgsPicker->addItem(displayText);
 
-            // check if matches
             if (argData.size() != hotkey->arguments().size())
             {
                 continue;
@@ -139,7 +133,7 @@ void EditHotkeyDialog::setFromHotkey(std::shared_ptr<Hotkey> hotkey)
         this->ui_->argumentsLabel->setVisible(true);
         this->ui_->argumentsDescription->setVisible(true);
     }
-    // update arguments
+
     QString argsText;
     bool first = true;
     for (const auto &arg : hotkey->arguments())
@@ -181,19 +175,14 @@ void EditHotkeyDialog::afterEdit()
     }
     QString nameText = this->ui_->nameEdit->text();
 
-    // check if another hotkey with this name exists, accounts for editing a hotkey
     bool isEditing = bool(this->data_);
     if (getApp()->getHotkeys()->getHotkeyByName(nameText))
     {
-        // A hotkey with this name already exists
         if (isEditing && this->data()->name() == nameText)
         {
-            // The hotkey that already exists is the one we are editing
         }
         else
         {
-            // The user is either creating a hotkey with a name that already exists, or
-            // the user is editing an already-existing hotkey and changing its name to a hotkey that already exists
             this->showEditError("Hotkey with this name already exists.");
             return;
         }
@@ -231,7 +220,6 @@ void EditHotkeyDialog::afterEdit()
         return;
     }
 
-    // use raw name from item data if possible, otherwise fallback to what the user has entered.
     auto actionTemp = this->ui_->actionPicker->currentData();
     QString action = this->ui_->actionPicker->currentText();
     if (actionTemp.isValid())
@@ -297,7 +285,6 @@ void EditHotkeyDialog::updatePossibleActions()
     if (this->data_ &&
         (currentText.isEmpty() || this->data_->category() == category))
     {
-        // is editing
         currentText = this->data_->action();
     }
     this->ui_->actionPicker->clear();
@@ -313,7 +300,6 @@ void EditHotkeyDialog::updatePossibleActions()
                                              action.first);
             if (action.first == currentText)
             {
-                // update action raw name to display name
                 indexToSet = this->ui_->actionPicker->model()->rowCount() - 1;
             }
         }
@@ -397,7 +383,6 @@ void EditHotkeyDialog::updateArgumentsInput()
         this->ui_->argumentsDescription->setVisible(true);
         this->ui_->argumentsEdit->setVisible(true);
 
-        // update easy picker
         if (def.possibleArguments.empty())
         {
             qCDebug(chatterinoHotkeys)

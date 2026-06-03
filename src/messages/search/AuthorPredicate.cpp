@@ -12,7 +12,6 @@ AuthorPredicate::AuthorPredicate(const QString &authors, bool negate)
     : MessagePredicate(negate)
     , authors_()
 {
-    // Check if any comma-seperated values were passed and transform those
     for (const auto &author : authors.split(',', Qt::SkipEmptyParts))
     {
         this->authors_ << author;

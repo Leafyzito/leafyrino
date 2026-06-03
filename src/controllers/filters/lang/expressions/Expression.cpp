@@ -6,4 +6,4 @@
 
 namespace chatterino::filters {
 
-}  // namespace chatterino::filters
+}

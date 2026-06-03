@@ -15,26 +15,26 @@
 #include "widgets/TooltipWidget.hpp"
 
 #include <pajlada/signals/signal.hpp>
+#include <QColor>
 #include <QGestureEvent>
 #include <QMenu>
 #include <QPaintEvent>
 #include <QPointer>
 #include <QScroller>
+#include <QSet>
 #include <QTimer>
 #include <QVariantAnimation>
 #include <QWheelEvent>
 #include <QWidget>
 
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 
 namespace chatterino {
-enum class HighlightState;
 
 class Channel;
 using ChannelPtr = std::shared_ptr<Channel>;
-
-enum class MessagePlatform : uint8_t;
 
 struct Message;
 using MessagePtr = std::shared_ptr<const Message>;
@@ -121,6 +121,8 @@ public:
     void setEnableScrollingToBottom(bool);
     bool getEnableScrollingToBottom() const;
     void setOverrideFlags(std::optional<MessageElementFlags> value);
+    void setCollapseMessages(bool value);
+    void setOverrideSeparateMessages(std::optional<bool> value);
     const std::optional<MessageElementFlags> &getOverrideFlags() const;
     void updateLastReadMessage();
 
@@ -135,6 +137,9 @@ public:
      */
     bool scrollToMessageId(const QString &id);
 
+    void setNukePreviewMessageIds(QSet<QString> messageIds);
+    void clearNukePreview();
+
     /// Pausing
     bool pausable() const;
     void setPausable(bool value);
@@ -144,6 +149,25 @@ public:
     void unpause(PauseReason reason);
 
     MessageElementFlags getFlags() const;
+
+    void setTransparentBackground(bool transparent);
+    bool getTransparentBackground() const;
+
+    void setOverrideImageScale(std::optional<float> value);
+    std::optional<float> getOverrideImageScale() const;
+    void setVerticalOffset(int offset);
+
+    void performLayout(bool causedByScrollbar = false,
+                       bool causedByShow = false);
+    void layoutVisibleMessages(const std::vector<MessageLayoutPtr> &messages);
+
+    void setOverrideEmoteScale(std::optional<float> value);
+    std::optional<float> getOverrideEmoteScale() const;
+
+    void setOverrideBadgeScale(std::optional<float> value);
+    std::optional<float> getOverrideBadgeScale() const;
+
+    void setCenterBadges(bool value);
 
     /// @brief The virtual channel used to display messages
     ///
@@ -215,8 +239,8 @@ public:
      * @param userName The login name of the user
      * @param alternativePopoutChannel Optional parameter containing the channel name to use for context
      **/
-    void showUserInfoPopup(const QString &userName, MessagePlatform platform,
-                           const QString &alternativePopoutChannel = {});
+    void showUserInfoPopup(const QString &userName,
+                           QString alternativePopoutChannel = QString());
 
     /**
      * @brief This method is meant to be used when filtering out channels.
@@ -263,7 +287,11 @@ protected:
     void paintEvent(QPaintEvent * /*event*/) override;
     void wheelEvent(QWheelEvent *event) override;
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     void enterEvent(QEnterEvent * /*event*/) override;
+#else
+    void enterEvent(QEvent * /*event*/) override;
+#endif
     void leaveEvent(QEvent * /*event*/) override;
 
     bool event(QEvent *event) override;
@@ -302,11 +330,9 @@ private:
                          const MessagePtr &replacement);
     void messagesUpdated();
 
-    void performLayout(bool causedByScrollbar = false,
-                       bool causedByShow = false);
-    void layoutVisibleMessages(const std::vector<MessageLayoutPtr> &messages);
     void updateScrollbar(const std::vector<MessageLayoutPtr> &messages,
                          bool causedByScrollbar, bool causedByShow);
+    void updateScrollWidgetGeometries();
 
     void drawMessages(QPainter &painter, const QRect &area);
     void setSelection(const SelectionItem &start, const SelectionItem &end);
@@ -324,6 +350,8 @@ private:
         QMenu *menu, const MessageLayoutElement *hoveredElement);
     void addCommandExecutionContextMenuItems(QMenu *menu,
                                              const MessageLayoutPtr &layout);
+    void translateMessage(const MessagePtr &message);
+    void maybeAutoTranslateMessage(const MessagePtr &message);
 
     int getLayoutWidth() const;
     void updatePauses();
@@ -371,6 +399,7 @@ private:
     uint32_t pauseSelectionOffset_ = 0;
 
     std::optional<MessageElementFlags> overrideFlags_;
+    bool collapseMessages_{false};
     MessageLayoutPtr lastReadMessage_;
 
     ThreadGuard snapshotGuard_;
@@ -415,6 +444,7 @@ private:
 
     // Returns whether the scrollbar should have highlights
     bool showScrollbarHighlights() const;
+    void refreshScrollbarHighlights();
 
     // This variable can be used to decide whether or not we should render the
     // "Show latest messages" button
@@ -424,6 +454,14 @@ private:
     bool onlyUpdateEmotes_ = false;
 
     bool isOverlay_ = false;
+    bool transparentBackground_ = false;
+    std::optional<float> overrideImageScale_;
+    std::optional<float> overrideEmoteScale_;
+    std::optional<float> overrideBadgeScale_;
+    std::optional<bool> overrideSeparateMessages_;
+    bool centerBadges_ = false;
+
+    int verticalOffset_ = 0;
 
     // Mouse event variables
     bool isLeftMouseDown_ = false;
@@ -444,6 +482,7 @@ private:
     MessageLayout *highlightedMessage_ = nullptr;
     QVariantAnimation highlightAnimation_;
     void setupHighlightAnimationColors();
+    QSet<QString> nukePreviewMessageIds_;
 
     struct {
         QCursor neutral;

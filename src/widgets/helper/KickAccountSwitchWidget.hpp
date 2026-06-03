@@ -5,8 +5,6 @@
 
 namespace chatterino {
 
-// FIXME: this is mostly the same as the Twitch account switcher, but we don't
-// have some common base class
 class KickAccountSwitchWidget : public QListWidget
 {
 public:

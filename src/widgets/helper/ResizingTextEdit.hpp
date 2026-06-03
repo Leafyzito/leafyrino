@@ -17,6 +17,7 @@ public:
     ResizingTextEdit();
 
     QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
 
     bool hasHeightForWidth() const override;
     bool isFirstWord() const;
@@ -28,15 +29,13 @@ public:
     pajlada::Signals::Signal<QMenu *, QPoint> contextMenuRequested;
 
     void setCompleter(QCompleter *c);
-    /**
-     * Resets a completion for this text if one was is progress.
-     * See `completionInProgress_`.
-     */
+
     void resetCompletion();
 
 protected:
     int heightForWidth(int) const override;
     void keyPressEvent(QKeyEvent *event) override;
+    void changeEvent(QEvent *event) override;
 
     void focusInEvent(QFocusEvent *event) override;
     void focusOutEvent(QFocusEvent *event) override;
@@ -47,29 +46,13 @@ protected:
     void contextMenuEvent(QContextMenuEvent *event) override;
 
 private:
-    // hadSpace is set to true in case the "textUnderCursor" word was after a
-    // space
+    qreal documentHeightForWidth(int width) const;
+    void invalidateAncestorLayouts();
+
     QString textUnderCursor(bool *hadSpace = nullptr) const;
 
     QCompleter *completer_ = nullptr;
-    /**
-     * This is true if a completion was done but the user didn't type yet,
-     * and might want to press `Tab` again to get the next completion
-     * on the original text.
-     *
-     * For example:
-     *
-     * input: "pog"
-     * `Tab` pressed:
-     *   - complete to "PogBones"
-     *   - retain "pog" for next completion
-     *   - set `completionInProgress_ = true`
-     * `Tab` pressed again:
-     *   - complete ["pog"] to "PogChamp"
-     *
-     * [other key] pressed or cursor moved - updating the input text:
-     *   - set `completionInProgress_ = false`
-     */
+
     bool completionInProgress_ = false;
 
     bool eventFilter(QObject *obj, QEvent *event) override;

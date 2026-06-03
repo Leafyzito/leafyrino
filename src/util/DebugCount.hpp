@@ -14,21 +14,18 @@
 namespace chatterino {
 
 enum class DebugObject : size_t {
-    // windowing
+
     AttachedWindow,
     BaseWindow,
 
-    // live updates
     LiveUpdatesSubscription,
     LiveUpdatesSubscriptionBacklog,
     LiveUpdatesConnection,
 
-    // http/other networking
     HTTPRequestStarted,
     HTTPRequestSuccess,
     NetworkData,
 
-    // images
     Image,
     LoadedImage,
     AnimatedImage,
@@ -40,11 +37,9 @@ enum class DebugObject : size_t {
     LastImageGcEligible,
     LastImageGcLeft,
 
-    // Lua
     LuaHTTPResponse,
     LuaHTTPRequest,
 
-    // Messages
     MessageDrawingBuffer,
     MessageElement,
     MessageLayout,
@@ -52,7 +47,6 @@ enum class DebugObject : size_t {
     MessageThread,
     Message,
 
-    // Chatterino7
     SeventvPersonalEmoteSets,
     SeventvPersonalEmoteAssignments,
     SeventvPaints,
@@ -91,7 +85,6 @@ constexpr magic_enum::customize::customize_t
     using chatterino::DebugObject;
     switch (value)
     {
-        // class names
         case chatterino::DebugObject::AttachedWindow:
         case chatterino::DebugObject::BaseWindow:
         case chatterino::DebugObject::NetworkData:

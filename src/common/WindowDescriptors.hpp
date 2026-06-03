@@ -51,6 +51,9 @@ struct SplitDescriptor {
     // Twitch Channel name or IRC channel name
     QString channelName_;
 
+    // Twitch channel is joined through an anonymous read only IRC connection
+    bool anonymous_{false};
+
     // IRC server
     int server_{-1};
 

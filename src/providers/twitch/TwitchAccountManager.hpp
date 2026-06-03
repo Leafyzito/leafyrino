@@ -10,18 +10,12 @@
 #include "util/QStringHash.hpp"
 #include "util/RapidJsonSerializeQString.hpp"
 
-#include <pajlada/signals/signal.hpp>
+#include <boost/signals2.hpp>
 #include <QString>
 
 #include <memory>
 #include <mutex>
 #include <vector>
-
-//
-// Warning: This class is not supposed to be created directly.
-// 			Get yourself an instance from our friends over at
-// AccountManager.hpp
-//
 
 namespace chatterino {
 
@@ -42,8 +36,6 @@ public:
         QString oauthToken;
     };
 
-    // Returns the current twitchUsers, or the anonymous user if we're not
-    // currently logged in
     std::shared_ptr<TwitchAccount> getCurrent();
 
     std::vector<QString> getUsernames() const;
@@ -60,22 +52,16 @@ public:
     pajlada::Settings::Setting<QString> currentUsername{"/accounts/current",
                                                         ""};
 
-    /// This signal fires after we've figured out what the new account is, but before
-    /// any updates to Helix have been made.
-    ///
-    /// Useful for scenarios where you have to call Helix using the previous account.
     pajlada::Signals::Signal<std::shared_ptr<TwitchAccount>,
                              std::shared_ptr<TwitchAccount>>
         currentUserAboutToChange;
 
-    pajlada::Signals::NoArgSignal currentUserChanged;
+    boost::signals2::signal<void()> currentUserChanged;
     pajlada::Signals::NoArgSignal userListUpdated;
     pajlada::Signals::NoArgSignal currentUserNameChanged;
 
     SignalVector<std::shared_ptr<TwitchAccount>> accounts;
 
-    /// The signal is invoked with (caller, error) where caller is the argument
-    /// passed to reloadEmotes() and error.
     pajlada::Signals::Signal<void *, ExpectedStr<void>> emotesReloaded;
 
 private:

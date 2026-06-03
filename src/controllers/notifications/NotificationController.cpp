@@ -33,8 +33,6 @@ NotificationController::NotificationController()
         this->channelMap[Platform::Twitch].append(channelName);
     }
 
-    // We can safely ignore this signal connection since channelMap will always be destroyed
-    // before the NotificationController
     std::ignore =
         this->channelMap[Platform::Twitch].delayedItemsChanged.connect([this] {
             this->twitchSetting_.setValue(
@@ -142,13 +140,11 @@ void NotificationController::notifyTwitchChannelLive(
         }
     }
 
-    // Message in /live channel
     getApp()->getTwitch()->getLiveChannel()->addMessage(
         MessageBuilder::makeLiveMessage(payload.displayName, payload.channelId,
                                         payload.title),
         MessageContext::Original);
 
-    // Notify on all channels with a ping sound
     if (showNotification && !playedSound &&
         getSettings()->notificationOnAnyChannel)
     {
@@ -156,10 +152,8 @@ void NotificationController::notifyTwitchChannelLive(
     }
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void NotificationController::notifyTwitchChannelOffline(const QString &id) const
 {
-    // "delete" old 'CHANNEL is live' message
     auto snapshot =
         getApp()->getTwitch()->getLiveChannel()->getMessageSnapshot(200);
     for (const auto &s : snapshot | std::views::reverse)
@@ -218,12 +212,11 @@ void NotificationController::fetchFakeChannels()
                 }
             },
             [batch]() {
-                // we done fucked up.
                 qCWarning(chatterinoNotification)
                     << "Failed to fetch live status for " << batch;
             },
             []() {
-                // finally
+
             });
     }
 }
@@ -250,7 +243,7 @@ void NotificationController::updateFakeChannel(
     }
     if (channelIt->second.isLive == live && !isInitialUpdate)
     {
-        return;  // nothing changed
+        return;
     }
 
     if (live && channelIt->second.id.isNull())
@@ -260,12 +253,8 @@ void NotificationController::updateFakeChannel(
 
     channelIt->second.isLive = live;
 
-    // Similar code can be found in TwitchChannel::onLiveStatusChange.
-    // Since this is a fake channel, we don't send a live message in the
-    // TwitchChannel.
     if (!live)
     {
-        // Stream is offline
         this->notifyTwitchChannelOffline(channelIt->second.id);
         return;
     }

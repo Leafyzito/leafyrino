@@ -28,11 +28,6 @@ class Split;
 class NotebookTab;
 class Notebook;
 
-//
-// Note: This class is a spaghetti container. There is a lot of spaghetti code
-// inside but it doesn't expose any of it publicly.
-//
-
 class SplitContainer final : public BaseWidget
 {
     Q_OBJECT
@@ -86,9 +81,6 @@ public:
         Node();
         Node(Split *_split, Node *_parent);
 
-        /**
-         * @exposeenum c2.SplitContainerNodeType
-         */
         enum class Type {
             EmptyRoot,
             Split,
@@ -118,7 +110,6 @@ public:
                     std::vector<DropRect> &dropRects_,
                     std::vector<ResizeRect> &resizeRects);
 
-        // Clamps the flex values ensuring they're never below 0
         void clamp();
 
         static Type toContainerType(SplitDirection _dir);
@@ -187,20 +178,14 @@ public:
     Split *appendNewSplit(bool openChannelNameDialog);
 
     struct InsertOptions {
-        /// Position must be set alone, as if it's set it will override direction & relativeNode with its underlying values
         std::optional<Position> position{};
 
-        /// Will be used to figure out the relative node, so relative node or position must not be set if using this
         Split *relativeSplit{nullptr};
 
         Node *relativeNode{nullptr};
         std::optional<SplitDirection> direction{};
     };
 
-    // Insert split into the base node of this container
-    // Default values for each field must be specified due to these bugs:
-    //  - https://bugs.llvm.org/show_bug.cgi?id=36684
-    //  - https://gcc.gnu.org/bugzilla/show_bug.cgi?id=96645
     void insertSplit(Split *split, InsertOptions &&options = InsertOptions{
                                        .position = std::nullopt,
                                        .relativeSplit = nullptr,
@@ -208,7 +193,6 @@ public:
                                        .direction = std::nullopt,
                                    });
 
-    // Returns a pointer to the selected split
     Split *getSelectedSplit() const;
     Position releaseSplit(Split *split);
     Position deleteSplit(Split *split);
@@ -280,7 +264,6 @@ private:
 
     pajlada::Signals::SignalHolder signalHolder_;
 
-    // Specifies whether the user is currently dragging something over this container
     bool isDragging_ = false;
 };
 

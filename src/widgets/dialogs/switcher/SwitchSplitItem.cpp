@@ -39,7 +39,6 @@ void SwitchSplitItem::paint(QPainter *painter, const QRect &rect) const
 
     painter->setRenderHint(QPainter::Antialiasing, true);
 
-    // TODO(leon): Right pen/brush/font settings?
     painter->setPen(getApp()->getThemes()->splits.header.text);
     painter->setBrush(Qt::SolidPattern);
     painter->setFont(
@@ -50,7 +49,6 @@ void SwitchSplitItem::paint(QPainter *painter, const QRect &rect) const
 
     if (this->split_)
     {
-        // Draw channel name and name of the containing tab
         const auto availableTextWidth = rect.width() - iconRect.width();
         QRect leftTextRect =
             QRect(iconRect.topRight(),
@@ -70,7 +68,6 @@ void SwitchSplitItem::paint(QPainter *painter, const QRect &rect) const
     }
     else if (!this->split_ && this->container_)
     {
-        // Only draw name of tab
         QRect textRect =
             QRect(iconRect.topRight(),
                   QSize(rect.width() - iconRect.width(), iconRect.height()));

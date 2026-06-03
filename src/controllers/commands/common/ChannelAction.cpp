@@ -23,7 +23,6 @@ namespace chatterino::commands {
 
 bool IncompleteHelixUser::hydrateFrom(const std::vector<HelixUser> &users)
 {
-    // Find user in list based on our id or login
     auto resolvedIt =
         std::find_if(users.begin(), users.end(), [this](const auto &user) {
             if (!this->login.isEmpty())
@@ -68,7 +67,6 @@ Expected<std::vector<PerformChannelAction>, QString> parseChannelAction(
 {
     if (ctx.channel == nullptr)
     {
-        // A ban action must be performed with a channel as a context
         return makeUnexpected(
             "A " % command %
             " action must be performed with a channel as a context");
@@ -117,7 +115,7 @@ Expected<std::vector<PerformChannelAction>, QString> parseChannelAction(
     {
         if (positionalArguments.isEmpty())
         {
-            base.duration = 10 * 60;  // 10 min
+            base.duration = 10 * 60;
         }
         else
         {
@@ -193,12 +191,10 @@ ExpectedStr<StartUserParticipationAction> parseUserParticipationAction(
 {
     if (ctx.twitchChannel == nullptr)
     {
-        // This action must be performed with a twitch channel as a context
         return makeUnexpected("The " % command %
                               " command only works in Twitch channels");
     }
 
-    // Define arguments
     QCommandLineParser parser;
     parser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsLongOptions);
     parser.setOptionsAfterPositionalArgumentsMode(
@@ -221,7 +217,6 @@ ExpectedStr<StartUserParticipationAction> parseUserParticipationAction(
     const auto joined = ctx.words.join(" ");
     parser.parse(QProcess::splitCommand(joined));
 
-    // Input validation
     if (!parser.isSet(titleOption))
     {
         return makeUnexpected("Missing title - " % usage);
@@ -244,7 +239,6 @@ ExpectedStr<StartUserParticipationAction> parseUserParticipationAction(
         return makeUnexpected("Missing choices - " % usage);
     }
 
-    // Build action
     StartUserParticipationAction action{
         .broadcasterID = ctx.twitchChannel->roomId(),
         .title = parser.value(titleOption),

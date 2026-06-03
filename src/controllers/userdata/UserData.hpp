@@ -15,10 +15,6 @@
 
 namespace chatterino {
 
-// UserData defines a set of data that is defined for a unique user
-// It can contain things like optional replacement color for the user, a unique alias
-// or a user note that should be displayed with the user
-// Replacement fields should be optional, where none denotes that the field should not be updated for the user
 struct UserData {
     std::optional<QColor> color{std::nullopt};
     QString notes;

@@ -22,7 +22,6 @@ SvgButton::SvgButton(Src source, BaseWidget *parent, QSize padding)
 
 void SvgButton::setSource(Src source)
 {
-    // TODO: compare sources before trying to load / invalidate?
     this->source_ = std::move(source);
     this->loadSource();
     this->invalidateContent();
@@ -83,10 +82,6 @@ void SvgButton::paintContent(QPainter &painter)
     {
         painter.save();
 
-        // Set the composition mode so that the upcoming color fill only applies the color
-        // on top of the pre-existing SVG contents
-        //
-        // More info on how the composition modes work can be found here: https://doc.qt.io/qt-6/qpainter.html#CompositionMode-enum
         painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
         painter.fillRect(bounds, *this->color_);
 

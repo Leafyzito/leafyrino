@@ -17,14 +17,12 @@ class KickChannel;
 
 struct CommandContext {
     QStringList words;
+    QString rawText;
 
-    // Can be null
     ChannelPtr channel;
 
-    // Can be null if `channel` is null or if `channel` is not a Twitch channel
     TwitchChannel *twitchChannel;
 
-    // Can be null if `channel` is null or if `channel` is not a Kick channel
     KickChannel *kickChannel;
 };
 

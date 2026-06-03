@@ -9,8 +9,10 @@
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/highlights/HighlightController.hpp"
 #include "controllers/highlights/HighlightResult.hpp"
+#include "messages/Link.hpp"
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
+#include "messages/MessageElement.hpp"
 #include "providers/twitch/eventsub/Controller.hpp"
 #include "providers/twitch/eventsub/MessageBuilder.hpp"
 #include "providers/twitch/eventsub/MessageHandlers.hpp"
@@ -26,10 +28,14 @@
 
 #include <boost/json.hpp>
 #include <QDateTime>
+#include <QTimer>
+#include <QVector>
 #include <twitch-eventsub-ws/listener.hpp>
 #include <twitch-eventsub-ws/session.hpp>
 
+#include <algorithm>
 #include <chrono>
+#include <optional>
 
 namespace {
 
@@ -55,6 +61,109 @@ concept CanHandleModMessage =
              const std::remove_cvref_t<Action> &action) {
         handleModerateMessage(channel, time, event, action);
     };
+
+struct RecentRoleMod {
+    QString key;
+    QDateTime expiresAt;
+};
+
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+QVector<RecentRoleMod> recentRoleMods;
+
+QString roleEventKey(const channel_moderate::Event &event,
+                     const lib::String &targetLogin)
+{
+    const auto broadcaster = event.broadcasterUserLogin.qt().toLower();
+    const auto moderator = event.moderatorUserLogin.qt().toLower();
+    const auto target = targetLogin.qt().toLower();
+
+    QString key;
+    key.reserve(broadcaster.size() + moderator.size() + target.size() + 2);
+    key.append(broadcaster);
+    key.append(u'|');
+    key.append(moderator);
+    key.append(u'|');
+    key.append(target);
+    return key;
+}
+
+void pruneRecentRoleMods(const QDateTime &now)
+{
+    recentRoleMods.erase(
+        std::remove_if(recentRoleMods.begin(), recentRoleMods.end(),
+                       [&now](const auto &entry) {
+                           return entry.expiresAt <= now;
+                       }),
+        recentRoleMods.end());
+}
+
+void rememberRecentRoleMod(const QString &key)
+{
+    const auto now = QDateTime::currentDateTimeUtc();
+    pruneRecentRoleMods(now);
+
+    recentRoleMods.push_back({key, now.addMSecs(2500)});
+}
+
+bool hasRecentRoleMod(const QString &key)
+{
+    const auto now = QDateTime::currentDateTimeUtc();
+    pruneRecentRoleMods(now);
+
+    return std::any_of(recentRoleMods.cbegin(), recentRoleMods.cend(),
+                       [&key](const auto &entry) {
+                           return entry.key == key;
+                       });
+}
+
+std::optional<QString> deletedMessageID(const MessagePtr &message)
+{
+    if (!message || !message->flags.has(MessageFlag::ModerationAction))
+    {
+        return std::nullopt;
+    }
+
+    for (const auto &element : message->elements)
+    {
+        const auto link = element->getLink();
+        if (link.type == Link::JumpToMessage && !link.value.isEmpty())
+        {
+            return link.value;
+        }
+    }
+
+    return std::nullopt;
+}
+
+void addOrReplaceDeleteAction(TwitchChannel *channel, MessagePtr message)
+{
+    const auto messageID = deletedMessageID(message);
+    if (!messageID)
+    {
+        channel->addMessage(message, MessageContext::Original);
+        return;
+    }
+
+    if (auto original = channel->findMessageByID(*messageID))
+    {
+        original->flags.set(MessageFlag::Disabled);
+        original->flags.set(MessageFlag::InvalidReplyTarget);
+    }
+
+    const auto messages = channel->getMessageSnapshot();
+    auto it =
+        std::find_if(messages.rbegin(), messages.rend(), [&](const auto &m) {
+            const auto existingID = deletedMessageID(m);
+            return existingID && *existingID == *messageID;
+        });
+    if (it != messages.rend())
+    {
+        channel->replaceMessage(*it, message);
+        return;
+    }
+
+    channel->addMessage(message, MessageContext::Original);
+}
 
 }  // namespace
 
@@ -203,9 +312,61 @@ void Connection::onChannelModerate(
                 builder->loginName = payload.event.moderatorUserLogin.qt();
                 makeModerateMessage(builder, payload.event, action);
                 auto msg = builder.release();
-                runInGuiThread([channel, msg] {
-                    channel->addMessage(msg, MessageContext::Original);
-                });
+                if constexpr (std::is_same_v<Action, channel_moderate::Mod>)
+                {
+                    const auto key =
+                        roleEventKey(payload.event, action.userLogin);
+                    runInGuiThread([channelPtr, msg, key] {
+                        auto *roleChannel =
+                            dynamic_cast<TwitchChannel *>(channelPtr.get());
+                        if (roleChannel == nullptr || roleChannel->isEmpty())
+                        {
+                            return;
+                        }
+
+                        rememberRecentRoleMod(key);
+                        roleChannel->addMessage(msg, MessageContext::Original);
+                    });
+                }
+                else if constexpr (std::is_same_v<Action,
+                                                  channel_moderate::Unvip>)
+                {
+                    const auto key =
+                        roleEventKey(payload.event, action.userLogin);
+                    runInGuiThread([channelPtr, msg, key] {
+                        QTimer::singleShot(1500, [channelPtr, msg, key] {
+                            if (hasRecentRoleMod(key))
+                            {
+                                return;
+                            }
+
+                            auto *delayedChannel =
+                                dynamic_cast<TwitchChannel *>(channelPtr.get());
+                            if (delayedChannel == nullptr ||
+                                delayedChannel->isEmpty())
+                            {
+                                return;
+                            }
+
+                            delayedChannel->addMessage(
+                                msg, MessageContext::Original);
+                        });
+                    });
+                }
+                else
+                {
+                    runInGuiThread([channel, msg] {
+                        if constexpr (std::is_same_v<Action,
+                                                     channel_moderate::Delete>)
+                        {
+                            addOrReplaceDeleteAction(channel, msg);
+                        }
+                        else
+                        {
+                            channel->addMessage(msg, MessageContext::Original);
+                        }
+                    });
+                }
             }
 
             if constexpr (CanHandleModMessage<Action>)
@@ -246,7 +407,7 @@ void Connection::onAutomodMessageHold(
         if (highlighted)
         {
             MessageBuilder::triggerHighlights(
-                channel,
+                channel, body,
                 {
                     .customSound =
                         highlightResult.customSoundUrl.value_or<QUrl>({}),

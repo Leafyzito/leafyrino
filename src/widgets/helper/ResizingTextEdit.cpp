@@ -9,10 +9,15 @@
 #include "controllers/completion/TabCompletionModel.hpp"
 #include "singletons/Settings.hpp"
 
+#include <QAbstractTextDocumentLayout>
+#include <QEvent>
+#include <QLayout>
 #include <QMenu>
 #include <QMimeData>
 #include <QMimeDatabase>
 #include <QObject>
+#include <QTextDocument>
+#include <QtMath>
 
 namespace chatterino {
 
@@ -26,6 +31,11 @@ ResizingTextEdit::ResizingTextEdit()
 
     QObject::connect(this, &QTextEdit::textChanged, this,
                      &QWidget::updateGeometry);
+    QObject::connect(this->document()->documentLayout(),
+                     &QAbstractTextDocumentLayout::documentSizeChanged, this,
+                     [this] {
+                         this->invalidateAncestorLayouts();
+                     });
 
     QObject::connect(this, &QTextEdit::cursorPositionChanged, [this]() {
         // If tab was pressed and we're completing/replacing the current word,
@@ -50,9 +60,48 @@ ResizingTextEdit::ResizingTextEdit()
     this->installEventFilter(this);
 }
 
+void ResizingTextEdit::changeEvent(QEvent *event)
+{
+    QTextEdit::changeEvent(event);
+    if (event->type() == QEvent::FontChange)
+    {
+        // QTextEdit::setFont() updates the widget font but not the backing
+        // document's default font. Keep them in sync so the live document
+        // relayout tracks scale changes correctly.
+        this->document()->setDefaultFont(this->font());
+        this->invalidateAncestorLayouts();
+    }
+}
+
+void ResizingTextEdit::invalidateAncestorLayouts()
+{
+    this->updateGeometry();
+
+    // Walk up only 3 levels (inputWrapper -> SplitInput -> Split) to avoid
+    // invalidating unrelated ancestor layouts during scale propagation.
+    QWidget *w = this->parentWidget();
+    for (int i = 0; w != nullptr && i < 3; ++i, w = w->parentWidget())
+    {
+        if (auto *lay = w->layout())
+        {
+            lay->invalidate();
+        }
+        w->updateGeometry();
+    }
+}
+
 QSize ResizingTextEdit::sizeHint() const
 {
-    return QSize(this->width(), this->heightForWidth(this->width()));
+    auto hint = QTextEdit::sizeHint();
+    hint.setHeight(this->heightForWidth(hint.width()));
+    return hint;
+}
+
+QSize ResizingTextEdit::minimumSizeHint() const
+{
+    auto hint = QTextEdit::minimumSizeHint();
+    hint.setHeight(this->heightForWidth(hint.width()));
+    return hint;
 }
 
 bool ResizingTextEdit::hasHeightForWidth() const
@@ -67,12 +116,31 @@ bool ResizingTextEdit::isFirstWord() const
     return !portionBeforeCursor.contains(' ');
 };
 
-int ResizingTextEdit::heightForWidth(int) const
+int ResizingTextEdit::heightForWidth(int width) const
 {
     auto margins = this->contentsMargins();
+    auto documentWidth = qMax(width - margins.left() - margins.right(), 1);
 
-    return margins.top() + this->document()->size().height() +
+    return margins.top() + qCeil(this->documentHeightForWidth(documentWidth)) +
            margins.bottom() + 5;
+}
+
+qreal ResizingTextEdit::documentHeightForWidth(int width) const
+{
+    QTextDocument document;
+    document.setDocumentMargin(this->document()->documentMargin());
+    document.setDefaultFont(this->font());
+    document.setDefaultTextOption(this->document()->defaultTextOption());
+
+    auto text = this->toPlainText();
+    if (text.isEmpty())
+    {
+        text = " ";
+    }
+
+    document.setPlainText(text);
+    document.setTextWidth(width);
+    return document.size().height();
 }
 
 QString ResizingTextEdit::textUnderCursor(bool *hadSpace) const
@@ -181,7 +249,6 @@ void ResizingTextEdit::keyPressEvent(QKeyEvent *event)
                 QSignalBlocker dontTriggerCursorMovement(this);
                 this->completer_->complete();
             }
-            this->textChanged();
             return;
         }
 
@@ -211,7 +278,6 @@ void ResizingTextEdit::keyPressEvent(QKeyEvent *event)
             QSignalBlocker dontTriggerCursorMovement(this);
             this->completer_->complete();
         }
-        this->textChanged();
         return;
     }
 

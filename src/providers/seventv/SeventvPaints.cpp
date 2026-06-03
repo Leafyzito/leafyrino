@@ -14,9 +14,13 @@
 
 #include <QUrlQuery>
 
+#include <chrono>
+
 namespace {
 using namespace chatterino;
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
+
+constexpr std::chrono::minutes SEVENTV_PAINT_FRAME_CACHE_LIFETIME{4};
 
 QColor rgbaToQColor(const uint32_t color)
 {
@@ -50,10 +54,6 @@ QGradientStops parsePaintStops(const QJsonArray &stops)
         const auto rgbaColor = stopObject["color"].toInt();
         auto position = stopObject["at"].toDouble();
 
-        // HACK: qt does not support hard edges in gradients like css does
-        // Setting a different color at the same position twice just overwrites
-        // the previous color. So we have to shift the second point slightly
-        // ahead, simulating an actual hard edge
         if (position <= lastStop)
         {
             position = lastStop + 0.0000001;
@@ -120,6 +120,7 @@ std::optional<std::shared_ptr<Paint>> parsePaint(const QJsonObject &paintJson)
         {
             return std::nullopt;
         }
+        image->setFrameCacheLifetime(SEVENTV_PAINT_FRAME_CACHE_LIFETIME);
 
         return std::make_shared<UrlPaint>(name, id, image, shadows);
     }

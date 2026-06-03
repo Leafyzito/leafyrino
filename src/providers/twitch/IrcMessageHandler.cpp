@@ -30,12 +30,12 @@
 #include "util/FormatTime.hpp"
 #include "util/Helpers.hpp"
 #include "util/IrcHelpers.hpp"
-#include "util/QMagicEnum.hpp"
 
 #include <IrcMessage>
 #include <QLocale>
 #include <QStringBuilder>
 
+#include <algorithm>
 #include <memory>
 
 using namespace chatterino::literals;
@@ -54,10 +54,39 @@ const QSet<QString> SPECIAL_MESSAGE_TYPES{
     "announcement",     // new mod announcement thing
     "viewermilestone",  // watch streak, but other categories possible in future
     "modiversary",      // Mod anniversary.
-    "socialsharingbadge",  // social media badge from sharing clips
 };
 
 const QString ANONYMOUS_GIFTER_ID = "274598607";
+
+bool deleteActionTargetsMessage(const MessagePtr &message,
+                                const QString &messageID)
+{
+    if (!message || messageID.isEmpty() ||
+        !message->flags.has(MessageFlag::ModerationAction))
+    {
+        return false;
+    }
+
+    return std::any_of(message->elements.cbegin(), message->elements.cend(),
+                       [&](const auto &element) {
+                           const auto link = element->getLink();
+                           return link.type == Link::JumpToMessage &&
+                                  link.value == messageID;
+                       });
+}
+
+bool hasDeleteActionForMessage(Channel *channel, const QString &messageID)
+{
+    if (messageID.isEmpty())
+    {
+        return false;
+    }
+
+    const auto messages = channel->getMessageSnapshot();
+    return std::any_of(messages.cbegin(), messages.cend(), [&](const auto &m) {
+        return deleteActionTargetsMessage(m, messageID);
+    });
+}
 
 MessagePtr generateBannedMessage(bool confirmedBan)
 {
@@ -107,7 +136,7 @@ int stripLeadingReplyMention(const QVariantMap &tags, QString &content)
     if (const auto it = tags.find("reply-parent-display-name");
         it != tags.end())
     {
-        auto displayName = parseTagString(it.value().toString());
+        auto displayName = it.value().toString();
 
         if (content.length() <= 1 + displayName.length())
         {
@@ -119,8 +148,7 @@ int stripLeadingReplyMention(const QVariantMap &tags, QString &content)
             content.at(1 + displayName.length()) == ' ' &&
             content.indexOf(displayName, 1) == 1)
         {
-            // Reply prefix's "@" + displayName + " "
-            qsizetype messageOffset = 1 + displayName.length() + 1;
+            int messageOffset = 1 + displayName.length() + 1;
             content.remove(0, messageOffset);
             return messageOffset;
         }
@@ -287,6 +315,26 @@ MessagePtr parseNoticeMessage(Communi::IrcNoticeMessage *message)
                              calculateMessageTime(message).time());
 }
 
+bool isWarningAcknowledgeNotice(const QString &text)
+{
+    return text.startsWith(
+               "You received a Warning from a moderator in this channel.",
+               Qt::CaseInsensitive) ||
+           text.contains("Acknowledge the Warning at", Qt::CaseInsensitive);
+}
+
+bool isRaidCanceledNoticeText(const QString &text)
+{
+    const auto content = parseTagString(text).trimmed();
+    return content.contains("raid has been canceled", Qt::CaseInsensitive) ||
+           content.contains("raid has been cancelled", Qt::CaseInsensitive);
+}
+
+bool isRaidCanceledNotice(Communi::IrcNoticeMessage *message)
+{
+    return message != nullptr && isRaidCanceledNoticeText(message->content());
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -317,9 +365,32 @@ void IrcMessageHandler::parseMessageInto(Communi::IrcMessage *message,
 
     if (command == u"NOTICE"_s)
     {
-        sink.addMessage(parseNoticeMessage(
-                            dynamic_cast<Communi::IrcNoticeMessage *>(message)),
-                        MessageContext::Original);
+        auto *notice = dynamic_cast<Communi::IrcNoticeMessage *>(message);
+        if (isRaidCanceledNotice(notice))
+        {
+            if (channel != nullptr)
+            {
+                channel->clearActiveRaid();
+            }
+            return;
+        }
+        if (notice != nullptr && channel != nullptr &&
+            isWarningAcknowledgeNotice(notice->content()))
+        {
+            channel->handleChatWarningNotice();
+            return;
+        }
+
+        auto parsed = parseNoticeMessage(notice);
+        if (parsed && isRaidCanceledNoticeText(parsed->messageText))
+        {
+            if (channel != nullptr)
+            {
+                channel->clearActiveRaid();
+            }
+            return;
+        }
+        sink.addMessage(parsed, MessageContext::Original);
     }
 
     if (command == u"CLEARCHAT"_s)
@@ -600,7 +671,8 @@ void IrcMessageHandler::handleClearMessageMessage(Communi::IrcMessage *message)
 
     msg->flags.set(MessageFlag::Disabled);
     msg->flags.set(MessageFlag::InvalidReplyTarget);
-    if (!getSettings()->hideDeletionActions)
+    if (!getSettings()->hideDeletionActions &&
+        !hasDeleteActionForMessage(chan.get(), targetID))
     {
         chan->addMessage(MessageBuilder::makeDeletionMessageFromIRC(msg),
                          MessageContext::Original);
@@ -665,6 +737,20 @@ void IrcMessageHandler::handleUserStateMessage(Communi::IrcMessage *message)
         {
             tc->setSendWait(0);
         }
+        else
+        {
+            // USERSTATE reflects the current ability to chat for the
+            // logged-in user. Recompute the send-wait timer from the
+            // current room state instead of keeping an old timeout value
+            // that may have already been removed by an untimeout/unban.
+            tc->setSendWait(0);
+
+            auto roomModes = *tc->accessRoomModes();
+            if (roomModes.slowMode > 0)
+            {
+                tc->setSendWait(roomModes.slowMode);
+            }
+        }
     }
 }
 
@@ -685,7 +771,7 @@ void IrcMessageHandler::handleWhisperMessage(Communi::IrcMessage *ircMessage)
     }
 
     message->flags.set(MessageFlag::Whisper);
-    MessageBuilder::triggerHighlights(c, alert);
+    MessageBuilder::triggerHighlights(c, message, alert);
 
     getApp()->getTwitch()->setLastUserThatWhisperedMe(message->loginName);
 
@@ -791,7 +877,6 @@ void IrcMessageHandler::parseUserNoticeMessageInto(Communi::IrcMessage *message,
     {
         // By default, we return value of system-msg tag
         QString messageText = it.value().toString();
-
         auto displayName = [&] {
             if (msgType == u"raid")
             {
@@ -898,19 +983,14 @@ void IrcMessageHandler::parseUserNoticeMessageInto(Communi::IrcMessage *message,
                 }
             }
         }
-        else if (msgType == "socialsharingbadge")
-        {
-            int level = tags.value("msg-param-current-badge-level").toInt();
-            messageText = QString("%1 earned a Level %2 Social Media Badge!")
-                              .arg(tags.value("display-name").toString(),
-                                   QString::number(level));
-        }
         else if (msgType == "modiversary")
         {
-            // The message text we get is "has been a moderator for ..." (without the name).
-            // This might be a bug on Twitch's side.
-            if (!messageText.startsWith(login) &&
-                !messageText.startsWith(displayName))
+            // Twitch currently omits the user name in some modiversary system
+            // messages, unlike normal watch-streak notices.
+            const auto startsWithUser =
+                (!login.isEmpty() && messageText.startsWith(login)) ||
+                (!displayName.isEmpty() && messageText.startsWith(displayName));
+            if (!displayName.isEmpty() && !startsWithUser)
             {
                 messageText = displayName % ' ' % messageText;
             }
@@ -927,6 +1007,15 @@ void IrcMessageHandler::parseUserNoticeMessageInto(Communi::IrcMessage *message,
                              })
                              .value_or(MessageColor::System);
 
+        if (isRaidCanceledNoticeText(messageText))
+        {
+            if (channel != nullptr)
+            {
+                channel->clearActiveRaid();
+            }
+            return;
+        }
+
         auto msg = MessageBuilder::makeSystemMessageWithUser(
             parseTagString(messageText), login, displayName, userColor,
             calculateMessageTime(message).time());
@@ -934,18 +1023,6 @@ void IrcMessageHandler::parseUserNoticeMessageInto(Communi::IrcMessage *message,
         if (msgType == "viewermilestone" || msgType == "modiversary")
         {
             msg->flags.set(MessageFlag::WatchStreak);
-        }
-        else if (msgType == "announcement")
-        {
-            msg->flags.set(MessageFlag::Announcement);
-
-            if (auto cit = tags.find("msg-param-color"); cit != tags.end())
-            {
-                msg->announcementColor =
-                    qmagicenum::enumCast<HelixAnnouncementColor>(
-                        cit->toString(), qmagicenum::CASE_INSENSITIVE)
-                        .value_or(HelixAnnouncementColor::Primary);
-            }
         }
         else
         {
@@ -964,11 +1041,19 @@ void IrcMessageHandler::parseUserNoticeMessageInto(Communi::IrcMessage *message,
 void IrcMessageHandler::handleNoticeMessage(Communi::IrcNoticeMessage *message)
 {
     auto msg = parseNoticeMessage(message);
+    const auto isRaidCancelNotice =
+        isRaidCanceledNotice(message) ||
+        (msg && isRaidCanceledNoticeText(msg->messageText));
 
     QString channelName;
     if (!trimChannelName(message->target(), channelName) ||
         channelName == "jtv")
     {
+        if (isRaidCancelNotice)
+        {
+            return;
+        }
+
         // Notice wasn't targeted at a single channel, send to all twitch
         // channels
         getApp()->getTwitch()->forEachChannelAndSpecialChannels(
@@ -986,6 +1071,24 @@ void IrcMessageHandler::handleNoticeMessage(Communi::IrcNoticeMessage *message)
         qCDebug(chatterinoTwitch)
             << "[IrcManager:handleNoticeMessage] Channel" << channelName
             << "not found in channel manager";
+        return;
+    }
+
+    if (isRaidCancelNotice)
+    {
+        if (auto *tc = dynamic_cast<TwitchChannel *>(channel.get()))
+        {
+            tc->clearActiveRaid();
+        }
+        return;
+    }
+
+    if (isWarningAcknowledgeNotice(message->content()))
+    {
+        if (auto *tc = dynamic_cast<TwitchChannel *>(channel.get()))
+        {
+            tc->handleChatWarningNotice();
+        }
         return;
     }
 
@@ -1147,7 +1250,7 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
     MessageParseArgs args;
     if (isSub)
     {
-        args.isSubscriptionMessage = msgType != "announcement";
+        args.isSubscriptionMessage = true;
         args.trimSubscriberUsername = true;
     }
 
@@ -1227,6 +1330,27 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
             rewardId = msgId;
         }
     }
+    if (!rewardId.isEmpty() &&
+        sink.sinkTraits().has(
+            MessageSinkTrait::RequiresKnownChannelPointReward))
+    {
+        const auto messageId = tags.value("id").toString();
+        if (!messageId.isEmpty())
+        {
+            auto roomId = tags.value("room-id").toString();
+            if (roomId.isEmpty())
+            {
+                roomId = chan->roomId();
+            }
+
+            if (!chan->markChannelPointRedemptionSeen(u"irc:" % roomId % u':' %
+                                                      messageId))
+            {
+                return;
+            }
+        }
+    }
+
     if (!rewardId.isEmpty() &&
         sink.sinkTraits().has(
             MessageSinkTrait::RequiresKnownChannelPointReward) &&
@@ -1323,18 +1447,6 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
             {
                 msg->flags.set(MessageFlag::WatchStreak);
             }
-            else if (msgType == "announcement")
-            {
-                msg->flags.set(MessageFlag::Announcement);
-
-                if (auto cit = tags.find("msg-param-color"); cit != tags.end())
-                {
-                    msg->announcementColor =
-                        qmagicenum::enumCast<HelixAnnouncementColor>(
-                            cit->toString(), qmagicenum::CASE_INSENSITIVE)
-                            .value_or(HelixAnnouncementColor::Primary);
-                }
-            }
             else
             {
                 msg->flags.set(MessageFlag::Subscription);
@@ -1342,7 +1454,8 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
 
             if (tags.value("msg-id") != "announcement")
             {
-                // We want announcements to be able to show up in mentions
+                // Announcements are currently tagged as subscriptions,
+                // but we want them to be able to show up in mentions
                 msg->flags.unset(MessageFlag::Highlighted);
             }
         }
@@ -1353,7 +1466,7 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
             (!getSettings()->hideSimilar &&
              getSettings()->shownSimilarTriggerHighlights))
         {
-            MessageBuilder::triggerHighlights(chan, alert);
+            MessageBuilder::triggerHighlights(chan, msg, alert);
         }
 
         const auto highlighted = msg->flags.has(MessageFlag::Highlighted);

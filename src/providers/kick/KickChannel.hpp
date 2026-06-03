@@ -78,9 +78,6 @@ public:
         return this->channelID_;
     }
 
-    /// Get the thread for the given message.
-    /// If no thread can be found for the message, create one.
-    /// Additionally, this returns the reply parent.
     std::pair<std::shared_ptr<MessageThread>, MessagePtr> getOrCreateThread(
         const QString &messageID);
 
@@ -148,7 +145,6 @@ protected:
     void messageRemovedFromStart(const MessagePtr &msg) override;
 
 private:
-    /// Message ID -> thread
     std::unordered_map<QString, std::weak_ptr<MessageThread>> threads_;
 
     uint64_t roomID_ = 0;
@@ -176,9 +172,8 @@ private:
 
     void emitSendWait();
 
-    // Kick usually calls this username
     QString displayName_;
-    // The name in the URL (replaces non-alphanumeric characters with dashes)
+
     QString slug_;
 
     Atomic<std::shared_ptr<const EmoteMap>> seventvEmotes_;
@@ -186,11 +181,11 @@ private:
     QString seventvUserID_;
     QString seventvEmoteSetID_;
     size_t seventvKickConnectionIndex_ = 0;
-    /// The actor name of the last 7TV emote update.
+
     QString lastSeventvEmoteActor_;
-    /// A weak reference to the last 7TV emote update message.
+
     std::weak_ptr<const Message> lastSeventvMessage_;
-    /// A list of the emotes listed in the lat 7TV emote update message.
+
     std::vector<QString> lastSeventvEmoteNames_;
     QDateTime nextSeventvActivity_;
 
@@ -199,7 +194,7 @@ private:
     std::chrono::steady_clock::time_point lastMessageAmountErrorTs_;
 
     QTimer sendWaitTimer_;
-    // Timepoint at which the user can send messages again
+
     std::optional<std::chrono::steady_clock::time_point> sendWaitEnd_;
 
     RoomModes roomModes_;

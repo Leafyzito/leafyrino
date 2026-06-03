@@ -24,7 +24,7 @@ public:
                          QWidget *parent = nullptr);
 
 protected:
-    void closeEvent(QCloseEvent * /*event*/) override;
+    void closeEvent(QCloseEvent *) override;
     void keyPressEvent(QKeyEvent *event) override;
 
 private:

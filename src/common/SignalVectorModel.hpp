@@ -46,15 +46,13 @@ public:
             {
                 return;
             }
-            // get row index
+
             int index = this->getModelIndexFromVectorIndex(args.index);
             assert(index >= 0 && index <= static_cast<int>(this->rows_.size()));
 
-            // get row items
             std::vector<QStandardItem *> row = this->createRow();
             this->getRowFromItem(args.item, row);
 
-            // insert row
             index = this->beforeInsert(args.item, row, index);
 
             this->beginInsertRows(QModelIndex(), index, index);
@@ -82,7 +80,6 @@ public:
             int row = this->getModelIndexFromVectorIndex(args.index);
             assert(row >= 0 && row <= static_cast<int>(this->rows_.size()));
 
-            // remove row
             std::vector<QStandardItem *> items = this->rows_[row].items;
 
             this->beginRemoveRows(QModelIndex(), row, row);
@@ -172,8 +169,7 @@ public:
         else
         {
             int vecRow = this->getVectorIndexFromModelIndex(row);
-            // TODO: This is only a safety-thing for when we modify data that's being modified right now.
-            // It should not be necessary, but it would require some rethinking about this surrounding logic
+
             if (vecRow >= static_cast<int>(this->vector_->readOnly()->size()))
             {
                 return false;
@@ -323,7 +319,6 @@ public:
             return nullptr;
         }
 
-        // Check if all indices are in the same row -> single row selected
         for (auto &&x : list)
         {
             if (x.row() != list.first().row())
@@ -337,8 +332,8 @@ public:
         return data;
     }
 
-    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int /*row*/,
-                      int /*column*/, const QModelIndex &parent) override
+    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int, int,
+                      const QModelIndex &parent) override
     {
         if (data->hasFormat("chatterino_row_id") &&
             action & (Qt::DropAction::MoveAction | Qt::DropAction::CopyAction))
@@ -362,7 +357,6 @@ public:
                 this->moveRow(this->index(from, 0), from, parent, to);
             }
 
-            // We return false since we remove items ourselves.
             return false;
         }
 
@@ -381,11 +375,9 @@ protected:
     {
     }
 
-    // turn a vector item into a model row
     virtual TVectorItem getItemFromRow(std::vector<QStandardItem *> &row,
                                        const TVectorItem &original) = 0;
 
-    // turns a row in the model into a vector item
     virtual void getRowFromItem(const TVectorItem &item,
                                 std::vector<QStandardItem *> &row) = 0;
 
@@ -473,7 +465,6 @@ private:
 
     const int columnCount_;
 
-    // returns the related index of the SignalVector
     int getVectorIndexFromModelIndex(int index)
     {
         int i = 0;
@@ -497,7 +488,6 @@ private:
     }
 
 public:
-    // returns the related index of the model
     int getModelIndexFromVectorIndex(int vectorIndex) const
     {
         int modelIndex = 0;

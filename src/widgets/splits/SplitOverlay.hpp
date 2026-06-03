@@ -15,7 +15,6 @@ namespace chatterino {
 
 class Split;
 
-/// Type of button in the split overlay (the overlay that appears when holding down ctrl+alt)
 enum class SplitOverlayButton {
     Move,
     Left,
@@ -29,13 +28,10 @@ class SplitOverlay : public BaseWidget
 public:
     explicit SplitOverlay(Split *parent);
 
-    // Called from the Split Overlay's button when it gets hovered over
     void setHoveredButton(std::optional<SplitOverlayButton> hoveredButton);
 
-    // Called from the Split Overlay's button when the move button is pressed
     void dragPressed();
 
-    // Called from the Split Overlay's button when one of the direction buttons are pressed
     void createSplitPressed(SplitDirection direction);
 
 protected:

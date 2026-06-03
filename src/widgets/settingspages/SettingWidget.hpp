@@ -39,20 +39,12 @@ class SettingWidget : public QWidget
 
 public:
     struct IntInputParams {
-        /// The minimum value of this spin box.
-        /// Leave empty for a minimum value of 0.
         std::optional<int> min;
 
-        /// The maximum value of this spin box.
-        /// Leave empty for a maximum value of 99.
         std::optional<int> max;
 
-        /// The value the spinbox is incremented or decremented by when the up or down arrow is clicked.
-        /// Leave empty for a single step of 1.
         std::optional<int> singleStep;
 
-        /// The suffix appended to the end of the displayed value.
-        /// Leave empty for no suffix.
         std::optional<QString> suffix;
     };
 
@@ -74,21 +66,14 @@ public:
         intInput(const QString &label, IntSetting &setting,
                  IntInputParams params);
 
-    /// Create a dropdown backed by an enum
-    ///
-    /// The setting itself expects the enum name (i.e. "Foo")
     template <typename T>
     [[nodiscard("Must use created setting widget")]] static SettingWidget *
         dropdown(const QString &label, EnumStringSetting<T> &setting);
 
-    /// Create a dropdown backed by an enum
-    ///
-    /// The setting itself expects the enum value (i.e. 3)
     template <typename T>
     [[nodiscard("Must use created setting widget")]] static SettingWidget *
         dropdown(const QString &label, EnumSetting<T> &setting);
 
-    /// Create a dropdown for a String setting that is not backed by an enum
     [[nodiscard("Must use created setting widget")]] static SettingWidget *
         dropdown(const QString &label, QStringSetting &setting,
                  const std::vector<std::pair<QString, QVariant>> &items);
@@ -109,17 +94,12 @@ public:
     [[nodiscard("Must use created setting widget")]] SettingWidget *
         setDescription(const QString &text);
 
-    /// Add extra keywords to the widget
-    ///
-    /// All text from the tooltip, description, and label are already keywords
     [[nodiscard("Must use created setting widget")]] SettingWidget *addKeywords(
         const QStringList &newKeywords);
 
-    /// Conditionally enable the widget if the given bool setting is true
     [[nodiscard("Must use created setting widget")]] SettingWidget *
         conditionallyEnabledBy(BoolSetting &setting);
 
-    /// Conditionally enable the widget if the given string setting is equal to expectedValue
     [[nodiscard("Must use created setting widget")]] SettingWidget *
         conditionallyEnabledBy(QStringSetting &setting,
                                const QString &expectedValue);
@@ -127,11 +107,9 @@ public:
     void addTo(GeneralPageView &view);
     void addTo(GeneralPageView &view, QFormLayout *formLayout);
 
-    /// For settings pages without a page view
     void addToLayout(QLayout *layout);
 
 private:
-    /// Registers this widget & its optional label to the given page view
     void registerWidget(GeneralPageView &view);
 
     QWidget *label = nullptr;

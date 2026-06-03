@@ -22,8 +22,6 @@ namespace {
 
 using namespace chatterino;
 
-// The duration after which a sound is played we should try to stop the sound engine, hopefully
-// returning the handle to idle letting the computer or monitors sleep
 constexpr const auto STOP_AFTER_DURATION = std::chrono::seconds(30);
 
 void miniaudioLogCallback(void *userData, ma_uint32 level, const char *pMessage)
@@ -66,7 +64,6 @@ void miniaudioLogCallback(void *userData, ma_uint32 level, const char *pMessage)
 
 namespace chatterino {
 
-// NUM_SOUNDS specifies how many simultaneous default ping sounds & decoders to create
 constexpr const auto NUM_SOUNDS = 4;
 
 MiniaudioBackend::MiniaudioBackend(bool keepEngineAlive_)
@@ -81,7 +78,6 @@ MiniaudioBackend::MiniaudioBackend(bool keepEngineAlive_)
     boost::asio::post(this->ioContext, [this] {
         ma_result result{};
 
-        // We are leaking this log object on purpose
         auto *logger = new ma_log;
 
         result = ma_log_init(nullptr, logger);
@@ -106,7 +102,6 @@ MiniaudioBackend::MiniaudioBackend(bool keepEngineAlive_)
         auto contextConfig = ma_context_config_init();
         contextConfig.pLog = logger;
 
-        /// Initialize context
         result =
             ma_context_init(nullptr, 0, &contextConfig, this->context.get());
         if (result != MA_SUCCESS)
@@ -117,7 +112,6 @@ MiniaudioBackend::MiniaudioBackend(bool keepEngineAlive_)
             return;
         }
 
-        /// Load default sound
         QFile defaultPingFile(":/sounds/ping2.wav");
         if (!defaultPingFile.open(QIODevice::ReadOnly))
         {
@@ -127,7 +121,6 @@ MiniaudioBackend::MiniaudioBackend(bool keepEngineAlive_)
         }
         this->defaultPingData = defaultPingFile.readAll();
 
-        /// Initialize engine
         auto engineConfig = ma_engine_config_init();
         engineConfig.pContext = this->context.get();
         engineConfig.noAutoStart = MA_TRUE;
@@ -143,8 +136,6 @@ MiniaudioBackend::MiniaudioBackend(bool keepEngineAlive_)
 
         if (this->keepEngineAlive)
         {
-            // User has configured the "keep engine alive option"
-            // We pre-start the engine to ensure it's available to play sounds as soon as possible.
             result = ma_engine_start(this->engine.get());
             if (result != MA_SUCCESS)
             {
@@ -153,22 +144,20 @@ MiniaudioBackend::MiniaudioBackend(bool keepEngineAlive_)
             }
         }
 
-        /// Initialize default ping sounds
         {
-            // TODO: Can we optimize this?
             BenchmarkGuard b("init sounds");
 
             ma_uint32 soundFlags = 0;
-            // Decode the sound during loading instead of during playback
+
             soundFlags |= MA_SOUND_FLAG_DECODE;
-            // Disable pitch control (we don't use it, so this saves some performance)
+
             soundFlags |= MA_SOUND_FLAG_NO_PITCH;
-            // Disable spatialization control, this brings the volume up to "normal levels"
+
             soundFlags |= MA_SOUND_FLAG_NO_SPATIALIZATION;
 
             auto decoderConfig =
                 ma_decoder_config_init(ma_format_f32, 0, 48000);
-            // This must match the encoding format of our default ping sound
+
             decoderConfig.encodingFormat = ma_encoding_format_wav;
 
             for (auto i = 0; i < NUM_SOUNDS; ++i)
@@ -297,7 +286,6 @@ void MiniaudioBackend::play(const QUrl &sound)
             return;
         }
 
-        // Play default sound, loaded from our resources in the constructor
         auto &snd = this->defaultPingSounds[++i % NUM_SOUNDS];
         ma_sound_seek_to_pcm_frame(snd.get(), 0);
         result = ma_sound_start(snd.get());
@@ -313,7 +301,6 @@ void MiniaudioBackend::play(const QUrl &sound)
             this->sleepTimer.async_wait([this](const auto &ec) {
                 if (ec)
                 {
-                    // Timer was most likely cancelled
                     return;
                 }
 

@@ -69,7 +69,7 @@ std::shared_ptr<TwitchUser> TwitchUsers::resolveID(const UserId &id)
 TwitchUsersPrivate::TwitchUsersPrivate()
 {
     this->nextBatchTimer.setSingleShot(true);
-    // Wait for multiple request batches to come in before making a request
+
     this->nextBatchTimer.setInterval(250);
 
     QObject::connect(&this->nextBatchTimer, &QTimer::timeout, [this] {
@@ -79,8 +79,6 @@ TwitchUsersPrivate::TwitchUsersPrivate()
 
 std::shared_ptr<TwitchUser> TwitchUsersPrivate::makeUnresolved(const UserId &id)
 {
-    // assumption: Cache entry is empty so neither a shared pointer was created
-    //             nor an entry in the unresolved list was added.
     auto ptr = this->cache
                    .emplace(id, std::make_shared<TwitchUser>(TwitchUser{
                                     .id = id.string,

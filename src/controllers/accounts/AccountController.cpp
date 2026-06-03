@@ -15,8 +15,6 @@ namespace chatterino {
 AccountController::AccountController()
     : accounts_(SharedPtrElementLess<Account>{})
 {
-    // These signal connections can safely be ignored since the twitch object
-    // will always be destroyed before the AccountController
     std::ignore =
         this->twitch.accounts.itemInserted.connect([this](const auto &args) {
             this->accounts_.insert(args.item);

@@ -21,15 +21,13 @@ namespace chatterino::eventsub {
 void handleModerateMessage(
     TwitchChannel *chan, const QDateTime &time,
     const lib::payload::channel_moderate::v2::Event &event,
-    const lib::payload::channel_moderate::v2::Clear & /*action*/)
+    const lib::payload::channel_moderate::v2::Clear &)
 {
     runInGuiThread([chan, actor{event.moderatorUserLogin.qt()}, time] {
         chan->addOrReplaceClearChat(
             MessageBuilder::makeClearChatMessage(time, actor), time);
         if (getSettings()->hideModerated)
         {
-            // XXX: This is expensive. We could use a layout request if the layout
-            //      would store the previous message flags.
             getApp()->getWindows()->forceLayoutChannelViews();
         }
     });
@@ -40,7 +38,6 @@ void handleModerateMessage(
     const lib::payload::channel_moderate::v2::Event &event,
     const lib::payload::channel_moderate::v2::Timeout &action)
 {
-    // Not all compilers support QDateTime::toStdSysMilliseconds
     std::chrono::system_clock::time_point chronoTime{
         std::chrono::milliseconds{time.toMSecsSinceEpoch()}};
 
@@ -49,16 +46,12 @@ void handleModerateMessage(
 
     EventSubMessageBuilder builder(chan, time);
     builder->loginName = event.moderatorUserLogin.qt();
-    // pretend we're pubsub
+
     builder->flags.set(MessageFlag::PubSub, MessageFlag::Timeout,
                        MessageFlag::ModerationAction);
 
     QString text;
     bool isShared = event.isFromSharedChat();
-
-    // XXX: We use regular links here instead of appendUser, because stacking
-    //      will create those as well. Once everything uses mention elements,
-    //      this can use them as well.
 
     builder.emplaceSystemTextAndUpdate(event.moderatorUserLogin.qt(), text)
         ->setLink({Link::UserInfo, event.moderatorUserLogin.qt()});
@@ -85,7 +78,7 @@ void handleModerateMessage(
     }
 
     assert(text.endsWith(' '));
-    removeLastQS(text);  // trailing space
+    removeLastQS(text);
 
     if (action.reason.view().empty())
     {
@@ -113,7 +106,7 @@ void handleModerateMessage(
 {
     EventSubMessageBuilder builder(chan, time);
     builder->loginName = event.moderatorUserLogin.qt();
-    // pretend we're pubsub
+
     builder->flags.set(MessageFlag::PubSub, MessageFlag::Timeout,
                        MessageFlag::ModerationAction);
 
@@ -149,6 +142,15 @@ void handleModerateMessage(
     auto msg = builder.release();
     runInGuiThread([chan, msg, time] {
         chan->addOrReplaceTimeout(msg, time);
+    });
+}
+
+void handleModerateMessage(TwitchChannel *chan, const QDateTime &,
+                           const lib::payload::channel_moderate::v2::Event &,
+                           const lib::payload::channel_moderate::v2::Unraid &)
+{
+    runInGuiThread([chan] {
+        chan->clearActiveRaid();
     });
 }
 

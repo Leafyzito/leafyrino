@@ -20,9 +20,9 @@ class SettingsDialog;
 enum class SettingsTabId {
     None,
     General,
+    Moltorino,
     Leafyrino,
     Accounts,
-    Highlights,
     Moderation,
     About,
     Technorino
@@ -40,6 +40,7 @@ public:
 
     void setSelected(bool selected_);
     SettingsPage *page();
+    SettingsPage *createdPage() const;
     SettingsTabId id() const;
 
     const QString &name() const;

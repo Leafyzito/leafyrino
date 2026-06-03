@@ -88,7 +88,6 @@ void loadCached(std::shared_ptr<NetworkData> &&data)
         return;
     }
 
-    // XXX: check if bytes is empty?
     QByteArray bytes = cachedFile.readAll();
 
     qCDebug(chatterinoHTTP).noquote() << data->typeString() << "[CACHED] 200"

@@ -6,7 +6,7 @@
 
 #include "Application.hpp"
 #include "controllers/accounts/AccountController.hpp"
-#include "providers/twitch/TwitchAccount.hpp"  // IWYU pragma: keep
+#include "providers/twitch/TwitchAccount.hpp"
 
 namespace chatterino {
 

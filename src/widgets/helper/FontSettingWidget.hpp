@@ -14,8 +14,6 @@ namespace chatterino {
 
 class FontSettingDialog;
 
-/// FontSettingWidget includes a label showing the current font and its size, with a button
-/// that opens a FontSettingDialog
 class FontSettingWidget : public QWidget
 {
 public:

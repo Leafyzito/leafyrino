@@ -49,6 +49,23 @@ TEST(FolhinhaBadges, PriorityResolution)
     // Build a payload matching the FolhinhaBot API structure.
     QJsonObject root;
 
+    {
+        QJsonObject badges;
+        const auto tier = [](const char *base) {
+            return QJsonObject{
+                {"1", QString("%1/1.webp").arg(base)},
+                {"2", QString("%1/2.webp").arg(base)},
+                {"3", QString("%1/3.webp").arg(base)},
+            };
+        };
+        badges.insert("dev", tier("https://folhinhabot.com/badges/dev"));
+        badges.insert("admin", tier("https://folhinhabot.com/badges/admin"));
+        badges.insert("founder",
+                      tier("https://folhinhabot.com/badges/founder"));
+        badges.insert("sub", tier("https://folhinhabot.com/badges/sub"));
+        root.insert("badges", badges);
+    }
+
     // leafyzito is both dev and admin -> should take dev
     {
         QJsonArray dev;

@@ -26,13 +26,13 @@
 #include <QNetworkRequest>
 #include <QThreadPool>
 #include <QTimer>
+#include <QUrl>
 
 #include <algorithm>
 #include <atomic>
 
-// Duration between each check of every Image instance
 const auto IMAGE_POOL_CLEANUP_INTERVAL = std::chrono::minutes(1);
-// Duration since last usage of Image pixmap before expiration of frames
+
 const auto IMAGE_POOL_IMAGE_LIFETIME = std::chrono::minutes(10);
 
 namespace chatterino::detail {
@@ -210,11 +210,6 @@ QList<Frame> readFrames(QImageReader &reader, const Url &url)
         auto pixmap = QPixmap::fromImageReader(&reader);
         if (!pixmap.isNull())
         {
-            // It seems that browsers have special logic for fast animations.
-            // This implements Chrome and Firefox's behavior which uses
-            // a duration of 100 ms for any frames that specify a duration of <= 10 ms.
-            // See http://webkit.org/b/36082 for more information.
-            // https://github.com/SevenTV/chatterino7/issues/46#issuecomment-1010595231
             int duration = reader.nextImageDelay();
             if (duration <= 10)
             {
@@ -250,8 +245,6 @@ void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed)
         shared->frames_ = std::make_unique<detail::Frames>(std::move(parsed));
         if (shared->autoScale_)
         {
-            // FIXME: We should actually scale the pixmaps. However, we'd also
-            //        need to cache that.
             auto firstFrame = shared->frames_->first();
             if (firstFrame)
             {
@@ -262,16 +255,10 @@ void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed)
             }
         }
 
-        // Avoid too many layouts in one event-loop iteration
-        //
-        // This callback is called for every image, so there might be multiple
-        // callbacks queued on the event-loop in this iteration, but we only
-        // want to generate one invalidation.
         if (!isPushQueued)
         {
             isPushQueued = true;
-            // We don't use postToThread here, because that would run immediately.
-            // We explicitly want to queue a callback after the current ones.
+
             QMetaObject::invokeMethod(
                 qApp,
                 [] {
@@ -293,7 +280,6 @@ void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed)
 
 namespace chatterino {
 
-// IMAGE2
 Image::~Image()
 {
 #ifndef DISABLE_IMAGE_EXPIRATION_POOL
@@ -302,8 +288,6 @@ Image::~Image()
 
     if (this->empty_ && !this->frames_)
     {
-        // No data in this image, don't bother trying to release it
-        // The reason we do this check is that we keep a few (or one) static empty image around that are deconstructed at the end of the programs lifecycle, and we want to prevent the isGuiThread call to be called after the QApplication has been exited
         return;
     }
 
@@ -316,10 +300,6 @@ Image::~Image()
         return;
     }
 
-    // Ensure the destructor for our frames is called in the GUI thread
-    // If the Image destructor is called outside of the GUI thread, move the
-    // ownership of the frames to the GUI thread, otherwise the frames will be
-    // destructed as part as we go out of scope
     if (!isGuiThread())
     {
         postToThread([frames = this->frames_.release()]() {
@@ -378,7 +358,6 @@ ImagePtr Image::fromResourcePixmap(const QPixmap &pixmap, qreal scale)
 
     newImage->setPixmap(pixmap);
 
-    // store in cache
     cache.insert({{&pixmap, scale}, std::weak_ptr<Image>(newImage)});
 
     return newImage;
@@ -442,11 +421,6 @@ bool Image::loaded() const
 {
     assertInGuiThread();
 
-    if (!this->frames_)
-    {
-        return false;
-    }
-
     return this->frames_->current().has_value();
 }
 
@@ -454,14 +428,6 @@ std::optional<QPixmap> Image::pixmapOrLoad() const
 {
     assertInGuiThread();
 
-    if (!this->frames_)
-    {
-        return std::nullopt;
-    }
-
-    // Mark the image as just used.
-    // Any time this Image is painted, this method is invoked.
-    // See src/messages/layouts/MessageLayoutElement.cpp ImageLayoutElement::paint, for example.
     this->lastUsed_ = std::chrono::steady_clock::now();
 
     this->load();
@@ -498,29 +464,24 @@ bool Image::animated() const
 {
     assertInGuiThread();
 
-    if (!this->frames_)
-    {
-        return false;
-    }
-
     return this->frames_->animated();
+}
+
+void Image::setFrameCacheLifetime(std::chrono::milliseconds lifetime)
+{
+    this->frameCacheLifetimeMs_.store(std::max<int64_t>(0, lifetime.count()),
+                                      std::memory_order_relaxed);
 }
 
 int Image::width() const
 {
     assertInGuiThread();
 
-    if (!this->frames_)
-    {
-        return 0;
-    }
-
     if (auto pixmap = this->frames_->first())
     {
         return static_cast<int>(pixmap->width() * this->scale_);
     }
 
-    // No frames loaded, use the expected size
     return static_cast<int>(this->expectedSize_.width() * this->scale_);
 }
 
@@ -528,17 +489,11 @@ int Image::height() const
 {
     assertInGuiThread();
 
-    if (!this->frames_)
-    {
-        return 0;
-    }
-
     if (auto pixmap = this->frames_->first())
     {
         return static_cast<int>(pixmap->height() * this->scale_);
     }
 
-    // No frames loaded, use the expected size
     return static_cast<int>(this->expectedSize_.height() * this->scale_);
 }
 
@@ -546,17 +501,11 @@ QSizeF Image::size() const
 {
     assertInGuiThread();
 
-    if (!this->frames_)
-    {
-        return {0, 0};
-    }
-
     if (auto pixmap = this->frames_->first())
     {
         return pixmap->size().toSizeF() * this->scale_;
     }
 
-    // No frames loaded, use the expected size
     return this->expectedSize_.toSizeF() * this->scale_;
 }
 
@@ -591,7 +540,6 @@ void Image::actuallyLoad()
             return;
         }
 
-        // returns 1 for non-animated formats
         if (reader.imageCount() <= 0)
         {
             qCDebug(chatterinoImage)
@@ -601,7 +549,6 @@ void Image::actuallyLoad()
             return;
         }
 
-        // use "double" to prevent int overflows
         if (double(size.width()) * double(size.height()) *
                 double(reader.imageCount()) * 4.0 >
             double(Image::maxBytesRam))
@@ -616,14 +563,13 @@ void Image::actuallyLoad()
 
         assignFrames(shared, parsed);
     };
-    auto onError = [weak](const auto & /*result*/) {
+    auto onError = [weak](const auto &) {
         auto shared = weak.lock();
         if (!shared)
         {
             return false;
         }
 
-        // fourtf: is this the right thing to do?
         shared->empty_ = true;
 
         return true;
@@ -669,13 +615,8 @@ void Image::actuallyLoad()
 void Image::expireFrames()
 {
     assertInGuiThread();
-    if (!this->frames_)
-    {
-        return;
-    }
-
     this->frames_->clear();
-    this->shouldLoad_ = true;  // Mark as needing load again
+    this->shouldLoad_ = true;
 }
 
 #ifndef DISABLE_IMAGE_EXPIRATION_POOL
@@ -746,28 +687,32 @@ void ImageExpirationPool::freeOld()
         auto img = it->second.lock();
         if (!img)
         {
-            // This can only really happen from a race condition because ~Image
-            // should remove itself from the ImageExpirationPool automatically.
             it = this->allImages_.erase(it);
             continue;
         }
 
         if (img->frames_->empty())
         {
-            // No frame data, nothing to do
             ++it;
             continue;
         }
 
         ++eligible;
 
-        // Check if image has expired and, if so, expire its frame data
-        auto diff = now - img->lastUsed_;
-        if (diff > IMAGE_POOL_IMAGE_LIFETIME)
+        const auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now - img->lastUsed_);
+        const auto customLifetimeMs =
+            img->frameCacheLifetimeMs_.load(std::memory_order_relaxed);
+        const auto lifetime =
+            customLifetimeMs > 0
+                ? std::chrono::milliseconds{customLifetimeMs}
+                : std::chrono::duration_cast<std::chrono::milliseconds>(
+                      IMAGE_POOL_IMAGE_LIFETIME);
+        if (diff > lifetime)
         {
             ++numExpired;
             img->expireFrames();
-            // erase without mutex locking issue
+
             it = this->allImages_.erase(it);
             continue;
         }
@@ -782,6 +727,125 @@ void ImageExpirationPool::freeOld()
     DebugCount::set(DebugObject::LastImageGcExpired, numExpired);
     DebugCount::set(DebugObject::LastImageGcEligible, eligible);
     DebugCount::set(DebugObject::LastImageGcLeft, this->allImages_.size());
+}
+
+std::vector<ImageExpirationPool::ProviderUsage>
+    ImageExpirationPool::getProviderUsageSnapshot()
+{
+    const auto providerForUrl = [](const QString &url) {
+        if (url.isEmpty())
+        {
+            return QStringLiteral("internal");
+        }
+        if (url.startsWith(u":/"))
+        {
+            return QStringLiteral("resources");
+        }
+
+        const QUrl parsed(url);
+        const auto host = parsed.host().toLower();
+        const auto path = parsed.path().toLower();
+        if (host.isEmpty())
+        {
+            return QStringLiteral("unknown");
+        }
+
+        if (host.contains(u"chatterinohomies.com") ||
+            host == u"itzalex.github.io")
+        {
+            return QStringLiteral("Homies");
+        }
+        if (host.contains(u"7tv"))
+        {
+            if (path.contains(u"/emote/"))
+            {
+                return QStringLiteral("7TV emotes");
+            }
+            if (path.contains(u"/paint/"))
+            {
+                return QStringLiteral("7TV paints");
+            }
+            if (path.contains(u"/badge/"))
+            {
+                return QStringLiteral("7TV badges");
+            }
+            if (path.contains(u"/cosmetic/"))
+            {
+                return QStringLiteral("7TV cosmetics");
+            }
+            return QStringLiteral("7TV");
+        }
+        if (host.contains(u"jtvnw.net") || host.contains(u"ttvnw.net") ||
+            host.contains(u"twitch.tv"))
+        {
+            return QStringLiteral("Twitch");
+        }
+        if (host.contains(u"betterttv") || host.contains(u"bttv"))
+        {
+            return QStringLiteral("BTTV");
+        }
+        if (host.contains(u"frankerfacez") || host.contains(u"ffzap"))
+        {
+            return QStringLiteral("FFZ");
+        }
+        if (host.contains(u"chatterino"))
+        {
+            return QStringLiteral("Chatterino");
+        }
+
+        return host;
+    };
+
+    std::map<QString, ProviderUsage> providers;
+
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    for (auto it = this->allImages_.begin(); it != this->allImages_.end();)
+    {
+        auto img = it->second.lock();
+        if (!img)
+        {
+            it = this->allImages_.erase(it);
+            continue;
+        }
+
+        if (img->frames_->empty())
+        {
+            ++it;
+            continue;
+        }
+
+        const auto bytes = img->frames_->memoryUsage();
+        if (bytes <= 0)
+        {
+            ++it;
+            continue;
+        }
+
+        const auto provider = providerForUrl(img->url_.string);
+        auto &usage = providers[provider];
+        usage.provider = provider;
+        usage.bytes += bytes;
+        usage.images += 1;
+        if (img->frames_->animated())
+        {
+            usage.animatedImages += 1;
+        }
+
+        ++it;
+    }
+
+    std::vector<ProviderUsage> result;
+    result.reserve(providers.size());
+    for (auto &[_, usage] : providers)
+    {
+        result.push_back(std::move(usage));
+    }
+
+    std::ranges::sort(result, [](const auto &a, const auto &b) {
+        return a.bytes > b.bytes;
+    });
+
+    return result;
 }
 
 #endif

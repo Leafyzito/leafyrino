@@ -4,7 +4,7 @@
 
 #include "widgets/dialogs/font/FontSettingDialog.hpp"
 
-#include "util/RapidJsonSerializeQString.hpp"  // IWYU pragma: keep
+#include "util/RapidJsonSerializeQString.hpp"
 
 namespace chatterino {
 

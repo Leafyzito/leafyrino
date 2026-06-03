@@ -9,8 +9,6 @@
 
 namespace chatterino {
 
-/// A ConstBufferSequence over a single QByteArray.
-/// https://www.boost.org/doc/libs/1_87_0/doc/html/boost_asio/reference/ConstBufferSequence.html
 struct QByteArrayBuffer {
     struct QByteArrayHolder {
         QByteArray data;
@@ -25,7 +23,6 @@ struct QByteArrayBuffer {
     };
 
     struct ConstIterator : public std::bidirectional_iterator_tag {
-        // using iterator_category = std::bidirectional_iterator_tag;
         using value_type = QByteArrayHolder;
         using difference_type = ptrdiff_t;
         using pointer = const QByteArrayHolder *;

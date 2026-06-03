@@ -126,7 +126,7 @@ void AlphaSlider::updatePixmap()
     painter.drawRect(QRect({0, 0}, this->size()));
 }
 
-void AlphaSlider::paintEvent(QPaintEvent * /*event*/)
+void AlphaSlider::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);

@@ -29,7 +29,6 @@ public:
         return this->shouldRecover_;
     }
 
-    /// Sets and saves whether Chatterino should restart on a crash
     void saveShouldRecover(bool value);
 
 private:

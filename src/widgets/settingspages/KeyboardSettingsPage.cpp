@@ -35,7 +35,7 @@ void tableCellClicked(const QModelIndex &clicked, EditableModelView *view,
         clicked.siblingAtColumn(0).data(Qt::EditRole).toString());
     if (!hotkey)
     {
-        return;  // clicked on header or invalid hotkey
+        return;
     }
     EditHotkeyDialog dialog(hotkey, view);
     bool wasAccepted = dialog.exec() == 1;
@@ -70,7 +70,6 @@ KeyboardSettingsPage::KeyboardSettingsPage()
     view->getTableView()->horizontalHeader()->setSectionResizeMode(
         1, QHeaderView::Stretch);
 
-    // We can safely ignore this signal connection since we own the view
     std::ignore = view->addButtonPressed.connect([view] {
         EditHotkeyDialog dialog(nullptr, view);
         bool wasAccepted = dialog.exec() == 1;
@@ -90,13 +89,14 @@ KeyboardSettingsPage::KeyboardSettingsPage()
 
     auto *keySequenceInput = new QKeySequenceEdit(this);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
     keySequenceInput->setClearButtonEnabled(true);
+#endif
     auto *searchText = new QLabel("Search keybind:", this);
 
     QObject::connect(keySequenceInput, &QKeySequenceEdit::keySequenceChanged,
                      this,
                      [view, keySequenceInput](const QKeySequence &keySequence) {
-                         // Normalize Key_Enter (numpad) to Key_Return for consistent search
                          auto normalized = normalizeKeySequence(keySequence);
                          if (normalized != keySequence)
                          {
@@ -122,9 +122,6 @@ KeyboardSettingsPage::KeyboardSettingsPage()
     });
     view->addCustomButton(resetEverything);
 
-    // We only check this once since a user *should* not have the ability to create a new hotkey with a deprecated or removed action
-    // However, we also don't update this after the user has deleted a hotkey. This is a big lift that should probably be solved on the model level rather
-    // than individually here. Same goes for marking specific rows as deprecated/removed
     const auto &removedOrDeprecatedHotkeys =
         getApp()->getHotkeys()->removedOrDeprecatedHotkeys();
 

@@ -13,6 +13,8 @@ class Paths;
 class Settings;
 class Updates;
 
+bool activateExistingGuiInstance(const Paths &paths);
+
 void runGui(QApplication &a, const Paths &paths, Settings &settings,
             const Args &args, Updates &updates);
 

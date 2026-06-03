@@ -9,6 +9,7 @@
 #include "common/QLogging.hpp"
 #include "common/WindowDescriptors.hpp"
 #include "debug/AssertInGuiThread.hpp"
+#include "providers/twitch/TwitchChannel.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
@@ -878,6 +879,11 @@ NodeDescriptor SplitContainer::buildDescriptorRecursively(
         SplitNodeDescriptor result;
         result.type_ = channelTypeToString(channelType);
         result.channelName_ = currentNode->split_->getChannel()->getName();
+        if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(
+                currentNode->split_->getChannel().get()))
+        {
+            result.anonymous_ = twitchChannel->isAnonymous();
+        }
         result.filters_ = currentNode->split_->getFilters();
         result.perSplitHidePinnedMessage_ =
             currentNode->split_->perSplitHidePinnedMessage();
@@ -1005,6 +1011,14 @@ void SplitContainer::refreshTabTitle()
     for (const auto &chatWidget : this->splits_)
     {
         auto channelName = chatWidget->getChannel()->getLocalizedName();
+        if (auto *twitchChannel =
+                dynamic_cast<TwitchChannel *>(chatWidget->getChannel().get()))
+        {
+            if (twitchChannel->isAnonymous() && !channelName.isEmpty())
+            {
+                channelName += " (anonymous)";
+            }
+        }
         if (channelName.isEmpty())
         {
             continue;

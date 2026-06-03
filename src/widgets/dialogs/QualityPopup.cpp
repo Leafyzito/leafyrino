@@ -43,7 +43,7 @@ void QualityPopup::showDialog(const QString &channelURL, QStringList options)
 {
     QualityPopup *instance = new QualityPopup(channelURL, options);
 
-    instance->window()->setWindowTitle("Chatterino - select stream quality");
+    instance->window()->setWindowTitle("Leafyrino - select stream quality");
     instance->setAttribute(Qt::WA_DeleteOnClose, true);
 
     instance->show();

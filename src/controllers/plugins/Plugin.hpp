@@ -11,7 +11,7 @@
 #    include "controllers/plugins/PluginMeta.hpp"
 #    include "controllers/plugins/PluginRef.hpp"
 
-#    include <pajlada/signals/signal.hpp>
+#    include <boost/signals2/signal.hpp>
 #    include <QDir>
 #    include <QString>
 #    include <QUrl>
@@ -29,11 +29,11 @@ class QTimer;
 
 namespace chatterino::lua::api {
 enum class LogLevel;
-}  // namespace chatterino::lua::api
+}
 
 namespace chatterino::lua {
 struct SignalCallback;
-}  // namespace chatterino::lua
+}
 
 namespace chatterino {
 
@@ -60,17 +60,8 @@ public:
     Plugin &operator=(const Plugin &) = delete;
     Plugin &operator=(Plugin &&) = delete;
 
-    /**
-     * @brief Perform all necessary tasks to bind a command name to this plugin
-     * @param name name of the command to create
-     * @param function the function that should be called when the command is executed
-     * @return true if addition succeeded, false otherwise (for example because the command name is already taken)
-     */
     bool registerCommand(const QString &name, sol::protected_function function);
 
-    /**
-     * @brief Get names of all commands belonging to this plugin
-     */
     std::unordered_set<QString> listRegisteredCommands();
 
     const QDir &loadDirectory() const
@@ -100,9 +91,6 @@ public:
 
     lua::SignalCallback createCallback(sol::main_protected_function pfn);
 
-    /**
-     * If the plugin crashes while evaluating the main file, this function will return the error
-     */
     QString error()
     {
         return this->error_;
@@ -124,12 +112,10 @@ public:
 
     std::map<lua::api::EventType, sol::protected_function> callbacks;
 
-    // In-flight HTTP Requests
-    // This is a lifetime hack to ensure they get deleted with the plugin. This relies on the Plugin getting deleted on reload!
     std::vector<std::shared_ptr<lua::api::HTTPRequest>> httpRequests;
 
-    pajlada::Signals::NoArgSignal onUnloaded;
-    pajlada::Signals::Signal<lua::api::LogLevel, const QString &> onLog;
+    boost::signals2::signal<void()> onUnloaded;
+    boost::signals2::signal<void(lua::api::LogLevel, const QString &)> onLog;
     lua::ConnectionManager connections;
 
 private:
@@ -140,13 +126,12 @@ private:
 
     QString error_;
 
-    // maps command name -> function
     std::unordered_map<QString, sol::protected_function> ownedCommands;
     std::vector<QTimer *> activeTimeouts;
     int lastTimerId = 0;
 
     friend class PluginController;
-    friend class PluginControllerAccess;  // this is for tests
+    friend class PluginControllerAccess;
 };
 }  // namespace chatterino
 #endif

@@ -17,7 +17,7 @@ class BttvLiveUpdateClient
 public:
     BttvLiveUpdateClient(BttvLiveUpdates &manager);
 
-    void onMessage(const QByteArray &msg) /* override */;
+    void onMessage(const QByteArray &msg);
 
     void broadcastMe(const QString &channelID, const QString &userID);
 

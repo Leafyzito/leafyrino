@@ -22,7 +22,6 @@ class FontDialog : public QDialog
 public:
     FontDialog(const QFont &startFont, QWidget *parent = nullptr);
 
-    /// Gets the currently selected font.
     QFont getSelected() const;
 
 Q_SIGNALS:

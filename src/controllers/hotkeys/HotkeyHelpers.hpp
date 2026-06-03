@@ -18,7 +18,6 @@ std::vector<QString> parseHotkeyArguments(QString argumentString);
 std::optional<ActionDefinition> findHotkeyActionDefinition(
     HotkeyCategory category, const QString &action);
 
-// convert key_enter to key_return so that both keys function the same. preserves multi-key sequences and combinations.
 QKeySequence normalizeKeySequence(const QKeySequence &seq);
 
 }  // namespace chatterino

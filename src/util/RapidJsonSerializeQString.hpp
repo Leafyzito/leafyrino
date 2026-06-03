@@ -35,11 +35,9 @@ struct Deserialize<QString> {
         }
         catch (const std::exception &)
         {
-            //            int x = 5;
         }
         catch (...)
         {
-            //            int y = 5;
         }
 
         return QString{};

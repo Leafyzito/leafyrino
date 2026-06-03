@@ -77,7 +77,6 @@ QString chatters(const CommandContext &ctx)
         return "";
     }
 
-    // Refresh chatter list via helix api for mods
     getHelix()->getChatters(
         ctx.twitchChannel->roomId(),
         getApp()->getAccounts()->twitch.getCurrent()->getUserId(), 1,

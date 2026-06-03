@@ -21,11 +21,10 @@
 
 namespace {
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
-// fallback case
 template <typename T>
-T stringSwitch(std::string_view /* provided */)
+T stringSwitch(std::string_view)
 {
     return {};
 }
@@ -187,41 +186,36 @@ bool KickChatServer::onAppEvent(uint64_t roomID, uint64_t channelID,
 {
     using Fn = void (KickChatServer::*)(KickChannel *, BoostJsonObject);
     auto fn = stringSwitch<Fn>(
-        event,                                                      //
-        "ChatMessageEvent", &KickChatServer::onChatMessage,         //
-        "MessageDeletedEvent", &KickChatServer::onMessageDeleted,   //
-        "ChatroomClearEvent", &KickChatServer::onChatroomClear,     //
-        "UserBannedEvent", &KickChatServer::onUserBanned,           //
-        "UserUnbannedEvent", &KickChatServer::onUserUnbanned,       //
-        "SubscriptionEvent", &KickChatServer::onSubscriptionEvent,  //
-        "GiftedSubscriptionsEvent",
-        &KickChatServer::onGiftedSubscriptionEvent,  //
-        "PinnedMessageCreatedEvent",
-        &KickChatServer::onPinnedMessageCreatedEvent,  //
+        event, "ChatMessageEvent", &KickChatServer::onChatMessage,
+        "MessageDeletedEvent", &KickChatServer::onMessageDeleted,
+        "ChatroomClearEvent", &KickChatServer::onChatroomClear,
+        "UserBannedEvent", &KickChatServer::onUserBanned, "UserUnbannedEvent",
+        &KickChatServer::onUserUnbanned, "SubscriptionEvent",
+        &KickChatServer::onSubscriptionEvent, "GiftedSubscriptionsEvent",
+        &KickChatServer::onGiftedSubscriptionEvent, "PinnedMessageCreatedEvent",
+        &KickChatServer::onPinnedMessageCreatedEvent,
         "PinnedMessageDeletedEvent",
-        &KickChatServer::onPinnedMessageDeletedEvent,                     //
-        "RewardRedeemedEvent", &KickChatServer::onRewardRedeemedEvent,    //
-        "KicksGifted", &KickChatServer::onKicksGiftedEvent,               //
-        "StreamHostEvent", &KickChatServer::onStreamHostEvent,            //
-        "ChatroomUpdatedEvent", &KickChatServer::onChatroomUpdatedEvent,  //
+        &KickChatServer::onPinnedMessageDeletedEvent, "RewardRedeemedEvent",
+        &KickChatServer::onRewardRedeemedEvent, "KicksGifted",
+        &KickChatServer::onKicksGiftedEvent, "StreamHostEvent",
+        &KickChatServer::onStreamHostEvent, "ChatroomUpdatedEvent",
+        &KickChatServer::onChatroomUpdatedEvent,
 
-        // ignored
-        "KicksLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,  //
-        "GiftsLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,  //
-        "PredictionUpdated", &KickChatServer::onKnownIgnoredMessage,        //
-        // old sub events
-        "ChannelSubscriptionEvent", &KickChatServer::onKnownIgnoredMessage,  //
+        "KicksLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,
+        "GiftsLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,
+        "PredictionUpdated", &KickChatServer::onKnownIgnoredMessage,
+
+        "ChannelSubscriptionEvent", &KickChatServer::onKnownIgnoredMessage,
         "LuckyUsersWhoGotGiftSubscriptionsEvent",
-        &KickChatServer::onKnownIgnoredMessage,  //
-        // v1 stream host event
-        "StreamHostedEvent", &KickChatServer::onKnownIgnoredMessage,  //
-        // seems to be for subscriptions too
-        "ChatMessageSentEvent", &KickChatServer::onKnownIgnoredMessage  //
-    );
+        &KickChatServer::onKnownIgnoredMessage,
+
+        "StreamHostedEvent", &KickChatServer::onKnownIgnoredMessage,
+
+        "ChatMessageSentEvent", &KickChatServer::onKnownIgnoredMessage);
 
     if (!fn)
     {
-        return false;  // no handler
+        return false;
     }
 
     std::shared_ptr<KickChannel> channel;
@@ -238,14 +232,13 @@ bool KickChatServer::onAppEvent(uint64_t roomID, uint64_t channelID,
     {
         qCWarning(chatterinoKick)
             << "No channel found for room" << roomID << "channel" << channelID;
-        return true;  // technically it's handled, we just don't have a channel
+        return true;
     }
 
     (this->*fn)(channel.get(), data);
     return true;
 }
 
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void KickChatServer::onChatMessage(KickChannel *channel, BoostJsonObject data)
 {
     auto [msg, highlight] = KickMessageBuilder::makeChatMessage(channel, data);
@@ -257,7 +250,7 @@ void KickChatServer::onChatMessage(KickChannel *channel, BoostJsonObject data)
             (!getSettings()->hideSimilar &&
              getSettings()->shownSimilarTriggerHighlights))
         {
-            MessageBuilder::triggerHighlights(channel, highlight);
+            MessageBuilder::triggerHighlights(channel, msg, highlight);
         }
 
         const auto highlighted = msg->flags.has(MessageFlag::Highlighted);
@@ -265,7 +258,6 @@ void KickChatServer::onChatMessage(KickChannel *channel, BoostJsonObject data)
 
         if (highlighted && showInMentions)
         {
-            // yes, we add this to the Twitch channel
             getApp()->getTwitch()->getMentionsChannel()->addMessage(
                 msg, MessageContext::Original);
         }
@@ -330,8 +322,7 @@ void KickChatServer::onMessageDeleted(KickChannel *channel,
     }
 }
 
-void KickChatServer::onChatroomClear(KickChannel *channel,
-                                     BoostJsonObject /* data */)
+void KickChatServer::onChatroomClear(KickChannel *channel, BoostJsonObject)
 {
     auto now = QDateTime::currentDateTime();
     auto clear = KickMessageBuilder::makeClearChatMessage(now, {});
@@ -347,7 +338,7 @@ void KickChatServer::onPinnedMessageCreatedEvent(KickChannel *channel,
 }
 
 void KickChatServer::onPinnedMessageDeletedEvent(KickChannel *channel,
-                                                 BoostJsonObject /*data*/)
+                                                 BoostJsonObject)
 {
     channel->addSystemMessage(u"The pinned message was unpinned."_s);
 }
@@ -366,7 +357,7 @@ void KickChatServer::onSubscriptionEvent(KickChannel *channel,
         KickMessageBuilder::makeSubscriptionMessage(channel, data);
     if (first)
     {
-        MessageBuilder::triggerHighlights(channel, alert);
+        MessageBuilder::triggerHighlights(channel, first, alert);
         channel->addMessage(first, MessageContext::Original);
     }
     channel->addMessage(second, MessageContext::Original);
@@ -458,13 +449,9 @@ void KickChatServer::onChatroomUpdatedEvent(KickChannel *channel,
     channel->updateRoomModes(newMode);
 }
 
-void KickChatServer::onKnownIgnoredMessage(KickChannel * /*channel*/,
-                                           BoostJsonObject /*data*/)
+void KickChatServer::onKnownIgnoredMessage(KickChannel *, BoostJsonObject)
 {
-    // nop
 }
-
-// NOLINTEND(readability-convert-member-functions-to-static)
 
 void KickChatServer::onJoin(uint64_t roomID) const
 {
@@ -514,7 +501,7 @@ void KickChatServer::loadGlobalEmotesIfNeeded()
             {
                 if (set.userID)
                 {
-                    continue;  // local set
+                    continue;
                 }
                 for (const auto &emoteInfo : set.emotes)
                 {

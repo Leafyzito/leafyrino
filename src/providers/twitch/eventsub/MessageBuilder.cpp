@@ -5,6 +5,7 @@
 #include "providers/twitch/eventsub/MessageBuilder.hpp"
 
 #include "Application.hpp"
+#include "common/Literals.hpp"
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
 #include "messages/Message.hpp"
@@ -14,16 +15,14 @@
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
 #include "util/Helpers.hpp"
-#include "util/QCompareTransparent.hpp"
 
 #include <QStringBuilder>
-
-using namespace Qt::StringLiterals;
 
 namespace {
 
 using namespace chatterino;
 using namespace chatterino::eventsub;
+using namespace chatterino::literals;
 
 /// <MODERATOR> turned {on/off} <MODE> mode. [<DURATION>]
 void makeModeMessage(EventSubMessageBuilder &builder,
@@ -61,35 +60,12 @@ QString stringifyAutomodReason(const lib::automod::BlockedTermReason &reason,
         return u"blocked term usage"_s;
     }
 
-    // dedupe hit terms case-insensitively and remove any empty terms
-    std::set<QString, QCompareCaseInsensitive> hitTerms;
-    for (const auto &term : reason.termsFound)
-    {
-        const auto hitTerm = codepointSlice(message, term.boundary.startPos,
-                                            term.boundary.endPos + 1);
-        if (hitTerm.isEmpty())
-        {
-            // empty terms can be hit if the blocked term is an emote - this is a Twitch bug
-            continue;
-        }
-#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
-        hitTerms.emplace(hitTerm);
-#else
-        hitTerms.emplace(hitTerm.toString());
-#endif
-    }
-
-    if (hitTerms.empty())
-    {
-        return u"blocked term usage"_s;
-    }
-
     QString msg = [&] {
-        if (hitTerms.size() == 1)
+        if (reason.termsFound.size() == 1)
         {
             return u"matches 1 blocked term"_s;
         }
-        return u"matches %1 blocked terms"_s.arg(hitTerms.size());
+        return u"matches %1 blocked terms"_s.arg(reason.termsFound.size());
     }();
 
     if (getSettings()->streamerModeHideBlockedTermText &&
@@ -98,20 +74,19 @@ QString stringifyAutomodReason(const lib::automod::BlockedTermReason &reason,
         return msg;
     }
 
-    bool first = true;
-    for (const auto &hitTerm : hitTerms)
+    for (size_t i = 0; i < reason.termsFound.size(); i++)
     {
-        if (first)
+        if (i == 0)
         {
             msg.append(u" \"");
-            first = false;
         }
         else
         {
             msg.append(u"\", \"");
         }
-
-        msg.append(hitTerm);
+        msg.append(codepointSlice(message,
+                                  reason.termsFound[i].boundary.startPos,
+                                  reason.termsFound[i].boundary.endPos + 1));
     }
     msg.append(u'"');
 
@@ -344,21 +319,18 @@ void makeModerateMessage(
     builder->flags.set(MessageFlag::DoNotTriggerNotification,
                        MessageFlag::ModerationAction);
 
+    (void)event;
+    builder->loginName.clear();
     QString text;
-    bool isShared = event.isFromSharedChat();
-
-    builder.appendUser(event.moderatorUserName, event.moderatorUserLogin, text);
-    builder.emplaceSystemTextAndUpdate("deleted message from", text);
-    builder.appendUser(action.userName, action.userLogin, text);
-
-    if (isShared)
-    {
-        builder.emplaceSystemTextAndUpdate("in", text);
-        builder.appendUser(*event.sourceBroadcasterUserName,
-                           *event.sourceBroadcasterUserLogin, text);
-    }
-
-    builder.emplaceSystemTextAndUpdate("saying:", text);
+    builder.emplace<TextElement>("A message from", MessageElementFlag::Text,
+                                 MessageColor::System);
+    builder
+        .emplace<TextElement>(action.userName.qt(),
+                              MessageElementFlag::Username,
+                              MessageColor::System, FontStyle::ChatMediumBold)
+        ->setLink({Link::UserInfo, action.userLogin.qt()});
+    builder.emplace<TextElement>("was deleted:", MessageElementFlag::Text,
+                                 MessageColor::System);
 
     auto limit = getSettings()->deletedMessageLengthLimit.getValue();
     if (limit > 0 && action.messageBody.view().length() > limit)
@@ -380,6 +352,8 @@ void makeModerateMessage(
         text.append(action.messageBody.qt());
     }
 
+    text = QString("A message from %1 was deleted: %2")
+               .arg(action.userLogin.qt(), text);
     builder.setMessageAndSearchText(text);
     builder->timeoutUser = action.userLogin.qt();
 }
@@ -566,7 +540,6 @@ void makeModerateMessage(EventSubMessageBuilder &builder,
     builder.appendUser(event.moderatorUserName, event.moderatorUserLogin, text);
     builder.emplaceSystemTextAndUpdate("initiated a raid to", text);
     builder.appendUser(action.userName, action.userLogin, text, false);
-    builder.emplaceSystemTextAndUpdate(".", text);
 
     builder.setMessageAndSearchText(text);
 }
@@ -581,7 +554,6 @@ void makeModerateMessage(
     builder.appendUser(event.moderatorUserName, event.moderatorUserLogin, text);
     builder.emplaceSystemTextAndUpdate("canceled the raid to", text);
     builder.appendUser(action.userName, action.userLogin, text, false);
-    builder.emplaceSystemTextAndUpdate(".", text);
 
     builder.setMessageAndSearchText(text);
 }
@@ -761,14 +733,15 @@ MessagePtr makeSuspiciousUserMessageHeader(
             evader = u"possible"_s;
         }
 
-        headerMessage += u". Detected as " % evader % " ban evader";
+        headerMessage += QStringLiteral(". Detected as ") % evader %
+                         QStringLiteral(" ban evader");
     }
 
     if (hasType(lib::suspicious_users::Type::SharedChannelBan))
     {
-        headerMessage += u". Banned in " %
+        headerMessage += QStringLiteral(". Banned in ") %
                          QString::number(event.sharedBanChannelIds.size()) %
-                         u" shared channels";
+                         QStringLiteral(" shared channels");
     }
 
     builder.emplace<TextElement>(headerMessage, MessageElementFlag::Text,

@@ -18,17 +18,16 @@
 namespace chatterino::completion {
 
 struct EmoteItem {
-    /// Emote image to show in input popup
     EmotePtr emote{};
-    /// Name to check completion queries against
+
     QString searchName{};
-    /// Name to insert into split input upon tab completing
+
     QString tabCompletionName{};
-    /// Display name within input popup
+
     QString displayName{};
-    /// Emote provider name for input popup
+
     QString providerName{};
-    /// Whether emote is emoji
+
     bool isEmoji{};
 };
 
@@ -38,11 +37,6 @@ public:
     using ActionCallback = std::function<void(const QString &)>;
     using EmoteStrategy = Strategy<EmoteItem>;
 
-    /// @brief Initializes a source for EmoteItems from the given channel
-    /// @param channel Channel to initialize emotes from
-    /// @param strategy Strategy to apply
-    /// @param callback ActionCallback to invoke upon InputCompletionItem selection.
-    /// See InputCompletionItem::action(). Can be nullptr.
     EmoteSource(const Channel *channel, std::unique_ptr<EmoteStrategy> strategy,
                 ActionCallback callback = nullptr);
 

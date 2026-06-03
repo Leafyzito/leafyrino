@@ -20,6 +20,11 @@ bool operator==(const Emote &a, const Emote &b)
            std::tie(b.homePage, b.name, b.tooltip, b.images);
 }
 
+bool operator!=(const Emote &a, const Emote &b)
+{
+    return !(a == b);
+}
+
 QJsonObject Emote::toJson() const
 {
     QJsonObject obj{
@@ -53,7 +58,6 @@ QJsonObject Emote::toJson() const
 
 EmotePtr cachedOrMakeEmotePtr(Emote &&emote, const EmoteMap &cache)
 {
-    // reuse old shared_ptr if nothing changed
     auto it = cache.find(emote.name);
     if (it != cache.end() && *it->second == emote)
     {
@@ -73,7 +77,6 @@ EmotePtr cachedOrMakeEmotePtr(
     auto shared = cache[id].lock();
     if (shared && *shared == emote)
     {
-        // reuse old shared_ptr if nothing changed
         return shared;
     }
     else

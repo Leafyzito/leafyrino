@@ -33,23 +33,10 @@ class IController
 public:
     virtual ~IController() = default;
 
-    /// Removes one reference for the given subscription request
-    ///
-    /// Should realistically only be called in the dtor of SubscriptionHandle
     virtual void removeRef(const SubscriptionRequest &request) = 0;
 
-    /// Mark the controller as quitting
-    ///
-    /// This lets us simplify some logic with unsubscriptions (i.e. we ignore it instead)
     virtual void setQuitting() = 0;
 
-    /// Subscribe will make a request to each open connection and ask them to
-    /// add this subscription.
-    ///
-    /// If this subscription already exists, this call is a no-op.
-    ///
-    /// If no open connection has room for this subscription, this function will
-    /// create a new connection and queue up the subscription to run again after X seconds.
     [[nodiscard]] virtual SubscriptionHandle subscribe(
         const SubscriptionRequest &request) = 0;
 
@@ -123,35 +110,27 @@ private:
 
     struct Subscription {
         enum class State : uint8_t {
-            /// No subscription attempt has been made, or we have unsubscribed after all references
-            /// were released
+
             Unsubscribed,
 
-            /// The subscription attempt failed, maxing out our retry attempts
             Failed,
 
-            /// The initial subscription is currently in progress
             Subscribing,
 
-            /// A retry is currently in progress
             Retrying,
 
-            /// The subscription has been established
             Subscribed,
 
-            /// We've lost interested in this subscription - currently unsubscribing
             Unsubscribing,
         } state = State::Unsubscribed;
 
         int32_t refCount = 0;
         std::weak_ptr<lib::Session> connection;
 
-        /// The ID of the subscription the Twitch Helix API has given us
         QString subscriptionID;
 
-        /// The timer, if any, for retrying the subscription creation
         std::unique_ptr<boost::asio::system_timer> retryTimer;
-        // 500ms to 16s backoff
+
         ExponentialBackoff<6> backoff{std::chrono::milliseconds{500}};
     };
 
@@ -160,6 +139,37 @@ private:
 
     std::atomic<bool> quitting = false;
     OnceFlag stoppedFlag;
+};
+
+class DummyController : public IController
+{
+public:
+    ~DummyController() override = default;
+
+    void removeRef(const SubscriptionRequest &request) override
+    {
+        (void)request;
+    }
+
+    void setQuitting() override
+    {
+    }
+
+    [[nodiscard]] SubscriptionHandle subscribe(
+        const SubscriptionRequest &request) override
+    {
+        (void)request;
+        return {};
+    }
+
+    void reconnectConnection(
+        std::unique_ptr<lib::Listener> connection,
+        const std::optional<std::string> &reconnectURL,
+        const std::unordered_set<SubscriptionRequest> &subs) override;
+
+    void debug() override
+    {
+    }
 };
 
 }  // namespace chatterino::eventsub

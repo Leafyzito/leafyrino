@@ -61,7 +61,7 @@ QJsonValue NetworkResult::parseJsonValue() const
         return jsonDoc.object();
     }
 
-    return {};  // undefined
+    return {};
 #endif
 }
 
@@ -90,7 +90,6 @@ const QByteArray &NetworkResult::getData() const
 
 QString NetworkResult::formatError() const
 {
-    // Print the status for errors that mirror HTTP status codes (=0 || >99)
     if (this->status_ && (this->error_ == QNetworkReply::NoError ||
                           this->error_ > QNetworkReply::UnknownNetworkError))
     {

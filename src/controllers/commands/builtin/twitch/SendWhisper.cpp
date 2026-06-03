@@ -70,7 +70,6 @@ QString formatWhisperError(HelixWhisperError error, const QString &message)
         break;
 
         case Error::UserMissingScope: {
-            // TODO(pajlada): Phrase MISSING_REQUIRED_SCOPE
             errorMessage += "Missing required scope. "
                             "Re-login with your "
                             "account and try again.";
@@ -78,7 +77,6 @@ QString formatWhisperError(HelixWhisperError error, const QString &message)
         break;
 
         case Error::UserNotAuthorized: {
-            // TODO(pajlada): Phrase MISSING_PERMISSION
             errorMessage += "You don't have permission to "
                             "perform that action.";
         }
@@ -116,29 +114,29 @@ bool appendWhisperMessageWordsLocally(const QStringList &words)
     auto emote = std::optional<EmotePtr>{};
     for (int i = 2; i < words.length(); i++)
     {
-        {  // Twitch emote
+        {
             auto it = accemotes->find({words[i]});
             if (it != accemotes->end())
             {
                 b.emplace<EmoteElement>(it->second, MessageElementFlag::Emote);
                 continue;
             }
-        }  // Twitch emote
+        }
 
-        {  // bttv/ffz emote
+        {
             emote = bttvemotes->emote({words[i]});
             if (!emote)
             {
                 emote = ffzemotes->emote({words[i]});
             }
-            // TODO: Load 7tv global emotes
+
             if (emote)
             {
                 b.emplace<EmoteElement>(*emote, MessageElementFlag::Emote);
                 continue;
             }
-        }  // bttv/ffz emote
-        {  // emoji/text
+        }
+        {
             for (auto &variant : app->getEmotes()->getEmojis()->parse(words[i]))
             {
                 constexpr const static struct {
@@ -166,7 +164,7 @@ bool appendWhisperMessageWordsLocally(const QStringList &words)
                         visitor(arg, b);
                     },
                     variant);
-            }  // emoji/text
+            }
         }
     }
 

@@ -15,14 +15,12 @@ HotkeyModel::HotkeyModel(QObject *parent)
 {
 }
 
-// turn a vector item into a model row
 std::shared_ptr<Hotkey> HotkeyModel::getItemFromRow(
     std::vector<QStandardItem *> &row, const std::shared_ptr<Hotkey> &original)
 {
     return original;
 }
 
-// turns a row in the model into a vector item
 void HotkeyModel::getRowFromItem(const std::shared_ptr<Hotkey> &item,
                                  std::vector<QStandardItem *> &row)
 {
@@ -52,7 +50,6 @@ int HotkeyModel::beforeInsert(const std::shared_ptr<Hotkey> &item,
         setStringItem(newRow[0], category, false, false);
         newRow[0]->setData(QFont("Segoe UI Light", 16), Qt::FontRole);
 
-        // make sure category headers aren't editable
         for (unsigned long i = 1; i < newRow.size(); i++)
         {
             setStringItem(newRow[i], "", false, false);
@@ -68,7 +65,6 @@ int HotkeyModel::beforeInsert(const std::shared_ptr<Hotkey> &item,
 
     if (nextCategoryModelIndex != -1 && proposedIndex >= nextCategoryModelIndex)
     {
-        // The proposed index would have landed under the wrong category, we offset by -1 to compensate
         return proposedIndex - 1;
     }
 

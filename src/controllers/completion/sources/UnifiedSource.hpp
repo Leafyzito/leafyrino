@@ -18,8 +18,6 @@ namespace chatterino::completion {
 class UnifiedSource : public Source
 {
 public:
-    /// @brief Initializes a unified completion source.
-    /// @param sources Vector of sources to unify
     UnifiedSource(std::vector<std::unique_ptr<Source>> sources);
 
     void update(const QString &query) override;

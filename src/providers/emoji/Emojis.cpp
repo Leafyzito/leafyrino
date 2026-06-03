@@ -12,6 +12,7 @@
 #include "util/QMagicEnum.hpp"
 #include "util/RapidjsonHelpers.hpp"
 
+#include <boost/variant.hpp>
 #include <QFile>
 #include <rapidjson/error/en.h>
 #include <rapidjson/error/error.h>
@@ -48,7 +49,6 @@ void parseEmoji(const std::shared_ptr<EmojiData> &emojiData,
     }
     else
     {
-        // Load short codes from the suggested short_names
         const auto &shortNames = unparsedEmoji["short_names"];
         for (const auto &shortName : shortNames.GetArray())
         {
@@ -98,7 +98,6 @@ void parseEmoji(const std::shared_ptr<EmojiData> &emojiData,
         }
     }
 
-    // We can safely do a narrowing static cast since unicodeBytes will never be a large number
     emojiData->value =
         QString::fromUcs4(unicodeBytes.data(),
                           static_cast<QString::size_type>(unicodeBytes.size()));
@@ -122,16 +121,12 @@ void parseEmoji(const std::shared_ptr<EmojiData> &emojiData,
             }
         }
 
-        // We can safely do a narrowing static cast since unicodeBytes will never be a large number
         emojiData->nonQualified = QString::fromUcs4(
             nonQualifiedBytes.data(),
             static_cast<QString::size_type>(nonQualifiedBytes.size()));
     }
 }
 
-// getToneNames takes a tones and returns their names in the same order
-// The format of the tones is: "1F3FB-1F3FB" or "1F3FB"
-// The output of the tone names is: "tone1-tone1" or "tone1"
 QString getToneNames(const QString &tones)
 {
     auto toneParts = tones.split('-');
@@ -175,7 +170,6 @@ void Emojis::load()
 
 void Emojis::loadEmojis()
 {
-    // Current version: https://github.com/Nerixyz/emoji-data/blob/feat/17-0/emoji.json (Emoji version 17.0 (2025))
     QFile file(":/emoji.json");
     if (!file.open(QFile::ReadOnly))
     {
@@ -224,8 +218,6 @@ void Emojis::loadEmojis()
                 parseEmoji(variationEmojiData, variation,
                            emojiData->shortCodes[0] + "_" + toneName);
 
-                // NOTE: Emoji variations do not have a category.
-                // We have to manually inherit it from the original emojiData.
                 variationEmojiData->category = emojiData->category;
 
                 this->emojiShortCodeToEmoji_.insert(
@@ -267,30 +259,21 @@ void Emojis::loadEmojiSet()
         for (const auto &emoji : this->emojis)
         {
             QString emojiSetToUse = emojiSet;
-            // clang-format off
-            static std::map<QString, QString, QCompareCaseInsensitive> emojiSets = {
-                // JSDELIVR
-                // {"Twitter", "https://cdn.jsdelivr.net/npm/emoji-datasource-twitter@4.0.4/img/twitter/64/"},
-                // {"Facebook", "https://cdn.jsdelivr.net/npm/emoji-datasource-facebook@4.0.4/img/facebook/64/"},
-                // {"Apple", "https://cdn.jsdelivr.net/npm/emoji-datasource-apple@5.0.1/img/apple/64/"},
-                // {"Google", "https://cdn.jsdelivr.net/npm/emoji-datasource-google@4.0.4/img/google/64/"},
-                // {"Messenger", "https://cdn.jsdelivr.net/npm/emoji-datasource-messenger@4.0.4/img/messenger/64/"},
 
-                // OBRODAI
-                {"Twitter", "https://pajbot.com/static/emoji-v2/img/twitter/64/"},
-                {"Facebook", "https://pajbot.com/static/emoji-v2/img/facebook/64/"},
-                {"Apple", "https://pajbot.com/static/emoji-v2/img/apple/64/"},
-                {"Google", "https://pajbot.com/static/emoji-v2/img/google/64/"},
+            static std::map<QString, QString, QCompareCaseInsensitive>
+                emojiSets = {
 
-                // Cloudflare+B2 bucket
-                // {"Twitter", "https://chatterino2-emoji-cdn.pajlada.se/file/c2-emojis/emojis-v1/twitter/64/"},
-                // {"Facebook", "https://chatterino2-emoji-cdn.pajlada.se/file/c2-emojis/emojis-v1/facebook/64/"},
-                // {"Apple", "https://chatterino2-emoji-cdn.pajlada.se/file/c2-emojis/emojis-v1/apple/64/"},
-                // {"Google", "https://chatterino2-emoji-cdn.pajlada.se/file/c2-emojis/emojis-v1/google/64/"},
-            };
-            // clang-format on
+                    {"Twitter",
+                     "https://pajbot.com/static/emoji-v2/img/twitter/64/"},
+                    {"Facebook",
+                     "https://pajbot.com/static/emoji-v2/img/facebook/64/"},
+                    {"Apple",
+                     "https://pajbot.com/static/emoji-v2/img/apple/64/"},
+                    {"Google",
+                     "https://pajbot.com/static/emoji-v2/img/google/64/"},
 
-            // Both Twitter/Twemoji and Google have all images
+                };
+
             if (!emoji->capabilities.has(setCapability))
             {
                 emojiSetToUse = QStringLiteral("Twitter");
@@ -333,7 +316,6 @@ std::vector<std::variant<EmotePtr, QStringView>> Emojis::parse(
         auto it = this->emojiFirstByte_.find(character);
         if (it == this->emojiFirstByte_.end())
         {
-            // No emoji starts with this character
             continue;
         }
 
@@ -352,7 +334,6 @@ std::vector<std::variant<EmotePtr, QStringView>> Emojis::parse(
             auto emojiExtraCharacters = emoji->value.length() - 1;
             if (remainingCharacters >= emojiExtraCharacters)
             {
-                // look in emoji->value
                 bool match = QStringView{emoji->value}.mid(1) ==
                              text.mid(i + 1, emojiExtraCharacters);
 
@@ -367,8 +348,6 @@ std::vector<std::variant<EmotePtr, QStringView>> Emojis::parse(
             if (!emoji->nonQualified.isNull() &&
                 remainingCharacters >= emojiNonQualifiedExtraCharacters)
             {
-                // This checking here relies on the fact that the nonQualified string
-                // always starts with the same byte as value (the unified string)
                 bool match = QStringView{emoji->nonQualified}.mid(1) ==
                              text.mid(i + 1, emojiNonQualifiedExtraCharacters);
 
@@ -395,12 +374,10 @@ std::vector<std::variant<EmotePtr, QStringView>> Emojis::parse(
 
         if (charactersFromLastParsedEmoji > 0)
         {
-            // Add characters inbetween emojis
             result.emplace_back(text.mid(lastParsedEmojiEndIndex,
                                          charactersFromLastParsedEmoji));
         }
 
-        // Push the emoji as a word to parsedWords
         result.emplace_back(matchedEmoji->emote);
 
         lastParsedEmojiEndIndex = currentParsedEmojiEndIndex;
@@ -410,7 +387,6 @@ std::vector<std::variant<EmotePtr, QStringView>> Emojis::parse(
 
     if (lastParsedEmojiEndIndex < text.length())
     {
-        // Add remaining characters
         result.emplace_back(text.mid(lastParsedEmojiEndIndex));
     }
 

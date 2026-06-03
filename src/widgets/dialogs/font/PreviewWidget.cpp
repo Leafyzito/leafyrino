@@ -15,7 +15,7 @@ PreviewWidget::PreviewWidget(const QFont &startFont, QWidget *parent)
     this->setMinimumHeight(60);
 }
 
-void PreviewWidget::paintEvent(QPaintEvent * /* event */)
+void PreviewWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter{this};
 

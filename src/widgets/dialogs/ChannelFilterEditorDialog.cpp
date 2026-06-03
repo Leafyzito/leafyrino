@@ -75,7 +75,6 @@ ChannelFilterEditorDialog::ChannelFilterEditorDialog(QWidget *parent)
     vbox->addLayout(filterVbox);
     vbox->addLayout(buttonBox);
 
-    // setup default values
     left->setType("Variable");
     left->setValue("message.content");
     exp->setOperation("contains");
@@ -162,12 +161,12 @@ QString ChannelFilterEditorDialog::ValueSpecifier::expressionText()
 {
     switch (this->typeCombo_->currentIndex())
     {
-        case 0:  // text
+        case 0:
             return QString("\"%1\"").arg(
                 this->valueInput_->text().replace("\"", "\\\""));
-        case 1:  // number
+        case 1:
             return this->valueInput_->text();
-        case 2:  // variable
+        case 2:
             return filters::VALID_IDENTIFIERS_MAP.key(
                 this->varCombo_->currentText());
         default:
@@ -193,7 +192,6 @@ ChannelFilterEditorDialog::BinaryOperationSpecifier::BinaryOperationSpecifier(
     QObject::connect(
         this->opCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
         [this](int index) {
-            // disable if set to "(nothing)"
             this->right_->setEnabled(!realBinaryOps.at(index).isEmpty());
         });
 }

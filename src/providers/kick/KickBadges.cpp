@@ -7,7 +7,7 @@
 namespace {
 
 using namespace chatterino;
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 enum class BadgeID : uint8_t {
     bot,
@@ -109,7 +109,6 @@ BadgeNameData nameDataFor(BadgeID id)
 
 using CacheData = std::pair<EmotePtr, MessageElementFlag>;
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 std::array<CacheData, magic_enum::enum_count<BadgeID>()> CACHE{};
 
 }  // namespace
@@ -134,7 +133,6 @@ std::pair<EmotePtr, MessageElementFlag> KickBadges::lookup(
         return {nullptr, {}};
     }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index) -- see above
     auto &entry = CACHE[idx];
     if (!entry.first)
     {

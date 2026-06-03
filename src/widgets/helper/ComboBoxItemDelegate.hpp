@@ -8,8 +8,6 @@
 
 namespace chatterino {
 
-// stolen from https://wiki.qt.io/Combo_Boxes_in_Item_Views
-
 class ComboBoxItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT

@@ -111,7 +111,6 @@ bool ExternalToolsPage::filterElements(const QString &query)
     return false;
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void ExternalToolsPage::initLayout(GeneralPageView &layout)
 {
     auto &s = *getSettings();
@@ -237,7 +236,6 @@ void ExternalToolsPage::initLayout(GeneralPageView &layout)
 
 #ifdef CHATTERINO_WITH_SPELLCHECK
     {
-        // auto *form = new QFormLayout;
         layout.addTitle("Spell checker (experimental)");
 
         layout.addDescription(

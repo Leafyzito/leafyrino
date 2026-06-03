@@ -22,7 +22,7 @@ class ChannelChatters
 {
 public:
     ChannelChatters(Channel &channel);
-    virtual ~ChannelChatters() = default;  // add vtable
+    virtual ~ChannelChatters() = default;
 
     SharedAccessGuard<const ChatterSet> accessChatters() const;
 
@@ -33,8 +33,6 @@ public:
     void setUserColor(const QString &user, const QColor &color);
     void updateOnlineChatters(const std::unordered_set<QString> &usernames);
 
-    // colorsSize returns the amount of colors stored in `chatterColors_`
-    // NOTE: This function is only meant to be used in tests and benchmarks
     size_t colorsSize() const;
 
     MessageElementFlag mentionFlag() const
@@ -49,11 +47,9 @@ public:
 private:
     Channel &channel_;
 
-    // maps 2 char prefix to set of names
     UniqueAccess<ChatterSet> chatters_;
     UniqueAccess<cache::lru_cache<QString, QRgb>> chatterColors_;
 
-    // combines multiple joins/parts into one message
     UniqueAccess<QStringList> joinedUsers_;
     bool joinedUsersMergeQueued_ = false;
     UniqueAccess<QStringList> partedUsers_;

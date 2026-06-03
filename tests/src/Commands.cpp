@@ -12,12 +12,20 @@
 #include "mocks/Helix.hpp"
 #include "mocks/Logging.hpp"
 #include "mocks/TwitchIrcServer.hpp"
+#include "providers/twitch/PubSubManager.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "singletons/Settings.hpp"
+#include "singletons/WindowManager.hpp"
 #include "Test.hpp"
+#include "widgets/dialogs/PredictionDialog.hpp"
 
+#include <QApplication>
+#include <QLabel>
+#include <QLineEdit>
 #include <QStringBuilder>
+
+#include <algorithm>
 
 using namespace chatterino;
 
@@ -30,8 +38,16 @@ class MockApplication : public mock::BaseApplication
 {
 public:
     MockApplication()
-        : commands(this->paths_)
+        : windowManager(this->args, this->paths_, this->settings, this->theme,
+                        this->fonts)
+        , commands(this->paths_)
+        , pubSub("wss://127.0.0.1:9050")
     {
+    }
+
+    WindowManager *getWindows() override
+    {
+        return &this->windowManager;
     }
 
     ITwitchIrcServer *getTwitch() override
@@ -59,11 +75,18 @@ public:
         return &this->chatLogger;
     }
 
+    PubSub *getTwitchPubSub() override
+    {
+        return &this->pubSub;
+    }
+
     mock::EmptyLogging chatLogger;
     AccountController accounts;
+    WindowManager windowManager;
     CommandController commands;
     mock::MockTwitchIrcServer twitch;
     mock::EmoteController emotes;
+    PubSub pubSub;
 };
 
 }  // namespace
@@ -1053,6 +1076,52 @@ TEST(Commands, E2E)
     getApp()->getCommands()->execCommand(
         "/unban --channel id:11148817 --channel testaccount_420 forsen",
         channel, false);
+}
+
+TEST(Commands, PredictionCommandOpensDialogInsteadOfCreatingViaArgs)
+{
+    MockApplication app;
+
+    StrictMock<mock::Helix> mockHelix;
+    initializeHelix(&mockHelix);
+
+    auto channel = std::make_shared<TwitchChannel>("pajlada");
+
+    std::vector<QWidget *> existingDialogs;
+    for (auto *widget : QApplication::topLevelWidgets())
+    {
+        if (dynamic_cast<PredictionDialog *>(widget) != nullptr)
+        {
+            existingDialogs.push_back(widget);
+        }
+    }
+
+    EXPECT_CALL(mockHelix, createPrediction(_, _, _, _, _, _)).Times(0);
+
+    getApp()->getCommands()->execCommand(
+        "/prediction --title \"Question\" --choice \"A\" --choice \"B\" "
+        "--duration 60",
+        channel, false);
+
+    PredictionDialog *openedDialog = nullptr;
+    for (auto *widget : QApplication::topLevelWidgets())
+    {
+        auto *dialog = dynamic_cast<PredictionDialog *>(widget);
+        if (dialog != nullptr &&
+            std::find(existingDialogs.begin(), existingDialogs.end(), widget) ==
+                existingDialogs.end())
+        {
+            openedDialog = dialog;
+            break;
+        }
+    }
+
+    ASSERT_NE(openedDialog, nullptr);
+    EXPECT_NE(openedDialog->findChild<QLabel *>("PredictionHeaderTitle"),
+              nullptr);
+
+    openedDialog->close();
+    QApplication::processEvents();
 }
 
 }  // namespace chatterino

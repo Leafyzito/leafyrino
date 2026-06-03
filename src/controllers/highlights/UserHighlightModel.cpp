@@ -13,18 +13,14 @@
 
 namespace chatterino {
 
-// commandmodel
 UserHighlightModel::UserHighlightModel(QObject *parent)
     : SignalVectorModel<HighlightPhrase>(Column::COUNT, parent)
 {
 }
 
-// turn vector item into model row
 HighlightPhrase UserHighlightModel::getItemFromRow(
     std::vector<QStandardItem *> &row, const HighlightPhrase &original)
 {
-    // In order for old messages to update their highlight color, we need to
-    // update the highlight color here.
     auto highlightColor = original.getColor();
     *highlightColor =
         row[Column::Color]->data(Qt::DecorationRole).value<QColor>();
@@ -42,7 +38,6 @@ HighlightPhrase UserHighlightModel::getItemFromRow(
 
 void UserHighlightModel::afterInit()
 {
-    // User highlight settings for your own messages
     std::vector<QStandardItem *> messagesRow = this->createRow();
     setBoolItem(messagesRow[Column::Pattern],
                 getSettings()->enableSelfMessageHighlight.getValue(), true,
@@ -97,14 +92,12 @@ void UserHighlightModel::customRowSetData(
         }
         break;
         case Column::Color: {
-            // Custom color
             if (role == Qt::DecorationRole)
             {
                 auto colorName = value.value<QColor>().name(QColor::HexArgb);
                 if (rowIndex ==
                     HighlightModel::UserHighlightRowIndexes::SelfMessageRow)
                 {
-                    // Update the setting with the new value
                     getSettings()->selfMessageHighlightColor.setValue(
                         colorName);
                 }
@@ -116,7 +109,6 @@ void UserHighlightModel::customRowSetData(
     getApp()->getWindows()->forceLayoutChannelViews();
 }
 
-// row into vector item
 void UserHighlightModel::getRowFromItem(const HighlightPhrase &item,
                                         std::vector<QStandardItem *> &row)
 {

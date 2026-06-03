@@ -22,7 +22,6 @@ inline QString stdPathToQString(const std::filesystem::path &path)
 
 inline std::filesystem::path qStringToStdPath(const QString &path)
 {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     const auto *ptr = reinterpret_cast<const char16_t *>(path.utf16());
     return {ptr, ptr + path.size()};
 }

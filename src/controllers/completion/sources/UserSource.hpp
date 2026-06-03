@@ -25,13 +25,6 @@ public:
     using ActionCallback = std::function<void(const QString &)>;
     using UserStrategy = Strategy<UserItem>;
 
-    /// @brief Initializes a source for UserItems from the given channel.
-    /// @param channel Channel to initialize users from. Must be a TwitchChannel
-    /// or completion is a no-op.
-    /// @param strategy Strategy to apply
-    /// @param callback ActionCallback to invoke upon InputCompletionItem selection.
-    /// See InputCompletionItem::action(). Can be nullptr.
-    /// @param prependAt Whether to prepend @ to string completion suggestions.
     UserSource(const Channel *channel, std::unique_ptr<UserStrategy> strategy,
                ActionCallback callback = nullptr, bool prependAt = true);
 

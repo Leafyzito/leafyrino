@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2020 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include "widgets/listview/GenericListItem.hpp"
@@ -22,7 +18,6 @@ public:
     InputCompletionItem(const EmotePtr &emote, const QString &text,
                         ActionCallback action);
 
-    // GenericListItem interface
     void action() override;
     void paint(QPainter *painter, const QRect &rect) const override;
     QSize sizeHint(const QRect &rect) const override;

@@ -10,15 +10,6 @@
 
 #include <concepts>
 
-/// MAGIC_ENUM_VERSION_AT_LEAST(0, 9, 8) equivalent to magic enum version >= 0.9.8
-#define MAGIC_ENUM_VERSION_AT_LEAST(major, minor, patch) \
-    ((MAGIC_ENUM_VERSION_MAJOR > (major)) ||             \
-     (MAGIC_ENUM_VERSION_MAJOR == (major) &&             \
-      MAGIC_ENUM_VERSION_MINOR > (minor)) ||             \
-     (MAGIC_ENUM_VERSION_MAJOR == (major) &&             \
-      MAGIC_ENUM_VERSION_MINOR == (minor) &&             \
-      MAGIC_ENUM_VERSION_PATCH >= (patch)))
-
 namespace chatterino::qmagicenum::detail {
 
 template <typename T, typename U>
@@ -48,7 +39,6 @@ consteval QStringView fromArray(const std::array<char16_t, N> &arr)
     return QStringView{arr.data(), static_cast<QStringView::size_type>(N - 1)};
 }
 
-// Only the latin1 subset may be used right now, since it's easily convertible
 template <std::size_t N>
 consteval bool isLatin1(std::string_view maybe)
 {
@@ -63,16 +53,10 @@ consteval bool isLatin1(std::string_view maybe)
 }
 
 template <typename BinaryPredicate>
-constexpr bool
-    eq(QStringView a, QStringView b, [[maybe_unused]] BinaryPredicate &&p) noexcept(
-#if MAGIC_ENUM_VERSION_AT_LEAST(0, 9, 8)
-        magic_enum::detail::is_nothrow_invocable_v<BinaryPredicate>
-#else
-        magic_enum::detail::is_nothrow_invocable<BinaryPredicate>()
-#endif
-    )
+constexpr bool eq(QStringView a, QStringView b,
+                  [[maybe_unused]] BinaryPredicate
+                      &&p) noexcept(isNothrowInvocable<BinaryPredicate>())
 {
-    // Note: QStringView::operator== isn't constexpr
     if (a.size() != b.size())
     {
         return false;
@@ -106,19 +90,16 @@ consteval auto enumNameStorage()
     return storage;
 }
 
-/// This contains a std::array<char16_t> for each enum value (V) with the
-/// corresponding name.
 template <typename E, E V>
 inline constexpr auto ENUM_NAME_STORAGE = enumNameStorage<char16_t, E, V>();
 
 template <typename E, std::size_t... I>
-consteval auto namesStorage(std::index_sequence<I...> /*unused*/)
+consteval auto namesStorage(std::index_sequence<I...>)
 {
     return std::array<QStringView, sizeof...(I)>{{detail::fromArray(
         ENUM_NAME_STORAGE<E, magic_enum::enum_values<E>()[I]>)...}};
 }
 
-/// This contains a std::array<QStringView> for each enum (E).
 template <typename E>
 inline constexpr auto NAMES_STORAGE =
     namesStorage<E>(std::make_index_sequence<magic_enum::enum_count<E>()>{});
@@ -141,30 +122,23 @@ public:
     }
 };
 
-/// @brief Gets a static QString from @a view.
-///
-/// @pre @a view must be a static string view (i.e. it must be valid throughout
-///      the entire duration of the program).
-///
-/// @param view The view to turn into a static string
-/// @returns A static string (never gets freed)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 [[nodiscard]] inline QString staticString(QStringView view) noexcept
 {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     return QString(QStringPrivate(nullptr, const_cast<char16_t *>(view.utf16()),
                                   view.size()));
 }
+#else
+[[nodiscard]] inline QString staticString(QStringView view)
+{
+    return view.toString();
+}
+#endif
 
 }  // namespace chatterino::qmagicenum::detail
 
 namespace chatterino::qmagicenum {
 
-/// @brief Get the name of an enum value
-///
-/// This version is much lighter on the compile times and is not restricted to the enum_range limitation.
-///
-/// @tparam V The enum value
-/// @returns The name as a string view
 template <detail::IsEnum auto V>
 [[nodiscard]] consteval QStringView enumName() noexcept
 {
@@ -172,11 +146,6 @@ template <detail::IsEnum auto V>
         detail::fromArray(detail::ENUM_NAME_STORAGE<decltype(V), V>)};
 }
 
-/// @brief Get the name of an enum value
-///
-/// @param value The enum value
-/// @returns The name as a string view. If @a value does not have name or the
-///          value is out of range an empty string is returned.
 template <detail::IsEnum E>
 [[nodiscard]] constexpr QStringView enumName(E value) noexcept
 {
@@ -189,28 +158,12 @@ template <detail::IsEnum E>
     return {};
 }
 
-/// @brief Get the name of an enum value
-///
-/// This version is much lighter on the compile times and is not restricted to
-/// the enum_range limitation.
-///
-/// @tparam V The enum value
-/// @returns The name as a string. The returned string is static.
 template <detail::IsEnum auto V>
 [[nodiscard]] inline QString enumNameString() noexcept
 {
     return detail::staticString(enumName<V>());
 }
 
-/// @brief Get the name of an enum value
-///
-/// This version is much lighter on the compile times and is not restricted to
-/// the enum_range limitation.
-///
-/// @tparam V The enum value
-/// @returns The name as a string. If @a value does not have name or the
-///          value is out of range an empty string is returned.
-///          The returned string is static.
 template <detail::IsEnum E>
 [[nodiscard]] inline QString enumNameString(E value) noexcept
 {
@@ -219,14 +172,6 @@ template <detail::IsEnum E>
     return detail::staticString(enumName<D>(value));
 }
 
-/// @brief Gets the enum value from a name
-///
-/// @tparam E The enum type to parse the @a name as
-/// @param name The name of the enum value to parse
-/// @param p A predicate to compare characters of a string
-///          (defaults to std::equal_to)
-/// @returns A `std::optional` of the parsed value. If no value was parsed,
-///          `std::nullopt` is returned.
 template <detail::IsEnum E, typename BinaryPredicate = std::equal_to<>>
 [[nodiscard]] constexpr std::optional<std::decay_t<E>>
     enumCast(QStringView name, BinaryPredicate p = {}) noexcept(
@@ -238,7 +183,7 @@ template <detail::IsEnum E, typename BinaryPredicate = std::equal_to<>>
     if constexpr (magic_enum::enum_count<D>() == 0)
     {
         static_cast<void>(name);
-        return std::nullopt;  // Empty enum.
+        return std::nullopt;
     }
 
     for (std::size_t i = 0; i < magic_enum::enum_count<D>(); i++)
@@ -248,16 +193,9 @@ template <detail::IsEnum E, typename BinaryPredicate = std::equal_to<>>
             return magic_enum::enum_value<D>(i);
         }
     }
-    return std::nullopt;  // Invalid value or out of range.
+    return std::nullopt;
 }
 
-/// @brief Constructs a name from the @a flags
-///
-/// @param flags The combined flags to construct the name from
-/// @param sep A separator between each flag (defaults to u'|')
-/// @returns A string containing all names separated by @a sep. If any flag in
-///          @a flags is out of rage or does not have a name, an empty string
-///          is returned.
 template <detail::IsEnum E>
 [[nodiscard]] inline QString enumFlagsName(E flags, char16_t sep = u'|')
 {
@@ -286,7 +224,7 @@ template <detail::IsEnum E>
             }
             else
             {
-                return {};  // Value out of range.
+                return {};
             }
         }
     }
@@ -295,20 +233,15 @@ template <detail::IsEnum E>
     {
         return name;
     }
-    return {};  // Invalid value or out of range.
+    return {};
 }
 
-/// @brief Get the names of all values from @a E.
-///
-/// @tparam E The enum type
-/// @returns A `std::array` of all names (`QStringView`s)
 template <detail::IsEnum E>
 [[nodiscard]] constexpr auto enumNames() noexcept
 {
     return detail::NAMES_STORAGE<std::decay_t<E>>;
 }
 
-/// Allows you to write qmagicenum::enumCast<foo>("bar", qmagicenum::CASE_INSENSITIVE)
 inline constexpr auto CASE_INSENSITIVE = detail::CaseInsensitive<>{};
 
 }  // namespace chatterino::qmagicenum

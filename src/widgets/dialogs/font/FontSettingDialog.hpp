@@ -20,10 +20,8 @@ public:
                       IntSetting &weight, QWidget *parent = nullptr);
 
 private:
-    /// Apply the current dialog's values to the font settings
     void setSettings();
 
-    /// Restore the original setting values to the font settings
     void restoreSettings();
 
     QStringSetting &familySetting;

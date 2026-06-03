@@ -12,7 +12,7 @@ namespace Ui {
 
 class EditHotkeyDialog;
 
-}  // namespace Ui
+}
 
 namespace chatterino {
 
@@ -30,25 +30,11 @@ public:
     std::shared_ptr<Hotkey> data();
 
 protected Q_SLOTS:
-    /**
-     * @brief validates the hotkey
-     *
-     * fired by the ok button
-     **/
+
     void afterEdit();
 
-    /**
-     * @brief updates the list of actions based on the category
-     *
-     * fired by the category picker changing
-     **/
     void updatePossibleActions();
 
-    /**
-     * @brief updates the arguments description and input visibility
-     *
-     * fired by the action picker changing
-     **/
     void updateArgumentsInput();
 
 private:

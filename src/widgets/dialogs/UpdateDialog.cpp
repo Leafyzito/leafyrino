@@ -5,7 +5,6 @@
 #include "widgets/dialogs/UpdateDialog.hpp"
 
 #include "Application.hpp"
-#include "common/Version.hpp"
 #include "singletons/Updates.hpp"
 #include "util/LayoutCreator.hpp"
 #include "widgets/Label.hpp"
@@ -30,17 +29,7 @@ UpdateDialog::UpdateDialog()
         ->setWordWrap(true);
 
     auto buttons = layout.emplace<QDialogButtonBox>();
-
-    const auto *installText = [] {
-        if (Version::instance().isNightly())
-        {
-            return "Yes";
-        }
-
-        return "Install";
-    }();
-    auto *install =
-        buttons->addButton(installText, QDialogButtonBox::AcceptRole);
+    auto *install = buttons->addButton("Install", QDialogButtonBox::AcceptRole);
     this->ui_.installButton = install;
     auto *dismiss = buttons->addButton("Dismiss", QDialogButtonBox::RejectRole);
 
@@ -49,7 +38,7 @@ UpdateDialog::UpdateDialog()
         this->close();
     });
     QObject::connect(dismiss, &QPushButton::clicked, this, [this] {
-        this->dismissed.invoke();
+        this->buttonClicked.invoke(Dismiss);
         this->close();
     });
 
@@ -71,7 +60,17 @@ void UpdateDialog::updateStatusChanged(Updates::Status status)
     {
         case Updates::UpdateAvailable: {
             this->ui_.label->setText(
-                getApp()->getUpdates().buildUpdateAvailableText());
+                (getApp()->getUpdates().isDowngrade()
+                     ? QString(
+                           "The version online (%1) seems to be lower than the "
+                           "current (%2).\nEither a version was reverted or "
+                           "you are running a newer build.\n\nDo you want to "
+                           "download and install it?")
+                           .arg(getApp()->getUpdates().getOnlineVersion(),
+                                getApp()->getUpdates().getCurrentVersion())
+                     : QString("An update (%1) is available.\n\nDo you want to "
+                               "download and install it?")
+                           .arg(getApp()->getUpdates().getOnlineVersion())));
             this->updateGeometry();
         }
         break;

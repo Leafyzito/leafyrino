@@ -14,10 +14,9 @@
 
 namespace {
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 const auto &LOG = chatterinoPronouns;
 
-}  // namespace
+}
 
 namespace chatterino::pronouns {
 
@@ -26,7 +25,6 @@ void Pronouns::getUserPronoun(
     const std::function<void(UserPronouns)> &callbackSuccess,
     const std::function<void()> &callbackFail)
 {
-    // Only fetch pronouns if we haven't fetched before.
     auto cachedPronoun = this->getCachedUserPronoun(username);
     if (cachedPronoun.has_value())
     {

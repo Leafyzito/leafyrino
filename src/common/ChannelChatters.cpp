@@ -133,7 +133,6 @@ QColor ChannelChatters::getUserColor(const QString &user) const
 
     if (!chatterColors->exists(lowerUser))
     {
-        // Returns an invalid color so we can decide not to override `textColor`
         return QColor();
     }
 

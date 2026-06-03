@@ -58,6 +58,7 @@ LabelButton::LabelButton(const QString &text, BaseWidget *parent, QSize padding)
         this->label_.setText(text);
     }
 
+    this->syncLabelFont();
     this->updatePadding();
 }
 
@@ -106,8 +107,23 @@ void LabelButton::enableRichText()
     this->label_.setTextFormat(Qt::RichText);
 }
 
+void LabelButton::changeEvent(QEvent *event)
+{
+    Button::changeEvent(event);
+
+    if (event->type() == QEvent::FontChange)
+    {
+        this->syncLabelFont();
+    }
+}
+
 void LabelButton::paintContent(QPainter &painter)
 {
+}
+
+void LabelButton::syncLabelFont()
+{
+    this->label_.setFont(this->font());
 }
 
 void LabelButton::updatePadding()

@@ -23,13 +23,11 @@ std::vector<QString> parseHotkeyArguments(QString argumentString)
 
     if (argumentString.isEmpty())
     {
-        // argumentString is empty, early out to ensure we don't end up with a vector with one empty element
         return arguments;
     }
 
     auto argList = argumentString.split("\n");
 
-    // convert the QStringList to our preferred std::vector
     for (const auto &arg : argList)
     {
         arguments.push_back(arg.trimmed());
@@ -61,7 +59,6 @@ QKeySequence normalizeKeySequence(const QKeySequence &seq)
         return seq;
     }
 
-    // First, check if any normalization is needed
     bool needsNormalization = false;
     for (int i = 0; i < seq.count(); i++)
     {
@@ -77,8 +74,6 @@ QKeySequence normalizeKeySequence(const QKeySequence &seq)
         return seq;
     }
 
-    // Build normalized key combinations, preserving all keys in the sequence
-    // QKeySequence supports up to 4 key combinations
     std::array<QKeyCombination, 4> combos{};
     int count = seq.count();
 
@@ -96,7 +91,6 @@ QKeySequence normalizeKeySequence(const QKeySequence &seq)
         }
     }
 
-    // Construct QKeySequence with the appropriate number of keys
     switch (count)
     {
         case 1:

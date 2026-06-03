@@ -97,7 +97,6 @@ void FfzBadges::load()
                     .color = QColor(jsonBadge.value("color").toString()),
                 };
 
-                // Find users with this badge
                 auto badgeIDString = QString::number(badgeID);
                 for (const auto &user : jsonRoot.value("users")
                                             .toObject()
@@ -111,7 +110,6 @@ void FfzBadges::load()
                             std::move(userIDString), {badgeID}));
                     if (!created)
                     {
-                        // User already had a badge assigned
                         userBadges->second.emplace(badgeID);
                     }
                 }

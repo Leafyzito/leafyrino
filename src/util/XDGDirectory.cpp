@@ -14,8 +14,6 @@ namespace chatterino {
 
 QStringList getXDGBaseDirectories(XDGDirectoryType directory)
 {
-    // Base (or system) XDG directory environment variables with defaults
-    // Defaults fetched from https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html#variables 2023-08-05
     static std::unordered_map<XDGDirectoryType,
                               std::pair<const char *, QStringList>>
         baseDirectories = {
@@ -54,8 +52,6 @@ QStringList getXDGBaseDirectories(XDGDirectoryType directory)
 
 QStringList getXDGUserDirectories(XDGDirectoryType directory)
 {
-    // User XDG directory environment variables with defaults
-    // Defaults fetched from https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html#variables 2023-08-05
     static std::unordered_map<XDGDirectoryType,
                               std::pair<const char *, QString>>
         userDirectories = {

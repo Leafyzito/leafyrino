@@ -30,7 +30,6 @@
 
 namespace {
 
-// Delay between uploads in milliseconds
 constexpr int UPLOAD_DELAY = 2000;
 
 std::optional<QByteArray> convertToPng(const QImage &image)
@@ -51,7 +50,6 @@ std::optional<QByteArray> convertToPng(const QImage &image)
 
 namespace chatterino::imageuploader::detail {
 
-// extracting link to either image or its deletion from response body
 QString getJSONValue(QJsonValue responseJson, QStringView jsonPattern)
 {
     for (auto key : jsonPattern.tokenize(u'.'))
@@ -71,7 +69,6 @@ QString getJSONValue(QJsonValue responseJson, QStringView jsonPattern)
         }
         else
         {
-            // we reached a scalar value, no need to continue
             break;
         }
     }
@@ -100,7 +97,6 @@ namespace chatterino {
 
 using namespace imageuploader::detail;
 
-// logging information on successful uploads to a json file
 void ImageUploader::logToFile(const QString &originalFilePath,
                               const QString &imageLink,
                               const QString &deletionLink, ChannelPtr channel)
@@ -111,7 +107,6 @@ void ImageUploader::logToFile(const QString &originalFilePath,
                          : getSettings()->logPath),
                     "ImageUploader.json");
 
-    //reading existing logs
     QFile logReadFile(logFileName);
     bool isLogFileOkay =
         logReadFile.open(QIODevice::ReadWrite | QIODevice::Text);
@@ -128,7 +123,6 @@ void ImageUploader::logToFile(const QString &originalFilePath,
     }
     logReadFile.close();
 
-    //writing new data to logs
     QJsonObject newLogEntry;
     newLogEntry["channelName"] = channel->getName();
     newLogEntry["deletionLink"] =
@@ -138,11 +132,7 @@ void ImageUploader::logToFile(const QString &originalFilePath,
                                    ? QJsonValue(QJsonValue::Null)
                                    : originalFilePath;
     newLogEntry["timestamp"] = QDateTime::currentSecsSinceEpoch();
-    // channel name
-    // deletion link (can be empty)
-    // image link
-    // local path to an image (can be empty)
-    // timestamp
+
     QSaveFile logSaveFile(logFileName);
     if (!logSaveFile.open(QIODevice::WriteOnly | QIODevice::Text))
     {
@@ -206,7 +196,6 @@ void ImageUploader::handleFailedUpload(const NetworkResult &result,
         QString("An error happened while uploading your image: %1")
             .arg(result.formatError());
 
-    // Try to read more information from the result body
     auto obj = result.parseJson();
     if (!obj.isEmpty())
     {
@@ -227,7 +216,7 @@ void ImageUploader::handleFailedUpload(const NetworkResult &result,
     }
 
     channel->addSystemMessage(errorMessage);
-    // NOTE: We abort any future uploads on failure. Should this be handled differently?
+
     while (!this->uploadQueue_.empty())
     {
         this->uploadQueue_.pop();
@@ -242,8 +231,6 @@ void ImageUploader::handleSuccessfulUpload(const NetworkResult &result,
 {
     if (textEdit == nullptr)
     {
-        // Split was destroyed abort further uploads
-
         while (!this->uploadQueue_.empty())
         {
             this->uploadQueue_.pop();
@@ -263,8 +250,6 @@ void ImageUploader::handleSuccessfulUpload(const NetworkResult &result,
     qCDebug(chatterinoImageuploader) << link << deletionLink;
     textEdit->insertPlainText(link + " ");
 
-    // 2 seconds for the timer that's there not to spam the remote server
-    // and 1 second of actual uploading.
     auto timeToUpload = this->uploadQueue_.size() * (UPLOAD_DELAY / 1000 + 1);
     MessageBuilder builder(imageUploaderResultMessage, link, deletionLink,
                            this->uploadQueue_.size(), timeToUpload);
@@ -300,8 +285,7 @@ std::pair<std::queue<RawImageData>, QString> ImageUploader::getImages(
         std::queue<RawImageData> images;
 
         auto mimeDb = QMimeDatabase();
-        // This path gets chosen when files are copied from a file manager, like explorer.exe, caja.
-        // Each entry in source->urls() is a QUrl pointing to a file that was copied.
+
         for (const QUrl &path : source->urls())
         {
             QString localPath = path.toLocalFile();
@@ -334,7 +318,7 @@ std::pair<std::queue<RawImageData>, QString> ImageUploader::getImages(
                 {
                     return {{}, "Failed to open file :("};
                 }
-                // file.readAll() => might be a bit big but it /should/ work
+
                 images.push({file.readAll(), "gif", localPath});
                 file.close();
             }
@@ -362,7 +346,6 @@ std::pair<std::queue<RawImageData>, QString> ImageUploader::getImages(
 
         if (source->hasFormat("image/png"))
         {
-            // the path to file is not present every time, thus the filePath is empty
             images.push({source->data("image/png"), "png", ""});
             return {images, {}};
         }
@@ -379,7 +362,6 @@ std::pair<std::queue<RawImageData>, QString> ImageUploader::getImages(
             return {images, {}};
         }
 
-        // not PNG, try loading it into QImage and save it to a PNG.
         auto image = qvariant_cast<QImage>(source->imageData());
         auto imageData = convertToPng(image);
         if (imageData)
@@ -388,7 +370,6 @@ std::pair<std::queue<RawImageData>, QString> ImageUploader::getImages(
             return {images, {}};
         }
 
-        // No direct upload happenned
         return {{}, "Cannot upload file, failed to convert to png."};
     };
 
@@ -407,7 +388,7 @@ std::pair<std::queue<RawImageData>, QString> ImageUploader::getImages(
 
     return {
         {},
-        // TODO: verify that this looks ok xd
+
         urlError + directError,
     };
 }

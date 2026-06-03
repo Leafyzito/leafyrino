@@ -22,6 +22,10 @@ using MessagePtr = std::shared_ptr<const Message>;
 
 namespace chatterino::filters {
 
+extern const QMap<QString, Type> MESSAGE_TYPING_CONTEXT;
+
+ContextMap buildContextMap(const MessagePtr &m, chatterino::Channel *channel);
+
 class Filter;
 struct FilterError {
     QString message;
@@ -35,10 +39,10 @@ public:
     static FilterResult fromString(const QString &str);
 
     Type returnType() const;
-    QVariant execute(RunContext context) const;
+    QVariant execute(const ContextMap &context) const;
 
     QString filterString() const;
-    QString debugString() const;
+    QString debugString(const TypingContext &context) const;
 
 private:
     Filter(ExpressionPtr expression, Type returnType);

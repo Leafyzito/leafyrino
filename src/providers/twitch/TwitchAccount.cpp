@@ -6,7 +6,7 @@
 
 #include "Application.hpp"
 #include "common/Channel.hpp"
-#include "common/network/NetworkResult.hpp"  // IWYU pragma: keep
+#include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/emotes/EmoteController.hpp"
@@ -20,7 +20,7 @@
 #include "providers/twitch/TwitchCommon.hpp"
 #include "providers/twitch/TwitchUsers.hpp"
 #include "util/CancellationToken.hpp"
-#include "util/QStringHash.hpp"  // IWYU pragma: keep
+#include "util/QStringHash.hpp"
 
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <QStringBuilder>
@@ -247,16 +247,14 @@ const std::unordered_set<QString> &TwitchAccount::blockedUserLogins() const
     return this->ignoresUserLogins_;
 }
 
-// AutoModActions
 void TwitchAccount::autoModAllow(const QString &msgID, ChannelPtr channel) const
 {
     getHelix()->manageAutoModMessages(
         this->getUserId(), msgID, "ALLOW",
         [] {
-            // success
+
         },
         [channel](auto error) {
-            // failure
             QString errorMessage("Failed to allow AutoMod message - ");
 
             switch (error)
@@ -282,7 +280,6 @@ void TwitchAccount::autoModAllow(const QString &msgID, ChannelPtr channel) const
                 }
                 break;
 
-                // This would most likely happen if the service is down, or if the JSON payload returned has changed format
                 case HelixAutoModMessageError::Unknown:
                 default: {
                     errorMessage += "an unknown error occurred.";
@@ -299,10 +296,9 @@ void TwitchAccount::autoModDeny(const QString &msgID, ChannelPtr channel) const
     getHelix()->manageAutoModMessages(
         this->getUserId(), msgID, "DENY",
         [] {
-            // success
+
         },
         [channel](auto error) {
-            // failure
             QString errorMessage("Failed to deny AutoMod message - ");
 
             switch (error)
@@ -328,7 +324,6 @@ void TwitchAccount::autoModDeny(const QString &msgID, ChannelPtr channel) const
                 }
                 break;
 
-                // This would most likely happen if the service is down, or if the JSON payload returned has changed format
                 case HelixAutoModMessageError::Unknown:
                 default: {
                     errorMessage += "an unknown error occurred.";
@@ -360,8 +355,7 @@ void TwitchAccount::loadSeventvUserID()
                                        const QString &emoteSetID) {
         SeventvEmotes::getEmoteSet(
             emoteSetID,
-            [twitchUserID, emoteSetID](auto &&emoteMap,
-                                       const auto & /*emoteSetName*/) {
+            [twitchUserID, emoteSetID](auto &&emoteMap, const auto &) {
                 getApp()->getSeventvPersonalEmotes()->addEmoteSetForTwitchUser(
                     emoteSetID, std::forward<decltype(emoteMap)>(emoteMap),
                     twitchUserID);
@@ -473,8 +467,6 @@ void TwitchAccount::reloadEmotes(void *caller)
         auto emotePtr = twitchEmotes->getOrCreateEmote(id, name);
         if (!emoteMap->try_emplace(emotePtr->name, emotePtr).second)
         {
-            // if the emote already exists, we don't want to add it to a set as
-            // those are assumed to be disjoint
             return;
         }
 

@@ -83,7 +83,6 @@ void UserDataController::setUserColor(const QString &userID,
     {
         if (!finalColor)
         {
-            // Early out - user is not configured and will not get a new color
             return;
         }
 
@@ -103,7 +102,6 @@ void UserDataController::update(
     std::unordered_map<QString, UserData> &&newUsers,
     std::unique_lock<std::shared_mutex> usersLock)
 {
-    // Remove empty user data items
     std::erase_if(newUsers, [](const auto &pair) {
         return pair.second.isEmpty();
     });
@@ -111,7 +109,6 @@ void UserDataController::update(
     this->users = std::move(newUsers);
     this->setting.setValue(this->users);
 
-    // unlock before invoking updated signal
     usersLock.unlock();
 
     this->userDataUpdated_.invoke();

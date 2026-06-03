@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2022 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include <magic_enum/magic_enum.hpp>

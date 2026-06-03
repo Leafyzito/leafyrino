@@ -150,7 +150,6 @@ void addTwitchEmoteSets(const std::shared_ptr<const EmoteMap> &local,
     {
         if (set.owner->id == currentChannelID)
         {
-            // Put current channel emotes at the top
             addEmotes(subChannel, set.emotes, set.title());
         }
         else
@@ -193,12 +192,11 @@ void loadEmojis(ChannelView &view, const std::vector<EmojiPtr> &emojiMap)
     }();
 
     ChannelPtr emojiChannel(new Channel("", Channel::Type::None));
-    // set the channel first to make sure the scrollbar is at the top
+
     view.setChannel(emojiChannel);
 
     for (auto &it : emoteCategoryMap)
     {
-        // Skip the Component category for now.
         if (it.first == "Component")
         {
             continue;
@@ -210,7 +208,6 @@ void loadEmojis(ChannelView &view, const std::vector<EmojiPtr> &emojiMap)
                                  MessageContext::Original);
     }
 
-    // Add the Component category at the bottom of the picker.
     emojiChannel->addMessage(makeTitleMessage("Component"),
                              MessageContext::Original);
     emojiChannel->addMessage(makeEmojiMessage(emoteCategoryMap["Component"]),
@@ -224,7 +221,6 @@ void loadEmojis(Channel &channel, const std::vector<EmojiPtr> &emojiMap,
     channel.addMessage(makeEmojiMessage(emojiMap), MessageContext::Original);
 }
 
-// Create an emote
 EmoteMap filterEmoteMap(const QString &text,
                         const std::shared_ptr<const EmoteMap> &emotes)
 {
@@ -267,7 +263,6 @@ EmotePopup::EmotePopup(QWidget *parent)
     , search_(new QLineEdit())
     , notebook_(new Notebook(this))
 {
-    // this->setStayInScreenRect(true);
     auto bounds = getApp()->getWindows()->emotePopupBounds();
     if (bounds.size().isEmpty())
     {
@@ -312,8 +307,7 @@ EmotePopup::EmotePopup(QWidget *parent)
             MessageElementFlag::Default, MessageElementFlag::AlwaysShow,
             MessageElementFlag::EmoteImage});
         view->setEnableScrollingToBottom(false);
-        // We can safely ignore this signal connection since the ChannelView is deleted
-        // either when the notebook is deleted, or when our main layout is deleted.
+
         std::ignore = view->linkClicked.connect(clicked);
 
         if (addToNotebook)
@@ -349,10 +343,9 @@ EmotePopup::EmotePopup(QWidget *parent)
 
     this->signalHolder_.managedConnect(
         getApp()->getAccounts()->twitch.emotesReloaded,
-        [this](auto * /*caller*/, const auto &result) {
+        [this](auto *, const auto &result) {
             if (!result)
             {
-                // some error occurred, no need to reload
                 return;
             }
             this->reloadEmotes();
@@ -364,7 +357,7 @@ EmotePopup::EmotePopup(QWidget *parent)
 void EmotePopup::addShortcuts()
 {
     HotkeyController::HotkeyMap actions{
-        {"openTab",  // CTRL + 1-8 to open corresponding tab.
+        {"openTab",
          [this](std::vector<QString> arguments) -> QString {
              if (arguments.empty())
              {
@@ -488,14 +481,12 @@ void EmotePopup::reloadEmotes()
 
     if (this->twitchChannel_)
     {
-        // twitch
         addTwitchEmoteSets(
             twitchChannel_->localTwitchEmotes(),
             *getApp()->getAccounts()->twitch.getCurrent()->accessEmoteSets(),
             *globalChannel, *subChannel, twitchChannel_->roomId(),
             twitchChannel_->getName());
 
-        // channel
         if (Settings::instance().enableBTTVChannelEmotes)
         {
             addEmotes(*channelChannel, *this->twitchChannel_->bttvEmotes(),
@@ -512,7 +503,6 @@ void EmotePopup::reloadEmotes()
                       "7TV");
         }
 
-        // personal
         for (const auto &map :
              getApp()->getSeventvPersonalEmotes()->getEmoteSetsForTwitchUser(
                  getApp()->getAccounts()->twitch.getCurrent()->getUserId()))
@@ -522,18 +512,15 @@ void EmotePopup::reloadEmotes()
     }
     if (this->kickChannel_)
     {
-        // Kick
         addEmotes(*globalChannel,
                   *getApp()->getKickChatServer()->globalEmotes(), "Kick");
 
-        // channel
         if (Settings::instance().enableSevenTVChannelEmotes)
         {
             addEmotes(*channelChannel, *this->kickChannel_->seventvEmotes(),
                       "7TV");
         }
 
-        // personal
         const auto personalEmotes =
             getApp()->getSeventvPersonalEmotes()->getEmoteSetsForKickUser(
                 getApp()->getAccounts()->kick.current()->userID());
@@ -542,7 +529,7 @@ void EmotePopup::reloadEmotes()
             addEmotes(*subChannel, *map, "7TV (Personal)");
         }
     }
-    // global
+
     if (Settings::instance().enableBTTVGlobalEmotes)
     {
         addEmotes(*globalChannel, *getApp()->getBttvEmotes()->emotes(),
@@ -626,7 +613,6 @@ void EmotePopup::filterTwitchEmotes(std::shared_ptr<Channel> searchChannel,
     auto seventvGlobalEmotes = filterEmoteMap(
         searchText, getApp()->getSeventvEmotes()->globalEmotes());
 
-    // global
     if (!bttvGlobalEmotes.empty())
     {
         addEmotes(*searchChannel, bttvGlobalEmotes, "BetterTTV (Global)");
@@ -676,7 +662,6 @@ void EmotePopup::filterTwitchEmotes(std::shared_ptr<Channel> searchChannel,
     auto seventvChannelEmotes =
         filterEmoteMap(searchText, this->twitchChannel_->seventvEmotes());
 
-    // channel
     if (!bttvChannelEmotes.empty())
     {
         addEmotes(*searchChannel, bttvChannelEmotes, "BetterTTV (Channel)");
@@ -715,7 +700,6 @@ void EmotePopup::filterEmotes(const QString &searchText)
     auto searchChannel = this->searchView_->underlyingChannel();
     searchChannel->clearMessages();
 
-    // true in special channels like /mentions
     if (this->channel_->isTwitchOrKickChannel())
     {
         this->filterTwitchEmotes(searchChannel, searchText);
@@ -733,7 +717,7 @@ void EmotePopup::filterEmotes(const QString &searchText)
             emojiCount++;
         }
     }
-    // emojis
+
     if (emojiCount > 0)
     {
         loadEmojis(*searchChannel, filteredEmojis, "Emojis");

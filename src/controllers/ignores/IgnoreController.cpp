@@ -17,20 +17,6 @@ namespace {
 
 using namespace chatterino::literals;
 
-/**
-  * Computes (only) the replacement of @a match in @a source.
-  * The parts before and after the match in @a source are ignored.
-  *
-  * Occurrences of \b{\\1}, \b{\\2}, ..., in @a replacement are replaced
-  * with the string captured by the corresponding capturing group.
-  * This function should only be used if the regex contains capturing groups.
-  * 
-  * Since Qt doesn't provide a way of replacing a single match with some replacement
-  * while supporting both capturing groups and lookahead/-behind in the regex,
-  * this is included here. It's essentially the implementation of 
-  * QString::replace(const QRegularExpression &, const QString &).
-  * @see https://github.com/qt/qtbase/blob/97bb0ecfe628b5bb78e798563212adf02129c6f6/src/corelib/text/qstring.cpp#L4594-L4703
-  */
 QString makeRegexReplacement(QStringView source,
                              const QRegularExpression &regex,
                              const QRegularExpressionMatch &match,
@@ -45,8 +31,6 @@ QString makeRegexReplacement(QStringView source,
 
     qsizetype numCaptures = regex.captureCount();
 
-    // 1. build the backreferences list, holding where the backreferences
-    //    are in the replacement string
     QVarLengthArray<QStringCapture> backReferences;
 
     SizeType replacementLength = replacement.size();
@@ -79,21 +63,14 @@ QString makeRegexReplacement(QStringView source,
         backReferences.append(backReference);
     }
 
-    // 2. iterate on the matches.
-    //    For every match, copy the replacement string in chunks
-    //    with the proper replacements for the backreferences
-
-    // length of the new string, with all the replacements
     SizeType newLength = 0;
     QVarLengthArray<QStringView> chunks;
     QStringView replacementView{replacement};
 
-    // Initially: empty, as we only care about the replacement
     SizeType len = 0;
     SizeType lastEnd = 0;
     for (const QStringCapture &backReference : std::as_const(backReferences))
     {
-        // part of "replacement" before the backreference
         len = backReference.pos - lastEnd;
         if (len > 0)
         {
@@ -101,7 +78,6 @@ QString makeRegexReplacement(QStringView source,
             newLength += len;
         }
 
-        // backreference itself
         len = match.capturedLength(backReference.captureNumber);
         if (len > 0)
         {
@@ -113,7 +89,6 @@ QString makeRegexReplacement(QStringView source,
         lastEnd = backReference.pos + backReference.len;
     }
 
-    // add the last part of the replacement string
     len = replacementView.size() - lastEnd;
     if (len > 0)
     {
@@ -121,7 +96,6 @@ QString makeRegexReplacement(QStringView source,
         newLength += len;
     }
 
-    // 3. assemble the chunks together
     QString dst;
     dst.reserve(newLength);
     for (const QStringView &chunk : std::as_const(chunks))
@@ -139,7 +113,6 @@ bool isIgnoredMessage(IgnoredMessageParameters &&params)
 {
     if (!params.message.isEmpty())
     {
-        // TODO(pajlada): Do we need to check if the phrase is valid first?
         auto phrases = getSettings()->ignoredMessages.readOnly();
         for (const auto &phrase : *phrases)
         {
@@ -210,12 +183,9 @@ void processIgnorePhrases(const std::vector<IgnorePhrase> &phrases,
     using SizeType = QString::size_type;
 
     auto removeEmotesInRange = [&twitchEmotes](SizeType pos, SizeType len) {
-        // all emotes outside the range come before `it`
-        // all emotes in the range start at `it`
         auto it = std::partition(
             twitchEmotes.begin(), twitchEmotes.end(),
             [pos, len](const auto &item) {
-                // returns true for emotes outside the range
                 return !((item.start >= pos) && item.start < (pos + len));
             });
         std::vector<TwitchEmoteOccurrence> emotesInRange(it,
@@ -244,7 +214,11 @@ void processIgnorePhrases(const std::vector<IgnorePhrase> &phrases,
             return;
         }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         auto words = midrepl.tokenize(u' ');
+#else
+        auto words = midrepl.split(' ');
+#endif
         SizeType pos = 0;
         for (const auto &word : words)
         {
@@ -310,7 +284,11 @@ void processIgnorePhrases(const std::vector<IgnorePhrase> &phrases,
             QRegularExpression emoteregex(
                 "\\b" + emote.name.string + "\\b",
                 QRegularExpression::UseUnicodePropertiesOption);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
             auto match = emoteregex.matchView(midExtendedRef);
+#else
+            auto match = emoteregex.match(midExtendedRef);
+#endif
             if (match.hasMatch())
             {
                 emote.start = static_cast<int>(from + match.capturedStart());

@@ -20,8 +20,6 @@ struct BttvLiveUpdateEmoteUpdateAddMessage {
     bool validate() const;
 
 private:
-    // true if the channel id is malformed
-    // (e.g. doesn't start with "twitch:")
     bool badChannelID_;
 };
 
@@ -34,8 +32,6 @@ struct BttvLiveUpdateEmoteRemoveMessage {
     bool validate() const;
 
 private:
-    // true if the channel id is malformed
-    // (e.g. doesn't start with "twitch:")
     bool badChannelID_;
 };
 

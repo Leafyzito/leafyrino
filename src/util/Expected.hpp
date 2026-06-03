@@ -23,7 +23,6 @@ namespace chatterino {
 template <typename T, typename E>
 using Expected = std::expected<T, E>;
 
-// convenience function from nonstd/expected.hpp
 template <typename E>
 constexpr std::unexpected<std::decay_t<E>> makeUnexpected(E &&value)
 {
@@ -33,7 +32,6 @@ constexpr std::unexpected<std::decay_t<E>> makeUnexpected(E &&value)
 template <typename T, typename E>
 using Expected = nonstd::expected_lite::expected<T, E>;
 
-// convenience function from nonstd/expected.hpp
 template <typename E>
 constexpr nonstd::unexpected<std::decay_t<E>> makeUnexpected(E &&value)
 {

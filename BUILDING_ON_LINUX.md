@@ -58,6 +58,29 @@ nix-shell -p openssl boost qt6.full pkg-config cmake libnotify hunspell
 
 ## Compile
 
+### Windows + WSL (Ubuntu 22.04)
+
+Moltorino ships helper scripts for Linux packaging from Windows through WSL:
+
+```bat
+build_linux_appimage.bat
+build_linux_flatpak.bat
+```
+
+Those wrappers call the WSL scripts in `.CI/` and place finished artifacts in `releases/linux/`.
+
+Prerequisites for the WSL path:
+
+```sh
+sudo apt install ninja-build build-essential pkg-config libgl1-mesa-dev libxkbcommon-dev libdbus-1-dev libxcb-cursor-dev libx11-xcb-dev libxkbcommon-x11-dev libwayland-dev libsecret-1-dev libpulse-dev libasound2-dev libfontconfig1-dev libfuse2 desktop-file-utils patchelf flatpak flatpak-builder rsync python3-pip
+python3 -m pip install --user aqtinstall
+~/.local/bin/aqt install-qt linux desktop 6.10.2 linux_gcc_64 -O /home/$USER/Qt --modules qtimageformats qt5compat
+flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub org.kde.Platform//6.10 org.kde.Sdk//6.10
+```
+
+The WSL scripts assume Qt is installed at `/home/<user>/Qt/6.10.2/gcc_64`. Set `QT_ROOT_DIR` before running the AppImage script if your Qt path differs.
+
 ## Manually
 
 1. In the project directory, create a build directory and enter it

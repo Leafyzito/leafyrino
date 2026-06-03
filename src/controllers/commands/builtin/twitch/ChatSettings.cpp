@@ -27,7 +27,6 @@ QString formatError(const HelixUpdateChatSettingsError error,
     switch (error)
     {
         case Error::UserMissingScope: {
-            // TODO(pajlada): Phrase MISSING_REQUIRED_SCOPE
             errorMessage += "Missing required scope. "
                             "Re-login with your "
                             "account and try again.";
@@ -36,7 +35,6 @@ QString formatError(const HelixUpdateChatSettingsError error,
 
         case Error::UserNotAuthorized:
         case Error::Forbidden: {
-            // TODO(pajlada): Phrase MISSING_PERMISSION
             errorMessage += "You don't have permission to "
                             "perform that action.";
         }
@@ -84,7 +82,6 @@ QString formatError(const HelixUpdateChatSettingsError error,
     return errorMessage;
 }
 
-// Do nothing as we'll receive a message from IRC about updates
 auto successCallback = [](auto result) {};
 
 auto failureCallback = [](ChannelPtr channel, int durationUnitMultiplier = 1) {
@@ -317,7 +314,7 @@ QString followers(const CommandContext &ctx)
     {
         auto parsed = parseDurationToSeconds(ctx.words.mid(1).join(' '), 60);
         duration = (int)(parsed / 60);
-        // -1 / 60 == 0 => use parsed
+
         if (parsed < 0)
         {
             ctx.channel->addSystemMessage(

@@ -39,28 +39,6 @@ concept IsClient = requires(Client &client, const QByteArray &msg) {
 
 }  // namespace liveupdates
 
-/**
- * This class is the basis for connecting and interacting with
- * simple PubSub servers over the Websocket protocol.
- * It acts as a pool for connections (see BasicPubSubClient).
- *
- * You **must** implement a method `makeClient()` that returns a shared pointer
- * of the client. 
- *
- * You must expose your own subscribe and unsubscribe methods
- * (e.g. [un-]subscribeTopic).
- * This manager does not keep track of the subscriptions.
- *
- * @tparam Derived
- * The derived class. Used to dispatch to makeClient().
- *
- * @tparam ClientT
- * The client type. Must confirm to the IsClient above. Use BasicPubSubClient 
- * for a common implementation. Used to dispatch to the correct methods there 
- * and to get the subscription type.
- *
- * @see BasicPubSubClient
- */
 template <typename Derived, typename ClientT>
 class BasicPubSubManager : public QObject
 {
@@ -72,16 +50,12 @@ public:
         : pool_(std::make_optional<WebSocketPool>(shortName))
         , host_(std::move(host))
     {
-        // We do this here, because `Derived` needs to be a complete type. If we
-        // did it as a requires clause on the class, the type would be
-        // incomplete.
         static_assert(liveupdates::IsManager<Derived, Client>);
         static_assert(liveupdates::IsClient<Client>);
     }
 
     ~BasicPubSubManager() override
     {
-        // The derived class must call stop in its destructor
         assert(this->stopping_);
     }
 
@@ -90,7 +64,6 @@ public:
     BasicPubSubManager &operator=(const BasicPubSubManager &) = delete;
     BasicPubSubManager &operator=(const BasicPubSubManager &&) = delete;
 
-    /** This is only used for testing. */
     liveupdates::Diag diag;
 
     void stop()
@@ -147,12 +120,20 @@ private:
     {
         assertInGuiThread();
 
+        auto *client = this->resolve(id);
+        if (client == nullptr)
+        {
+            qCWarning(chatterinoLiveupdates)
+                << "Ignoring open event for unknown client:" << id;
+            return;
+        }
+
+        DebugCount::increase(DebugObject::LiveUpdatesConnection);
         this->addingClient_ = false;
         this->diag.connectionsOpened.fetch_add(1, std::memory_order_acq_rel);
 
         this->connectBackoff_.reset();
 
-        auto *client = this->resolve(id);
         client->onOpen();
         auto pendingSubsToTake = std::min(this->pendingSubscriptions_.size(),
                                           client->maxSubscriptions);
@@ -167,9 +148,6 @@ private:
             this->pendingSubscriptions_.pop_back();
             if (this->isSubscribed(last))
             {
-                // we subscribed to this in the meantime
-                qCDebug(chatterinoLiveupdates)
-                    << "Already subscribed to" << last << "in the meantime";
                 continue;
             }
 
@@ -197,20 +175,19 @@ private:
     {
         assertInGuiThread();
 
-        this->addingClient_ = false;
-
         auto it = this->clients_.find(id);
         if (it == this->clients_.end())
         {
             qCWarning(chatterinoLiveupdates) << "Unknown client:" << id;
-            assert(false);
             return;
         }
+
+        this->addingClient_ = false;
 
         DebugCount::decrease(DebugObject::LiveUpdatesConnection);
         qCDebug(chatterinoLiveupdates) << "Connection" << id << "closed";
 
-        auto subs = std::exchange(it->second->subscriptions_, {});
+        auto subs = std::move(it->second->subscriptions_);
         bool wasOpen = it->second->isOpen();
 
         if (wasOpen)
@@ -278,7 +255,6 @@ private:
                 std::weak_ptr{client}, this->derived(), id));
         client->ws_ = std::move(hdl);
         this->clients_.emplace(id, std::move(client));
-        DebugCount::increase(DebugObject::LiveUpdatesConnection);
     }
 
     bool trySubscribe(const Subscription &subscription)

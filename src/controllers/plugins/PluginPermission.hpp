@@ -14,7 +14,7 @@ namespace chatterino {
 
 struct PluginPermission {
     explicit PluginPermission(const QJsonObject &obj);
-    // This is for tests
+
     PluginPermission() = default;
 
     enum class Type {

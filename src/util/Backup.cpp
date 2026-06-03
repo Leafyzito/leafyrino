@@ -89,7 +89,7 @@ std::vector<BackupFile> findBackupsFor(const QString &directory,
                 break;
 
             case LoadError::SavingFromTemporaryFileFailed:
-                // should never happen, temporary file loading/saving is not enabled
+
                 assert(false);
                 break;
         }
@@ -127,10 +127,10 @@ void loadWithBackups(const FileData &fileData,
         }
 
         auto *diag = new RestoreBackupsDialog(fileData, loadResult.error());
-        auto ret = diag->exec();  // we need to use exec here to block
+        auto ret = diag->exec();
         if (ret != QDialog::Accepted)
         {
-            return;  // rejected -> don't retry
+            return;
         }
 
         qCDebug(chatterinoSettings) << "Retrying to load" << fileData.fileKind;

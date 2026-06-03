@@ -227,7 +227,6 @@ int FlowLayout::defaultSpacing(QStyle::PixelMetric pm) const
 
 QSize FlowLayout::getSpacing(QLayoutItem *item) const
 {
-    // called if there isn't any parent or the parent can't provide any spacing
     auto fallbackSpacing = [&](auto dir) {
         if (auto *widget = item->widget())
         {

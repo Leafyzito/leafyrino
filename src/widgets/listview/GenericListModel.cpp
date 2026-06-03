@@ -11,12 +11,12 @@ GenericListModel::GenericListModel(QObject *parent)
 {
 }
 
-int GenericListModel::rowCount(const QModelIndex & /*parent*/) const
+int GenericListModel::rowCount(const QModelIndex &) const
 {
     return this->items_.size();
 }
 
-QVariant GenericListModel::data(const QModelIndex &index, int /* role */) const
+QVariant GenericListModel::data(const QModelIndex &index, int) const
 {
     if (!index.isValid())
     {
@@ -29,13 +29,12 @@ QVariant GenericListModel::data(const QModelIndex &index, int /* role */) const
     }
 
     auto *item = this->items_[index.row()].get();
-    // See https://stackoverflow.com/a/44503822 .
+
     return QVariant::fromValue(static_cast<void *>(item));
 }
 
 void GenericListModel::addItem(std::unique_ptr<GenericListItem> item)
 {
-    // {begin,end}InsertRows needs to be called to notify attached views
     this->beginInsertRows(QModelIndex(), this->items_.size(),
                           this->items_.size());
     this->items_.push_back(std::move(item));
@@ -49,10 +48,8 @@ void GenericListModel::clear()
         return;
     }
 
-    // {begin,end}RemoveRows needs to be called to notify attached views
     this->beginRemoveRows(QModelIndex(), 0, this->items_.size() - 1);
 
-    // clear
     this->items_.clear();
 
     this->endRemoveRows();

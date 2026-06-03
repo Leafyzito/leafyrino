@@ -32,8 +32,6 @@ void PaintDropShadow::apply(QPixmapDropShadowFilter &effect) const
     auto radius = this->radius_;
     if (getSettings()->largeSevenTVPaintShadows)
     {
-        // Multiplied by 3 to match the appearance from the extension.
-        // Best value found through manual testing.
         radius *= 3;
     }
     effect.setBlurRadius(radius);

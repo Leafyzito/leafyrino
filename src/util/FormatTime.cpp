@@ -17,7 +17,7 @@ namespace chatterino {
 
 namespace {
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 void appendShortDuration(int count, QChar suffix, QString &out)
 {
@@ -35,7 +35,7 @@ std::pair<uint16_t, boost::gregorian::date> yearsBetween(
     uint16_t years = 0;
     boost::gregorian::date lastOk = first;
     boost::gregorian::year_iterator yit(first);
-    ++yit;  // skip one year
+    ++yit;
     for (; *yit <= second; ++yit)
     {
         years++;
@@ -50,7 +50,7 @@ std::pair<uint16_t, boost::gregorian::date> monthsBetween(
     uint16_t months = 0;
     boost::gregorian::date lastOk = first;
     boost::gregorian::month_iterator mit(first);
-    ++mit;  // skip one month
+    ++mit;
     for (; *mit <= second; ++mit)
     {
         months++;
@@ -250,11 +250,11 @@ QString formatLongFriendlyDuration(const QDateTime &from, const QDateTime &to)
                 {
                     out += ',';
                 }
-                out += u" and ";
+                out += QStringLiteral(" and ");
             }
             else
             {
-                out += u", ";
+                out += QStringLiteral(", ");
             }
         }
 

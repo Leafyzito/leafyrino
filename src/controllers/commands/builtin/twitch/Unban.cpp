@@ -25,7 +25,7 @@ void unbanUserByID(const ChannelPtr &channel, const QString &channelID,
     getHelix()->unbanUser(
         channelID, sourceUserID, targetUserID,
         [] {
-            // No response for unbans, they're emitted over pubsub/IRC instead
+
         },
         [channel, displayName](auto error, auto message) {
             using Error = HelixUnbanUserError;
@@ -52,7 +52,6 @@ void unbanUserByID(const ChannelPtr &channel, const QString &channelID,
                 break;
 
                 case Error::TargetNotBanned: {
-                    // Equivalent IRC error
                     errorMessage =
                         QString("%1 is not banned from this channel.")
                             .arg(displayName);
@@ -60,7 +59,6 @@ void unbanUserByID(const ChannelPtr &channel, const QString &channelID,
                 break;
 
                 case Error::UserMissingScope: {
-                    // TODO(pajlada): Phrase MISSING_REQUIRED_SCOPE
                     errorMessage += "Missing required scope. "
                                     "Re-login with your "
                                     "account and try again.";
@@ -68,7 +66,6 @@ void unbanUserByID(const ChannelPtr &channel, const QString &channelID,
                 break;
 
                 case Error::UserNotAuthorized: {
-                    // TODO(pajlada): Phrase MISSING_PERMISSION
                     errorMessage += "You don't have permission to "
                                     "perform that action.";
                 }
@@ -140,7 +137,6 @@ QString unbanUser(const CommandContext &ctx)
         }
         else
         {
-            // For hydration
             userIDs.append(action.target.id);
         }
         if (action.channel.id.isEmpty())
@@ -152,14 +148,11 @@ QString unbanUser(const CommandContext &ctx)
         }
         else
         {
-            // For hydration
             userIDs.append(action.channel.id);
         }
 
         if (!userLoginsToFetch.isEmpty())
         {
-            // At least 1 user ID needs to be resolved before we can take action
-            // userIDs is filled up with the data we already have to hydrate the action channel & action target
             getHelix()->fetchUsers(
                 userIDs, userLoginsToFetch,
                 [channel{ctx.channel}, actionChannel{action.channel},
@@ -192,7 +185,6 @@ QString unbanUser(const CommandContext &ctx)
         }
         else
         {
-            // If both IDs are available, we do no hydration & just use the id as the display name
             unbanUserByID(ctx.channel, action.channel.id,
                           currentUser->getUserId(), action.target.id,
                           action.target.id);

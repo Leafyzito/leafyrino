@@ -39,7 +39,9 @@ int maxUncollapsedLines()
 namespace chatterino {
 
 void MessageLayoutContainer::beginLayout(qreal width, float scale,
-                                         float imageScale, MessageFlags flags)
+                                         float imageScale, float emoteScale,
+                                         float badgeScale, bool centerBadges,
+                                         MessageFlags flags)
 {
     this->elements_.clear();
     this->lines_.clear();
@@ -55,9 +57,13 @@ void MessageLayoutContainer::beginLayout(qreal width, float scale,
     this->height_ = 0;
     this->scale_ = scale;
     this->imageScale_ = imageScale;
+    this->emoteScale_ = emoteScale;
+    this->badgeScale_ = badgeScale;
+    this->centerBadges_ = centerBadges;
     this->flags_ = flags;
     auto mediumFontMetrics =
         getApp()->getFonts()->getFontMetrics(FontStyle::ChatMedium, scale);
+    this->descent_ = mediumFontMetrics.descent();
     this->textLineHeight_ = mediumFontMetrics.height();
     this->spaceWidth_ = mediumFontMetrics.horizontalAdvance(' ');
     this->dotdotdotWidth_ = mediumFontMetrics.horizontalAdvance("...");
@@ -147,6 +153,31 @@ void MessageLayoutContainer::addElementNoLineBreak(
     this->addElement(element, false, -2);
 }
 
+void MessageLayoutContainer::ensureSingleSpaceBeforeNextElement()
+{
+    if (this->elements_.empty())
+    {
+        return;
+    }
+
+    auto *last = this->elements_.back().get();
+    if (last->getLine() != this->line_)
+    {
+        return;
+    }
+
+    if (last->hasTrailingSpace())
+    {
+        last->setTrailingSpace(false);
+        this->currentX_ -= this->spaceWidth_;
+        if (this->currentX_ < 0)
+        {
+            this->currentX_ = 0;
+        }
+    }
+    this->currentX_ += this->spaceWidth_;
+}
+
 void MessageLayoutContainer::breakLine()
 {
     if (this->lineContainsRTL_ || this->isRTL())
@@ -190,6 +221,27 @@ void MessageLayoutContainer::breakLine()
         if (isCompactEmote)
         {
             yExtra = (COMPACT_EMOTES_OFFSET / 2) * this->scale_;
+        }
+        else if (element->getCreator().getFlags().hasAny(
+                     {MessageElementFlag::Badges,
+                      MessageElementFlag::ModeratorTools,
+                      MessageElementFlag::ReplyButton}))
+        {
+            // Small meta-elements are bottom-aligned with text, but text line
+            // height includes the descender region (g, p, y, etc.). Shift them
+            // up by half the descent to split the difference between capital
+            // letters and lowercase letters with descenders.
+            yExtra = -this->descent_ / 2.0;
+        }
+        else if (this->centerBadges_ && element->getCreator().getFlags().has(
+                                            MessageElementFlag::EmoteImage))
+        {
+            yExtra = -(this->lineHeight_ - element->getRect().height()) / 2.0;
+        }
+        else if (this->centerBadges_ && element->getCreator().getFlags().has(
+                                            MessageElementFlag::EmojiImage))
+        {
+            yExtra = -this->descent_ * 0.5;
         }
 
         element->setPosition(QPointF{
@@ -255,6 +307,11 @@ void MessageLayoutContainer::paintElements(QPainter &painter,
 
     for (const auto &element : this->elements_)
     {
+        if (ctx.isCollapsed && element->getLine() > 0)
+        {
+            continue;
+        }
+
 #ifdef FOURTF
         painter.setPen(QColor(0, 255, 0));
         painter.drawRect(element->getRect());
@@ -264,14 +321,65 @@ void MessageLayoutContainer::paintElements(QPainter &painter,
         element->paint(painter, ctx.messageColors);
         painter.restore();
     }
+
+    if (ctx.isCollapsed && this->lines_.size() > 1)
+    {
+        MessageLayoutElement *lastElement = nullptr;
+        for (const auto &element : this->elements_)
+        {
+            if (element->getLine() == 0)
+            {
+                lastElement = element.get();
+            }
+        }
+
+        if (lastElement != nullptr)
+        {
+            auto font = getApp()->getFonts()->getFont(FontStyle::ChatMedium,
+                                                      this->scale_);
+            QFontMetrics metrics(font);
+            QString ellipsis = "...";
+            int ellipsisWidth = metrics.horizontalAdvance(ellipsis);
+
+            int drawX = lastElement->getRect().right();
+            int drawY = lastElement->getRect().y();
+            int drawHeight = lastElement->getRect().height();
+
+            if (drawX + ellipsisWidth > ctx.canvasWidth)
+            {
+                drawX = ctx.canvasWidth - ellipsisWidth;
+            }
+
+            // Clear the space underneath
+            painter.save();
+            painter.setCompositionMode(QPainter::CompositionMode_Clear);
+            painter.fillRect(QRectF(drawX, drawY, ellipsisWidth, drawHeight),
+                             Qt::transparent);
+            painter.restore();
+
+            painter.save();
+            painter.setPen(ctx.messageColors.regularText);
+            painter.setFont(font);
+            // Draw perfectly aligned with the last element
+            painter.drawText(QRectF(drawX, drawY, ellipsisWidth, drawHeight),
+                             ellipsis,
+                             QTextOption(Qt::AlignRight | Qt::AlignVCenter));
+            painter.restore();
+        }
+    }
 }
 
 bool MessageLayoutContainer::paintAnimatedElements(QPainter &painter,
-                                                   qreal yOffset) const
+                                                   qreal yOffset,
+                                                   bool isCollapsed) const
 {
     bool anyAnimatedElement = false;
     for (const auto &element : this->elements_)
     {
+        if (isCollapsed && element->getLine() > 0)
+        {
+            continue;
+        }
         anyAnimatedElement |= element->paintAnimated(painter, yOffset);
     }
     return anyAnimatedElement;
@@ -551,6 +659,20 @@ qreal MessageLayoutContainer::getHeight() const
     return this->height_;
 }
 
+int MessageLayoutContainer::getFirstLineHeight() const
+{
+    if (this->lines_.empty())
+    {
+        return 0;
+    }
+    if (this->lines_.size() == 1)
+    {
+        return static_cast<int>(this->getHeight());
+    }
+    return static_cast<int>(std::ceil(this->lines_[0].rect.bottom() +
+                                      (MARGIN.bottom() * this->scale_)));
+}
+
 float MessageLayoutContainer::getScale() const
 {
     return this->scale_;
@@ -559,6 +681,16 @@ float MessageLayoutContainer::getScale() const
 float MessageLayoutContainer::getImageScale() const
 {
     return this->imageScale_;
+}
+
+float MessageLayoutContainer::getEmoteScale() const
+{
+    return this->emoteScale_;
+}
+
+float MessageLayoutContainer::getBadgeScale() const
+{
+    return this->badgeScale_;
 }
 
 bool MessageLayoutContainer::isCollapsed() const
@@ -574,6 +706,11 @@ bool MessageLayoutContainer::atStartOfLine() const
 bool MessageLayoutContainer::fitsInLine(qreal width) const
 {
     return width <= this->remainingWidth();
+}
+
+size_t MessageLayoutContainer::getLineCount() const
+{
+    return this->lines_.size();
 }
 
 qreal MessageLayoutContainer::remainingWidth() const

@@ -19,7 +19,7 @@ namespace {
 
 static const chatterino::Paths *PATHS = nullptr;
 
-}  // namespace
+}
 
 namespace boost::interprocess::ipcdetail {
 
@@ -117,14 +117,13 @@ QByteArray IpcQueue::receive()
         auto *d = this->private_.get();
 
         QByteArray buf;
-        // The new storage is uninitialized
+
         buf.resize(static_cast<qsizetype>(d->queue.get_max_msg_size()));
 
         size_t messageSize = 0;
         unsigned int priority = 0;
         d->queue.receive(buf.data(), buf.size(), messageSize, priority);
 
-        // truncate to the initialized storage
         buf.truncate(static_cast<qsizetype>(messageSize));
         return buf;
     }

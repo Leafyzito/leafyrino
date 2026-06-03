@@ -7,9 +7,13 @@
 #include <QFileInfo>
 #include <QStringBuilder>
 
+#define STRINGIFY(x) #x
+
+#define STRINGIFY2(x) STRINGIFY(x)
+
 namespace chatterino {
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 Version::Version()
     : version_(CHATTERINO_VERSION)
@@ -41,8 +45,8 @@ Version::Version()
     this->generateExtraString();
 
 #ifdef Q_OS_WIN
-    // keep in sync with .CI/chatterino-installer.iss
-    this->appUserModelID_ = L"SevenTV.Chatterino7";
+
+    this->appUserModelID_ = L"leafyzito.Leafyrino7";
 #endif
 }
 
@@ -134,10 +138,8 @@ bool Version::isNightly() const
 
 void Version::generateBuildString()
 {
-    // e.g. Chatterino 2.3.5 or Chatterino Nightly 2.3.5
     auto s = this->fullVersion();
 
-    // Add commit information
     s +=
         QString(
             R"( (commit <a href="https://github.com/leafyzito/leafyrino/commit/%1">%1</a>)")
@@ -153,13 +155,11 @@ void Version::generateBuildString()
 
     s += " built";
 
-    // If the build is a nightly build (decided with modes atm), include build date information
     if (this->isNightly())
     {
         s += " on " + this->dateOfBuild();
     }
 
-    // Append build tags (e.g. compiler, qt version etc)
     s += " with " + this->buildTags().join(", ");
 
     this->buildString_ = s;
@@ -177,10 +177,6 @@ void Version::generateRunningString()
 
     this->runningString_ = s;
 }
-
-#define STRINGIFY(x) #x
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define STRINGIFY2(x) STRINGIFY(x)
 
 void Version::generateExtraString()
 {

@@ -85,7 +85,6 @@ Updates::Updates(const Paths &paths_, Settings &settings)
         this->managedConnections, false);
 }
 
-/// Checks if the online version is newer or older than the current version.
 bool Updates::isDowngradeOf(const QString &online, const QString &current)
 {
     semver::version onlineVersion;
@@ -104,7 +103,6 @@ bool Updates::isDowngradeOf(const QString &online, const QString &current)
         return false;
     }
 
-    // TODO: remove once chatterino7's major version switches from `7` to `2`
     if (currentVersion.major == 7 && onlineVersion.major == 2)
     {
         currentVersion = {2, currentVersion.minor, currentVersion.patch,
@@ -150,14 +148,6 @@ void Updates::installUpdates()
     if (this->status_ != UpdateAvailable)
     {
         assert(false);
-        return;
-    }
-
-    if (Version::instance().isNightly())
-    {
-        // Since Nightly builds can be installed in many different ways, we ask the user to download the update manually.
-        QDesktopServices::openUrl(
-            QUrl("https://github.com/SevenTV/chatterino7/releases"));
         return;
     }
 
@@ -296,7 +286,7 @@ void Updates::installUpdates()
                     combinePath(this->paths.miscDirectory, "Update.exe");
 
                 QFile file(filePath);
-                // write() will fail if we couldn't open
+
                 std::ignore =
                     file.open(QIODevice::Truncate | QIODevice::WriteOnly);
 
@@ -356,22 +346,23 @@ void Updates::checkForUpdates()
         return;
     }
 
-    // Disable updates on Flatpak
     if (version.isFlatpak())
     {
         return;
     }
 
-    // See https://github.com/SevenTV/SevenTV/issues/48#issue-2193272289
-    // for the proposed structure of the response.
+    if (version.isNightly())
+    {
+        return;
+    }
+
     auto onSuccess = [this](const NetworkResult &result) {
         const auto object = result.parseJson();
         if (object.empty())
         {
-            return;  // this should only happen on the v4 url as it's not really mapped
+            return;
         }
 
-        /// Version available on every platform
         auto version = object["version"];
         if (object["v2_version"_L1].isString())
         {
@@ -387,7 +378,7 @@ void Updates::checkForUpdates()
         }
 
 #    if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
-        /// Downloads an installer for the new version
+
         auto updateExeUrl = getForArchitecture(object, u"updateexe"_s);
         if (!updateExeUrl.isString())
         {
@@ -400,7 +391,7 @@ void Updates::checkForUpdates()
         this->updateExe_ = updateExeUrl.toString();
 
 #        ifdef Q_OS_WIN
-        /// Windows portable
+
         auto portableUrl = getForArchitecture(object, "portable_download");
         if (!portableUrl.isString())
         {
@@ -423,11 +414,8 @@ void Updates::checkForUpdates()
         return;
 #    endif
 
-        /// Current version
         this->onlineVersion_ = version.toString();
 
-        /// Update available :)
-        // 7TV: Don't treat downgrades as updates.
         if (this->currentVersion_ != this->onlineVersion_ &&
             !Updates::isDowngradeOf(this->onlineVersion_,
                                     this->currentVersion_))
@@ -440,20 +428,15 @@ void Updates::checkForUpdates()
         }
     };
 
-    // We're trying v3, ~~and v4~~ to get updates.
-    // The first successful one will be used
     auto apiVersion = std::make_shared<uint8_t>(3);
-    constexpr auto maxApiVersion =
-        3;  // don't try v4 yet (we don't know the API scheme yet)
+    constexpr auto maxApiVersion = 3;
     auto fmtUrl = [apiVersion]() -> QString {
         return u"https://7tv.io/v" % QString::number(*apiVersion) %
                "/chatterino/version/" % CHATTERINO_OS % "/" % currentBranch();
     };
 
     auto onError = std::make_shared<std::function<void(NetworkResult)>>();
-    // We need to avoid cyclic ownership, so we pass onError as a weak pointer.
-    // During the request, it's kept alive by the finally handler, which will
-    // always be called after onError and onSuccess.
+
     auto makeRequest = [onSuccess,
                         onErrorWeak = std::weak_ptr(onError)](auto url) {
         auto onError = onErrorWeak.lock();
@@ -474,7 +457,7 @@ void Updates::checkForUpdates()
     *onError = [apiVersion, fmtUrl, makeRequest](const auto &) mutable {
         if (*apiVersion >= maxApiVersion)
         {
-            return;  // nothing returned a response, we're done
+            return;
         }
         (*apiVersion)++;
         makeRequest(fmtUrl());
@@ -531,41 +514,6 @@ bool Updates::isError() const
 bool Updates::isDowngrade() const
 {
     return this->isDowngrade_;
-}
-
-QString Updates::buildUpdateAvailableText() const
-{
-    const auto &version = Version::instance();
-
-    if (version.isNightly())
-    {
-        // Since Nightly builds can be installed in many different ways, we ask the user to download the update manually.
-        if (this->isDowngrade())
-        {
-            return QString("The version online (%1) seems to be lower than the "
-                           "current (%2).\nEither a version was reverted or "
-                           "you are running a newer build.\n\nDo you want to "
-                           "head to Chatterino.com to download it?")
-                .arg(this->getOnlineVersion(), this->getCurrentVersion());
-        }
-
-        return QString("An update (%1) is available.\n\nDo you want to head to "
-                       "Chatterino.com to download the new update?")
-            .arg(this->getOnlineVersion());
-    }
-
-    if (this->isDowngrade())
-    {
-        return QString("The version online (%1) seems to be lower than the "
-                       "current (%2).\nEither a version was reverted or "
-                       "you are running a newer build.\n\nDo you want to "
-                       "download and install it?")
-            .arg(this->getOnlineVersion(), this->getCurrentVersion());
-    }
-
-    return QString("An update (%1) is available.\n\nDo you want to "
-                   "download and install it?")
-        .arg(this->getOnlineVersion());
 }
 
 void Updates::setStatus_(Status status)

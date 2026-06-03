@@ -6,4 +6,4 @@
 
 namespace chatterino {
 
-}  // namespace chatterino
+}

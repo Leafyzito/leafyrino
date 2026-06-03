@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2020 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #include "widgets/splits/InputCompletionPopup.hpp"
 
 #include "controllers/completion/sources/UserSource.hpp"
@@ -39,14 +35,17 @@ void InputCompletionPopup::updateCompletion(const QString &text,
 {
     if (this->currentKind_ != kind || this->currentChannel_ != channel)
     {
-        // New completion context
         this->beginCompletion(kind, std::move(channel));
     }
 
     assert(this->model_.hasSource());
     this->model_.updateResults(text, MAX_ENTRY_COUNT);
+    if (this->model_.rowCount() == 0)
+    {
+        this->hide();
+        return;
+    }
 
-    // Move selection to top row
     if (this->model_.rowCount() != 0)
     {
         this->ui_.listView->setCurrentIndex(this->model_.index(0));
@@ -62,7 +61,6 @@ std::unique_ptr<completion::Source> InputCompletionPopup::getSource() const
         return nullptr;
     }
 
-    // Currently, strategies are hard coded.
     switch (*this->currentKind_)
     {
         case CompletionKind::Emote:
@@ -112,12 +110,17 @@ bool InputCompletionPopup::eventFilter(QObject *watched, QEvent *event)
     return this->ui_.listView->eventFilter(watched, event);
 }
 
-void InputCompletionPopup::showEvent(QShowEvent * /*event*/)
+bool InputCompletionPopup::hasResults() const
+{
+    return this->model_.rowCount() > 0;
+}
+
+void InputCompletionPopup::showEvent(QShowEvent *)
 {
     this->redrawTimer_.start();
 }
 
-void InputCompletionPopup::hideEvent(QHideEvent * /*event*/)
+void InputCompletionPopup::hideEvent(QHideEvent *)
 {
     this->redrawTimer_.stop();
     this->endCompletion();

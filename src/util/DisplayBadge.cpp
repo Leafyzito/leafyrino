@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2021 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #include "util/DisplayBadge.hpp"
 
 namespace chatterino {

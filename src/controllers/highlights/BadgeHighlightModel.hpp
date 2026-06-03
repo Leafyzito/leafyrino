@@ -28,7 +28,6 @@ public:
     };
 
 protected:
-    // vector into model row
     HighlightBadge getItemFromRow(std::vector<QStandardItem *> &row,
                                   const HighlightBadge &original) override;
 

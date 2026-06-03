@@ -12,7 +12,6 @@
 
 namespace chatterino {
 
-/// A QSpacerItem that scales with Chatterino's scale
 class ScalingSpacerItem : public QSpacerItem
 {
 public:

@@ -52,7 +52,6 @@ private:
              std::map<ChannelName, std::unique_ptr<LoggingChannel>>>
         loggingChannels_;
 
-    // Keeps the value of the `loggedChannels` settings
     std::unordered_set<ChannelName> onlyLogListedChannels;
     ThreadGuard threadGuard;
 };

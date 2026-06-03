@@ -29,7 +29,6 @@ public:
 
     void createEmoteSet(const QString &id);
 
-    // Returns the emote-map of this set if it's new.
     std::optional<std::shared_ptr<const EmoteMap>> assignUsersToEmoteSet(
         const QString &emoteSetID,
         std::span<const seventv::eventapi::User> users);
@@ -67,12 +66,11 @@ private:
     EmotePtr findInEmoteSets(std::span<const QString> emoteSetIDs,
                              const EmoteName &name) const;
 
-    // emoteSetID => emoteSet
     std::unordered_map<QString, Atomic<std::shared_ptr<const EmoteMap>>>
         emoteSets_;
-    // userID => emoteSetID
+
     std::unordered_map<QString, QList<QString>> twitchEmoteSets_;
-    // userID => emoteSetID
+
     std::unordered_map<uint64_t, QList<QString>> kickEmoteSets_;
 
     bool enabled_ = true;

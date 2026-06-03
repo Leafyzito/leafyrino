@@ -65,7 +65,7 @@ private:
     std::vector<BaseWidget *> widgets_;
 
     friend class BaseWindow;
-    friend class OverlayWindow;  // for setScale()
+    friend class OverlayWindow;
 };
 
 }  // namespace chatterino

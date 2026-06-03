@@ -39,9 +39,8 @@ struct IncompleteHelixUser {
 };
 
 struct PerformChannelAction {
-    // Channel to perform the action in
     IncompleteHelixUser channel;
-    // Target to perform the action on
+
     IncompleteHelixUser target;
     QString reason;
     int duration{};
@@ -64,8 +63,7 @@ struct StartUserParticipationAction {
 };
 
 std::ostream &operator<<(std::ostream &os, const IncompleteHelixUser &u);
-// gtest printer
-// NOLINTNEXTLINE(readability-identifier-naming)
+
 void PrintTo(const PerformChannelAction &a, std::ostream *os);
 
 Expected<std::vector<PerformChannelAction>, QString> parseChannelAction(

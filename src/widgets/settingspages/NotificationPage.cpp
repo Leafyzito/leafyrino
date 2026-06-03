@@ -72,9 +72,6 @@ NotificationPage::NotificationPage()
                         ->setSizePolicy(QSizePolicy::Maximum,
                                         QSizePolicy::Preferred);
 
-                    // implementation of custom combobox done
-                    // because addComboBox only can handle strings-settings
-                    // int setting for the ToastReaction is desired
                     openIn.append(this->createToastReactionComboBox())
                         ->setSizePolicy(QSizePolicy::Maximum,
                                         QSizePolicy::Preferred);
@@ -128,7 +125,6 @@ NotificationPage::NotificationPage()
                     view->getTableView()->setColumnWidth(0, 200);
                 });
 
-                // We can safely ignore this signal connection since we own the view
                 std::ignore = view->addButtonPressed.connect([] {
                     getApp()->getNotifications()->addChannelNotification(
                         "channel", Platform::Twitch);
@@ -148,7 +144,6 @@ QComboBox *NotificationPage::createToastReactionComboBox()
             i, Toasts::findStringFromReaction(static_cast<ToastReaction>(i)));
     }
 
-    // update when setting changes
     pajlada::Settings::Setting<int> setting = getSettings()->openFromToast;
     setting.connect(
         [toastReactionOptions](const int &index, auto) {

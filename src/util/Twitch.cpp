@@ -17,7 +17,6 @@ namespace {
 
 const auto TWITCH_USER_LOGIN_PATTERN = R"(^[a-z0-9]\w{0,24}$)";
 
-// Remember to keep VALID_HELIX_COLORS up-to-date if a new color is implemented to keep naming for users consistent
 const std::unordered_map<QString, QString> HELIX_COLOR_REPLACEMENTS{
     {"blueviolet", "blue_violet"},   {"cadetblue", "cadet_blue"},
     {"dodgerblue", "dodger_blue"},   {"goldenrod", "golden_rod"},
@@ -28,8 +27,6 @@ const std::unordered_map<QString, QString> HELIX_COLOR_REPLACEMENTS{
 
 }  // namespace
 
-// Colors retreived from https://dev.twitch.tv/docs/api/reference#update-user-chat-color 2022-09-11
-// Remember to keep HELIX_COLOR_REPLACEMENTS up-to-date if a new color is implemented to keep naming for users consistent
 extern const QStringList VALID_HELIX_COLORS{
     "blue",        "blue_violet", "cadet_blue", "chocolate",    "coral",
     "dodger_blue", "firebrick",   "golden_rod", "green",        "hot_pink",

@@ -11,7 +11,6 @@
 #include <cstddef>
 #include <functional>
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define QStringAlias(name)                                      \
     namespace chatterino {                                      \
     struct name {                                               \
@@ -20,8 +19,12 @@
         {                                                       \
             return this->string == other.string;                \
         }                                                       \
+        bool operator!=(const name &other) const                \
+        {                                                       \
+            return this->string != other.string;                \
+        }                                                       \
     };                                                          \
-    } /* namespace chatterino */                                \
+    }                                                           \
     namespace std {                                             \
     template <>                                                 \
     struct hash<chatterino::name> {                             \
@@ -30,7 +33,7 @@
             return qHash(s.string);                             \
         }                                                       \
     };                                                          \
-    } /* namespace std */                                       \
+    }                                                           \
     namespace boost {                                           \
     template <>                                                 \
     struct hash<chatterino::name> {                             \
@@ -39,7 +42,7 @@
             return qHash(s.string);                             \
         }                                                       \
     };                                                          \
-    } /* namespace boost */
+    }
 
 QStringAlias(UserName);
 QStringAlias(UserId);

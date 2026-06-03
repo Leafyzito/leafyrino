@@ -7,7 +7,7 @@
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
 
-using namespace Qt::StringLiterals;
+using namespace Qt::Literals::StringLiterals;
 
 namespace chatterino {
 
@@ -16,8 +16,7 @@ QString BttvBadges::idForBadge(const QJsonObject &badgeJson) const
     return badgeJson["url"].toString();
 }
 
-EmotePtr BttvBadges::createBadge(const QString &id,
-                                 const QJsonObject & /*badgeJson*/) const
+EmotePtr BttvBadges::createBadge(const QString &id, const QJsonObject &) const
 {
     auto emote = Emote{
         .name = EmoteName{u"betterttv:pro"_s},

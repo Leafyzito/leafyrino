@@ -94,7 +94,6 @@ bool isChatter(TwitchChannel *twitch, KickChannel *kick, const QString &word)
 
 bool isLink(const QString &token)
 {
-    // TODO: Replace this with a link parser variant that doesn't return the parsed data
     auto link = linkparser::parse(token);
     return link.has_value();
 }
@@ -117,13 +116,10 @@ namespace chatterino {
 
 namespace inputhighlight::detail {
 
-/// A word is a string of unicode letters possibly concatenated by `'` or `-`.
-/// This regex assumes the text it's matched on does not contain whitespace.
-/// Any words next to underscores (`_`) is ignored.
 QRegularExpression wordRegex()
 {
     static QRegularExpression regex{
-        R"((?<=^|(?!_)\p{P})\p{L}+(?:['-]\p{L}+)*(?=$|(?!_)\p{P}))",
+        R"((?<=^|(?!_)\p{P})\p{L}+(?=$|(?!_)\p{P}))",
         QRegularExpression::PatternOption::UseUnicodePropertiesOption,
     };
     return regex;
@@ -154,8 +150,7 @@ void InputHighlighter::setChannel(const std::shared_ptr<Channel> &channel)
 std::vector<QString> InputHighlighter::getSpellCheckedWords(const QString &text)
 {
     std::vector<QString> words;
-    this->visitWords(text, [&](const QString &word, qsizetype /*start*/,
-                               qsizetype /*count*/) {
+    this->visitWords(text, [&](const QString &word, qsizetype, qsizetype) {
         words.emplace_back(word);
     });
     return words;
@@ -170,7 +165,7 @@ QStringView InputHighlighter::getWordAt(QStringView text, qsizetype pos)
     while (tokenIt.hasNext())
     {
         auto match = tokenIt.next();
-        // using '<= end' to include the word left to the cursor if it's at the end
+
         if (match.capturedStart() <= pos && pos <= match.capturedEnd())
         {
             token = match.captured();
@@ -185,14 +180,14 @@ QStringView InputHighlighter::getWordAt(QStringView text, qsizetype pos)
     }
 
     QStringView word;
-    this->visitWords(token, [&](const QString & /*curWord*/, qsizetype start,
-                                qsizetype count) {
-        if (start <= posInWord && posInWord <= start + count)
-        {
-            assert(word.isEmpty());
-            word = text.sliced(tokenStart + start, count);
-        }
-    });
+    this->visitWords(token,
+                     [&](const QString &, qsizetype start, qsizetype count) {
+                         if (start <= posInWord && posInWord <= start + count)
+                         {
+                             assert(word.isEmpty());
+                             word = text.sliced(tokenStart + start, count);
+                         }
+                     });
     return word;
 }
 
@@ -221,13 +216,11 @@ void InputHighlighter::visitWords(
 
     QStringView textView = text;
 
-    // skip leading command trigger
     auto cmdTriggerLen = getApp()->getCommands()->commandTriggerLen(textView);
     textView = textView.sliced(cmdTriggerLen);
 
     auto tokenIt = this->tokenRegex.globalMatchView(textView);
 
-    // iterate over whitespace-delimited tokens
     while (tokenIt.hasNext())
     {
         auto tokenMatch = tokenIt.next();

@@ -1,86 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 2019 Artem Polishchuk <ego.cordatus@gmail.com> -->
 <component type="desktop-application">
-    <id>com.chatterino.chatterino.desktop</id>
-    <launchable type="desktop-id">com.chatterino.chatterino.desktop</launchable>
+    <id>com.moltobenne.moltorino.desktop</id>
+    <launchable type="desktop-id">com.moltobenne.moltorino.desktop</launchable>
     <metadata_license>CC0-1.0</metadata_license>
     <project_license>MIT</project_license>
     <content_rating type="oars-1.0">
         <content_attribute id="social-chat">intense</content_attribute>
     </content_rating>
-    <name>Chatterino</name>
-    <developer_name>Chatterino Developers</developer_name>
+    <name>Moltorino</name>
+    <developer_name>MoltoBenne</developer_name>
     <summary>
         Chat client for twitch.tv
     </summary>
     <description>
         <p>
-            Chatterino is a chat client for Twitch.tv.
+            Moltorino is a chat client for Twitch.tv.
         </p>
     </description>
     <screenshots>
         <screenshot type="default">
-            <image>https://chatterino.com/img/example_01.png</image>
+            <image>https://raw.githubusercontent.com/MoltoBenne/Moltorino/master/resources/icon.png</image>
         </screenshot>
     </screenshots>
     <keywords>
         <keyword>chat</keyword>
         <keyword>twitch</keyword>
     </keywords>
-    <url type="homepage">https://chatterino.com/</url>
-    <url type="bugtracker">https://chatterino.com/link/issues</url>
-    <url type="donation">https://chatterino.com/link/tips</url>
+    <url type="homepage">https://github.com/MoltoBenne/Moltorino</url>
+    <url type="bugtracker">https://github.com/MoltoBenne/Moltorino/issues</url>
+    <url type="donation">https://github.com/MoltoBenne/Moltorino</url>
     <provides>
-        <binary>chatterino</binary>
+        <binary>Moltorino7</binary>
     </provides>
     <releases>
-        <release version="7.5.5" date="2026-03-22">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.5</url>
-        </release>
-        <release version="7.5.5~beta1" date="2026-03-01">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.5-beta.1</url>
-        </release>
-        <release version="7.5.4" date="2025-09-21">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.4</url>
-        </release>
-        <release version="7.5.4~beta1" date="2025-08-30">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.4-beta.1</url>
-        </release>
-        <release version="7.5.3" date="2025-03-23">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.3</url>
-        </release>
-        <release version="7.5.3~beta1" date="2025-03-18">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.3-beta.1</url>
-        </release>
-        <release version="7.5.2" date="2025-01-05">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.2</url>
-        </release>
-        <release version="7.5.2~beta1" date="2024-12-14">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.2-beta.1</url>
-        </release>
-        <release version="7.5.1" date="2024-04-28">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.1</url>
-        </release>
-        <release version="7.5.0" date="2024-04-21">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.0</url>
-        </release>
-        <release version="7.5.0~beta1" date="2024-04-07">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.5.0-beta.1</url>
-        </release>
-        <release version="7.4.6" date="2023-09-28">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.4.6</url>
-        </release>
-        <release version="7.4.5" date="2023-08-26">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.4.5</url>
-        </release>
-        <release version="7.4.4" date="2023-05-14">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.4.4</url>
-        </release>
-        <release version="7.4.3" date="2023-04-30">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.4.3</url>
-        </release>
-        <release version="7.4.2" date="2023-03-05">
-            <url>https://github.com/SevenTV/chatterino7/releases/tag/v7.4.2</url>
+        <release version="7.5.5" date="2026-04-13">
+            <url>https://github.com/MoltoBenne/Moltorino/releases</url>
         </release>
     </releases>
 </component>

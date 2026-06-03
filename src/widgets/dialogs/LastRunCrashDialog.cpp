@@ -5,7 +5,7 @@
 #include "widgets/dialogs/LastRunCrashDialog.hpp"
 
 #include "common/Args.hpp"
-#include "common/Version.hpp"  // IWYU pragma: keep
+#include "common/Version.hpp"
 #include "singletons/Paths.hpp"
 #include "util/LayoutCreator.hpp"
 
@@ -20,7 +20,7 @@
 #include <QStringBuilder>
 #include <QVBoxLayout>
 
-using namespace Qt::StringLiterals;
+using namespace Qt::Literals::StringLiterals;
 
 namespace {
 
@@ -47,7 +47,7 @@ namespace chatterino {
 LastRunCrashDialog::LastRunCrashDialog(const Args &args, const Paths &paths)
 {
     this->setWindowFlag(Qt::WindowContextHelpButtonHint, false);
-    this->setWindowTitle(u"Chatterino - " % randomMessage());
+    this->setWindowTitle(u"Leafyrino - " % randomMessage());
 
     auto layout =
         LayoutCreator<LastRunCrashDialog>(this).setLayoutType<QVBoxLayout>();
@@ -58,18 +58,20 @@ LastRunCrashDialog::LastRunCrashDialog(const Args &args, const Paths &paths)
 
 #ifdef CHATTERINO_WITH_CRASHPAD
     auto reportsDir = QDir(paths.crashdumpDirectory).filePath(u"reports"_s);
-    text += u"A <b>crash report</b> has been saved to "
-            "<a href=\"file:///" %
-            reportsDir % u"\">" % reportsDir % u"</a>.<br>";
+    text += QStringLiteral("A <b>crash report</b> has been saved to "
+                           "<a href=\"file:///") %
+            reportsDir % QStringLiteral("\">") % reportsDir %
+            QStringLiteral("</a>.<br>");
 
     if (args.exceptionCode)
     {
-        text += u"The last run crashed with code <code>0x" %
+        text += QStringLiteral("The last run crashed with code <code>0x") %
                 QString::number(*args.exceptionCode, 16) % u"</code>";
 
         if (args.exceptionMessage)
         {
-            text += u" (" % *args.exceptionMessage % u")";
+            text += QStringLiteral(" (") % *args.exceptionMessage %
+                    QStringLiteral(")");
         }
 
         text += u".<br>"_s;

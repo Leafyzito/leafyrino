@@ -6,8 +6,6 @@
 
 #include <QString>
 
-/// Re-export of Qt's string literals. In new code, prefer using
-/// Qt::StringLiterals.
 namespace chatterino::literals {
 
 using Qt::StringLiterals::operator""_s;

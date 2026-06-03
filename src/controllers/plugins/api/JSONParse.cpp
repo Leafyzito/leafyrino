@@ -9,7 +9,6 @@
 #    include "controllers/plugins/LuaUtilities.hpp"
 
 #    include <boost/json/basic_parser.hpp>
-#    include <boost/json/basic_parser_impl.hpp>
 #    include <boost/json/serialize.hpp>
 #    include <QVarLengthArray>
 #    include <sol/sol.hpp>
@@ -20,7 +19,6 @@ namespace {
 
 using namespace chatterino::lua;
 
-// NOLINTNEXTLINE(performance-enum-size) -- we want `int` because that's what boost::system::error_code takes
 enum class ParseError : int {
     MoreThanOneTopLevel = 1,
     TooMuchNesting,
@@ -62,7 +60,6 @@ boost::system::error_code makeCode(ParseError kind)
     return {static_cast<int>(kind), CATEGORY};
 }
 
-/// Reserve at least `size` slots on the Lua stack.
 [[nodiscard]] bool reserveStack(lua_State *state, int size,
                                 boost::system::error_code &ec)
 {
@@ -74,14 +71,11 @@ boost::system::error_code makeCode(ParseError kind)
     return true;
 }
 
-// NOLINTBEGIN(cppcoreguidelines-pro-type-vararg)
-// NOLINTBEGIN(readability-identifier-naming)
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
 struct SaxHandler {
-    constexpr static std::size_t max_object_size = 1 << 20;  // about 1 million
-    constexpr static std::size_t max_array_size = 1 << 28;  // about 200 million
-    constexpr static std::size_t max_key_size = 1 << 29;    // 512 MiB
-    constexpr static std::size_t max_string_size = 1 << 30;  // 1 GiB
+    constexpr static std::size_t max_object_size = 1 << 20;
+    constexpr static std::size_t max_array_size = 1 << 28;
+    constexpr static std::size_t max_key_size = 1 << 29;
+    constexpr static std::size_t max_string_size = 1 << 30;
 
     constexpr static uint16_t MAX_NESTING = 256;
 
@@ -90,12 +84,12 @@ struct SaxHandler {
     {
     }
 
-    bool on_document_begin(boost::system::error_code & /* ec */)
+    bool on_document_begin(boost::system::error_code &)
     {
         return true;
     }
 
-    bool on_document_end(boost::system::error_code & /* ec */)
+    bool on_document_end(boost::system::error_code &)
     {
         return true;
     }
@@ -112,7 +106,6 @@ struct SaxHandler {
             return false;
         }
 
-        // grow stack by 3 (table, key, value)
         if (!reserveStack(this->state, 3, ec))
         {
             return false;
@@ -122,7 +115,7 @@ struct SaxHandler {
         return true;
     }
 
-    bool on_object_end(size_t /* nElements */, boost::system::error_code &ec)
+    bool on_object_end(size_t, boost::system::error_code &ec)
     {
         if (this->elements.empty())
         {
@@ -148,7 +141,6 @@ struct SaxHandler {
             return false;
         }
 
-        // grow stack by 2 (table, value)
         if (!reserveStack(this->state, 2, ec))
         {
             return false;
@@ -158,7 +150,7 @@ struct SaxHandler {
         return true;
     }
 
-    bool on_array_end(size_t /* nElements */, boost::system::error_code &ec)
+    bool on_array_end(size_t, boost::system::error_code &ec)
     {
         if (this->elements.empty())
         {
@@ -172,15 +164,15 @@ struct SaxHandler {
         return this->appendValue(ec);
     }
 
-    bool on_key_part(boost::json::string_view sv, std::size_t /* n */,
-                     boost::system::error_code & /* ec */)
+    bool on_key_part(boost::json::string_view sv, std::size_t,
+                     boost::system::error_code &)
     {
         this->buffer.append(sv);
-        return true;  // no push - we'll get a on_key call
+        return true;
     }
 
-    bool on_key(boost::json::string_view sv, size_t /* n */,
-                boost::system::error_code & /* ec */)
+    bool on_key(boost::json::string_view sv, size_t,
+                boost::system::error_code &)
     {
         if (this->buffer.empty())
         {
@@ -194,19 +186,17 @@ struct SaxHandler {
             this->buffer.clear();
         }
 
-        // no appendValue (wait for the value)
         return true;
     }
 
-    // scalar values
-    bool on_string_part(boost::json::string_view sv, size_t /* n */,
-                        boost::system::error_code & /* ec */)
+    bool on_string_part(boost::json::string_view sv, size_t,
+                        boost::system::error_code &)
     {
         this->buffer.append(sv);
-        return true;  // no appendValue - we'll get a on_string call
+        return true;
     }
 
-    bool on_string(boost::json::string_view sv, size_t /* n */,
+    bool on_string(boost::json::string_view sv, size_t,
                    boost::system::error_code &ec)
     {
         if (this->buffer.empty())
@@ -224,21 +214,19 @@ struct SaxHandler {
         return this->appendValue(ec);
     }
 
-    bool on_number_part(boost::json::string_view /* part */,
-                        boost::system::error_code & /* ec */)
+    bool on_number_part(boost::json::string_view, boost::system::error_code &)
     {
-        // unhandled
         return true;
     }
 
-    bool on_int64(int64_t i, boost::json::string_view /* source */,
+    bool on_int64(int64_t i, boost::json::string_view,
                   boost::system::error_code &ec)
     {
         lua_pushinteger(this->state, static_cast<lua_Integer>(i));
         return this->appendValue(ec);
     }
 
-    bool on_uint64(uint64_t i, boost::json::string_view /* source */,
+    bool on_uint64(uint64_t i, boost::json::string_view,
                    boost::system::error_code &ec)
     {
         if (i <= static_cast<uint64_t>(std::numeric_limits<lua_Integer>::max()))
@@ -252,7 +240,7 @@ struct SaxHandler {
         return this->appendValue(ec);
     }
 
-    bool on_double(double d, boost::json::string_view /* source */,
+    bool on_double(double d, boost::json::string_view,
                    boost::system::error_code &ec)
     {
         lua_pushnumber(this->state, d);
@@ -267,28 +255,21 @@ struct SaxHandler {
 
     bool on_null(boost::system::error_code &ec)
     {
-        lua_pushlightuserdata(this->state, nullptr);  // json.null
+        lua_pushlightuserdata(this->state, nullptr);
         return this->appendValue(ec);
     }
 
-    bool on_comment_part(boost::json::string_view /* part */,
-                         boost::system::error_code & /* ec */)
+    bool on_comment_part(boost::json::string_view, boost::system::error_code &)
     {
-        // unhandled
         return true;
     }
 
-    bool on_comment(boost::json::string_view /* comment */,
-                    boost::system::error_code & /* ec */)
+    bool on_comment(boost::json::string_view, boost::system::error_code &)
     {
-        // unhandled
         return true;
     }
 
 private:
-    /// Append the value to the current container.
-    /// If we only got a scalar, do nothing but remember that we got some value
-    /// already.
     bool appendValue(boost::system::error_code &ec)
     {
         if (this->elements.empty())
@@ -298,22 +279,17 @@ private:
                 ec = makeCode(ParseError::MoreThanOneTopLevel);
                 return false;
             }
-            // The element is already at the top of the stack
+
             this->hadElement = true;
             return true;
         }
 
         if (this->elements.back().isObject)
         {
-            // [-3] table
-            // [-2] key
-            // [-1] value
-            lua_rawset(this->state, -3);  // table[key] = value
+            lua_rawset(this->state, -3);
         }
-        else /* array */
+        else
         {
-            // [-2] table
-            // [-1] value
             lua_rawseti(this->state, -2, ++this->elements.back().index);
         }
 
@@ -321,26 +297,16 @@ private:
     }
 
     struct Element {
-        uint16_t index : 15;  // index of the last array element
+        uint16_t index : 15;
         uint16_t isObject : 1;
     };
 
     lua_State *state = nullptr;
 
-    /// The stack of elements we're in.
-    ///
-    /// We need to keep track of this to issue the right call to Lua when we see
-    /// an element.
-    /// Usually this shouldn't be too deep, so allocate some inline space.
     QVarLengthArray<Element, 16> elements;
 
-    /// Did we see any top-level element yet?
-    ///
-    /// This is only for safety. The JSON parser should guarantee that we don't
-    /// get two top-level elements.
     bool hadElement = false;
 
-    /// A buffer for partial strings
     std::string buffer;
 
     friend class SaxParser;
@@ -376,10 +342,6 @@ private:
     boost::json::basic_parser<SaxHandler> parser;
 };
 
-// NOLINTEND(readability-convert-member-functions-to-static)
-// NOLINTEND(readability-identifier-naming)
-// NOLINTEND(cppcoreguidelines-pro-type-vararg)
-
 }  // namespace
 
 namespace chatterino::lua::api {
@@ -392,7 +354,7 @@ int jsonParse(lua_State *L)
     boost::json::parse_options opts;
     opts.max_depth = SaxHandler::MAX_NESTING;
     opts.allow_invalid_utf8 = true;
-#    if BOOST_VERSION >= 108700  // 1.87
+#    if BOOST_VERSION >= 108700
     opts.allow_invalid_utf16 = true;
 #    endif
     if (nArgs >= 2)
@@ -416,4 +378,6 @@ int jsonParse(lua_State *L)
 
 }  // namespace chatterino::lua::api
 
-#endif  // CHATTERINO_HAVE_PLUGINS
+#    include <boost/json/src.hpp>
+
+#endif

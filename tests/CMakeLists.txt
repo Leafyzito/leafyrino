@@ -31,6 +31,7 @@ set(test_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/BttvLiveUpdates.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/Updates.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/Filters.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/FolhinhaBadges.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/LinkParser.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/InputCompletion.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/XDGDesktopFile.cpp
@@ -44,6 +45,7 @@ set(test_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/QMagicEnum.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ModerationAction.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/Scrollbar.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/ChannelView.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/Commands.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/FlagsEnum.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/MessageLayoutContainer.cpp

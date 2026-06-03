@@ -45,7 +45,6 @@ bool Hotkey::validAction() const
     auto categoryActionsIt = actionNames.find(this->category_);
     if (categoryActionsIt == actionNames.end())
     {
-        // invalid category
         return false;
     }
 

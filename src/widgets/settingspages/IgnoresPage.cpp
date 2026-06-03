@@ -66,7 +66,6 @@ void addPhrasesTab(LayoutCreator<QVBoxLayout> layout)
         view->getTableView()->setColumnWidth(0, 200);
     });
 
-    // We can safely ignore this signal connection since we own the view
     std::ignore = view->addButtonPressed.connect([] {
         getSettings()->ignoredMessages.append(IgnorePhrase{
             "my pattern",
@@ -112,13 +111,6 @@ void addUsersTab(IgnoresPage &page, LayoutCreator<QVBoxLayout> users,
 
         anyways->addStretch(1);
     }
-
-    /*auto addremove = users.emplace<QHBoxLayout>().withoutMargin();
-    {
-        auto add = addremove.emplace<QPushButton>("Block user");
-        auto remove = addremove.emplace<QPushButton>("Unblock User");
-        addremove->addStretch(1);
-    }*/
 
     users.emplace<QLabel>("List of blocked users:");
     users.emplace<QListView>()->setModel(&userModel);

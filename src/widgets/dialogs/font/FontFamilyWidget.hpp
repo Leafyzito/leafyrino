@@ -20,7 +20,6 @@ class FontFamilyWidget : public QWidget
 public:
     FontFamilyWidget(const QFont &startFont, QWidget *parent = nullptr);
 
-    /// Gets the currently selected font family (e.g. "Arial").
     QString getSelected() const;
 
 Q_SIGNALS:

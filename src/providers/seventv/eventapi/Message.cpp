@@ -16,12 +16,18 @@ std::optional<Message> parseBaseMessage(const QByteArray &blob)
 {
     QJsonDocument jsonDoc(QJsonDocument::fromJson(blob));
 
-    if (jsonDoc.isNull())
+    if (jsonDoc.isNull() || !jsonDoc.isObject())
     {
         return std::nullopt;
     }
 
-    return Message(jsonDoc.object());
+    auto json = jsonDoc.object();
+    if (!json["op"].isDouble())
+    {
+        return std::nullopt;
+    }
+
+    return Message(json);
 }
 
 }  // namespace chatterino::seventv::eventapi

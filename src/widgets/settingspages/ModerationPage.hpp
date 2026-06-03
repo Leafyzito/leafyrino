@@ -10,6 +10,8 @@
 
 class QTabWidget;
 class QPushButton;
+class QComboBox;
+class QLineEdit;
 
 namespace chatterino {
 
@@ -28,6 +30,7 @@ private:
 
     std::vector<QLineEdit *> durationInputs_;
     std::vector<QComboBox *> unitInputs_;
+    std::vector<QLineEdit *> reasonInputs_;
 };
 
 }  // namespace chatterino

@@ -8,7 +8,6 @@
 
 namespace chatterino {
 
-/// Guard to call `deleteLater` on a QObject when destroyed.
 class AbandonObject
 {
 public:

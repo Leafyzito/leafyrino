@@ -3,7 +3,7 @@
 #include "common/QLogging.hpp"
 #include "KickApi.hpp"
 #include "providers/kick/KickAccount.hpp"
-#include "util/RapidJsonSerializeQString.hpp"  // IWYU pragma: keep
+#include "util/RapidJsonSerializeQString.hpp"
 #include "util/SharedPtrElementLess.hpp"
 
 #include <pajlada/settings/setting.hpp>
@@ -25,7 +25,7 @@ KickAccountManager::KickAccountManager()
 
     this->refreshTimer.setSingleShot(false);
     this->refreshTimer.setInterval(KickAccount::CHECK_REFRESH_INTERVAL);
-    // NOLINTNEXTLINE(clazy-connect-3arg-lambda)
+
     QObject::connect(&this->refreshTimer, &QTimer::timeout, [this] {
         this->refreshAccounts();
     });
@@ -189,8 +189,6 @@ bool KickAccountManager::removeAccount(KickAccount *account)
 
     if (account->username() == this->currentUsername)
     {
-        // The user that was removed is the current user, log into the anonymous
-        // account
         this->currentUsername = "";
     }
 

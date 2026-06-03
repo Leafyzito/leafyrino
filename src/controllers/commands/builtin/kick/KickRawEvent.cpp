@@ -10,7 +10,7 @@
 
 namespace chatterino::commands {
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 QString debugKickRawEvent(const CommandContext &ctx)
 {

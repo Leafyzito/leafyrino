@@ -12,7 +12,7 @@
 namespace chatterino::lua {
 
 PluginRef::PluginRef(Plugin *plugin)
-    : shared(plugin, /*deleter=*/[](void *) {})
+    : shared(plugin, [](void *) {})
 {
     assert(plugin != nullptr);
 }

@@ -66,9 +66,11 @@ MessageFlagsPredicate::MessageFlagsPredicate(const QString &flags, bool negate)
         {
             this->flags_.set(MessageFlag::SharedMessage);
         }
-        else if (flag == "announcement")
+        else if (flag == "repeated" || flag == "repeated-message" ||
+                 flag == "repeated-messages" || flag == "repeated_message" ||
+                 flag == "repeated_messages")
         {
-            this->flags_.set(MessageFlag::Announcement);
+            this->flags_.set(MessageFlag::RepeatedMessage);
         }
     }
 }

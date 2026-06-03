@@ -20,15 +20,15 @@ QScrollArea *makeScrollArea(WidgetOrLayout item)
 {
     auto *area = new QScrollArea();
 
-    std::visit(variant::Overloaded{
-                   [&](QWidget *item) {
-                       area->setWidget(item);
-                   },
-                   [&](QLayout *item) {
-                       area->setWidget(wrapLayout(item));
-                   },
-               },
-               item);
+    switch (item.which())
+    {
+        case 0:
+            area->setWidget(boost::get<QWidget *>(item));
+            break;
+        case 1:
+            area->setWidget(wrapLayout(boost::get<QLayout *>(item)));
+            break;
+    }
 
     area->setWidgetResizable(true);
 

@@ -52,7 +52,6 @@ QPoint applyBounds(QScreen *screen, QPoint point, QSize frameSize, int height)
     return point;
 }
 
-/// Move the `window` into the `screen` geometry if it's not already in there.
 void moveWithinScreen(QWidget *window, QScreen *screen, QPoint point)
 {
     auto checked =

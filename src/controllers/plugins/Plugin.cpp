@@ -56,7 +56,7 @@ lua::SignalCallback Plugin::createCallback(sol::main_protected_function pfn)
 
 Plugin::~Plugin()
 {
-    this->onUnloaded.invoke();
+    this->onUnloaded();
 
     for (auto *timer : this->activeTimeouts)
     {
@@ -71,7 +71,6 @@ Plugin::~Plugin()
     this->activeTimeouts.clear();
     if (this->state_ != nullptr)
     {
-        // clearing this after the state is gone is not safe to do
         this->ownedCommands.clear();
         this->callbacks.clear();
         lua_close(this->state_);
@@ -140,7 +139,7 @@ void Plugin::log(lua_State *L, lua::api::LogLevel level, QDebug stream,
     stream.noquote();
     stream << "[" + this->id + ":" + this->meta.name + "]";
     QString fullMessage;
-    for (const auto arg : args)
+    for (const auto &arg : args)
     {
         auto s = lua::toString(L, arg.stack_index());
         stream << s;
@@ -151,11 +150,10 @@ void Plugin::log(lua_State *L, lua::api::LogLevel level, QDebug stream,
         }
         fullMessage.append(s);
 
-        // Remove this from our stack
         lua_pop(L, 1);
     }
 
-    this->onLog.invoke(level, fullMessage);
+    this->onLog(level, fullMessage);
 }
 
 sol::state_view Plugin::state()

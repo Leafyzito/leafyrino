@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2020 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include "controllers/completion/CompletionModel.hpp"
@@ -36,6 +32,7 @@ public:
     void setInputAction(ActionCallback callback);
 
     bool eventFilter(QObject *watched, QEvent *event) override;
+    bool hasResults() const;
 
 protected:
     void showEvent(QShowEvent *event) override;

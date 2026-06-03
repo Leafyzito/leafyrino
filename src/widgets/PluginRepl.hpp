@@ -8,7 +8,7 @@
 #    include "buttons/SvgButton.hpp"
 #    include "widgets/BaseWindow.hpp"
 
-#    include <pajlada/signals/scoped-connection.hpp>
+#    include <boost/signals2/connection.hpp>
 #    include <QString>
 #    include <QTextBlockFormat>
 #    include <QTextCharFormat>
@@ -20,7 +20,7 @@ class QTextBlockFormat;
 
 namespace chatterino::lua::api {
 enum class LogLevel;
-}  // namespace chatterino::lua::api
+}
 
 namespace chatterino {
 
@@ -38,7 +38,6 @@ protected:
 
 private:
     struct LogOptions {
-        /// Maximum number of items to show in tables.
         size_t maxItems = 10;
     };
 
@@ -57,9 +56,9 @@ private:
     QString id;
     Plugin *plugin = nullptr;
 
-    pajlada::Signals::ScopedConnection pluginDestroyConn;
-    pajlada::Signals::ScopedConnection pluginLogConn;
-    pajlada::Signals::ScopedConnection pluginLoadedConn;
+    boost::signals2::scoped_connection pluginDestroyConn;
+    boost::signals2::scoped_connection pluginLogConn;
+    boost::signals2::scoped_connection pluginLoadedConn;
 
     bool isPinned = false;
 

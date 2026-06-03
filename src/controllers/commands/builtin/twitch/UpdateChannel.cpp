@@ -138,8 +138,6 @@ QString setGame(const CommandContext &ctx)
 
             if (games.size() > 1)
             {
-                // NOTE: Improvements could be made with 'fuzzy string matching' code here
-                // attempt to find the best looking game by comparing exactly with lowercase values
                 for (const auto &game : games)
                 {
                     if (game.name.toLower() == gameName.toLower())

@@ -24,6 +24,10 @@ public:
 
     void sendChannelNotification(const QString &channelName,
                                  const QString &channelTitle);
+    bool sendHighlightNotification(const QString &channelName,
+                                   const QString &title, const QString &body,
+                                   const QString &messageId);
+    static bool isHighlightNotificationSupported();
     static QString findStringFromReaction(const ToastReaction &reaction);
     static QString findStringFromReaction(
         const pajlada::Settings::Setting<int> &reaction);
@@ -33,13 +37,24 @@ public:
 private:
 #ifdef Q_OS_WIN
     void ensureInitialized();
+    bool ensureActionCenterActivation();
     void sendWindowsNotification(const QString &channelName,
                                  const QString &channelTitle);
+    bool sendWindowsHighlightNotification(const QString &channelName,
+                                          const QString &title,
+                                          const QString &body,
+                                          const QString &messageId);
 
     bool initialized_ = false;
+    bool actionCenterActivationChecked_ = false;
+    bool actionCenterActivationAvailable_ = false;
 #elif defined(CHATTERINO_WITH_LIBNOTIFY)
     void ensureInitialized();
     void sendLibnotify(const QString &channelName, const QString &channelTitle);
+    bool sendLibnotifyHighlightNotification(const QString &channelName,
+                                            const QString &title,
+                                            const QString &body,
+                                            const QString &messageId);
 
     bool initialized_ = false;
 #endif

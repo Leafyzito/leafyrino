@@ -52,7 +52,6 @@ void appendTwitchEmoteOccurrences(const QString &emote,
         auto maxPositions = correctPositions.size();
         if (from > to || to >= maxPositions)
         {
-            // Emote coords are out of range
             qCDebug(chatterinoTwitch)
                 << "Emote coords" << from << "-" << to << "are out of range ("
                 << maxPositions << ")";
@@ -63,7 +62,6 @@ void appendTwitchEmoteOccurrences(const QString &emote,
         auto end = correctPositions[to];
         if (start > end || start < 0 || end > originalMessage.length())
         {
-            // Emote coords are out of range from the modified character positions
             qCDebug(chatterinoTwitch) << "Emote coords" << from << "-" << to
                                       << "are out of range after offsets ("
                                       << originalMessage.length() << ")";
@@ -141,7 +139,6 @@ std::vector<TwitchEmoteOccurrence> parseTwitchEmotes(const QVariantMap &tags,
                                                      const QString &content,
                                                      int messageOffset)
 {
-    // Twitch emotes
     std::vector<TwitchEmoteOccurrence> twitchEmotes;
 
     auto emotesTag = tags.find("emotes");

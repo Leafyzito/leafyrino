@@ -22,7 +22,6 @@ std::optional<BalancedResolverResults::Entry>
 {
     if (this->nextIsIPv6)
     {
-        // advance v6 first
         if (this->advanceIPv6() || this->advanceIPv4())
         {
             return this->currentEntry();
@@ -30,7 +29,6 @@ std::optional<BalancedResolverResults::Entry>
     }
     else
     {
-        // advance v4 first
         if (this->advanceIPv4() || this->advanceIPv6())
         {
             return this->currentEntry();

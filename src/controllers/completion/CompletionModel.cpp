@@ -29,7 +29,6 @@ void CompletionModel::updateResults(const QString &query, size_t maxCount)
     {
         this->source_->update(query);
 
-        // Copy results to this model
         this->clear();
         this->source_->addToListModel(*this, maxCount);
     }

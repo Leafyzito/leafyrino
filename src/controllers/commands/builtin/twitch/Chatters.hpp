@@ -10,7 +10,7 @@ namespace chatterino {
 
 struct CommandContext;
 
-}  // namespace chatterino
+}
 
 namespace chatterino::commands {
 

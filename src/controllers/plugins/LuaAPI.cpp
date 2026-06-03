@@ -9,7 +9,7 @@
 #    include "common/QLogging.hpp"
 #    include "controllers/plugins/LuaUtilities.hpp"
 #    include "controllers/plugins/PluginController.hpp"
-#    include "controllers/plugins/SolTypes.hpp"  // for lua operations on QString{,List} for CompletionList
+#    include "controllers/plugins/SolTypes.hpp"
 
 #    include <lauxlib.h>
 #    include <lua.h>
@@ -60,8 +60,6 @@ QDebug qdebugStreamForLogLevel(lua::api::LogLevel lvl)
 
 }  // namespace
 
-// NOLINTBEGIN(*vararg)
-// luaL_error is a c-style vararg function, this makes clang-tidy not dislike it so much
 namespace chatterino::lua::api {
 
 CompletionList::CompletionList(const sol::table &table)
@@ -73,11 +71,9 @@ CompletionList::CompletionList(const sol::table &table)
 sol::table toTable(lua_State *L, const CompletionEvent &ev)
 {
     return sol::state_view(L).create_table_with(
-        "query", ev.query,                          //
-        "full_text_content", ev.full_text_content,  //
-        "cursor_position", ev.cursor_position,      //
-        "is_first_word", ev.is_first_word           //
-    );
+        "query", ev.query, "full_text_content", ev.full_text_content,
+        "cursor_position", ev.cursor_position, "is_first_word",
+        ev.is_first_word);
 }
 
 void c2_register_callback(ThisPluginState L, EventType evtType,
@@ -135,7 +131,6 @@ void c2_later(ThisPluginState L, sol::protected_function callback, int time)
     timer->start();
 }
 
-// TODO: Add tests for this once we run tests in debug mode
 sol::variadic_results g_load(ThisPluginState s, sol::object data)
 {
 #    ifdef NDEBUG
@@ -144,8 +139,6 @@ sol::variadic_results g_load(ThisPluginState s, sol::object data)
     throw std::runtime_error("load() is only usable in debug mode");
 #    else
 
-    // If you're modifying this PLEASE verify it works, Sol is very annoying about serialization
-    // - Mm2PL
     sol::state_view lua(s);
     auto load = lua.registry()["real_load"];
     sol::protected_function_result ret = load(data, "=(load)", "t");
@@ -164,7 +157,6 @@ int loadfile(lua_State *L, const QString &str)
 
     if (!dir.isParentOf(str))
     {
-        // XXX: This intentionally hides the resolved path to not leak it
         lua::push(
             L, QString("requested module is outside of the plugin directory"));
         return 1;
@@ -188,7 +180,7 @@ int loadfile(lua_State *L, const QString &str)
     const auto *filename = temp.c_str();
 
     auto res = luaL_loadfilex(L, filename, "t");
-    // Yoinked from checkload lib/lua/src/loadlib.c
+
     if (res == LUA_OK)
     {
         lua_pushstring(L, filename);
@@ -246,7 +238,6 @@ int searcherRelative(lua_State *L)
 
 void g_print(ThisPluginState L, sol::variadic_args args)
 {
-    // This is almost the expansion of qCDebug() macro, actual thing is wrapped in a for loop
     auto stream =
         (QMessageLogger(QT_MESSAGELOG_FILE, QT_MESSAGELOG_LINE,
                         QT_MESSAGELOG_FUNC, chatterinoLua().categoryName())
@@ -260,5 +251,5 @@ void package_loadlib(sol::variadic_args args)
 }
 
 }  // namespace chatterino::lua::api
-// NOLINTEND(*vararg)
+
 #endif

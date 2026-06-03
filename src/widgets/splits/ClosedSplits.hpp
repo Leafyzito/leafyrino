@@ -22,7 +22,7 @@ public:
     struct SplitInfo {
         QString channelName;
         QList<QUuid> filters;
-        NotebookTab *tab;  // non owning ptr
+        NotebookTab *tab;
     };
 
     static void invalidateTab(NotebookTab *const tab);

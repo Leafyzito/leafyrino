@@ -57,12 +57,16 @@ public:
 
     void debug(std::string_view msg) override
     {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         qCDebug(this->loggingCategory).noquote() << msg;
+#endif
     }
 
     void warn(std::string_view msg) override
     {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         qCWarning(this->loggingCategory).noquote() << msg;
+#endif
     }
 
 private:
@@ -171,6 +175,9 @@ void Controller::removeRef(const SubscriptionRequest &request)
                 << "but we had no subscription ID attached - a "
                    "successful subscription was never made. From state "
                 << qmagicenum::enumName(subscription.state);
+            subscription.state = Subscription::State::Unsubscribed;
+            subscription.backoff.reset();
+            this->subscriptions.erase(request);
             return;
         }
 
@@ -436,7 +443,7 @@ void Controller::subscribe(const SubscriptionRequest &request, bool isRetry)
 
                     case Error::Forbidden:
                         qCDebug(LOG) << "Forbidden" << errorString << request;
-                        return;
+                        break;
 
                     case Error::Conflict:
                         // This session ID is already subscribed to this request, some logic of ours is wrong
@@ -761,6 +768,13 @@ void Controller::clearConnections()
         auto conn = it.lock();
         return !conn || !conn->getListener();
     });
+}
+
+void DummyController::reconnectConnection(
+    std::unique_ptr<lib::Listener> /* connection */,
+    const std::optional<std::string> & /* reconnectURL */,
+    const std::unordered_set<SubscriptionRequest> & /* subs */)
+{
 }
 
 }  // namespace chatterino::eventsub

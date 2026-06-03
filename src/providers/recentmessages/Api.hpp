@@ -27,18 +27,6 @@ namespace chatterino::recentmessages {
 using ResultCallback = std::function<void(const std::vector<MessagePtr> &)>;
 using ErrorCallback = std::function<void()>;
 
-/**
- * @brief Loads recent messages for a channel using the Recent Messages API
- *
- * @param channelName Name of Twitch channel
- * @param channelPtr Weak pointer to Channel to use to build messages
- * @param onLoaded Callback taking the built messages as a const std::vector<MessagePtr> &
- * @param onError Callback called when the network request fails
- * @param limit Maximum number of messages to query
- * @param after Only return messages that were received after this timestamp; ignored if `std::nullopt`
- * @param before Only return messages that were received before this timestamp; ignored if `std::nullopt`
- * @param jitter Whether to delay the request by a small random duration
- */
 void load(
     const QString &channelName, std::weak_ptr<Channel> channelPtr,
     ResultCallback onLoaded, ErrorCallback onError, int limit,

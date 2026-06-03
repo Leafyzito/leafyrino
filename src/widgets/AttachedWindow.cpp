@@ -16,13 +16,10 @@
 #include <memory>
 
 #ifdef USEWINSDK
-#    include "util/WindowsHelper.hpp"
-
-// clang-format off
-// don't even think about reordering these
-#    include "Windows.h"
 #    include "Psapi.h"
-// clang-format on
+#    include "util/WindowsHelper.hpp"
+#    include "Windows.h"
+
 #    pragma comment(lib, "Dwmapi.lib")
 #endif
 
@@ -176,13 +173,10 @@ void AttachedWindow::attachToHwnd(void *_attachedPtr)
 
     this->attached_ = true;
 
-    //auto hwnd = HWND(this->winId());
     auto attached = HWND(_attachedPtr);
 
-    // FAST TIMER - used to resize/reorder windows
     this->timer_.setInterval(1);
     QObject::connect(&this->timer_, &QTimer::timeout, [this, attached] {
-        // check process id
         if (!this->validProcessName_)
         {
             DWORD processId;
@@ -199,7 +193,6 @@ void AttachedWindow::attachToHwnd(void *_attachedPtr)
 
             if (!getSettings()->attachExtensionToAnyProcess)
             {
-                // We don't attach to non-browser processes by default.
                 if (!qfilename.endsWith("chrome.exe") &&
                     !qfilename.endsWith("firefox.exe") &&
                     !qfilename.endsWith("vivaldi.exe") &&
@@ -223,7 +216,6 @@ void AttachedWindow::attachToHwnd(void *_attachedPtr)
 
     this->timer_.start();
 
-    // SLOW TIMER - used to hide taskbar behind fullscreen window
     this->slowTimer_.setInterval(2000);
     QObject::connect(&this->slowTimer_, &QTimer::timeout, [this, attached] {
         if (this->fullscreen_)
@@ -249,9 +241,6 @@ void AttachedWindow::updateWindowRect(void *_attachedPtr)
     auto hwnd = HWND(this->winId());
     auto attached = HWND(_attachedPtr);
 
-    // We get the window rect first so we can close this window when it returns
-    // an error. If we query the process first and check the filename then it
-    // will return and empty string that doens't match.
     ::SetLastError(0);
     RECT rect;
     ::GetWindowRect(attached, &rect);
@@ -265,7 +254,6 @@ void AttachedWindow::updateWindowRect(void *_attachedPtr)
         return;
     }
 
-    // set the correct z-order
     if (HWND next = ::GetNextWindow(attached, GW_HWNDPREV))
     {
         ::SetWindowPos(hwnd, next ? next : HWND_TOPMOST, 0, 0, 0, 0,
@@ -290,7 +278,6 @@ void AttachedWindow::updateWindowRect(void *_attachedPtr)
     {
         this->ui_.split->setFixedWidth(int(this->width_ * ourScale));
 
-        // offset
         int o = this->fullscreen_ ? 0 : 8;
 
         if (this->pixelRatio_ != -1.0)
@@ -301,7 +288,7 @@ void AttachedWindow::updateWindowRect(void *_attachedPtr)
                 int(rect.bottom - this->height_ * scale - o),
                 int(this->width_ * scale), int(this->height_ * scale), true);
         }
-        //support for old extension version 1.3
+
         else if (this->x_ != -1.0)
         {
             ::MoveWindow(hwnd, int(rect.left + this->x_ * scale + o),
@@ -309,7 +296,7 @@ void AttachedWindow::updateWindowRect(void *_attachedPtr)
                          int(this->width_ * scale), int(this->height_ * scale),
                          true);
         }
-        //support for old extension version 1.2
+
         else
         {
             ::MoveWindow(hwnd, int(rect.right - this->width_ * scale - o),
@@ -319,24 +306,8 @@ void AttachedWindow::updateWindowRect(void *_attachedPtr)
         }
     }
 
-//    if (this->fullscreen_)
-//    {
-//        ::BringWindowToTop(attached);
-//    }
-
-//        ::MoveWindow(hwnd, rect.right - 360, rect.top + 82, 360 - 8,
-//        rect.bottom - rect.top - 82 - 8, false);
 #endif
 }
-
-// void AttachedWindow::nativeEvent(const QByteArray &eventType, void *message,
-// long *result)
-//{
-//    MSG *msg = reinterpret_cast
-
-//    case WM_NCCALCSIZE: {
-//    }
-//}
 
 std::vector<AttachedWindow::Item> AttachedWindow::items;
 

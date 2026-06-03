@@ -7,14 +7,13 @@
 #ifdef CHATTERINO_HAVE_PLUGINS
 #    include "Application.hpp"
 #    include "controllers/plugins/PluginController.hpp"
-#    include "controllers/plugins/SolTypes.hpp"  // IWYU pragma: keep
+#    include "controllers/plugins/SolTypes.hpp"
 #    include "util/PostToThread.hpp"
 
 #    include <utility>
 
 namespace chatterino::lua::api {
 
-/// A WebSocket listener that dispatches events on the GUI thread to the user type.
 class WebSocketListenerProxy final : public WebSocketListener
 {
 public:
@@ -92,8 +91,7 @@ void WebSocket::createUserType(sol::table &c2, Plugin *plugin)
             self->handle = std::move(handle);
             return self;
         }),
-        // Note: These properties could be pointers to members, but Clang 18
-        // specifically can't compile these - see https://github.com/ThePhD/sol2/issues/1581
+
         "on_close",
         sol::property(
             [](WebSocket &ws) {
@@ -126,10 +124,8 @@ void WebSocket::createUserType(sol::table &c2, Plugin *plugin)
             [](WebSocket &ws, sol::main_function fn) {
                 ws.onOpen = std::move(fn);
             }),
-        "close", &WebSocket::close,            //
-        "send_text", &WebSocket::sendText,     //
-        "send_binary", &WebSocket::sendBinary  //
-    );
+        "close", &WebSocket::close, "send_text", &WebSocket::sendText,
+        "send_binary", &WebSocket::sendBinary);
 }
 
 void WebSocket::close()
@@ -158,7 +154,6 @@ void WebSocketListenerProxy::onClose(std::unique_ptr<WebSocketListener> self)
         auto strong = this->target.lock();
         if (strong)
         {
-            // clear our object, so we can get GC'd
             auto cb = std::move(strong->onClose);
             strong->onText.reset();
             strong->onBinary.reset();

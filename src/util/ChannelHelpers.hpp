@@ -13,23 +13,11 @@
 
 namespace chatterino {
 
-/// Adds a timeout or replaces a previous one sent in the last 20 messages and in the last 5s.
-/// This function accepts any buffer to store the messsages in.
-/// @param replaceMessage A function of type `void (int index, MessagePtr toReplace, MessagePtr replacement)`
-///                       - replace `buffer[i]` (=toReplace) with `replacement`
-/// @param addMessage A function of type `void (MessagePtr message)`
-///                   - adds the `message`.
-/// @param disableUserMessages If set, disables all message by the timed out user.
 template <typename Buf, typename Replace, typename Add>
 void addOrReplaceChannelTimeout(const Buf &buffer, MessagePtr message,
                                 const QDateTime &now, Replace replaceMessage,
                                 Add addMessage, bool disableUserMessages)
 {
-    // NOTE: This function uses the messages PARSE time to figure out whether they should be replaced
-    // This works as expected for incoming messages, but not for historic messages.
-    // This has never worked before, but would be nice in the future.
-    // For this to work, we need to make sure *all* messages have a "server received time".
-
     auto snapshotLength = static_cast<qsizetype>(buffer.size());
 
     auto end = std::max<qsizetype>(0, snapshotLength - 20);
@@ -111,7 +99,6 @@ void addOrReplaceChannelTimeout(const Buf &buffer, MessagePtr message,
         }
     }
 
-    // disable the messages from the user
     if (disableUserMessages)
     {
         for (qsizetype i = 0; i < snapshotLength; i++)
@@ -121,8 +108,6 @@ void addOrReplaceChannelTimeout(const Buf &buffer, MessagePtr message,
                 s->flags.hasNone(
                     {MessageFlag::ModerationAction, MessageFlag::Whisper}))
             {
-                // FOURTF: disabled for now
-                // PAJLADA: Shitty solution described in Message.hpp
                 s->flags.set(MessageFlag::Disabled);
                 s->flags.set(MessageFlag::InvalidReplyTarget);
             }
@@ -135,21 +120,11 @@ void addOrReplaceChannelTimeout(const Buf &buffer, MessagePtr message,
     }
 }
 
-/// Adds a clear message or replaces a previous one sent in the last 20 messages and in the last 5s.
-/// This function accepts any buffer to store the messsages in.
-/// @param replaceMessage A function of type `void (int index, MessagePtr toReplace, MessagePtr replacement)`
-///                       - replace `buffer[i]` (=toReplace) with `replacement`
-/// @param addMessage A function of type `void (MessagePtr message)`
-///                   - adds the `message`.
 template <typename Buffer, typename Replace, typename Add>
 void addOrReplaceChannelClear(const Buffer &buffer, MessagePtr message,
                               const QDateTime &now, Replace replaceMessage,
                               Add addMessage)
 {
-    // NOTE: This function uses the messages PARSE time to figure out whether they should be replaced
-    // This works as expected for incoming messages, but not for historic messages.
-    // This has never worked before, but would be nice in the future.
-    // For this to work, we need to make sure *all* messages have a "server received time".
     auto snapshotLength = static_cast<qsizetype>(buffer.size());
     auto end = std::max<qsizetype>(0, snapshotLength - 20);
     bool shouldAddMessage = true;

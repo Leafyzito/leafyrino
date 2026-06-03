@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2018 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include "util/RapidjsonHelpers.hpp"
@@ -21,29 +17,17 @@ using ImagePtr = std::shared_ptr<Image>;
 class ModerationAction
 {
 public:
-    /**
-     * Type of the action, parsed from the input `action`
-     */
     enum class Type {
-        /**
-         * /ban <user>
-         */
+
         Ban,
 
-        /**
-         * /delete <msg-id>
-         */
         Delete,
 
-        /**
-         * /timeout <user> <duration>
-         */
         Timeout,
 
-        /**
-         * Anything not matching the action types above
-         */
         Custom,
+
+        Pin,
     };
 
     ModerationAction(const QString &action, const QUrl &iconPath = {});

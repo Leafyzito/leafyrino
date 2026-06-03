@@ -18,9 +18,6 @@ namespace chatterino {
 
 Logging::Logging(Settings &settings)
 {
-    // We can safely ignore this signal connection since settings are only-ever destroyed
-    // on application exit
-    // NOTE: SETTINGS_LIFETIME
     std::ignore = settings.loggedChannels.delayedItemsChanged.connect(
         [this, &settings]() {
             this->threadGuard.guard();

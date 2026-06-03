@@ -45,7 +45,7 @@ void GenericListView::setInvokeActionOnTab(bool value)
     this->invokeActionOnTab_ = value;
 }
 
-bool GenericListView::eventFilter(QObject * /*watched*/, QEvent *event)
+bool GenericListView::eventFilter(QObject *, QEvent *event)
 {
     if (this->model_ == nullptr)
     {

@@ -11,8 +11,12 @@
 
 #include <pajlada/settings/setting.hpp>
 #include <pajlada/signals/signalholder.hpp>
+#include <QColor>
 #include <QMenu>
 #include <QPropertyAnimation>
+
+#include <memory>
+#include <unordered_map>
 
 namespace chatterino {
 
@@ -35,14 +39,13 @@ public:
     void resetCustomTitle();
     bool hasCustomTitle() const;
     const QString &getCustomTitle() const;
-    void setDefaultTitle(const QString &title);
-    const QString &getDefaultTitle() const;
-    const QString &getTitle() const;
-
     void setCustomTabColor(const QColor &color);
     void resetCustomTabColor();
     bool hasCustomTabColor() const;
     const QColor &getCustomTabColor() const;
+    void setDefaultTitle(const QString &title);
+    const QString &getDefaultTitle() const;
+    const QString &getTitle() const;
 
     bool isSelected() const;
     void setSelected(bool value);
@@ -107,7 +110,11 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     void enterEvent(QEnterEvent *event) override;
+#else
+    void enterEvent(QEvent *event) override;
+#endif
     void leaveEvent(QEvent *) override;
 
     void dragEnterEvent(QDragEnterEvent *event) override;
@@ -136,11 +143,14 @@ private:
     struct HighlightSource {
         HighlightState state = HighlightState::None;
         std::shared_ptr<QColor> color;
-        size_t sequence = 0;
+        std::size_t sequence = 0;
     };
+
     using HighlightSources =
         std::unordered_map<ChannelView::ChannelViewID, HighlightSource>;
     HighlightSources highlightSources_;
+    std::shared_ptr<QColor> highlightColor_;
+    std::size_t lastHighlightSequence_ = 0;
 
     void removeHighlightStateChangeSources(const HighlightSources &toRemove);
     void removeHighlightSource(const ChannelView::ChannelViewID &source);
@@ -154,9 +164,8 @@ private:
     Notebook *notebook_;
 
     QString customTitle_;
-    QString defaultTitle_;
-
     QColor customTabColor_;
+    QString defaultTitle_;
 
     bool selected_{};
     bool mouseOver_{};
@@ -168,8 +177,6 @@ private:
     NotebookTabLocation tabLocation_ = NotebookTabLocation::Top;
 
     HighlightState highlightState_ = HighlightState::None;
-    std::shared_ptr<QColor> highlightColor_;
-    size_t lastHighlightSequence_ = 0;
     bool highlightEnabled_ = true;
     QAction *highlightNewMessagesAction_;
 

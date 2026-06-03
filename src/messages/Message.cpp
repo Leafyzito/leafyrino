@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #include "messages/Message.hpp"
 
 #include "Application.hpp"
@@ -101,13 +97,10 @@ ScrollbarHighlight Message::getScrollBarHighlight() const
         };
     }
 
-    if (this->flags.has(MessageFlag::Announcement) &&
-        getSettings()->enableAnnouncementHighlight)
+    if (this->flags.has(MessageFlag::ChatWarning))
     {
         return {
-            ColorProvider::instance().color(colorTypeFromHelixAnnouncementColor(
-                this->announcementColor,
-                getSettings()->enableColoredAnnouncementHighlight)),
+            ColorProvider::instance().color(ColorType::AutomodHighlight),
         };
     }
 
@@ -125,6 +118,7 @@ std::shared_ptr<Message> Message::clone() const
     cloned->loginName = this->loginName;
     cloned->displayName = this->displayName;
     cloned->localizedName = this->localizedName;
+    cloned->userID = this->userID;
     cloned->timeoutUser = this->timeoutUser;
     cloned->channelName = this->channelName;
     cloned->usernameColor = this->usernameColor;
@@ -134,11 +128,12 @@ std::shared_ptr<Message> Message::clone() const
     cloned->externalBadges = this->externalBadges;
     cloned->highlightColor = this->highlightColor;
     cloned->replyThread = this->replyThread;
+    cloned->replyParent = this->replyParent;
+    cloned->translatedFrom = this->translatedFrom;
     cloned->count = this->count;
     cloned->reward = this->reward;
     cloned->platform = this->platform;
-    cloned->bits = this->bits;
-    cloned->announcementColor = this->announcementColor;
+    cloned->clientDetection = this->clientDetection;
     std::ranges::transform(this->elements, std::back_inserter(cloned->elements),
                            [](const auto &element) {
                                return element->clone();
@@ -202,18 +197,6 @@ QJsonObject Message::toJson() const
         msg["reward"_L1] = this->reward->toJson();
     }
 
-    if (this->bits > 0)
-    {
-        msg["bits"_L1] = static_cast<qint64>(this->bits);
-    }
-
-    if (this->flags.has(MessageFlag::Announcement))
-    {
-        msg["announcementColor"_L1] =
-            qmagicenum::enumNameString(this->announcementColor);
-    }
-
-    // XXX: figure out if we can add this in tests
     if (!getApp()->isTest())
     {
         msg["parseTime"_L1] = this->parseTime.toString(Qt::ISODate);
@@ -234,11 +217,28 @@ QJsonObject Message::toJson() const
     return msg;
 }
 
+QString Message::clientDetectionStatusToString(ClientDetectionStatus status)
+{
+    switch (status)
+    {
+        case ClientDetectionStatus::Web:
+            return QStringLiteral("Web");
+        case ClientDetectionStatus::Android:
+            return QStringLiteral("Android");
+        case ClientDetectionStatus::IOS:
+            return QStringLiteral("iOS");
+        case ClientDetectionStatus::Abnormal:
+            return QStringLiteral("Abnormal");
+        case ClientDetectionStatus::Unknown:
+        default:
+            return QStringLiteral("Unknown");
+    }
+}
+
 Message::ReplyStatus Message::isReplyable() const
 {
     if (this->loginName.isEmpty())
     {
-        // no replies can happen
         return ReplyStatus::NotReplyable;
     }
 
@@ -261,7 +261,6 @@ Message::ReplyStatus Message::isReplyable() const
             assert(this != rootPtr.get());
             if (rootPtr->isReplyable() == ReplyStatus::NotReplyable)
             {
-                // thread parent must be replyable to be replyable
                 return ReplyStatus::NotReplyableDueToThread;
             }
 
