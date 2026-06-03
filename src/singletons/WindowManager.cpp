@@ -190,6 +190,7 @@ WindowManager::WindowManager(const Args &appArgs_, const Paths &paths,
     this->updateWordTypeMaskListener.add(settings.showBadgesHomiesSupporter);
     this->updateWordTypeMaskListener.add(settings.showBadgesHomiesCustom);
     this->updateWordTypeMaskListener.add(settings.showBadgesMoltorino);
+    this->updateWordTypeMaskListener.add(settings.showBadgesFolhinha);
     this->updateWordTypeMaskListener.add(settings.enableEmoteImages);
     this->updateWordTypeMaskListener.add(settings.lowercaseDomains);
     this->updateWordTypeMaskListener.add(settings.showReplyButton);
@@ -317,6 +318,7 @@ void WindowManager::updateWordTypeMask()
                   : MEF::None);
     flags.set(settings->showBadgesMoltorino ? MEF::BadgeMoltorino
                                             : MEF::None);
+    flags.set(settings->showBadgesFolhinha ? MEF::BadgeFolhinha : MEF::None);
 
     // username
     flags.set(MEF::Username);

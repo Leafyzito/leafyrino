@@ -1163,6 +1163,10 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->setTooltip(
             "Badges for Moltorino supporters, top donors, and developers")
         ->addTo(layout);
+    SettingWidget::checkbox("Folhinha", s.showBadgesFolhinha)
+        ->addKeywords({"folhinha", "folhinhabot"})
+        ->setTooltip("FolhinhaBot Plus, Founder, and Supporter badges")
+        ->addTo(layout);
     layout.addSeparator();
     SettingWidget::checkbox("Use custom FrankerFaceZ moderator badges",
                             s.useCustomFfzModeratorBadges)

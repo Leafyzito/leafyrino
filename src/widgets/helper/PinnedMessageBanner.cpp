@@ -124,6 +124,8 @@ namespace {
                            MessageElementFlag::BadgeHomiesCustom);
         setPinnedBadgeFlag(flags, wordFlags,
                            MessageElementFlag::BadgeMoltorino);
+        setPinnedBadgeFlag(flags, wordFlags,
+                           MessageElementFlag::BadgeFolhinha);
 
         return flags;
     }

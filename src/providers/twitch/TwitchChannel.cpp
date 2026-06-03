@@ -29,6 +29,8 @@
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/folhinha/FolhinhaBadges.hpp"
+#include "providers/homies/HomiesBadges.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/recentmessages/Api.hpp"
 #include "providers/seventv/eventapi/Dispatch.hpp"
@@ -1078,6 +1080,14 @@ void TwitchChannel::refreshSevenTVChannelEmotes(bool manualRefresh)
             }
         },
         manualRefresh, cacheHit);
+}
+
+void TwitchChannel::refreshBadgesProviders()
+{
+    getApp()->getHomiesBadges()->loadHomiesBadges();
+    this->addSystemMessage("Homies badges reloaded.");
+    getApp()->getFolhinhaBadges()->loadFolhinhaBadges();
+    this->addSystemMessage("FolhinhaBot badges reloaded.");
 }
 
 void TwitchChannel::setBttvEmotes(std::shared_ptr<const EmoteMap> &&map)

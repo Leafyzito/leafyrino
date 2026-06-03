@@ -460,6 +460,9 @@ set(SOURCE_FILES
         providers/repetitions/RepeatedMessageDetector.cpp
         providers/repetitions/RepeatedMessageDetector.hpp
 
+        providers/folhinha/FolhinhaBadges.cpp
+        providers/folhinha/FolhinhaBadges.hpp
+
         providers/homies/HomiesBadges.cpp
         providers/homies/HomiesBadges.hpp
 

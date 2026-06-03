@@ -295,6 +295,7 @@ public:
     BoolSetting showBadgesHomiesCustom = {"/appearance/badges/homies/custom",
                                           true};
     BoolSetting showBadgesMoltorino = {"/appearance/badges/moltorino", true};
+    BoolSetting showBadgesFolhinha = {"/appearance/badges/folhinha", true};
     BoolSetting animateSevenTVBadges = {"/appearance/badges/animateSeventv",
                                         true};
     QSizeSetting lastPopupSize = {

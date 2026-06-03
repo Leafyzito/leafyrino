@@ -182,6 +182,12 @@ public:
         return nullptr;
     }
 
+    FolhinhaBadges *getFolhinhaBadges() override
+    {
+        assert(!"getFolhinhaBadges was called without being initialized");
+        return nullptr;
+    }
+
     MoltorinoSupporterBadges *getMoltorinoSupporterBadges() override
     {
         return nullptr;

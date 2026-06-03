@@ -53,6 +53,7 @@ class SeventvEmotes;
 class SeventvEventAPI;
 class ILinkResolver;
 class HomiesBadges;
+class FolhinhaBadges;
 class MoltorinoSupporterBadges;
 class RepeatedMessageDetector;
 class IStreamerMode;
@@ -102,6 +103,7 @@ public:
     virtual BttvBadges *getBttvBadges() = 0;
     virtual SeventvBadges *getSeventvBadges() = 0;
     virtual HomiesBadges *getHomiesBadges() = 0;
+    virtual FolhinhaBadges *getFolhinhaBadges() = 0;
     virtual MoltorinoSupporterBadges *getMoltorinoSupporterBadges() = 0;
     virtual RepeatedMessageDetector *getRepeatedMessageDetector() = 0;
     virtual IUserDataController *getUserData() = 0;
@@ -183,6 +185,7 @@ private:
     std::unique_ptr<BttvBadges> bttvBadges;
     std::unique_ptr<SeventvBadges> seventvBadges;
     std::unique_ptr<HomiesBadges> homiesBadges;
+    std::unique_ptr<FolhinhaBadges> folhinhaBadges;
     std::unique_ptr<MoltorinoSupporterBadges> moltorinoSupporterBadges;
     std::unique_ptr<RepeatedMessageDetector> repeatedMessageDetector;
     std::unique_ptr<SeventvPaints> seventvPaints;
@@ -235,6 +238,7 @@ public:
     BttvBadges *getBttvBadges() override;
     SeventvBadges *getSeventvBadges() override;
     HomiesBadges *getHomiesBadges() override;
+    FolhinhaBadges *getFolhinhaBadges() override;
     MoltorinoSupporterBadges *getMoltorinoSupporterBadges() override;
     RepeatedMessageDetector *getRepeatedMessageDetector() override;
     IUserDataController *getUserData() override;

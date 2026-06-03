@@ -1517,6 +1517,7 @@ void SplitHeader::reloadChannelEmotes()
         twitchChannel->refreshFFZChannelEmotes(true);
         twitchChannel->refreshBTTVChannelEmotes(true);
         twitchChannel->refreshSevenTVChannelEmotes(true);
+        twitchChannel->refreshBadgesProviders();
     }
     else if (auto *kc = dynamic_cast<KickChannel *>(channel.get()))
     {

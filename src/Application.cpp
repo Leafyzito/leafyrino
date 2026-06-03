@@ -41,6 +41,7 @@
 #include "providers/chatterino/ChatterinoBadges.hpp"
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/seventv/SeventvBadges.hpp"
+#include "providers/folhinha/FolhinhaBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/repetitions/RepeatedMessageDetector.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
@@ -198,6 +199,7 @@ Application::Application(Settings &_settings, const Paths &paths,
     , bttvBadges(new BttvBadges)
     , seventvBadges(new SeventvBadges)
     , homiesBadges(new HomiesBadges)
+    , folhinhaBadges(new FolhinhaBadges)
     , moltorinoSupporterBadges(new MoltorinoSupporterBadges)
     , repeatedMessageDetector(new RepeatedMessageDetector)
     , seventvPaints(new SeventvPaints)
@@ -523,6 +525,15 @@ HomiesBadges *Application::getHomiesBadges()
     assert(this->homiesBadges);
 
     return this->homiesBadges.get();
+}
+
+FolhinhaBadges *Application::getFolhinhaBadges()
+{
+    // FolhinhaBadges handles its own locks, so we don't need to assert that this
+    // is called in the GUI thread
+    assert(this->folhinhaBadges);
+
+    return this->folhinhaBadges.get();
 }
 
 MoltorinoSupporterBadges *Application::getMoltorinoSupporterBadges()
