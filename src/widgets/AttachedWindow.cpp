@@ -16,9 +16,8 @@
 #include <memory>
 
 #ifdef USEWINSDK
-#    include "Psapi.h"
 #    include "util/WindowsHelper.hpp"
-#    include "Windows.h"
+#    include <Psapi.h>
 
 #    pragma comment(lib, "Dwmapi.lib")
 #endif
