@@ -193,4 +193,4 @@ private:
 };
 
 Theme *getTheme();
-}
+}  // namespace chatterino

@@ -57,7 +57,6 @@ QString formatGetVIPsError(HelixListVIPsError error, const QString &message)
         break;
 
         case Error::UserMissingScope: {
-
             errorMessage += "Missing required scope. "
                             "Re-login with your "
                             "account and try again.";
@@ -65,7 +64,6 @@ QString formatGetVIPsError(HelixListVIPsError error, const QString &message)
         break;
 
         case Error::UserNotAuthorized: {
-
             errorMessage += "You don't have permission to "
                             "perform that action.";
         }
@@ -87,7 +85,7 @@ QString formatGetVIPsError(HelixListVIPsError error, const QString &message)
     return errorMessage;
 }
 
-}
+}  // namespace
 
 namespace chatterino::commands {
 
@@ -108,8 +106,7 @@ QString getVIPs(const CommandContext &ctx)
 
     auto currentUser = getApp()->getAccounts()->twitch.getCurrent();
     if (ctx.words.size() <= 1 && ctx.twitchChannel != nullptr &&
-        ctx.twitchChannel->isBroadcaster() &&
-        !currentUser->isAnon())
+        ctx.twitchChannel->isBroadcaster() && !currentUser->isAnon())
     {
         getHelix()->getChannelVIPs(
             ctx.twitchChannel->roomId(),
@@ -153,11 +150,11 @@ QString getVIPs(const CommandContext &ctx)
 
             auto messagePrefix =
                 QString("The VIPs (%1) of this channel are").arg(vips.size());
-            channel->addMessage(MessageBuilder::makeListOfUsersMessage(
-                                    messagePrefix, vips,
-                                    twitchChannel != nullptr ? twitchChannel
-                                                            : channel.get()),
-                                MessageContext::Original);
+            channel->addMessage(
+                MessageBuilder::makeListOfUsersMessage(
+                    messagePrefix, vips,
+                    twitchChannel != nullptr ? twitchChannel : channel.get()),
+                MessageContext::Original);
         },
         [channel{ctx.channel}] {
             channel->addSystemMessage("Could not get VIP list!");
@@ -166,4 +163,4 @@ QString getVIPs(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

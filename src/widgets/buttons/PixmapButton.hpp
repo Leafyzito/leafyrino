@@ -30,4 +30,4 @@ private:
     bool marginEnabled_ = true;
 };
 
-}
+}  // namespace chatterino

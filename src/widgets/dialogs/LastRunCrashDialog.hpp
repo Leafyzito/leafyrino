@@ -17,4 +17,4 @@ public:
     explicit LastRunCrashDialog(const Args &args, const Paths &paths);
 };
 
-}
+}  // namespace chatterino

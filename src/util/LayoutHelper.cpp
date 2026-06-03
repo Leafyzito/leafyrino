@@ -35,4 +35,4 @@ QScrollArea *makeScrollArea(WidgetOrLayout item)
     return area;
 }
 
-}
+}  // namespace chatterino

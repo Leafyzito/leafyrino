@@ -19,7 +19,7 @@ constexpr int GRID_NUM_COLS = 3;
 
 #ifdef Q_OS_WIN
 template <typename T>
-inline constexpr T *tooltipParentFor(T * )
+inline constexpr T *tooltipParentFor(T *)
 {
     return nullptr;
 }
@@ -31,7 +31,7 @@ inline constexpr T *tooltipParentFor(T *desiredParent)
 }
 #endif
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -131,7 +131,6 @@ void TooltipWidget::set(const std::vector<TooltipEntry> &entries,
     int delta = entries.size() - this->currentLayoutCount();
     if (delta > 0)
     {
-
         int base = this->currentLayoutCount();
         for (int i = 0; i < delta; ++i)
         {
@@ -188,7 +187,6 @@ void TooltipWidget::addNewEntry(int absoluteIndex)
         case TooltipStyle::Grid:
             if (absoluteIndex == 0)
             {
-
                 this->gLayout_->addWidget(new TooltipEntryWidget(), 0, 0, 1,
                                           GRID_NUM_COLS, Qt::AlignCenter);
             }
@@ -240,7 +238,6 @@ void TooltipWidget::setCurrentStyle(TooltipStyle style)
 {
     if (this->currentStyle_ == style)
     {
-
         return;
     }
 
@@ -303,7 +300,6 @@ void TooltipWidget::initializeGLayout()
 
 void TooltipWidget::themeChangedEvent()
 {
-
 }
 
 void TooltipWidget::paintEvent(QPaintEvent *)
@@ -353,12 +349,10 @@ void TooltipWidget::showEvent(QShowEvent *)
 
 void TooltipWidget::changeEvent(QEvent *)
 {
-
 }
 
 void TooltipWidget::leaveEvent(QEvent *)
 {
-
 }
 
-}
+}  // namespace chatterino

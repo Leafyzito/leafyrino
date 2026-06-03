@@ -103,4 +103,4 @@ void AccountSwitchWidget::refreshSelection()
     this->blockSignals(false);
 }
 
-}
+}  // namespace chatterino

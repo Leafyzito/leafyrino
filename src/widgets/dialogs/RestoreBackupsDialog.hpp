@@ -24,7 +24,7 @@ public:
                          QWidget *parent = nullptr);
 
 protected:
-    void closeEvent(QCloseEvent * ) override;
+    void closeEvent(QCloseEvent *) override;
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
@@ -42,4 +42,4 @@ private:
     bool hasChosenAnything = false;
 };
 
-}
+}  // namespace chatterino

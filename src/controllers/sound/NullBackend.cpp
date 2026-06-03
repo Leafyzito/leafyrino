@@ -15,8 +15,7 @@ NullBackend::NullBackend()
 
 void NullBackend::play(const QUrl &sound)
 {
-
     qCDebug(chatterinoSound) << "null backend asked to play" << sound;
 }
 
-}
+}  // namespace chatterino

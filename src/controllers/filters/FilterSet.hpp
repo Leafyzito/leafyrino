@@ -40,4 +40,4 @@ private:
 
 using FilterSetPtr = std::shared_ptr<FilterSet>;
 
-}
+}  // namespace chatterino

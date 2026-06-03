@@ -42,4 +42,4 @@ void NetworkManager::deinit()
     NetworkManager::workerThread = nullptr;
 }
 
-}
+}  // namespace chatterino

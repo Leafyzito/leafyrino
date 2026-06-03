@@ -174,7 +174,6 @@ public:
 private:
     void itemsChanged_()
     {
-
         if (!this->itemsChangedTimer_.isActive())
         {
             this->itemsChangedTimer_.start();
@@ -189,4 +188,4 @@ private:
     std::function<bool(const T &, const T &)> itemCompare_;
 };
 
-}
+}  // namespace chatterino

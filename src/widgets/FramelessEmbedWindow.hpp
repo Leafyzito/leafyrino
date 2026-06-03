@@ -33,4 +33,4 @@ private:
     Split *split_{};
 };
 
-}
+}  // namespace chatterino

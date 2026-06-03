@@ -71,7 +71,7 @@ Q_SIGNALS:
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
 
-    void paintEvent(QPaintEvent * ) override;
+    void paintEvent(QPaintEvent *) override;
 
     virtual void paintContent(QPainter &painter) = 0;
 
@@ -88,9 +88,9 @@ protected:
     void setOpaqueContent(bool opaqueContent);
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    void enterEvent(QEnterEvent * ) override;
+    void enterEvent(QEnterEvent *) override;
 #else
-    void enterEvent(QEvent * ) override;
+    void enterEvent(QEvent *) override;
 #endif
     void leaveEvent(QEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -135,4 +135,4 @@ private:
     std::vector<QString> acceptedDropMimes;
 };
 
-}
+}  // namespace chatterino

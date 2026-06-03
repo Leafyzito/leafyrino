@@ -100,4 +100,4 @@ private:
     mutable std::shared_mutex mutex_;
 };
 
-}
+}  // namespace chatterino

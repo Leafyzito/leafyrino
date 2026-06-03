@@ -60,7 +60,7 @@ private:
     bool hasVersions_;
     QStringList badges_;
 };
-};
+};  // namespace chatterino
 
 namespace pajlada {
 
@@ -124,4 +124,4 @@ struct Deserialize<chatterino::HighlightBadge> {
     }
 };
 
-}
+}  // namespace pajlada

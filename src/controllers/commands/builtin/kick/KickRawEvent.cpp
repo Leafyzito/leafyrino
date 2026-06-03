@@ -43,4 +43,4 @@ QString debugKickRawEvent(const CommandContext &ctx)
     return u"Unhandled event."_s;
 }
 
-}
+}  // namespace chatterino::commands

@@ -94,4 +94,4 @@ private:
 
     TokenType tokenize(const QString &text);
 };
-}
+}  // namespace chatterino::filters

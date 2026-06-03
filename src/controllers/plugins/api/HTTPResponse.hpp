@@ -34,7 +34,6 @@ private:
     friend class chatterino::PluginController;
 
 public:
-
     QByteArray data();
 
     std::optional<int> status();
@@ -44,5 +43,5 @@ public:
     QString to_string();
 };
 
-}
+}  // namespace chatterino::lua::api
 #endif

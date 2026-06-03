@@ -70,4 +70,4 @@ QString UnaryOperation::filterString() const
     return QString("(%1%2)").arg(opText).arg(this->right_->filterString());
 }
 
-}
+}  // namespace chatterino::filters

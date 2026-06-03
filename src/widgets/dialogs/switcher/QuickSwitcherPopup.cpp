@@ -36,7 +36,7 @@ QList<SplitContainer *> openPages(Window *window)
     return pages;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -150,4 +150,4 @@ void QuickSwitcherPopup::themeChangedEvent()
     this->ui_.list->refreshTheme(*this->theme);
 }
 
-}
+}  // namespace chatterino

@@ -35,7 +35,6 @@ void InputCompletionPopup::updateCompletion(const QString &text,
 {
     if (this->currentKind_ != kind || this->currentChannel_ != channel)
     {
-
         this->beginCompletion(kind, std::move(channel));
     }
 
@@ -116,12 +115,12 @@ bool InputCompletionPopup::hasResults() const
     return this->model_.rowCount() > 0;
 }
 
-void InputCompletionPopup::showEvent(QShowEvent * )
+void InputCompletionPopup::showEvent(QShowEvent *)
 {
     this->redrawTimer_.start();
 }
 
-void InputCompletionPopup::hideEvent(QHideEvent * )
+void InputCompletionPopup::hideEvent(QHideEvent *)
 {
     this->redrawTimer_.stop();
     this->endCompletion();
@@ -149,4 +148,4 @@ void InputCompletionPopup::initLayout()
                      });
 }
 
-}
+}  // namespace chatterino

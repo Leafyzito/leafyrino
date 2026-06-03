@@ -123,4 +123,4 @@ IgnorePhrase IgnorePhrase::createEmpty()
     };
 }
 
-}
+}  // namespace chatterino

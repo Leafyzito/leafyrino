@@ -43,7 +43,6 @@ QString formatVIPListError(HelixListVIPsError error, const QString &message)
         break;
 
         case Error::UserMissingScope: {
-
             errorMessage += "Missing required scope. "
                             "Re-login with your "
                             "account and try again.";
@@ -51,7 +50,6 @@ QString formatVIPListError(HelixListVIPsError error, const QString &message)
         break;
 
         case Error::UserNotAuthorized: {
-
             errorMessage += "You don't have permission to "
                             "perform that action.";
         }
@@ -145,7 +143,7 @@ QString formatChattersError(HelixGetChattersError error, const QString &message)
     return errorMessage;
 }
 
-}
+}  // namespace
 
 ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
                                      QWidget *parent)
@@ -296,7 +294,6 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
 
     if (twitchChannel->isBroadcaster())
     {
-
         getHelix()->getModerators(
             twitchChannel->roomId(), 1000,
             [=](const auto &mods) {
@@ -394,4 +391,4 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
     this->setLayout(dockVbox);
 }
 
-}
+}  // namespace chatterino

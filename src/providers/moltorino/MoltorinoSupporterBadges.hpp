@@ -29,8 +29,7 @@ public:
     void refreshPassive();
     void refreshIfNewer(int version);
 
-    std::vector<MoltorinoSupporterBadge> getBadges(
-        const QString &userId) const;
+    std::vector<MoltorinoSupporterBadge> getBadges(const QString &userId) const;
 
 private:
     void refreshInternal(bool force, std::optional<int> minimumVersion);

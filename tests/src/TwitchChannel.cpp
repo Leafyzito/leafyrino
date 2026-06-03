@@ -264,9 +264,8 @@ TEST(TwitchChannel, ChannelPointsPubSubUpdateRequiresMatchingChannel)
 
     channel.handleUserPointsUpdate(QJsonObject{
         {"type", "points-spent"},
-        {"data",
-         QJsonObject{{"balance",
-                      QJsonObject{{"channel_id", "222"}, {"balance", 90}}}}},
+        {"data", QJsonObject{{"balance", QJsonObject{{"channel_id", "222"},
+                                                     {"balance", 90}}}}},
     });
 
     EXPECT_EQ(channel.channelPointBalance(), 100);
@@ -296,9 +295,8 @@ TEST(TwitchChannel, ChannelPointsPubSubUpdateAppliesMatchingBalance)
 
     channel.handleUserPointsUpdate(QJsonObject{
         {"type", "points-spent"},
-        {"data",
-         QJsonObject{{"balance",
-                      QJsonObject{{"channel_id", "111"}, {"balance", 90}}}}},
+        {"data", QJsonObject{{"balance", QJsonObject{{"channel_id", "111"},
+                                                     {"balance", 90}}}}},
     });
 
     EXPECT_EQ(channel.channelPointBalance(), 90);
@@ -325,8 +323,7 @@ TEST(TwitchChannel, PredictionPubSubUpdateSetsActivePrediction)
                   {"status", "ACTIVE"},
                   {"prediction_window_seconds", 120},
                   {"created_at", "2026-03-08T12:00:00Z"},
-                  {"created_by",
-                   QJsonObject{{"display_name", "Moderator"}}},
+                  {"created_by", QJsonObject{{"display_name", "Moderator"}}},
                   {"locked_by", QJsonObject{}},
                   {"ended_by", QJsonObject{}},
                   {"outcomes",

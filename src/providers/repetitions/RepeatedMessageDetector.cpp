@@ -41,12 +41,11 @@ char32_t codePointAt(const QString &text, qsizetype index, qsizetype &next)
 
 bool isDuplicateBypassCodePoint(char32_t codePoint)
 {
-
     return codePoint == 0x034F ||
            (codePoint >= 0xE0000 && codePoint <= 0xE007F);
 }
 
-}
+}  // namespace
 
 std::optional<int> RepeatedMessageDetector::check(
     const RepeatedMessageCheck &check)
@@ -58,14 +57,14 @@ std::optional<int> RepeatedMessageDetector::check(
         return std::nullopt;
     }
 
-    if (check.historical || check.channelID.isEmpty() || check.userID.isEmpty() ||
-        check.messageID.isEmpty() || check.message.isEmpty())
+    if (check.historical || check.channelID.isEmpty() ||
+        check.userID.isEmpty() || check.messageID.isEmpty() ||
+        check.message.isEmpty())
     {
         return std::nullopt;
     }
 
-    if (settings->repeatedMessagesOnlyModChannels &&
-        !check.channelCanModerate)
+    if (settings->repeatedMessagesOnlyModChannels && !check.channelCanModerate)
     {
         return std::nullopt;
     }
@@ -121,9 +120,8 @@ std::optional<int> RepeatedMessageDetector::check(
     const int visibleThreshold =
         std::max(2, settings->repeatedMessagesRepetitionThreshold.getValue());
 
-    if (user.active &&
-        messagesMatch(normalized, user.active->normalizedMessage,
-                      sensitivityPercent))
+    if (user.active && messagesMatch(normalized, user.active->normalizedMessage,
+                                     sensitivityPercent))
     {
         user.active->repeatCount =
             std::min(user.active->repeatCount + 1, MAX_REPEAT_COUNT);
@@ -245,18 +243,16 @@ double RepeatedMessageDetector::compare(const QString &first,
     firstBigrams.reserve(first.size() - 1);
     for (qsizetype i = 0; i < first.size() - 1; ++i)
     {
-        const auto key =
-            (quint32(first.at(i).unicode()) << 16U) |
-            quint32(first.at(i + 1).unicode());
+        const auto key = (quint32(first.at(i).unicode()) << 16U) |
+                         quint32(first.at(i + 1).unicode());
         firstBigrams[key] = firstBigrams.value(key) + 1;
     }
 
     int intersectionSize = 0;
     for (qsizetype i = 0; i < second.size() - 1; ++i)
     {
-        const auto key =
-            (quint32(second.at(i).unicode()) << 16U) |
-            quint32(second.at(i + 1).unicode());
+        const auto key = (quint32(second.at(i).unicode()) << 16U) |
+                         quint32(second.at(i + 1).unicode());
         auto count = firstBigrams.value(key);
         if (count > 0)
         {
@@ -265,8 +261,7 @@ double RepeatedMessageDetector::compare(const QString &first,
         }
     }
 
-    return (2.0 * intersectionSize) /
-           double(first.size() + second.size() - 2);
+    return (2.0 * intersectionSize) / double(first.size() + second.size() - 2);
 }
 
 bool RepeatedMessageDetector::messagesMatch(const QString &first,
@@ -389,4 +384,4 @@ void RepeatedMessageDetector::enforceChannelLimit(ChannelCache &channel)
     }
 }
 
-}
+}  // namespace chatterino

@@ -19,7 +19,6 @@
 #include "widgets/settingspages/ExternalToolsPage.hpp"
 #include "widgets/settingspages/FiltersPage.hpp"
 #include "widgets/settingspages/GeneralPage.hpp"
-#include "widgets/settingspages/LeafyrinoPage.hpp"
 #include "widgets/settingspages/HighlightingPage.hpp"
 #include "widgets/settingspages/IgnoresPage.hpp"
 #include "widgets/settingspages/KeyboardSettingsPage.hpp"
@@ -407,9 +406,9 @@ void SettingsDialog::showDialog(QWidget *parent,
 
     if (instance->isMinimized())
     {
-        instance->setWindowState((instance->windowState() &
-                                  ~Qt::WindowMinimized) |
-                                 Qt::WindowActive);
+        instance->setWindowState(
+            (instance->windowState() & ~Qt::WindowMinimized) |
+            Qt::WindowActive);
     }
     if (instance->width() < 200 || instance->height() < 120)
     {

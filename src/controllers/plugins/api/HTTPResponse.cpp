@@ -24,10 +24,8 @@ void HTTPResponse::createUserType(sol::table &c2)
 
         sol::meta_method::to_string, &HTTPResponse::to_string,
 
-        "data", &HTTPResponse::data,
-        "status", &HTTPResponse::status,
-        "error", &HTTPResponse::error
-    );
+        "data", &HTTPResponse::data, "status", &HTTPResponse::status, "error",
+        &HTTPResponse::error);
 }
 
 HTTPResponse::HTTPResponse(NetworkResult res)
@@ -60,5 +58,5 @@ QString HTTPResponse::to_string()
     return "<c2.HTTPResponse no status>";
 }
 
-}
+}  // namespace chatterino::lua::api
 #endif

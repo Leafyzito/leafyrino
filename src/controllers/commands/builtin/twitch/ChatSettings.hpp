@@ -27,6 +27,6 @@ QString followersOff(const CommandContext &ctx);
 QString uniqueChat(const CommandContext &ctx);
 QString uniqueChatOff(const CommandContext &ctx);
 
-}
+}  // namespace commands
 
-}
+}  // namespace chatterino

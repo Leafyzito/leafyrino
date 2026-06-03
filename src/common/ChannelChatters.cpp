@@ -133,7 +133,6 @@ QColor ChannelChatters::getUserColor(const QString &user) const
 
     if (!chatterColors->exists(lowerUser))
     {
-
         return QColor();
     }
 
@@ -146,4 +145,4 @@ void ChannelChatters::setUserColor(const QString &user, const QColor &color)
     chatterColors->put(user.toLower(), color.rgb());
 }
 
-}
+}  // namespace chatterino

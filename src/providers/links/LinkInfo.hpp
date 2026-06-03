@@ -13,7 +13,6 @@ class LinkInfo : public QObject
     Q_OBJECT
 
 public:
-
     enum class State {
 
         Created,
@@ -78,4 +77,4 @@ private:
     State state_ = State::Created;
 };
 
-}
+}  // namespace chatterino

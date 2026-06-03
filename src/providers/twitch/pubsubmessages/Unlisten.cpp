@@ -37,4 +37,4 @@ QByteArray PubSubUnlistenMessage::toJson() const
     return QJsonDocument(root).toJson();
 }
 
-}
+}  // namespace chatterino

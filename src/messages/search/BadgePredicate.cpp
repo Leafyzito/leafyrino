@@ -12,10 +12,8 @@ namespace chatterino {
 BadgePredicate::BadgePredicate(const QString &badges, bool negate)
     : MessagePredicate(negate)
 {
-
     for (const auto &badge : badges.split(',', Qt::SkipEmptyParts))
     {
-
         if (badge.compare("mod", Qt::CaseInsensitive) == 0)
         {
             this->badges_ << "moderator";
@@ -48,4 +46,4 @@ bool BadgePredicate::appliesToImpl(const Message &message)
     return false;
 }
 
-}
+}  // namespace chatterino

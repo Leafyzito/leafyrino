@@ -40,4 +40,4 @@ constexpr auto type_name()
     return name;
 }
 
-}
+}  // namespace chatterino

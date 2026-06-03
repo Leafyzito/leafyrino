@@ -32,4 +32,4 @@ constexpr std::optional<std::string_view> qmagicenumDisplayName(
     }
 }
 
-}
+}  // namespace chatterino

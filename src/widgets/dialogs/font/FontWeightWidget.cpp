@@ -34,7 +34,7 @@ QList<int> getWeights(const QString &family)
     return weights;
 }
 
-}
+}  // namespace
 
 FontWeightWidget::FontWeightWidget(const QFont &startFont, QWidget *parent)
     : QWidget(parent)
@@ -110,4 +110,4 @@ int FontWeightWidget::getSelected() const
     return cast ? cast->getValue() : -1;
 }
 
-}
+}  // namespace chatterino

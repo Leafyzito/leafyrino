@@ -92,8 +92,7 @@ struct Message {
         // Does not match any of the known clients
         Abnormal,
     };
-    static QString clientDetectionStatusToString(
-        ClientDetectionStatus status);
+    static QString clientDetectionStatusToString(ClientDetectionStatus status);
 
     uint32_t count = 1;
 
@@ -102,8 +101,7 @@ struct Message {
     MessagePlatform platform = MessagePlatform::AnyOrTwitch;
 
     std::vector<std::unique_ptr<MessageElement>> elements;
-    ClientDetectionStatus clientDetection =
-        ClientDetectionStatus::Unknown;
+    ClientDetectionStatus clientDetection = ClientDetectionStatus::Unknown;
 
     ScrollbarHighlight getScrollBarHighlight() const;
 
@@ -119,4 +117,4 @@ struct Message {
     }
 };
 
-}
+}  // namespace chatterino

@@ -21,4 +21,4 @@ bool trimChannelName(const QString &channelName, QString &outChannelName)
     return true;
 }
 
-}
+}  // namespace chatterino

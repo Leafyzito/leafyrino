@@ -331,8 +331,8 @@ void EmoteElement::addToContainer(MessageLayoutContainer &container,
         else
         {
             bool isBadge = this->getFlags().hasAny(MessageElementFlag::Badges);
-            auto scale = isBadge ? container.getBadgeScale()
-                                 : container.getEmoteScale();
+            auto scale =
+                isBadge ? container.getBadgeScale() : container.getEmoteScale();
             auto emoteScale = getSettings()->emoteScale.getValue();
             auto size = image->size() * scale * emoteScale;
 
@@ -430,8 +430,8 @@ void LayeredEmoteElement::addToContainer(MessageLayoutContainer &container,
 
             auto emoteScale = getSettings()->emoteScale.getValue();
             bool isBadge = this->getFlags().hasAny(MessageElementFlag::Badges);
-            auto scale = isBadge ? container.getBadgeScale()
-                                 : container.getEmoteScale();
+            auto scale =
+                isBadge ? container.getBadgeScale() : container.getEmoteScale();
 
             auto largestSize = getBoundingBoxSize(images) * scale * emoteScale;
             std::vector<QSizeF> individualSizes;
@@ -632,12 +632,10 @@ void BadgeElement::addToContainer(MessageLayoutContainer &container,
     constexpr auto HOMIES_SUPPORTER_FLAG =
         static_cast<MessageElementFlags::Int>(
             MessageElementFlag::BadgeHomiesSupporter);
-    constexpr auto HOMIES_CUSTOM_FLAG =
-        static_cast<MessageElementFlags::Int>(
-            MessageElementFlag::BadgeHomiesCustom);
+    constexpr auto HOMIES_CUSTOM_FLAG = static_cast<MessageElementFlags::Int>(
+        MessageElementFlag::BadgeHomiesCustom);
 
-    const auto isHomiesSupporter =
-        (rawFlags & HOMIES_SUPPORTER_FLAG) != 0;
+    const auto isHomiesSupporter = (rawFlags & HOMIES_SUPPORTER_FLAG) != 0;
     const auto isHomiesCustom = (rawFlags & HOMIES_CUSTOM_FLAG) != 0;
     const auto isHomiesBadge = isHomiesSupporter || isHomiesCustom;
 
@@ -648,8 +646,7 @@ void BadgeElement::addToContainer(MessageLayoutContainer &container,
             ctx.flags.hasAny(elementFlags) &&
             ((isHomiesSupporter &&
               settings->showBadgesHomiesSupporter.getValue()) ||
-             (isHomiesCustom &&
-              settings->showBadgesHomiesCustom.getValue()));
+             (isHomiesCustom && settings->showBadgesHomiesCustom.getValue()));
 
         if (!enabled)
         {
@@ -662,10 +659,10 @@ void BadgeElement::addToContainer(MessageLayoutContainer &container,
     }
 
     const auto image =
-        isHomiesBadge ? this->emote_->images.getImageOrLoadedNoLoad(
-                            container.getImageScale())
-                      : this->emote_->images.getImageOrLoaded(
-                            container.getImageScale());
+        isHomiesBadge
+            ? this->emote_->images.getImageOrLoadedNoLoad(
+                  container.getImageScale())
+            : this->emote_->images.getImageOrLoaded(container.getImageScale());
     if (image->isEmpty())
     {
         return;
@@ -927,11 +924,10 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
         const bool measureUsernameWithLayout =
             this->getFlags().has(MessageElementFlag::Username);
 #endif
-        const auto usernameFont = measureUsernameWithLayout
-                                      ? app->getFonts()->getFont(
-                                            this->style_,
-                                            container.getScale())
-                                      : QFont{};
+        const auto usernameFont =
+            measureUsernameWithLayout
+                ? app->getFonts()->getFont(this->style_, container.getScale())
+                : QFont{};
         const QFont *layoutFont =
             measureUsernameWithLayout ? &usernameFont : nullptr;
 
@@ -948,8 +944,8 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
                 app->getThemes()->normalizeColor(color);
 
                 auto *e = new TextLayoutElement(
-                    *this, text, size, color,
-                    this->style_, this->color_.type(), container.getScale(),
+                    *this, text, size, color, this->style_, this->color_.type(),
+                    container.getScale(),
                     container.getImageScale() / container.getScale());
                 e->setTrailingSpace(hasTrailingSpace);
                 e->setText(text);
@@ -964,8 +960,8 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
             // see if the text fits in the current line
             if (container.fitsInLine(width))
             {
-                container.addElementNoLineBreak(getTextLayoutElement(
-                    word, size, hasTrailingSpace));
+                container.addElementNoLineBreak(
+                    getTextLayoutElement(word, size, hasTrailingSpace));
                 continue;
             }
 
@@ -976,8 +972,8 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
 
                 if (container.fitsInLine(width))
                 {
-                    container.addElementNoLineBreak(getTextLayoutElement(
-                        word, size, hasTrailingSpace));
+                    container.addElementNoLineBreak(
+                        getTextLayoutElement(word, size, hasTrailingSpace));
                     continue;
                 }
             }
@@ -1055,9 +1051,8 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
                     textElementSize(currentText, metrics, layoutFont);
                 if (layoutFont != nullptr)
                 {
-                    currentSize.setWidth(
-                        std::max(currentSize.width(),
-                                 std::ceil(currentWidth.toReal())));
+                    currentSize.setWidth(std::max(
+                        currentSize.width(), std::ceil(currentWidth.toReal())));
                 }
                 else
                 {
@@ -1105,8 +1100,8 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
                     {
                         currentSize.setWidth(width);
                     }
-                    container.addElementNoLineBreak(getTextLayoutElement(
-                        currentText, currentSize, false));
+                    container.addElementNoLineBreak(
+                        getTextLayoutElement(currentText, currentSize, false));
                     container.breakLine();
 
                     wordStart = i;
@@ -1128,7 +1123,8 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
             }
             //add the final piece of wrapped text
             auto currentText = word.mid(wordStart);
-            auto currentSize = textElementSize(currentText, metrics, layoutFont);
+            auto currentSize =
+                textElementSize(currentText, metrics, layoutFont);
             if (layoutFont != nullptr)
             {
                 currentSize.setWidth(
@@ -1402,8 +1398,7 @@ void LinkElement::addToContainer(MessageLayoutContainer &container,
             QChar ch = url[i];
             // Break BEFORE these characters (except at the very start)
             if (!current.isEmpty() && current.size() > 1 &&
-                (ch == '/' || ch == '?' || ch == '&' || ch == '#' ||
-                 ch == '='))
+                (ch == '/' || ch == '?' || ch == '&' || ch == '#' || ch == '='))
             {
                 segments.append(current);
                 current.clear();
@@ -1688,17 +1683,17 @@ void addModerationActionToContainer(MessageElement &source,
     {
         container.addElement(
             (new TextIconLayoutElement(source, action.getLine1(),
-                                       action.getLine2(),
-                                       container.getScale(), size))
+                                       action.getLine2(), container.getScale(),
+                                       size))
                 ->setLink(Link(Link::UserAction, action.getAction())));
     }
 }
 
 }  // namespace
 
-TwitchModerationElement::TwitchModerationElement(
-    bool canModerateUser, bool targetIsModOrBroadcaster,
-    bool targetIsCurrentUser)
+TwitchModerationElement::TwitchModerationElement(bool canModerateUser,
+                                                 bool targetIsModOrBroadcaster,
+                                                 bool targetIsCurrentUser)
     : MessageElement(MessageElementFlag::ModeratorTools)
     , canModerateUser_(canModerateUser)
     , targetIsModOrBroadcaster_(targetIsModOrBroadcaster)
@@ -1714,9 +1709,8 @@ void TwitchModerationElement::addToContainer(MessageLayoutContainer &container,
     auto *settings = getSettings();
     const auto selfDeleteMode =
         normalizeInlineActionMode(settings->showSelfDeleteButton.getValue());
-    const auto pinOnModeratorsMode =
-        normalizeInlineActionMode(
-            settings->showPinButtonOnModeratorsMode.getValue());
+    const auto pinOnModeratorsMode = normalizeInlineActionMode(
+        settings->showPinButtonOnModeratorsMode.getValue());
     const bool showSelfDeleteOutsideModerationMode =
         this->targetIsCurrentUser_ && selfDeleteMode == 2;
     const bool showPinOutsideModerationMode =
@@ -1799,9 +1793,10 @@ std::string_view TwitchModerationElement::type() const
     return std::remove_pointer_t<decltype(this)>::TYPE;
 }
 
-bool TwitchModerationElement::shouldShowAction(
-    const ModerationAction &action, bool inModerationMode, int selfDeleteMode,
-    int pinOnModeratorsMode) const
+bool TwitchModerationElement::shouldShowAction(const ModerationAction &action,
+                                               bool inModerationMode,
+                                               int selfDeleteMode,
+                                               int pinOnModeratorsMode) const
 {
     if (!inModerationMode &&
         action.getType() != ModerationAction::Type::Delete &&

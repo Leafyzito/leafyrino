@@ -19,7 +19,6 @@ class DraggablePopup : public BaseWindow
     Q_OBJECT
 
 public:
-
     DraggablePopup(bool closeAutomatically, QWidget *parent);
 
 protected:
@@ -37,7 +36,6 @@ protected:
     bool ensurePinned();
 
 private:
-
     bool isMoving_ = false;
 
     bool closeAutomatically_ = false;
@@ -60,4 +58,4 @@ private:
     bool isPinned_ = false;
 };
 
-}
+}  // namespace chatterino

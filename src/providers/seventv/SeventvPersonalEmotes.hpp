@@ -20,7 +20,7 @@ namespace seventv::eventapi {
 struct TwitchUser;
 struct KickUser;
 using User = std::variant<TwitchUser, KickUser>;
-}
+}  // namespace seventv::eventapi
 
 class SeventvPersonalEmotes
 {
@@ -79,4 +79,4 @@ private:
     mutable std::shared_mutex mutex_;
 };
 
-}
+}  // namespace chatterino

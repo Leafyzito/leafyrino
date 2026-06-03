@@ -31,7 +31,6 @@ QNetworkProxy createProxyFromUrl(const QUrl &url)
         proxy.setType(QNetworkProxy::HttpProxy);
         if (!proxy.user().isEmpty() || !proxy.password().isEmpty())
         {
-
             const auto auth = proxy.user() + ":" + proxy.password();
             const auto base64 = auth.toUtf8().toBase64();
             proxy.setRawHeader("Proxy-Authorization",
@@ -58,7 +57,7 @@ void applyProxy(const QString &url)
     qCDebug(chatterinoNetwork) << "Set application proxy to" << proxy;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -70,4 +69,4 @@ void NetworkConfigurationProvider::applyFromEnv(const Env &env)
     }
 }
 
-}
+}  // namespace chatterino

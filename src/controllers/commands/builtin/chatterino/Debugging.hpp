@@ -36,4 +36,4 @@ QString eventsub(const CommandContext &ctx);
 
 QString debugTest(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

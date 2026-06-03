@@ -113,4 +113,4 @@ void UpdateDialog::updateStatusChanged(Updates::Status status)
     }
 }
 
-}
+}  // namespace chatterino

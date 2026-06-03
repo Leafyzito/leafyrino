@@ -20,4 +20,4 @@ static void removeScrollAreaBackground(QScrollArea *scrollArea,
     childWidget->setPalette(p);
 }
 
-}
+}  // namespace chatterino

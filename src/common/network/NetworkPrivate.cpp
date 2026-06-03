@@ -98,7 +98,7 @@ void loadCached(std::shared_ptr<NetworkData> &&data)
     data->emitFinally();
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -245,4 +245,4 @@ void load(std::shared_ptr<NetworkData> &&data)
     }
 }
 
-}
+}  // namespace chatterino

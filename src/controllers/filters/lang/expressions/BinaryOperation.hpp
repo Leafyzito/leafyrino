@@ -25,4 +25,4 @@ private:
     ExpressionPtr right_;
 };
 
-}
+}  // namespace chatterino::filters

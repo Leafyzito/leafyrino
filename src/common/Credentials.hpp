@@ -26,4 +26,4 @@ private:
     Credentials() = default;
 };
 
-}
+}  // namespace chatterino

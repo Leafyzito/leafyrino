@@ -149,4 +149,4 @@ private:
     T value_{};
 };
 
-}
+}  // namespace chatterino

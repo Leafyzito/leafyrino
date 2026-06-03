@@ -17,7 +17,7 @@ class Linebreak : public QWidget
 {
 };
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -227,7 +227,6 @@ int FlowLayout::defaultSpacing(QStyle::PixelMetric pm) const
 
 QSize FlowLayout::getSpacing(QLayoutItem *item) const
 {
-
     auto fallbackSpacing = [&](auto dir) {
         if (auto *widget = item->widget())
         {
@@ -253,4 +252,4 @@ QSize FlowLayout::getSpacing(QLayoutItem *item) const
     return spacing;
 }
 
-}
+}  // namespace chatterino

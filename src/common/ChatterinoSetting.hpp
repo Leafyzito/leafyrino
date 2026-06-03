@@ -158,4 +158,4 @@ struct IsChatterinoSettingT<EnumStringSetting<T>> : std::true_type {
 template <typename T>
 concept IsChatterinoSetting = IsChatterinoSettingT<T>::value;
 
-}
+}  // namespace chatterino

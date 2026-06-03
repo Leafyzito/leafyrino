@@ -70,7 +70,7 @@ bool readBoolEnv(const char *envName, bool defaultValue)
     return defaultValue;
 }
 
-}
+}  // namespace
 
 Env::Env()
     : recentMessagesApiUrl(
@@ -94,4 +94,4 @@ const Env &Env::get()
     return instance;
 }
 
-}
+}  // namespace chatterino

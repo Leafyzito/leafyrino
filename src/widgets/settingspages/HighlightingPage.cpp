@@ -53,10 +53,8 @@ HighlightingPage::HighlightingPage()
 
     auto layout = layoutCreator.emplace<QVBoxLayout>().withoutMargin();
     {
-
         auto tabs = layout.emplace<QTabWidget>();
         {
-
             auto highlights = tabs.appendTab(new QVBoxLayout, "Messages");
             {
                 highlights.emplace<QLabel>(
@@ -380,4 +378,4 @@ void HighlightingPage::tableCellClicked(const QModelIndex &clicked,
     }
 }
 
-}
+}  // namespace chatterino

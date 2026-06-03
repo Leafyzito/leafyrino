@@ -37,4 +37,4 @@ private:
     bool isElevatedMessageHighlight_{};
 };
 
-}
+}  // namespace chatterino

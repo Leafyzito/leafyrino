@@ -23,6 +23,6 @@ void setRegisteredForStartup(bool isRegistered);
 
 QString getAssociatedExecutable(AssociationQueryType queryType, LPCWSTR query);
 
-}
+}  // namespace chatterino
 
 #endif

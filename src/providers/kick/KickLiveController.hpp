@@ -36,4 +36,4 @@ private:
     std::vector<uint64_t> immediateChannels;
 };
 
-}
+}  // namespace chatterino

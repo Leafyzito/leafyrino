@@ -80,7 +80,8 @@ private:
     void emitProgress();
     void finish(bool truncated = false);
     void fail(const QString &message);
-    bool matchesModeratorFilter(const GqlModerationActionLogEntry &action) const;
+    bool matchesModeratorFilter(
+        const GqlModerationActionLogEntry &action) const;
     QString moderatorKey(const GqlModerationActionLogEntry &action) const;
 
     ModerationActionLogScanRequest request_;

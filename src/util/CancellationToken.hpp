@@ -88,4 +88,4 @@ private:
     CancellationToken backingToken_;
 };
 
-}
+}  // namespace chatterino

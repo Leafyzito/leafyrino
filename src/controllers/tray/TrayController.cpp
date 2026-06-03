@@ -49,7 +49,7 @@ QString pingDisplayName(const chatterino::MessagePtr &message)
     return displayName;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -107,8 +107,7 @@ void TrayController::hideToTray()
     if (!this->notifiedHiddenHint_)
     {
         this->notifiedHiddenHint_ = true;
-        if (this->trayIcon_ != nullptr &&
-            QSystemTrayIcon::supportsMessages())
+        if (this->trayIcon_ != nullptr && QSystemTrayIcon::supportsMessages())
         {
             this->trayIcon_->showMessage(
                 QStringLiteral("Leafyrino is still running"),
@@ -138,8 +137,7 @@ void TrayController::markWindowShown()
 }
 
 void TrayController::notifyHighlight(const Channel *channel,
-                                     const MessagePtr &message,
-                                     bool playSound)
+                                     const MessagePtr &message, bool playSound)
 {
     if (!playSound || !this->hiddenToTray_ ||
         !getSettings()->trayNotifyOnSoundHighlights ||
@@ -188,16 +186,16 @@ void TrayController::ensureTrayIcon()
         return;
     }
 
-    this->trayIcon_ = new QSystemTrayIcon(QIcon(QStringLiteral(":/icon.ico")),
-                                          this);
+    this->trayIcon_ =
+        new QSystemTrayIcon(QIcon(QStringLiteral(":/icon.ico")), this);
     this->trayIcon_->setToolTip(QStringLiteral("Leafyrino"));
 
     this->menu_ = new QMenu;
-    this->openAction_ = this->menu_->addAction(QStringLiteral("Open Leafyrino"));
-    QObject::connect(this->openAction_, &QAction::triggered, this,
-                     [this] {
-                         this->restoreFromTray();
-                     });
+    this->openAction_ =
+        this->menu_->addAction(QStringLiteral("Open Leafyrino"));
+    QObject::connect(this->openAction_, &QAction::triggered, this, [this] {
+        this->restoreFromTray();
+    });
 
     this->openLastPingAction_ =
         this->menu_->addAction(QStringLiteral("Open last ping"));
@@ -210,27 +208,23 @@ void TrayController::ensureTrayIcon()
         this->menu_->addMenu(QStringLiteral("Recent pings"));
     this->menu_->addSeparator();
 
-    this->mutePingsAction_ =
-        this->menu_->addAction(QStringLiteral(
-            "Mute ping notifications for 15 minutes"));
-    QObject::connect(this->mutePingsAction_, &QAction::triggered, this,
-                     [this] {
-                         if (this->notificationsMuted())
-                         {
-                             this->mutePingsUntil_ = {};
-                         }
-                         else
-                         {
-                             this->mutePingsUntil_ =
-                                 QDateTime::currentDateTimeUtc().addSecs(15 *
-                                                                         60);
-                         }
-                         this->refreshMenu();
-                     });
+    this->mutePingsAction_ = this->menu_->addAction(
+        QStringLiteral("Mute ping notifications for 15 minutes"));
+    QObject::connect(this->mutePingsAction_, &QAction::triggered, this, [this] {
+        if (this->notificationsMuted())
+        {
+            this->mutePingsUntil_ = {};
+        }
+        else
+        {
+            this->mutePingsUntil_ =
+                QDateTime::currentDateTimeUtc().addSecs(15 * 60);
+        }
+        this->refreshMenu();
+    });
 
-    this->pingNotificationsAction_ =
-        this->menu_->addAction(QStringLiteral(
-            "Show notifications for sound-enabled highlights"));
+    this->pingNotificationsAction_ = this->menu_->addAction(
+        QStringLiteral("Show notifications for sound-enabled highlights"));
     this->pingNotificationsAction_->setCheckable(true);
     QObject::connect(this->pingNotificationsAction_, &QAction::toggled, this,
                      [](bool checked) {
@@ -238,7 +232,8 @@ void TrayController::ensureTrayIcon()
                      });
 
     this->menu_->addSeparator();
-    this->quitAction_ = this->menu_->addAction(QStringLiteral("Quit Leafyrino"));
+    this->quitAction_ =
+        this->menu_->addAction(QStringLiteral("Quit Leafyrino"));
     QObject::connect(this->quitAction_, &QAction::triggered, qApp, [] {
         QApplication::exit(0);
     });
@@ -249,15 +244,14 @@ void TrayController::ensureTrayIcon()
 
     this->trayIcon_->setContextMenu(this->menu_);
 
-    QObject::connect(
-        this->trayIcon_, &QSystemTrayIcon::activated, this,
-        [this](QSystemTrayIcon::ActivationReason reason) {
-            if (reason == QSystemTrayIcon::Trigger ||
-                reason == QSystemTrayIcon::DoubleClick)
-            {
-                this->restoreFromTray();
-            }
-        });
+    QObject::connect(this->trayIcon_, &QSystemTrayIcon::activated, this,
+                     [this](QSystemTrayIcon::ActivationReason reason) {
+                         if (reason == QSystemTrayIcon::Trigger ||
+                             reason == QSystemTrayIcon::DoubleClick)
+                         {
+                             this->restoreFromTray();
+                         }
+                     });
 
     QObject::connect(this->trayIcon_, &QSystemTrayIcon::messageClicked, this,
                      [this] {
@@ -299,13 +293,13 @@ void TrayController::refreshMenu()
 
     if (this->notificationsMuted())
     {
-        this->mutePingsAction_->setText(QStringLiteral(
-            "Unmute ping notifications"));
+        this->mutePingsAction_->setText(
+            QStringLiteral("Unmute ping notifications"));
     }
     else
     {
-        this->mutePingsAction_->setText(QStringLiteral(
-            "Mute ping notifications for 15 minutes"));
+        this->mutePingsAction_->setText(
+            QStringLiteral("Mute ping notifications for 15 minutes"));
     }
 
     {
@@ -327,8 +321,8 @@ void TrayController::rebuildRecentPingMenu()
 
     if (this->recentPings_.empty())
     {
-        auto *action =
-            this->recentPingsMenu_->addAction(QStringLiteral("No recent pings"));
+        auto *action = this->recentPingsMenu_->addAction(
+            QStringLiteral("No recent pings"));
         action->setEnabled(false);
         return;
     }
@@ -336,8 +330,8 @@ void TrayController::rebuildRecentPingMenu()
     for (int i = 0; i < static_cast<int>(this->recentPings_.size()); ++i)
     {
         const auto ping = this->recentPings_[static_cast<size_t>(i)];
-        auto *action = this->recentPingsMenu_->addAction(
-            this->formatPingActionText(ping));
+        auto *action =
+            this->recentPingsMenu_->addAction(this->formatPingActionText(ping));
         QObject::connect(action, &QAction::triggered, this, [this, i] {
             this->openRecentPing(i);
         });
@@ -346,16 +340,15 @@ void TrayController::rebuildRecentPingMenu()
 
 void TrayController::showTrayPingNotification(const RecentPing &ping)
 {
-    const auto title = ping.displayName.isEmpty()
-                           ? QStringLiteral("Highlight in #%1")
-                                 .arg(ping.channelName)
-                           : QStringLiteral("%1 in #%2")
-                                 .arg(ping.displayName, ping.channelName);
-    const auto body =
-        !ping.messageText.isEmpty()
-            ? ping.messageText
-            : QStringLiteral("You were highlighted in #%1").arg(
-                  ping.channelName);
+    const auto title =
+        ping.displayName.isEmpty()
+            ? QStringLiteral("Highlight in #%1").arg(ping.channelName)
+            : QStringLiteral("%1 in #%2")
+                  .arg(ping.displayName, ping.channelName);
+    const auto body = !ping.messageText.isEmpty()
+                          ? ping.messageText
+                          : QStringLiteral("You were highlighted in #%1")
+                                .arg(ping.channelName);
 
     bool shown = getApp()->getToasts()->sendHighlightNotification(
         ping.channelName, title, body, ping.messageId);
@@ -388,4 +381,4 @@ QString TrayController::formatPingActionText(const RecentPing &ping) const
     return cleanForTray(text);
 }
 
-}
+}  // namespace chatterino

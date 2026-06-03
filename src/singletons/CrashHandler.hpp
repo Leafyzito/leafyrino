@@ -40,4 +40,4 @@ std::unique_ptr<crashpad::CrashpadClient> installCrashHandler(
     const Args &args, const Paths &paths);
 #endif
 
-}
+}  // namespace chatterino

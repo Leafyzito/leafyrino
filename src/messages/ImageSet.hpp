@@ -48,4 +48,4 @@ private:
     ImagePtr imageX3_;
 };
 
-}
+}  // namespace chatterino

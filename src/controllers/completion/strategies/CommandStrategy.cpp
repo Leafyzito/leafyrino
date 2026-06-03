@@ -41,9 +41,8 @@ void CommandStrategy::apply(const std::vector<CommandItem> &items,
     else
     {
         const auto preferredPrefix =
-            (query.startsWith('/') || query.startsWith('.'))
-                ? query.at(0)
-                : QChar{};
+            (query.startsWith('/') || query.startsWith('.')) ? query.at(0)
+                                                             : QChar{};
         const auto hasPreferredPrefix = !preferredPrefix.isNull();
         auto effectivePrefix = [](const CommandItem &item) {
             return item.prefix.isEmpty() ? QStringLiteral("/") : item.prefix;
@@ -91,4 +90,4 @@ void CommandStrategy::apply(const std::vector<CommandItem> &items,
     }
 };
 
-}
+}  // namespace chatterino::completion

@@ -75,4 +75,4 @@ inline std::pair<QString, QString> slashKeyValue(const QString &kvStr)
     };
 }
 
-}
+}  // namespace chatterino

@@ -42,10 +42,8 @@ QString sendReply(const CommandContext &ctx)
     {
         if (msg->loginName.compare(username, Qt::CaseInsensitive) == 0)
         {
-
             if (msg->replyThread == nullptr)
             {
-
                 auto thread = std::make_shared<MessageThread>(msg);
                 ctx.twitchChannel->addReplyThread(thread);
             }
@@ -61,4 +59,4 @@ QString sendReply(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

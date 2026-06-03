@@ -62,4 +62,4 @@ enum class SplitDirection {
     Below,
 };
 
-}
+}  // namespace chatterino

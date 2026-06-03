@@ -63,7 +63,6 @@ PossibleType ListExpression::synthesizeType(const TypingContext &context) const
     if (types.size() == 2 && types[0] == Type::RegularExpression &&
         types[1] == Type::Int)
     {
-
         return TypeClass{Type::MatchingSpecifier};
     }
 
@@ -94,4 +93,4 @@ QString ListExpression::filterString() const
     return QString("{%1}").arg(strings.join(", "));
 }
 
-}
+}  // namespace chatterino::filters

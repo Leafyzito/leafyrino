@@ -84,8 +84,7 @@ BadgeImageUrls fallbackBadgeAssets(const QString &kind)
     };
 }
 
-EmotePtr makeFolhinhaBadge(const QString &tooltip,
-                           const BadgeImageUrls &urls)
+EmotePtr makeFolhinhaBadge(const QString &tooltip, const BadgeImageUrls &urls)
 {
     if (urls[0].isEmpty())
     {
@@ -107,14 +106,14 @@ EmotePtr makeFolhinhaBadge(const QString &tooltip,
     return std::make_shared<const Emote>(std::move(emote));
 }
 
-EmotePtr makeFolhinhaBadge(const QString &tooltip,
-                           const std::unordered_map<QString, BadgeImageUrls> &assets,
-                           const QString &kind)
+EmotePtr makeFolhinhaBadge(
+    const QString &tooltip,
+    const std::unordered_map<QString, BadgeImageUrls> &assets,
+    const QString &kind)
 {
     const auto *urls = lookupBadgeAssets(assets, kind);
-    return makeFolhinhaBadge(tooltip,
-                             urls != nullptr ? *urls
-                                             : fallbackBadgeAssets(kind));
+    return makeFolhinhaBadge(
+        tooltip, urls != nullptr ? *urls : fallbackBadgeAssets(kind));
 }
 
 void tryInsert(std::unordered_map<QString, BuiltBadge> &out,
@@ -224,7 +223,7 @@ void FolhinhaBadges::applyBadgeJson(const QJsonObject &jsonRoot)
                 built, userId,
                 BuiltBadge{
                     .emote = makeFolhinhaBadge(u"FolhinhaBot Developer"_s,
-                                              badgeAssets, u"dev"_s),
+                                               badgeAssets, u"dev"_s),
                     .priority = static_cast<int>(FolhinhaBadgePriority::Dev),
                 });
         }
@@ -241,7 +240,7 @@ void FolhinhaBadges::applyBadgeJson(const QJsonObject &jsonRoot)
                 built, userId,
                 BuiltBadge{
                     .emote = makeFolhinhaBadge(u"FolhinhaBot Admin"_s,
-                                              badgeAssets, u"admin"_s),
+                                               badgeAssets, u"admin"_s),
                     .priority = static_cast<int>(FolhinhaBadgePriority::Admin),
                 });
         }
@@ -262,22 +261,21 @@ void FolhinhaBadges::applyBadgeJson(const QJsonObject &jsonRoot)
             const bool isFounder = userObj.value("isFounder").toBool();
             if (isFounder)
             {
-                tryInsert(
-                    built, userId,
-                    BuiltBadge{
-                        .emote = makeFolhinhaBadge(
-                            u"FolhinhaBot Plus (Founder)"_s, badgeAssets,
-                            u"founder"_s),
-                        .priority = static_cast<int>(
-                            FolhinhaBadgePriority::PlusFounder),
-                    });
+                tryInsert(built, userId,
+                          BuiltBadge{
+                              .emote = makeFolhinhaBadge(
+                                  u"FolhinhaBot Plus (Founder)"_s, badgeAssets,
+                                  u"founder"_s),
+                              .priority = static_cast<int>(
+                                  FolhinhaBadgePriority::PlusFounder),
+                          });
             }
             else
             {
                 tryInsert(built, userId,
                           BuiltBadge{
-                              .emote = makeFolhinhaBadge(
-                                  u"FolhinhaBot Plus"_s, badgeAssets, u"sub"_s),
+                              .emote = makeFolhinhaBadge(u"FolhinhaBot Plus"_s,
+                                                         badgeAssets, u"sub"_s),
                               .priority =
                                   static_cast<int>(FolhinhaBadgePriority::Plus),
                           });

@@ -85,4 +85,4 @@ void KickAccountSwitchWidget::refreshItems()
     }
 }
 
-}
+}  // namespace chatterino

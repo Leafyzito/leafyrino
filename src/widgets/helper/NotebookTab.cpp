@@ -261,22 +261,17 @@ NotebookTab::NotebookTab(Notebook *notebook)
 
     auto *tabColorMenu = this->menu_.addMenu("Tab Color");
     const std::vector<std::pair<QString, QColor>> tabColorPresets = {
-        {"Blue", QColor(91, 157, 255)},
-        {"Orange", QColor(255, 148, 67)},
-        {"Red", QColor(244, 91, 91)},
-        {"Yellow", QColor(244, 190, 72)},
-        {"Green", QColor(76, 196, 120)},
-        {"Purple", QColor(172, 123, 255)},
-        {"Pink", QColor(238, 95, 161)},
-        {"Cyan", QColor(73, 205, 214)},
+        {"Blue", QColor(91, 157, 255)},  {"Orange", QColor(255, 148, 67)},
+        {"Red", QColor(244, 91, 91)},    {"Yellow", QColor(244, 190, 72)},
+        {"Green", QColor(76, 196, 120)}, {"Purple", QColor(172, 123, 255)},
+        {"Pink", QColor(238, 95, 161)},  {"Cyan", QColor(73, 205, 214)},
     };
     for (const auto &[name, color] : tabColorPresets)
     {
         auto *action = tabColorMenu->addAction(tabColorIcon(color), name);
-        QObject::connect(action, &QAction::triggered, this,
-                         [this, color] {
-                             this->setCustomTabColor(color);
-                         });
+        QObject::connect(action, &QAction::triggered, this, [this, color] {
+            this->setCustomTabColor(color);
+        });
     }
 
     tabColorMenu->addSeparator();
@@ -301,11 +296,10 @@ NotebookTab::NotebookTab(Notebook *notebook)
         tabColorMenu->addAction("Reset to Default", this, [this] {
             this->resetCustomTabColor();
         });
-    QObject::connect(tabColorMenu, &QMenu::aboutToShow, this,
-                     [this, resetTabColorAction] {
-                         resetTabColorAction->setEnabled(
-                             this->hasCustomTabColor());
-                     });
+    QObject::connect(
+        tabColorMenu, &QMenu::aboutToShow, this, [this, resetTabColorAction] {
+            resetTabColorAction->setEnabled(this->hasCustomTabColor());
+        });
 }
 
 void NotebookTab::recreateCloseMultipleTabsMenu(
@@ -974,12 +968,11 @@ void NotebookTab::updateHighlightState(const TabHighlight &highlight,
         case HighlightState::Highlighted:
             // override lower states
             this->highlightSources_.insert_or_assign(
-                channelViewId,
-                HighlightSource{
-                    .state = newHighlightStyle,
-                    .color = highlight.color,
-                    .sequence = ++this->lastHighlightSequence_,
-                });
+                channelViewId, HighlightSource{
+                                   .state = newHighlightStyle,
+                                   .color = highlight.color,
+                                   .sequence = ++this->lastHighlightSequence_,
+                               });
             break;
         case HighlightState::NewMessage: {
             // only insert if no state already there to avoid overriding
@@ -1146,10 +1139,8 @@ void NotebookTab::paintEvent(QPaintEvent *)
 
     if (this->hasCustomTabColor())
     {
-        painter.fillRect(
-            bgRect,
-            tabColorFill(this->customTabColor_, this->selected_,
-                         windowFocused));
+        painter.fillRect(bgRect, tabColorFill(this->customTabColor_,
+                                              this->selected_, windowFocused));
     }
 
     // draw color indicator line

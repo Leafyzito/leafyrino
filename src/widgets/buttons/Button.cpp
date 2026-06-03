@@ -128,7 +128,7 @@ void Button::dragEnterEvent(QDragEnterEvent *event)
     });
 }
 
-void Button::paintEvent(QPaintEvent * )
+void Button::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     this->paintButton(painter);
@@ -170,9 +170,9 @@ void Button::setOpaqueContent(bool opaqueContent)
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-void Button::enterEvent(QEnterEvent * )
+void Button::enterEvent(QEnterEvent *)
 #else
-void Button::enterEvent(QEvent * )
+void Button::enterEvent(QEvent *)
 #endif
 {
     if (!this->mouseOver_)
@@ -183,7 +183,7 @@ void Button::enterEvent(QEvent * )
     }
 }
 
-void Button::leaveEvent(QEvent * )
+void Button::leaveEvent(QEvent *)
 {
     if (this->mouseOver_)
     {
@@ -236,7 +236,6 @@ void Button::mousePressEvent(QMouseEvent *event)
 
 void Button::mouseReleaseEvent(QMouseEvent *event)
 {
-
     bool hadCorrectButtonPressed = false;
     switch (event->button())
     {
@@ -363,7 +362,6 @@ void Button::showMenu()
 
     if (point.y() + menuSizeHint.height() > bounds.bottom())
     {
-
         point.setY(point.y() - menuSizeHint.height() - this->height());
     }
 
@@ -462,4 +460,4 @@ void Button::fancyPaint(QPainter &painter)
     }
 }
 
-}
+}  // namespace chatterino

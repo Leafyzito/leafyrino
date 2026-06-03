@@ -138,7 +138,6 @@ bool Version::isNightly() const
 
 void Version::generateBuildString()
 {
-
     auto s = this->fullVersion();
 
     s +=
@@ -195,4 +194,4 @@ const std::wstring &Version::appUserModelID() const
 }
 #endif
 
-}
+}  // namespace chatterino

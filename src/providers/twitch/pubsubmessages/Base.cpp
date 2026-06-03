@@ -30,4 +30,4 @@ std::optional<PubSubMessage> parsePubSubBaseMessage(const QByteArray &blob)
     return PubSubMessage(jsonDoc.object());
 }
 
-}
+}  // namespace chatterino

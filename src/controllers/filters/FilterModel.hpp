@@ -19,7 +19,6 @@ public:
     explicit FilterModel(QObject *parent);
 
 protected:
-
     FilterRecordPtr getItemFromRow(std::vector<QStandardItem *> &row,
                                    const FilterRecordPtr &original) override;
 
@@ -27,4 +26,4 @@ protected:
                         std::vector<QStandardItem *> &row) override;
 };
 
-}
+}  // namespace chatterino

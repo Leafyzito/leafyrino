@@ -139,4 +139,4 @@ void IgnoresPage::onShow()
     this->userListModel_.setStringList(users);
 }
 
-}
+}  // namespace chatterino

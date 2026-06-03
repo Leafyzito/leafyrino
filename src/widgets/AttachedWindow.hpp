@@ -76,4 +76,4 @@ private:
     QTimer slowTimer_;
 };
 
-}
+}  // namespace chatterino

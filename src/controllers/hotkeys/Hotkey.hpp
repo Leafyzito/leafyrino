@@ -50,4 +50,4 @@ private:
     friend class HotkeyController;
 };
 
-}
+}  // namespace chatterino

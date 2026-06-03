@@ -95,7 +95,7 @@ void registerNmManifest([[maybe_unused]] const Paths &paths,
 #endif
 }
 
-}
+}  // namespace
 
 namespace chatterino::nm::detail {
 
@@ -130,7 +130,7 @@ Expected<void, WriteManifestError> writeManifestTo(QString directory,
     return {};
 }
 
-}
+}  // namespace chatterino::nm::detail
 
 namespace chatterino {
 
@@ -220,7 +220,7 @@ void writeToCout(const QByteArray &array)
     std::cout.flush();
 }
 
-}
+}  // namespace nm::client
 
 NativeMessagingServer::NativeMessagingServer()
     : thread(new ReceiverThread(*this))
@@ -392,7 +392,6 @@ void NativeMessagingServer::ReceiverThread::handleDetach(
 
 void NativeMessagingServer::ReceiverThread::handleSync(const QJsonObject &root)
 {
-
     postToThread([&parent = this->parent_,
                   twitch = root["twitchChannels"_L1].toArray()] {
         parent.syncChannels(twitch);
@@ -425,4 +424,4 @@ Atomic<std::optional<QString>> &nmIpcError()
     return x;
 }
 
-}
+}  // namespace chatterino

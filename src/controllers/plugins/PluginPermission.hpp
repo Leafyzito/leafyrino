@@ -33,5 +33,5 @@ struct PluginPermission {
     QString toHtml() const;
 };
 
-}
+}  // namespace chatterino
 #endif

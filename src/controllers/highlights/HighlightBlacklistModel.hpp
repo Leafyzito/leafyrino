@@ -24,7 +24,6 @@ public:
     };
 
 protected:
-
     HighlightBlacklistUser getItemFromRow(
         std::vector<QStandardItem *> &row,
         const HighlightBlacklistUser &original) override;
@@ -33,4 +32,4 @@ protected:
                         std::vector<QStandardItem *> &row) override;
 };
 
-}
+}  // namespace chatterino

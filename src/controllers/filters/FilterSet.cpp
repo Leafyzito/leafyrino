@@ -84,4 +84,4 @@ void FilterSet::reloadFilters()
     }
 }
 
-}
+}  // namespace chatterino

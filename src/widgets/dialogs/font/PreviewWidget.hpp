@@ -23,4 +23,4 @@ private:
     QFont font;
 };
 
-}
+}  // namespace chatterino

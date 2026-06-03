@@ -60,4 +60,4 @@ private:
     QObject lifetimeGuard_;
 };
 
-}
+}  // namespace chatterino

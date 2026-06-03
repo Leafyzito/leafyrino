@@ -43,7 +43,6 @@ HighlightBadge::HighlightBadge(const QString &badgeName,
     , soundUrl_(soundUrl)
     , color_(color)
 {
-
     this->hasVersions_ = badgeName.contains("/");
     this->isMulti_ = badgeName.contains(",");
     if (this->isMulti_)
@@ -123,4 +122,4 @@ const std::shared_ptr<QColor> HighlightBadge::getColor() const
     return this->color_;
 }
 
-}
+}  // namespace chatterino

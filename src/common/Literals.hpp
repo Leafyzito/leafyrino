@@ -12,4 +12,4 @@ using Qt::StringLiterals::operator""_s;
 using Qt::StringLiterals::operator""_ba;
 using Qt::StringLiterals::operator""_L1;
 
-}
+}  // namespace chatterino::literals

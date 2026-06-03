@@ -211,4 +211,4 @@ private:
     friend class BaseWidget;
 };
 
-}
+}  // namespace chatterino

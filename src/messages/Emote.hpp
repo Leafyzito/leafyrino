@@ -44,13 +44,12 @@ using EmotePtr = std::shared_ptr<const Emote>;
 class EmoteMap : public std::unordered_map<EmoteName, EmotePtr>
 {
 public:
-
     EmoteMap::const_iterator findEmote(const QString &emoteNameHint,
                                        const QString &emoteID) const;
 };
 
-inline const std::shared_ptr<const EmoteMap> EMPTY_EMOTE_MAP = std::make_shared<
-    const EmoteMap>();
+inline const std::shared_ptr<const EmoteMap> EMPTY_EMOTE_MAP =
+    std::make_shared<const EmoteMap>();
 
 EmotePtr cachedOrMakeEmotePtr(Emote &&emote, const EmoteMap &cache);
 EmotePtr cachedOrMakeEmotePtr(
@@ -58,4 +57,4 @@ EmotePtr cachedOrMakeEmotePtr(
     std::unordered_map<EmoteId, std::weak_ptr<const Emote>> &cache,
     std::mutex &mutex, const EmoteId &id);
 
-}
+}  // namespace chatterino

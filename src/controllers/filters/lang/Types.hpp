@@ -49,7 +49,6 @@ struct TypeClass {
 };
 
 struct IllTyped {
-
     const Expression *expr;
     QString message;
 
@@ -105,4 +104,4 @@ inline bool variantTypesMatch(QVariant &a, QVariant &b, int type)
     return variantIs(a, type) && variantIs(b, type);
 }
 
-}
+}  // namespace chatterino::filters

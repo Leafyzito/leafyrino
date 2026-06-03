@@ -27,7 +27,6 @@ namespace {
 
 void forceCustomOperation(QNetworkReply *reply)
 {
-
     auto *d = static_cast<QNetworkReplyPrivate *>(QObjectPrivate::get(reply));
     if (!d)
     {
@@ -36,7 +35,7 @@ void forceCustomOperation(QNetworkReply *reply)
     d->operation = QNetworkAccessManager::CustomOperation;
 }
 
-}
+}  // namespace
 
 namespace chatterino::network::detail {
 
@@ -264,7 +263,6 @@ void NetworkTask::finished()
 
     if (reply->error() == QNetworkReply::OperationCanceledError)
     {
-
         qCDebug(chatterinoHTTP).noquote()
             << this->data_->typeString() << "[cancelled]"
             << this->data_->request.url().toString();
@@ -293,4 +291,4 @@ void NetworkTask::finished()
     this->data_->emitFinally();
 }
 
-}
+}  // namespace chatterino::network::detail

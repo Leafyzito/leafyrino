@@ -75,4 +75,4 @@ private:
     Subscription subscription_ = Subscription::None;
 };
 
-}
+}  // namespace chatterino

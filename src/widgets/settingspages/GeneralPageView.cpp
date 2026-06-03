@@ -22,7 +22,7 @@ const auto MAX_TOOLTIP_LINE_LENGTH_PATTERN =
     QStringLiteral(R"(.{%1}\S*\K(\s+))").arg(MAX_TOOLTIP_LINE_LENGTH);
 const QRegularExpression MAX_TOOLTIP_LINE_LENGTH_REGEX(
     MAX_TOOLTIP_LINE_LENGTH_PATTERN);
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -116,7 +116,6 @@ void GeneralPageView::addStretch()
 
 TitleLabel *GeneralPageView::addTitle(const QString &title)
 {
-
     if (!this->groups_.empty())
     {
         this->addWidget(this->groups_.back().space = new Space);
@@ -218,7 +217,6 @@ bool GeneralPageView::filterElements(const QString &query)
 
     for (auto &&group : this->groups_)
     {
-
         bool descriptionMatches{};
         for (auto &&widget : group.widgets)
         {
@@ -282,7 +280,6 @@ bool GeneralPageView::filterElements(const QString &query)
 
                 if (auto *x = dynamic_cast<Line *>(widget.element))
                 {
-
                     x->hide();
                 }
 
@@ -365,11 +362,10 @@ void GeneralPageView::addToolTip(QWidget &widget, QString text) const
 
     if (text.length() > MAX_TOOLTIP_LINE_LENGTH)
     {
-
         text.replace(MAX_TOOLTIP_LINE_LENGTH_REGEX, "\n");
     }
 
     widget.setToolTip(text);
 }
 
-}
+}  // namespace chatterino

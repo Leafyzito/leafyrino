@@ -23,7 +23,6 @@ std::vector<std::pair<QByteArray, QByteArray>> parseHeaderList(
 
         if (headerName.isEmpty() || headerValue.isEmpty())
         {
-
             continue;
         }
 
@@ -33,4 +32,4 @@ std::vector<std::pair<QByteArray, QByteArray>> parseHeaderList(
     return res;
 }
 
-}
+}  // namespace chatterino

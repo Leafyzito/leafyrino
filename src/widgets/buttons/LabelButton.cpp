@@ -133,4 +133,4 @@ void LabelButton::updatePadding()
     this->label_.setContentsMargins(x, y, x, y);
 }
 
-}
+}  // namespace chatterino

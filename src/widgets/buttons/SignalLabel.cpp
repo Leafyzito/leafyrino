@@ -42,4 +42,4 @@ void SignalLabel::mouseMoveEvent(QMouseEvent *event)
     event->ignore();
 }
 
-}
+}  // namespace chatterino

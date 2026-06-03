@@ -48,7 +48,7 @@ void tableCellClicked(const QModelIndex &clicked, EditableModelView *view,
     }
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -97,7 +97,6 @@ KeyboardSettingsPage::KeyboardSettingsPage()
     QObject::connect(keySequenceInput, &QKeySequenceEdit::keySequenceChanged,
                      this,
                      [view, keySequenceInput](const QKeySequence &keySequence) {
-
                          auto normalized = normalizeKeySequence(keySequence);
                          if (normalized != keySequence)
                          {
@@ -164,4 +163,4 @@ bool KeyboardSettingsPage::filterElements(const QString &query)
     return this->view_->filterSearchResults(query, fields);
 }
 
-}
+}  // namespace chatterino

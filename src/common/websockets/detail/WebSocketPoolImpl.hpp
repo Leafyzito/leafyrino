@@ -49,4 +49,4 @@ public:
     OnceFlag shutdownFlag;
 };
 
-}
+}  // namespace chatterino::ws::detail

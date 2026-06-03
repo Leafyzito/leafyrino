@@ -19,7 +19,7 @@ public:
     void setText(const QString &text);
 
 protected:
-    void paintEvent(QPaintEvent * ) override;
+    void paintEvent(QPaintEvent *) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
 
@@ -29,4 +29,4 @@ private:
     QTextDocument *markdownDocument;
 };
 
-}
+}  // namespace chatterino

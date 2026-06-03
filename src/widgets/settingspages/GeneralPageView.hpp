@@ -94,7 +94,6 @@ public:
     SpinBox(QWidget *parent = nullptr)
         : QSpinBox(parent)
     {
-
         this->setFocusPolicy(Qt::StrongFocus);
     }
 
@@ -170,7 +169,6 @@ public:
 
         if (selected.which() == 1)
         {
-
             if (!editable && !items2.contains(boost::get<QString>(selected)))
             {
                 items2.insert(0, boost::get<QString>(selected));
@@ -185,7 +183,6 @@ public:
 
         if (selected.which() == 0)
         {
-
             auto value = boost::get<int>(selected);
             if (value >= 0 && value < items2.size())
             {
@@ -194,7 +191,6 @@ public:
         }
         else if (selected.which() == 1)
         {
-
             combo->setEditText(boost::get<QString>(selected));
         }
 
@@ -254,7 +250,6 @@ private:
     void addToolTip(QWidget &widget, QString text) const;
 
     struct Widget {
-
         QWidget *element{};
         QStringList keywords;
 
@@ -277,4 +272,4 @@ private:
     pajlada::Signals::SignalHolder managedConnections_;
 };
 
-}
+}  // namespace chatterino

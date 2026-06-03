@@ -20,7 +20,7 @@ namespace chatterino {
 struct CommandContext;
 struct HelixUser;
 
-}
+}  // namespace chatterino
 
 namespace chatterino::commands {
 
@@ -39,7 +39,6 @@ struct IncompleteHelixUser {
 };
 
 struct PerformChannelAction {
-
     IncompleteHelixUser channel;
 
     IncompleteHelixUser target;
@@ -75,4 +74,4 @@ ExpectedStr<StartUserParticipationAction> parseUserParticipationAction(
     const CommandContext &ctx, const QString &command, const QString &usage,
     std::chrono::seconds minDuration, std::chrono::seconds maxDuration);
 
-}
+}  // namespace chatterino::commands

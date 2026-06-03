@@ -44,5 +44,5 @@ sol::variadic_results io_write(sol::this_state L, sol::variadic_args args);
 void io_popen();
 void io_tmpfile();
 
-}
+}  // namespace chatterino::lua::api
 #endif

@@ -61,4 +61,4 @@ private Q_SLOTS:
     void insertCompletion(const QString &completion);
 };
 
-}
+}  // namespace chatterino

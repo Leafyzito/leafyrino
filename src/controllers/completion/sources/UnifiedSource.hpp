@@ -18,7 +18,6 @@ namespace chatterino::completion {
 class UnifiedSource : public Source
 {
 public:
-
     UnifiedSource(std::vector<std::unique_ptr<Source>> sources);
 
     void update(const QString &query) override;
@@ -31,4 +30,4 @@ private:
     std::vector<std::unique_ptr<Source>> sources_;
 };
 
-}
+}  // namespace chatterino::completion

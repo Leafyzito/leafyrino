@@ -106,7 +106,7 @@ private:
     QRegularExpression regex_{};
 };
 
-}
+}  // namespace chatterino
 
 namespace pajlada {
 
@@ -152,4 +152,4 @@ struct Deserialize<chatterino::Nickname> {
     }
 };
 
-}
+}  // namespace pajlada

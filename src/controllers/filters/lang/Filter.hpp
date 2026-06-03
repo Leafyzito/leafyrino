@@ -18,7 +18,7 @@ class Channel;
 struct Message;
 using MessagePtr = std::shared_ptr<const Message>;
 
-}
+}  // namespace chatterino
 
 namespace chatterino::filters {
 
@@ -51,4 +51,4 @@ private:
     Type returnType_;
 };
 
-}
+}  // namespace chatterino::filters

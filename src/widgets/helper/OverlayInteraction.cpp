@@ -87,7 +87,7 @@ bool OverlayInteraction::isInteracting() const
     return this->interacting_;
 }
 
-void OverlayInteraction::paintEvent(QPaintEvent * )
+void OverlayInteraction::paintEvent(QPaintEvent *)
 {
     if (this->interactionProgress() <= 0.0)
     {
@@ -123,4 +123,4 @@ void OverlayInteraction::setInteractionProgress(double progress)
     this->update();
 }
 
-}
+}  // namespace chatterino

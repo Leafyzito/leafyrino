@@ -15,6 +15,6 @@ struct ConnectionHandle {
     static void createUserType(sol::table &c2);
 };
 
-}
+}  // namespace chatterino::lua::api
 
 #endif

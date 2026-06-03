@@ -41,7 +41,7 @@ void MarkdownLabel::setText(const QString &text)
     }
 }
 
-void MarkdownLabel::paintEvent(QPaintEvent * )
+void MarkdownLabel::paintEvent(QPaintEvent *)
 {
     assert(this->markdownDocument != nullptr);
 
@@ -81,7 +81,6 @@ void MarkdownLabel::paintEvent(QPaintEvent * )
     }
     else
     {
-
         Label::paintEvent(nullptr);
         return;
     }
@@ -178,9 +177,8 @@ void MarkdownLabel::updateSize()
     }
     else
     {
-
         Label::updateSize();
     }
 }
 
-}
+}  // namespace chatterino

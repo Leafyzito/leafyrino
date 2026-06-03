@@ -52,7 +52,8 @@ struct MessageLayoutContainer {
 
     void paintElements(QPainter &painter, const MessagePaintContext &ctx) const;
 
-    bool paintAnimatedElements(QPainter &painter, qreal yOffset, bool isCollapsed = false) const;
+    bool paintAnimatedElements(QPainter &painter, qreal yOffset,
+                               bool isCollapsed = false) const;
 
     void paintSelection(QPainter &painter, size_t messageIndex,
                         const Selection &selection, qreal yOffset) const;
@@ -99,7 +100,6 @@ struct MessageLayoutContainer {
 
 private:
     struct Line {
-
         size_t startIndex{};
 
         size_t endIndex{};
@@ -181,4 +181,4 @@ private:
 #endif
 };
 
-}
+}  // namespace chatterino

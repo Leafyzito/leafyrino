@@ -33,4 +33,4 @@ private:
     std::vector<QLineEdit *> reasonInputs_;
 };
 
-}
+}  // namespace chatterino

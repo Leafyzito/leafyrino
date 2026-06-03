@@ -23,7 +23,6 @@ std::vector<QString> parseHotkeyArguments(QString argumentString)
 
     if (argumentString.isEmpty())
     {
-
         return arguments;
     }
 
@@ -106,4 +105,4 @@ QKeySequence normalizeKeySequence(const QKeySequence &seq)
     }
 }
 
-}
+}  // namespace chatterino

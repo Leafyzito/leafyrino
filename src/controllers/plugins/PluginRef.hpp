@@ -64,6 +64,6 @@ private:
     friend PluginRef;
 };
 
-}
+}  // namespace chatterino::lua
 
 #endif

@@ -21,7 +21,6 @@ void addSuspiciousTreatment(const CommandContext &ctx, const QString &command,
 {
     if (ctx.twitchChannel == nullptr)
     {
-
         const QString error =
             "The " % command % " command only works in Twitch channels";
         if (ctx.channel != nullptr)
@@ -74,7 +73,6 @@ void removeSuspiciousTreatment(const CommandContext &ctx,
 {
     if (ctx.twitchChannel == nullptr)
     {
-
         const QString error =
             "The " % command % " command only works in Twitch channels";
         if (ctx.channel != nullptr)
@@ -122,7 +120,7 @@ void removeSuspiciousTreatment(const CommandContext &ctx,
         });
 }
 
-}
+}  // namespace
 
 namespace chatterino::commands {
 
@@ -170,4 +168,4 @@ QString unrestrictUser(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

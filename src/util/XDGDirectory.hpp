@@ -27,4 +27,4 @@ QStringList getXDGDirectories(XDGDirectoryType directory);
 
 #endif
 
-}
+}  // namespace chatterino

@@ -22,14 +22,14 @@ constexpr bool IsOptional = false;
 template <typename T>
 constexpr bool IsOptional<std::optional<T>> = true;
 
-}
+}  // namespace chatterino::detail
 
 namespace chatterino {
 
 class Plugin;
 struct Link;
 
-}
+}  // namespace chatterino
 
 namespace chatterino::lua {
 
@@ -103,7 +103,6 @@ inline Expected<T, QString> tryCall(const auto &function, Args &&...args)
         {
             if constexpr (detail::IsOptional<T>)
             {
-
                 if (result.get_type() == sol::type::nil)
                 {
                     return {};
@@ -141,7 +140,6 @@ inline Expected<T, QString> tryCall(const auto &function, Args &&...args)
         {
             return makeUnexpected(QString::fromUtf8(e.what()));
         }
-
     }
 }
 
@@ -177,7 +175,7 @@ void loggedVoidCall(const auto &fn, QStringView context, Plugin *plugin,
 
 SOL_STACK_FUNCTIONS(chatterino::lua::ThisPluginState)
 
-}
+}  // namespace chatterino::lua
 
 namespace chatterino {
 

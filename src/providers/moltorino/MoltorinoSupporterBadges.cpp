@@ -28,8 +28,7 @@ namespace {
 
 using namespace literals;
 
-constexpr auto ENDPOINT =
-    "https://api.moltorino.com/badges";
+constexpr auto ENDPOINT = "https://api.moltorino.com/badges";
 constexpr auto CACHE_FILE = "moltorino-supporter-badges.json";
 constexpr int PASSIVE_REFRESH_THROTTLE_MS = 60000;
 constexpr qsizetype MAX_PAYLOAD_BYTES = 8 * 1024 * 1024;
@@ -67,7 +66,8 @@ QString versionedImageUrl(const QString &url, int version)
 
     const auto fragmentIndex = url.indexOf(u'#');
     auto base = fragmentIndex < 0 ? url : url.left(fragmentIndex);
-    const auto fragment = fragmentIndex < 0 ? QString{} : url.mid(fragmentIndex);
+    const auto fragment =
+        fragmentIndex < 0 ? QString{} : url.mid(fragmentIndex);
 
     base += base.contains(u'?') ? u'&' : u'?';
     base += u"mbv="_s + QString::number(version);
@@ -99,12 +99,12 @@ ImageSet badgeImageSet(const QString &image1, const QString &image2,
     constexpr int SIZE_2X = BADGE_SOURCE_SIZE * 2;
     constexpr int SIZE_3X = BADGE_SOURCE_SIZE * 4;
 
-    const auto badge1x = badgeImage(image1, version, badgeRenderScale(SIZE_1X),
-                                    SIZE_1X);
-    const auto badge2x = badgeImage(image2, version, badgeRenderScale(SIZE_2X),
-                                    SIZE_2X);
-    const auto badge3x = badgeImage(image3, version, badgeRenderScale(SIZE_3X),
-                                    SIZE_3X);
+    const auto badge1x =
+        badgeImage(image1, version, badgeRenderScale(SIZE_1X), SIZE_1X);
+    const auto badge2x =
+        badgeImage(image2, version, badgeRenderScale(SIZE_2X), SIZE_2X);
+    const auto badge3x =
+        badgeImage(image3, version, badgeRenderScale(SIZE_3X), SIZE_3X);
 
     const auto badgeDefault = !badge2x->isEmpty()
                                   ? badge2x
@@ -179,8 +179,7 @@ void addBadgeAssignment(ParsedPayload &parsed, const QString &userId,
     badges.emplace_back(MoltorinoSupporterBadge{categoryId, emote});
 }
 
-bool parsePayload(const QByteArray &payload,
-                  ParsedPayload &parsed)
+bool parsePayload(const QByteArray &payload, ParsedPayload &parsed)
 {
     if (payload.size() > MAX_PAYLOAD_BYTES)
     {
@@ -389,9 +388,8 @@ void MoltorinoSupporterBadges::refreshInternal(
     {
         this->pendingRefresh_ = true;
         this->pendingForce_ = this->pendingForce_ || force;
-        if (minimumVersion &&
-            (!this->pendingMinimumVersion_ ||
-             *minimumVersion > *this->pendingMinimumVersion_))
+        if (minimumVersion && (!this->pendingMinimumVersion_ ||
+                               *minimumVersion > *this->pendingMinimumVersion_))
         {
             this->pendingMinimumVersion_ = minimumVersion;
         }
@@ -471,9 +469,9 @@ void MoltorinoSupporterBadges::saveCache(const QByteArray &payload) const
     file.commit();
 }
 
-bool MoltorinoSupporterBadges::applyPayload(
-    const QByteArray &payload, bool fromCache,
-    std::optional<int> minimumVersion)
+bool MoltorinoSupporterBadges::applyPayload(const QByteArray &payload,
+                                            bool fromCache,
+                                            std::optional<int> minimumVersion)
 {
     ParsedPayload parsed;
     if (!parsePayload(payload, parsed))
@@ -508,11 +506,12 @@ bool MoltorinoSupporterBadges::applyPayload(
         this->userBadges_ = std::move(parsed.userBadges);
     }
 
-    qCDebug(chatterinoApp)
-        << "[Moltorino] Loaded supporter badges:"
-        << parsed.userBadges.size() << "users across" << parsed.categoryCount
-        << "categories from" << parsed.assignmentCount << "assignments in"
-        << (fromCache ? "cache" : "network") << "version" << this->version_;
+    qCDebug(chatterinoApp) << "[Moltorino] Loaded supporter badges:"
+                           << parsed.userBadges.size() << "users across"
+                           << parsed.categoryCount << "categories from"
+                           << parsed.assignmentCount << "assignments in"
+                           << (fromCache ? "cache" : "network") << "version"
+                           << this->version_;
 
     return true;
 }

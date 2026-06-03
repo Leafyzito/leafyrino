@@ -27,7 +27,7 @@ public:
     [[nodiscard]] static ChannelLog createEmpty();
 };
 
-}
+}  // namespace chatterino
 
 namespace pajlada {
 
@@ -67,4 +67,4 @@ struct Deserialize<chatterino::ChannelLog> {
     }
 };
 
-}
+}  // namespace pajlada

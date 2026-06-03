@@ -26,4 +26,4 @@ QWidget *RegExpItemDelegate::createEditor(QWidget *parent,
     return editor;
 }
 
-}
+}  // namespace chatterino

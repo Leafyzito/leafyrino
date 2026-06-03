@@ -47,4 +47,4 @@ private:
     std::vector<UserItem> output_{};
 };
 
-}
+}  // namespace chatterino::completion

@@ -35,4 +35,4 @@ void processIgnorePhrases(const std::vector<IgnorePhrase> &phrases,
                           QString &content,
                           std::vector<TwitchEmoteOccurrence> &twitchEmotes);
 
-}
+}  // namespace chatterino

@@ -23,7 +23,6 @@ WebSocketPool::~WebSocketPool()
         }
         else
         {
-
             qCWarning(chatterinoWebsocket)
                 << "Failed to shutdown within 1s, leaking";
             this->impl.release();
@@ -43,7 +42,6 @@ WebSocketHandle WebSocketPool::createSocket(
         }
         catch (const boost::system::system_error &err)
         {
-
             qCWarning(chatterinoWebsocket)
                 << "Failed to create WebSocket implementation" << err.what();
             return {{}};
@@ -124,4 +122,4 @@ void WebSocketHandle::sendBinary(const QByteArray &data)
     }
 }
 
-}
+}  // namespace chatterino

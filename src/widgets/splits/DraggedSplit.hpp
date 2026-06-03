@@ -12,4 +12,4 @@ void startDraggingSplit();
 
 void stopDraggingSplit();
 
-}
+}  // namespace chatterino

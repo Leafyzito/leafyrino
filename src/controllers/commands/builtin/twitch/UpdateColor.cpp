@@ -99,4 +99,4 @@ QString updateUserColor(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

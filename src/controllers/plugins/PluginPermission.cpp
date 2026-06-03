@@ -49,5 +49,5 @@ QString PluginPermission::toHtml() const
     }
 }
 
-}
+}  // namespace chatterino
 #endif

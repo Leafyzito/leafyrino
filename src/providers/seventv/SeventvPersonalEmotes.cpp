@@ -64,7 +64,6 @@ std::optional<std::shared_ptr<const EmoteMap>>
                        user);
         if (!changed)
         {
-
             return std::nullopt;
         }
     }
@@ -87,7 +86,6 @@ void SeventvPersonalEmotes::updateEmoteSet(
     auto emoteSet = this->emoteSets_.find(id);
     if (emoteSet != this->emoteSets_.end())
     {
-
         if (emoteSet->second.get()->contains(
                 EmoteName{dispatch.emoteJson["name"].toString()}))
         {
@@ -288,4 +286,4 @@ EmotePtr SeventvPersonalEmotes::findInEmoteSets(
     return {};
 }
 
-}
+}  // namespace chatterino

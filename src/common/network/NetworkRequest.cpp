@@ -55,7 +55,6 @@ NetworkRequest NetworkRequest::caller(const QObject *caller) &&
 {
     if (caller)
     {
-
         assert(caller->thread() == QApplication::instance()->thread());
 
         this->data->caller = const_cast<QObject *>(caller);
@@ -245,4 +244,4 @@ NetworkRequest NetworkRequest::ignoreSslErrors(bool ignore) &&
 }
 #endif
 
-}
+}  // namespace chatterino

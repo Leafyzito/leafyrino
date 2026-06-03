@@ -70,4 +70,4 @@ private:
                                    const ChannelPtr &channel);
 };
 
-}
+}  // namespace chatterino

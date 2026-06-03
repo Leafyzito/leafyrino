@@ -33,4 +33,4 @@ private:
     bool checkerboardCacheValid_ = false;
 };
 
-}
+}  // namespace chatterino

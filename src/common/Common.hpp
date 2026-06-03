@@ -69,4 +69,4 @@ struct DeleteLater {
 template <typename T>
 using QObjectPtr = std::unique_ptr<T, DeleteLater>;
 
-}
+}  // namespace chatterino

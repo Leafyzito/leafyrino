@@ -20,4 +20,4 @@ std::optional<ActionDefinition> findHotkeyActionDefinition(
 
 QKeySequence normalizeKeySequence(const QKeySequence &seq);
 
-}
+}  // namespace chatterino

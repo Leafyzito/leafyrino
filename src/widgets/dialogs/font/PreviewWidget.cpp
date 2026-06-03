@@ -15,7 +15,7 @@ PreviewWidget::PreviewWidget(const QFont &startFont, QWidget *parent)
     this->setMinimumHeight(60);
 }
 
-void PreviewWidget::paintEvent(QPaintEvent * )
+void PreviewWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter{this};
 
@@ -33,4 +33,4 @@ void PreviewWidget::setFont(const QFont &font)
     this->update();
 }
 
-}
+}  // namespace chatterino

@@ -115,13 +115,12 @@ CreateEmoteResult createChannelEmote(const QString &channelDisplayName,
                                EMOTE_BASE_SIZE * 4),
             },
         .tooltip =
-            Tooltip{
-                QString("%1<br>%2 BetterTTV Emote<br>By: %3")
-                    .arg(name.string)
+            Tooltip{QString("%1<br>%2 BetterTTV Emote<br>By: %3")
+                        .arg(name.string)
 
-                    .arg(author.string.isEmpty() ? "Channel" : "Shared")
-                    .arg(author.string.isEmpty() ? channelDisplayName
-                                                 : author.string)},
+                        .arg(author.string.isEmpty() ? "Channel" : "Shared")
+                        .arg(author.string.isEmpty() ? channelDisplayName
+                                                     : author.string)},
         .homePage = Url{EMOTE_LINK_FORMAT.arg(id.string)},
         .zeroWidth = false,
         .id = id,
@@ -161,7 +160,7 @@ bool updateChannelEmote(Emote &emote, const QString &channelDisplayName,
     return anyModifications;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -297,7 +296,6 @@ void BttvEmotes::loadChannel(std::weak_ptr<Channel> channel,
 
             if (result.status() == 404)
             {
-
                 if (manualRefresh)
                 {
                     shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
@@ -305,7 +303,6 @@ void BttvEmotes::loadChannel(std::weak_ptr<Channel> channel,
             }
             else
             {
-
                 auto errorString = result.formatError();
                 qCWarning(chatterinoBttv)
                     << "Error fetching BTTV emotes for channel" << channelId
@@ -329,7 +326,6 @@ EmotePtr BttvEmotes::addEmote(
     Atomic<std::shared_ptr<const EmoteMap>> &channelEmoteMap,
     const BttvLiveUpdateEmoteUpdateAddMessage &message)
 {
-
     EmoteMap updatedMap = *channelEmoteMap.get();
     auto result = createChannelEmote(channelDisplayName, message.jsonEmote);
 
@@ -345,13 +341,11 @@ std::optional<std::pair<EmotePtr, EmotePtr>> BttvEmotes::updateEmote(
     Atomic<std::shared_ptr<const EmoteMap>> &channelEmoteMap,
     const BttvLiveUpdateEmoteUpdateAddMessage &message)
 {
-
     EmoteMap updatedMap = *channelEmoteMap.get();
 
     auto it = updatedMap.findEmote(QString(), message.emoteID);
     if (it == updatedMap.end())
     {
-
         return std::nullopt;
     }
     auto oldEmotePtr = it->second;
@@ -361,7 +355,6 @@ std::optional<std::pair<EmotePtr, EmotePtr>> BttvEmotes::updateEmote(
 
     if (!updateChannelEmote(emote, channelDisplayName, message.jsonEmote))
     {
-
         return std::nullopt;
     }
 
@@ -377,12 +370,10 @@ std::optional<EmotePtr> BttvEmotes::removeEmote(
     Atomic<std::shared_ptr<const EmoteMap>> &channelEmoteMap,
     const BttvLiveUpdateEmoteRemoveMessage &message)
 {
-
     EmoteMap updatedMap = *channelEmoteMap.get();
     auto it = updatedMap.findEmote(QString(), message.emoteID);
     if (it == updatedMap.end())
     {
-
         return std::nullopt;
     }
     auto emote = it->second;
@@ -392,4 +383,4 @@ std::optional<EmotePtr> BttvEmotes::removeEmote(
     return emote;
 }
 
-}
+}  // namespace chatterino

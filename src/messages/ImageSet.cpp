@@ -186,4 +186,4 @@ QJsonObject ImageSet::toJson() const
     return obj;
 }
 
-}
+}  // namespace chatterino

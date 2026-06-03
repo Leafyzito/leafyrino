@@ -70,7 +70,7 @@ QStringList parseHeaders(const QJsonObject &headersObj)
     return headerLines;
 }
 
-}
+}  // namespace
 
 QJsonObject exportSettings(const Settings &s)
 {
@@ -180,4 +180,4 @@ ExpectedStr<QJsonObject> validateImportJson(const QString &clipboardText)
     return settingsObj;
 }
 
-}
+}  // namespace chatterino::imageuploader::detail

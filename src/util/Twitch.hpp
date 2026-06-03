@@ -31,4 +31,4 @@ QRegularExpression twitchUserNameRegexp();
 
 void cleanHelixColorName(QString &color);
 
-}
+}  // namespace chatterino

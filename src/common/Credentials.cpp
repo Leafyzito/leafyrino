@@ -131,7 +131,6 @@ void runNextJob()
 
     if (!queue.empty())
     {
-
         auto &&item = queue.front();
 
         std::visit(
@@ -176,7 +175,7 @@ void queueJob(Job &&job)
     }
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -265,4 +264,4 @@ void Credentials::erase(const QString &provider, const QString &name_)
     }
 }
 
-}
+}  // namespace chatterino

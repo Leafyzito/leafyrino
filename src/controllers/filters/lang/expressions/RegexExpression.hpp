@@ -27,4 +27,4 @@ private:
     QRegularExpression regex_;
 };
 
-}
+}  // namespace chatterino::filters

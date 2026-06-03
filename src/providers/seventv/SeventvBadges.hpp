@@ -22,4 +22,4 @@ protected:
                          const QJsonObject &badgeJson) const override;
 };
 
-}
+}  // namespace chatterino

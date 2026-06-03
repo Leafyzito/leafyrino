@@ -91,4 +91,4 @@ private:
     QTimer shortInteraction_;
 };
 
-}
+}  // namespace chatterino

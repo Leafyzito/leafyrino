@@ -17,4 +17,4 @@ public:
                const QModelIndex &index) const override;
 };
 
-}
+}  // namespace chatterino

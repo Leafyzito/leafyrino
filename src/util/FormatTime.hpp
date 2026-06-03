@@ -19,4 +19,4 @@ QString formatDurationExact(std::chrono::seconds seconds);
 
 QString formatLongFriendlyDuration(const QDateTime &from, const QDateTime &to);
 
-}
+}  // namespace chatterino

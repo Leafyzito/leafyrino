@@ -56,4 +56,4 @@ private:
     ThreadGuard threadGuard;
 };
 
-}
+}  // namespace chatterino

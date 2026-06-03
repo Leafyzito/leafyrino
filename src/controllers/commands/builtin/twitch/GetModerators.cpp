@@ -71,7 +71,7 @@ QString formatModsError(HelixGetModeratorsError error, const QString &message)
     return errorMessage;
 }
 
-}
+}  // namespace
 
 namespace chatterino::commands {
 
@@ -95,8 +95,8 @@ QString getModerators(const CommandContext &ctx)
     {
         getHelix()->getModerators(
             ctx.twitchChannel->roomId(), 500,
-            [channel{ctx.channel}, twitchChannel{ctx.twitchChannel}](
-                auto result) {
+            [channel{ctx.channel},
+             twitchChannel{ctx.twitchChannel}](auto result) {
                 if (result.empty())
                 {
                     channel->addSystemMessage(
@@ -132,14 +132,13 @@ QString getModerators(const CommandContext &ctx)
                 return;
             }
 
-            channel->addMessage(MessageBuilder::makeListOfUsersMessage(
-                                    QString(
-                                        "The moderators (%1) of this channel are")
-                                        .arg(mods.size()),
-                                    mods,
-                                    twitchChannel != nullptr ? twitchChannel
-                                                            : channel.get()),
-                                MessageContext::Original);
+            channel->addMessage(
+                MessageBuilder::makeListOfUsersMessage(
+                    QString("The moderators (%1) of this channel are")
+                        .arg(mods.size()),
+                    mods,
+                    twitchChannel != nullptr ? twitchChannel : channel.get()),
+                MessageContext::Original);
         },
         [channel{ctx.channel}] {
             channel->addSystemMessage("Could not get moderator list!");
@@ -147,4 +146,4 @@ QString getModerators(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

@@ -12,7 +12,7 @@ namespace {
 constexpr int PICKER_WIDTH = 256;
 constexpr int PICKER_HEIGHT = 256;
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -144,7 +144,7 @@ void SBCanvas::updatePixmap()
     this->gradientPixmap_ = QPixmap::fromImage(img);
 }
 
-void SBCanvas::paintEvent(QPaintEvent * )
+void SBCanvas::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -193,4 +193,4 @@ void SBCanvas::emitUpdatedColor()
     this->colorChanged(this->color_);
 }
 
-}
+}  // namespace chatterino

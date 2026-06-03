@@ -22,4 +22,4 @@ QString unmonitorUser(const CommandContext &ctx);
 
 QString unrestrictUser(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

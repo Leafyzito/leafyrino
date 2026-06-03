@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "Application.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 
+#include "Application.hpp"
 #include "common/Literals.hpp"
-#include "common/QLogging.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
+#include "common/QLogging.hpp"
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
 #include "singletons/WindowManager.hpp"
@@ -34,7 +34,8 @@ constexpr auto HOMIES_USER_AGENT =
     "(KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36";
 constexpr auto HOMIES_BADGE_FRAME_LIFETIME = std::chrono::minutes{4};
 
-QJsonArray extractBadgesArray(const NetworkResult &result, const QString &sourceName)
+QJsonArray extractBadgesArray(const NetworkResult &result,
+                              const QString &sourceName)
 {
     const auto object = result.parseJson();
     if (!object.isEmpty() && object.contains("badges") &&
@@ -65,10 +66,9 @@ EmotePtr createBadgeEmote(const QString &sourceTag, const QString &badgeName,
     }
 
     const auto tooltip = badgeJson.value("tooltip").toString().trimmed();
-    const auto resolvedName =
-        !badgeName.trimmed().isEmpty() ? badgeName.trimmed()
-                                       : (!tooltip.isEmpty() ? tooltip
-                                                             : u"badge"_s);
+    const auto resolvedName = !badgeName.trimmed().isEmpty()
+                                  ? badgeName.trimmed()
+                                  : (!tooltip.isEmpty() ? tooltip : u"badge"_s);
 
     auto makeImage = [](const QString &url, qreal scale) {
         if (url.isEmpty())
@@ -85,11 +85,12 @@ EmotePtr createBadgeEmote(const QString &sourceTag, const QString &badgeName,
 
     auto emote = Emote{
         .name = EmoteName{sourceTag % u":" % resolvedName},
-        .images = ImageSet{
-            makeImage(image1, 1),
-            makeImage(badgeJson.value("image2").toString().trimmed(), 0.5),
-            makeImage(badgeJson.value("image3").toString().trimmed(), 0.25),
-        },
+        .images =
+            ImageSet{
+                makeImage(image1, 1),
+                makeImage(badgeJson.value("image2").toString().trimmed(), 0.5),
+                makeImage(badgeJson.value("image3").toString().trimmed(), 0.25),
+            },
         .tooltip = Tooltip{tooltip},
         .homePage = Url{},
         .id = EmoteId{image1},
@@ -133,19 +134,21 @@ void storeBadgeCentricBadges(const QJsonArray &badges, const QString &sourceTag,
     qsizetype userCountEstimate = 0;
     for (const auto &badgeValue : badges)
     {
-        userCountEstimate += badgeValue.toObject().value("users").toArray().size();
+        userCountEstimate +=
+            badgeValue.toObject().value("users").toArray().size();
     }
 
     badgeMap.clear();
     emotes.clear();
-    badgeMap.reserve(static_cast<size_t>(std::max<qsizetype>(badges.size(), userCountEstimate)));
+    badgeMap.reserve(static_cast<size_t>(
+        std::max<qsizetype>(badges.size(), userCountEstimate)));
     emotes.reserve(badges.size());
 
     for (const auto &badgeValue : badges)
     {
         const auto badgeJson = badgeValue.toObject();
-        auto emote = createBadgeEmote(sourceTag, badgeJson.value("tooltip").toString(),
-                                      badgeJson);
+        auto emote = createBadgeEmote(
+            sourceTag, badgeJson.value("tooltip").toString(), badgeJson);
         if (!emote)
         {
             continue;
@@ -165,11 +168,10 @@ void storeBadgeCentricBadges(const QJsonArray &badges, const QString &sourceTag,
     }
 }
 
-}
+}  // namespace
 
 HomiesBadges::HomiesBadges()
 {
-
     QTimer::singleShot(3500, [this] {
         this->startLoading();
     });
@@ -229,8 +231,7 @@ void HomiesBadges::loadHomiesBadges()
                 this->queueRefresh();
             }
 
-            qCDebug(chatterinoApp) << "[Homies] Loaded"
-                                   << loadedCount
+            qCDebug(chatterinoApp) << "[Homies] Loaded" << loadedCount
                                    << "badges from chatterinohomies.com";
         })
         .onError([](const NetworkResult &result) {
@@ -266,8 +267,7 @@ void HomiesBadges::loadHomiesBadges()
                 this->queueRefresh();
             }
 
-            qCDebug(chatterinoApp) << "[Homies] Loaded"
-                                   << loadedCount
+            qCDebug(chatterinoApp) << "[Homies] Loaded" << loadedCount
                                    << "badges from itzalex.github.io/badges";
         })
         .onError([](const NetworkResult &result) {
@@ -303,8 +303,7 @@ void HomiesBadges::loadHomiesBadges()
                 this->queueRefresh();
             }
 
-            qCDebug(chatterinoApp) << "[Homies] Loaded"
-                                   << loadedCount
+            qCDebug(chatterinoApp) << "[Homies] Loaded" << loadedCount
                                    << "badges from itzalex.github.io/badges2";
         })
         .onError([](const NetworkResult &result) {

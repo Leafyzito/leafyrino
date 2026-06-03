@@ -20,7 +20,6 @@ struct BttvLiveUpdateEmoteUpdateAddMessage {
     bool validate() const;
 
 private:
-
     bool badChannelID_;
 };
 
@@ -33,7 +32,6 @@ struct BttvLiveUpdateEmoteRemoveMessage {
     bool validate() const;
 
 private:
-
     bool badChannelID_;
 };
 
@@ -47,4 +45,4 @@ struct BttvLiveUpdateUserUpdateMessage {
     bool hasBadge() const;
 };
 
-}
+}  // namespace chatterino

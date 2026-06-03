@@ -112,7 +112,7 @@ void tryMigrateLinuxSettingsInto(const QString &destinationPath)
     }
 }
 
-}
+}  // namespace
 
 Paths::Paths()
 {
@@ -186,7 +186,6 @@ void Paths::initRootDirectory()
     assert(this->portable_.has_value());
 
     this->rootAppDataDirectory = [&]() -> QString {
-
         if (Modes::instance().isPortable)
         {
             return QCoreApplication::applicationDirPath();
@@ -215,7 +214,6 @@ void Paths::initRootDirectory()
 
 void Paths::initSubDirectories()
 {
-
     assert(!this->rootAppDataDirectory.isEmpty());
 
     auto makePath = [&](const QString &name) -> QString {
@@ -249,4 +247,4 @@ void Paths::initSubDirectories()
 #endif
 }
 
-}
+}  // namespace chatterino

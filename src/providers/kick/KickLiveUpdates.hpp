@@ -26,4 +26,4 @@ private:
     friend KickLiveUpdatesPrivate;
 };
 
-}
+}  // namespace chatterino

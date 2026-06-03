@@ -30,4 +30,4 @@ void IconDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
     painter->drawPixmap(scaledRect, data.value<QPixmap>());
 }
 
-}
+}  // namespace chatterino

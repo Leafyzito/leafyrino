@@ -40,7 +40,7 @@ QString authenticatedTopicUserID(const QString &topic)
     return {};
 }
 
-}
+}  // namespace
 
 class PubSubManagerPrivate
     : public BasicPubSubManager<PubSubManagerPrivate, PubSubClient>
@@ -258,8 +258,7 @@ void PubSub::forgetOtherUserAuthenticatedTopics(const QString &activeUserID)
     }
 }
 
-void PubSub::listenToAuthenticatedTopic(QString topic,
-                                        const QString &authToken)
+void PubSub::listenToAuthenticatedTopic(QString topic, const QString &authToken)
 {
     const auto normalizedToken = authToken.trimmed();
     if (topic.isEmpty() || normalizedToken.isEmpty())
@@ -292,4 +291,4 @@ void PubSub::reconnect()
     this->private_->reconnect();
 }
 
-}
+}  // namespace chatterino

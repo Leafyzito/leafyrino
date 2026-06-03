@@ -27,7 +27,7 @@ constexpr QStringView API_PRONOUNS_ENDPOINT = u"/pronouns";
 constexpr int API_TIMEOUT_MS = 5 * 1000;
 constexpr int MAX_PRONOUN_LIST_RETRIES = 5;
 
-}
+}  // namespace
 
 namespace chatterino::pronouns {
 
@@ -83,7 +83,6 @@ void AlejoApi::fetch(
             auto status = result.status();
             if (status.has_value() && status == 404)
             {
-
                 onDone({UserPronouns()});
                 return;
             }
@@ -213,4 +212,4 @@ UserPronouns AlejoApi::parsePronoun(const QJsonObject &object)
     return {};
 }
 
-}
+}  // namespace chatterino::pronouns

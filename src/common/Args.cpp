@@ -91,7 +91,7 @@ std::optional<Args::Channel> parseActivateOption(QString input)
     };
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -330,4 +330,4 @@ void Args::applyCustomChannelLayout(const QString &argValue, const Paths &paths)
     }
 }
 
-}
+}  // namespace chatterino

@@ -381,7 +381,6 @@ HighlightAlert processHighlights(KickMessageBuilder &builder,
 {
     if (getSettings()->isBlacklistedUser(builder->loginName))
     {
-
         return {};
     }
 
@@ -419,12 +418,11 @@ QStringView plural(QStringView pluralText, uint64_t n)
     return pluralText;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
-KickMessageBuilder::KickMessageBuilder(SystemMessageTag ,
-                                       KickChannel *channel,
+KickMessageBuilder::KickMessageBuilder(SystemMessageTag, KickChannel *channel,
                                        const QDateTime &time)
     : channel_(channel)
 {
@@ -993,4 +991,4 @@ void KickMessageBuilder::appendMentionedUser(const QString &username,
     }
 }
 
-}
+}  // namespace chatterino

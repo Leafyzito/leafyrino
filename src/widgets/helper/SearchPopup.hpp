@@ -52,4 +52,4 @@ private:
     QList<std::reference_wrapper<ChannelView>> searchChannels_;
 };
 
-}
+}  // namespace chatterino

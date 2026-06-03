@@ -49,4 +49,4 @@ private:
     ThreadGuard tgBadges;
 };
 
-}
+}  // namespace chatterino

@@ -46,7 +46,7 @@ private:
 
 using FilterRecordPtr = std::shared_ptr<FilterRecord>;
 
-}
+}  // namespace chatterino
 
 namespace pajlada {
 
@@ -89,4 +89,4 @@ struct Deserialize<chatterino::FilterRecordPtr> {
     }
 };
 
-}
+}  // namespace pajlada

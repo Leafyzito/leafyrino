@@ -59,7 +59,7 @@ QString formatChattersError(HelixGetChattersError error, const QString &message)
     return errorMessage;
 }
 
-}
+}  // namespace
 
 namespace chatterino::commands {
 
@@ -139,4 +139,4 @@ QString testChatters(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

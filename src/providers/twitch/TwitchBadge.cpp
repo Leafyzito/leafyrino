@@ -41,4 +41,4 @@ bool TwitchBadge::operator==(const TwitchBadge &other) const
     return this->key_ == other.key_ && this->value_ == other.value_;
 }
 
-}
+}  // namespace chatterino

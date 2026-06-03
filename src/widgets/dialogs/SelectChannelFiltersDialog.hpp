@@ -20,4 +20,4 @@ private:
     QList<QUuid> currentSelection_;
 };
 
-}
+}  // namespace chatterino

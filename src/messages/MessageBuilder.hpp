@@ -90,7 +90,6 @@ struct HighlightAlert {
 class MessageBuilder
 {
 public:
-
     MessageBuilder();
 
     MessageBuilder(SystemMessageTag, const QString &text,
@@ -291,4 +290,4 @@ private:
     QColor usernameColor_ = {153, 153, 153};
 };
 
-}
+}  // namespace chatterino

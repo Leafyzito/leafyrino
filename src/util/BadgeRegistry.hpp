@@ -14,7 +14,7 @@ namespace seventv::eventapi {
 struct TwitchUser;
 struct KickUser;
 using User = std::variant<TwitchUser, KickUser>;
-}
+}  // namespace seventv::eventapi
 
 struct Emote;
 using EmotePtr = std::shared_ptr<const Emote>;
@@ -48,7 +48,6 @@ protected:
                                  const QJsonObject &badgeJson) const = 0;
 
 private:
-
     mutable std::shared_mutex mutex_;
 
     std::unordered_map<QString, EmotePtr> badgeMap_;
@@ -58,4 +57,4 @@ private:
     std::unordered_map<QString, EmotePtr> knownBadges_;
 };
 
-}
+}  // namespace chatterino

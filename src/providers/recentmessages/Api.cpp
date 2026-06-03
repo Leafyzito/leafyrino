@@ -109,4 +109,4 @@ void load(
     });
 }
 
-}
+}  // namespace chatterino::recentmessages

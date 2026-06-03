@@ -14,4 +14,4 @@ void initMoltorinoUpdateButton(PixmapButton &button,
                                const std::function<void()> &relayout,
                                pajlada::Signals::SignalHolder &signalHolder);
 
-}
+}  // namespace chatterino

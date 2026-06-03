@@ -52,4 +52,4 @@ public:
     virtual MessageSinkTraits sinkTraits() const = 0;
 };
 
-}
+}  // namespace chatterino

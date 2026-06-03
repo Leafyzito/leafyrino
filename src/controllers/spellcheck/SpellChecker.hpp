@@ -16,7 +16,6 @@ class Channel;
 class TwitchChannel;
 
 struct DictionaryInfo {
-
     QString name;
 
     QString path;
@@ -43,4 +42,4 @@ private:
     std::unique_ptr<SpellCheckerPrivate> private_;
 };
 
-}
+}  // namespace chatterino

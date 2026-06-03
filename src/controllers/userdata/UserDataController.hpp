@@ -65,4 +65,4 @@ private:
     pajlada::Signals::NoArgSignal userDataUpdated_;
 };
 
-}
+}  // namespace chatterino

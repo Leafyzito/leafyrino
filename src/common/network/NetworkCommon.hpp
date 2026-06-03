@@ -30,4 +30,4 @@ enum class NetworkRequestType {
 std::vector<std::pair<QByteArray, QByteArray>> parseHeaderList(
     const QString &headerListString);
 
-}
+}  // namespace chatterino

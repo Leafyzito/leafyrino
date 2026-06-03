@@ -264,7 +264,7 @@ std::optional<QJsonObject> loadTheme(const ThemeDescriptor &theme)
     return loadThemeFromPath(theme.path);
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -508,7 +508,6 @@ void Theme::parseFrom(const QJsonObject &root, bool isCustomTheme)
     std::optional<QJsonObject> fallbackTheme;
     if (isCustomTheme)
     {
-
         auto fallbackThemeName =
             root["metadata"_L1]["fallbackTheme"_L1].toString(
                 this->isLightTheme() ? "Light" : "Dark");
@@ -641,4 +640,4 @@ Theme *getTheme()
     return getApp()->getThemes();
 }
 
-}
+}  // namespace chatterino

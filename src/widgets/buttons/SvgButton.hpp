@@ -20,9 +20,7 @@ class SvgButton : public Button
     Q_OBJECT
 
 public:
-
     struct Src {
-
         QString dark;
 
         QString light;
@@ -59,4 +57,4 @@ private:
     std::optional<QColor> color_;
 };
 
-}
+}  // namespace chatterino

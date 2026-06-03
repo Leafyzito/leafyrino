@@ -27,7 +27,6 @@ QString formatError(const HelixUpdateChatSettingsError error,
     switch (error)
     {
         case Error::UserMissingScope: {
-
             errorMessage += "Missing required scope. "
                             "Re-login with your "
                             "account and try again.";
@@ -36,7 +35,6 @@ QString formatError(const HelixUpdateChatSettingsError error,
 
         case Error::UserNotAuthorized:
         case Error::Forbidden: {
-
             errorMessage += "You don't have permission to "
                             "perform that action.";
         }
@@ -97,7 +95,7 @@ auto failureCallback = [](ChannelPtr channel, int durationUnitMultiplier = 1) {
 const auto P_NOT_LOGGED_IN =
     QStringLiteral("You must be logged in to update chat settings!");
 
-}
+}  // namespace
 
 namespace chatterino::commands {
 
@@ -432,4 +430,4 @@ QString uniqueChatOff(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

@@ -313,7 +313,8 @@ public:
     QString roomId() const;
     SharedAccessGuard<const RoomModes> accessRoomModes() const;
     SharedAccessGuard<const StreamStatus> accessStreamStatus() const;
-    SharedAccessGuard<const std::optional<PinnedMessage>> accessPinnedMessage() const;
+    SharedAccessGuard<const std::optional<PinnedMessage>> accessPinnedMessage()
+        const;
     void setPinnedMessage(std::optional<PinnedMessage> pin);
     void refreshPinnedMessage();
     void pinMessage(const QString &messageId, int durationSeconds = 1200);
@@ -330,7 +331,8 @@ public:
     void handlePinnedChatUpdate(const QJsonObject &data);
 
     // Predictions & Points
-    SharedAccessGuard<const std::optional<PredictionEvent>> accessPrediction() const;
+    SharedAccessGuard<const std::optional<PredictionEvent>> accessPrediction()
+        const;
     void setActivePrediction(std::optional<PredictionEvent> prediction);
     void handlePredictionUpdate(const QJsonObject &data);
     void handleUserPointsUpdate(const QJsonObject &payload);
@@ -730,8 +732,7 @@ private:
     boost::circular_buffer_space_optimized<QueuedRedemption>
         waitingRedemptions_{MAX_QUEUED_REDEMPTIONS};
     boost::circular_buffer_space_optimized<QString>
-        recentChannelPointRedemptions_{
-            MAX_RECENT_CHANNEL_POINT_REDEMPTIONS};
+        recentChannelPointRedemptions_{MAX_RECENT_CHANNEL_POINT_REDEMPTIONS};
 
     bool mod_ = false;
     bool leadMod_ = false;

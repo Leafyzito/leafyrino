@@ -31,4 +31,4 @@ private:
     QString representation;
 };
 
-}
+}  // namespace chatterino::pronouns

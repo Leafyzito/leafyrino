@@ -33,4 +33,4 @@ private:
     QSpinBox *edit;
 };
 
-}
+}  // namespace chatterino

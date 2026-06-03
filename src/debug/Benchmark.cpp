@@ -26,4 +26,4 @@ qreal BenchmarkGuard::getElapsedMs()
     return qreal(this->timer_.nsecsElapsed()) / 1000000.0;
 }
 
-}
+}  // namespace chatterino

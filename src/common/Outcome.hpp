@@ -52,4 +52,4 @@ private:
     bool success_;
 };
 
-}
+}  // namespace chatterino

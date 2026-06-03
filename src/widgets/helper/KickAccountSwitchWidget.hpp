@@ -18,4 +18,4 @@ private:
     pajlada::Signals::SignalHolder managedConnections_;
 };
 
-}
+}  // namespace chatterino

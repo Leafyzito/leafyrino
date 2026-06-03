@@ -25,7 +25,7 @@ Expected<void, WriteManifestError> writeManifestTo(QString directory,
                                                    const QString &filename,
                                                    const QJsonDocument &json);
 
-}
+}  // namespace chatterino::nm::detail
 
 namespace chatterino {
 
@@ -45,7 +45,7 @@ namespace nm::client {
 void sendMessage(const QByteArray &array);
 void writeToCout(const QByteArray &array);
 
-}
+}  // namespace nm::client
 
 class NativeMessagingServer final
 {
@@ -85,4 +85,4 @@ private:
     friend ReceiverThread;
 };
 
-}
+}  // namespace chatterino

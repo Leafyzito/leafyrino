@@ -74,4 +74,4 @@ private:
         managedConnections;
 };
 
-}
+}  // namespace chatterino

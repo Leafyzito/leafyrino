@@ -317,7 +317,6 @@ struct HelixChatSettings {
 };
 
 struct HelixVip {
-
     QString userId;
 
     QString userName;
@@ -832,7 +831,6 @@ enum class HelixSendShoutoutError {
 };
 
 struct HelixStartCommercialResponse {
-
     int length;
 
     QString message;
@@ -849,7 +847,6 @@ struct HelixStartCommercialResponse {
 };
 
 struct HelixShieldModeStatus {
-
     bool isActive;
 
     QString moderatorID;
@@ -910,7 +907,6 @@ enum class HelixSendMessageError {
 };
 
 struct HelixError {
-
     QString error;
 
     int status;
@@ -1318,7 +1314,6 @@ public:
     virtual void update(QString clientId, QString oauthToken) = 0;
 
 protected:
-
     virtual void updateChatSettings(
         QString broadcasterID, QString moderatorID, QJsonObject json,
         ResultCallback<HelixChatSettings> successCallback,
@@ -1329,7 +1324,6 @@ protected:
 class Helix final : public IHelix
 {
 public:
-
     void fetchUsers(QStringList userIds, QStringList userLogins,
                     ResultCallback<std::vector<HelixUser>> successCallback,
                     HelixFailureCallback failureCallback) final;
@@ -1644,7 +1638,6 @@ public:
     static void initialize();
 
 protected:
-
     void updateChatSettings(
         QString broadcasterID, QString moderatorID, QJsonObject json,
         ResultCallback<HelixChatSettings> successCallback,
@@ -1699,4 +1692,4 @@ void initializeHelix(IHelix *_instance);
 
 IHelix *getHelix();
 
-}
+}  // namespace chatterino

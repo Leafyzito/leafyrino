@@ -20,4 +20,4 @@ struct HotkeyCategoryData {
     QString displayName;
 };
 
-}
+}  // namespace chatterino

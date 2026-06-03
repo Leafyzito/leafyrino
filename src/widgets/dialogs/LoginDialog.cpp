@@ -75,7 +75,7 @@ bool logInWithCredentials(QWidget *parent, const QString &userID,
     return true;
 }
 
-}
+}  // namespace
 
 BasicLoginWidget::BasicLoginWidget()
 {
@@ -277,4 +277,4 @@ LoginDialog::LoginDialog(QWidget *parent)
     this->ui_.mainLayout.addWidget(&this->ui_.buttonBox);
 }
 
-}
+}  // namespace chatterino

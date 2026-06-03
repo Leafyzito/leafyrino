@@ -34,4 +34,4 @@ private:
     QString channelURL_;
 };
 
-}
+}  // namespace chatterino

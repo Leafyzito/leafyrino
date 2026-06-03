@@ -60,4 +60,4 @@ private:
     friend class StreamerModePrivate;
 };
 
-}
+}  // namespace chatterino

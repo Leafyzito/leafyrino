@@ -164,4 +164,4 @@ QString unignoreUser(const CommandContext &ctx)
     return unblockUser(ctx);
 }
 
-}
+}  // namespace chatterino::commands

@@ -25,4 +25,4 @@ protected:
     bool handleEnter(QKeyEvent *e, QDialogButtonBox *buttonBox);
 };
 
-}
+}  // namespace chatterino

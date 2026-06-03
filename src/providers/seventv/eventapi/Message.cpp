@@ -30,4 +30,4 @@ std::optional<Message> parseBaseMessage(const QByteArray &blob)
     return Message(json);
 }
 
-}
+}  // namespace chatterino::seventv::eventapi

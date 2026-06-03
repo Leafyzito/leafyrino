@@ -17,7 +17,7 @@ class TwitchChannel;
 struct Message;
 using MessagePtr = std::shared_ptr<const Message>;
 
-}
+}  // namespace chatterino
 
 namespace chatterino::eventsub {
 
@@ -41,4 +41,4 @@ void handleModerateMessage(
     const lib::payload::channel_moderate::v2::Event &event,
     const lib::payload::channel_moderate::v2::Unraid &action);
 
-}
+}  // namespace chatterino::eventsub

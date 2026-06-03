@@ -127,8 +127,8 @@ TEST_P(MessageLayoutContainerTest, RtlReordering)
         .selectedChannel = nullptr,
         .message = message,
     };
-    container.beginLayout(ctx.width, ctx.scale, ctx.imageScale,
-                          ctx.emoteScale, ctx.badgeScale, ctx.centerBadges,
+    container.beginLayout(ctx.width, ctx.scale, ctx.imageScale, ctx.emoteScale,
+                          ctx.badgeScale, ctx.centerBadges,
                           {MessageFlag::Collapsed});
 
     auto elements = makeElements(inputText);

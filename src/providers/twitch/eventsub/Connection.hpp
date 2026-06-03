@@ -106,4 +106,4 @@ private:
     std::unordered_set<SubscriptionRequest> subscriptions;
 };
 
-}
+}  // namespace chatterino::eventsub

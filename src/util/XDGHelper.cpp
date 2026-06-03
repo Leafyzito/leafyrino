@@ -45,7 +45,6 @@ std::optional<XDGDesktopFile> processMimeAppsList(
     auto defaultApps = defaultGroup.find(HTTPS_MIMETYPE);
     if (defaultApps != defaultGroup.cend())
     {
-
         auto desktopIds = defaultApps->second.split(';', Qt::SkipEmptyParts);
         for (const auto &entry : desktopIds)
         {
@@ -118,13 +117,12 @@ std::optional<XDGDesktopFile> searchMimeAppsListsInDirectory(
     return {};
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
 std::optional<XDGDesktopFile> getDefaultBrowserDesktopFile()
 {
-
     QStringList associations;
     std::unordered_set<QString> denyList;
 
@@ -187,7 +185,6 @@ QString parseDesktopExecProgram(const QString &execKey)
 
     if (!program.startsWith('"'))
     {
-
         auto end = program.indexOf(' ');
         if (end != -1)
         {
@@ -196,11 +193,9 @@ QString parseDesktopExecProgram(const QString &execKey)
     }
     else
     {
-
         auto endQuote = program.indexOf('"', 1);
         if (endQuote == -1)
         {
-
             program = program.mid(1);
             qCWarning(LOG).noquote().nospace()
                 << "Malformed desktop entry key " << program << ", originally "
@@ -208,7 +203,6 @@ QString parseDesktopExecProgram(const QString &execKey)
         }
         else
         {
-
             program = program.mid(1, endQuote - 1);
         }
     }
@@ -218,6 +212,6 @@ QString parseDesktopExecProgram(const QString &execKey)
     return program;
 }
 
-}
+}  // namespace chatterino
 
 #endif

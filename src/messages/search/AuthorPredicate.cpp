@@ -12,7 +12,6 @@ AuthorPredicate::AuthorPredicate(const QString &authors, bool negate)
     : MessagePredicate(negate)
     , authors_()
 {
-
     for (const auto &author : authors.split(',', Qt::SkipEmptyParts))
     {
         this->authors_ << author;
@@ -25,4 +24,4 @@ bool AuthorPredicate::appliesToImpl(const Message &message)
            this->authors_.contains(message.loginName, Qt::CaseInsensitive);
 }
 
-}
+}  // namespace chatterino

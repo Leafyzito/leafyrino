@@ -18,4 +18,4 @@ QString deleteAllMessages(const CommandContext &ctx);
 
 QString deleteOneMessage(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

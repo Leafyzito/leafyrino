@@ -14,4 +14,4 @@ struct Diag {
     std::atomic<uint32_t> connectionsFailed{0};
 };
 
-}
+}  // namespace chatterino::liveupdates

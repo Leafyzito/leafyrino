@@ -42,7 +42,6 @@ AccountsPage::AccountsPage()
     });
 
     view->getTableView()->setStyleSheet("background: #333");
-
 }
 
-}
+}  // namespace chatterino

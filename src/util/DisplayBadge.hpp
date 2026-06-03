@@ -17,4 +17,4 @@ private:
     QString badgeName_;
 };
 
-}
+}  // namespace chatterino

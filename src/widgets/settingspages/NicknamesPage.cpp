@@ -60,4 +60,4 @@ bool NicknamesPage::filterElements(const QString &query)
     return this->view_->filterSearchResults(query, fields);
 }
 
-}
+}  // namespace chatterino

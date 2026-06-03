@@ -40,4 +40,4 @@ void ColorItemDelegate::paint(QPainter *painter,
     painter->restore();
 }
 
-}
+}  // namespace chatterino

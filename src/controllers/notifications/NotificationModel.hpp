@@ -17,7 +17,6 @@ class NotificationModel : public SignalVectorModel<QString>
     explicit NotificationModel(QObject *parent);
 
 protected:
-
     QString getItemFromRow(std::vector<QStandardItem *> &row,
                            const QString &original) override;
 
@@ -27,4 +26,4 @@ protected:
     friend class NotificationController;
 };
 
-}
+}  // namespace chatterino

@@ -16,4 +16,4 @@ QString endPoll(const CommandContext &ctx);
 
 QString cancelPoll(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

@@ -42,4 +42,4 @@ constexpr nonstd::unexpected<std::decay_t<E>> makeUnexpected(E &&value)
 template <typename T>
 using ExpectedStr = Expected<T, QString>;
 
-}
+}  // namespace chatterino

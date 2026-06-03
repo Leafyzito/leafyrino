@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "singletons/Paths.hpp"
 #include "providers/twitch/TwitchNameHistory.hpp"
+#include "singletons/Paths.hpp"
 #include "widgets/BaseWindow.hpp"
 #include "widgets/DraggablePopup.hpp"
 

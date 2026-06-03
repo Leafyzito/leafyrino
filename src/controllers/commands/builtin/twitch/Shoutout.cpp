@@ -105,11 +105,12 @@ QString sendShoutout(const CommandContext &ctx)
         },
         [channel, target] {
             channel->addSystemMessage(
-                QString("Could not look up user: %1. Check the username or log in again.")
+                QString("Could not look up user: %1. Check the username or log "
+                        "in again.")
                     .arg(target));
         });
 
     return "";
 }
 
-}
+}  // namespace chatterino::commands

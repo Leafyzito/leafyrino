@@ -77,7 +77,7 @@ private:
     std::weak_ptr<TwitchAccount> weak;
 };
 
-}
+}  // namespace
 
 namespace chatterino::lua::api {
 
@@ -85,13 +85,11 @@ void createAccounts(sol::table &c2)
 {
     c2.new_usertype<WeakTwitchAccount>(
 
-        "TwitchAccount", sol::no_constructor,
-        sol::meta_function::to_string, &WeakTwitchAccount::login,
-        "is_valid", &WeakTwitchAccount::isValid,
-        "login", &WeakTwitchAccount::login,
-        "id", &WeakTwitchAccount::id,
-        "color", &WeakTwitchAccount::color,
-        "is_anon", &WeakTwitchAccount::isAnon
+        "TwitchAccount", sol::no_constructor, sol::meta_function::to_string,
+        &WeakTwitchAccount::login, "is_valid", &WeakTwitchAccount::isValid,
+        "login", &WeakTwitchAccount::login, "id", &WeakTwitchAccount::id,
+        "color", &WeakTwitchAccount::color, "is_anon",
+        &WeakTwitchAccount::isAnon
 
     );
 
@@ -100,6 +98,6 @@ void createAccounts(sol::table &c2)
     });
 }
 
-}
+}  // namespace chatterino::lua::api
 
 #endif

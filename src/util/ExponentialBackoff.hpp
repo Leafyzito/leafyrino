@@ -12,7 +12,6 @@ template <unsigned maxSteps>
 class ExponentialBackoff
 {
 public:
-
     ExponentialBackoff(const std::chrono::milliseconds &start)
         : start_(start)
     {
@@ -43,4 +42,4 @@ private:
     unsigned step_ = 1;
 };
 
-}
+}  // namespace chatterino

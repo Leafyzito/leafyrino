@@ -36,7 +36,6 @@ std::optional<size_t> inferArraySize(lua_State *L)
     lua_pushnil(L);
     while (lua_next(L, -2) != 0)
     {
-
         if (lua_isinteger(L, -2) == 0)
         {
             lua_pop(L, 2);
@@ -46,7 +45,6 @@ std::optional<size_t> inferArraySize(lua_State *L)
         auto key = lua_tointeger(L, -2);
         if (key <= 0)
         {
-
             if (key == 0 && lua_islightuserdata(L, -1) &&
                 lua_touserdata(L, -1) == nullptr)
             {
@@ -216,7 +214,7 @@ void stringifyValue(lua_State *L, auto &writer, uint16_t depth)
     }
 }
 
-}
+}  // namespace
 
 namespace chatterino::lua::api {
 
@@ -259,6 +257,6 @@ int jsonStringify(lua_State *L)
     return 1;
 }
 
-}
+}  // namespace chatterino::lua::api
 
 #endif

@@ -19,4 +19,4 @@ const QString &getSampleChannelRewardIRCMessage();
 
 const QStringList &getSampleLinkMessages();
 
-}
+}  // namespace chatterino

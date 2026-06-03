@@ -14,4 +14,4 @@ QString blockTerm(const CommandContext &ctx);
 
 QString unblockTerm(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

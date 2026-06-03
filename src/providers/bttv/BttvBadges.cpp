@@ -16,8 +16,7 @@ QString BttvBadges::idForBadge(const QJsonObject &badgeJson) const
     return badgeJson["url"].toString();
 }
 
-EmotePtr BttvBadges::createBadge(const QString &id,
-                                 const QJsonObject & ) const
+EmotePtr BttvBadges::createBadge(const QString &id, const QJsonObject &) const
 {
     auto emote = Emote{
         .name = EmoteName{u"betterttv:pro"_s},
@@ -30,4 +29,4 @@ EmotePtr BttvBadges::createBadge(const QString &id,
     return std::make_shared<const Emote>(std::move(emote));
 }
 
-}
+}  // namespace chatterino

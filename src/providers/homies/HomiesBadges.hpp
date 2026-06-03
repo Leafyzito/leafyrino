@@ -6,10 +6,11 @@
 
 #include "messages/ImageSet.hpp"
 
-#include <array>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QString>
+
+#include <array>
 #include <atomic>
 #include <shared_mutex>
 #include <unordered_map>

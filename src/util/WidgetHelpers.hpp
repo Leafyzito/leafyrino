@@ -29,4 +29,4 @@ void moveWindowTo(QWidget *window, QPoint position,
 void showAndMoveWindowTo(QWidget *window, QPoint position,
                          BoundsChecking mode = BoundsChecking::DesiredPosition);
 
-}
+}  // namespace chatterino::widgets

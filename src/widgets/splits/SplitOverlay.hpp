@@ -50,4 +50,4 @@ private:
     QPushButton *down_;
 };
 
-}
+}  // namespace chatterino

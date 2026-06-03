@@ -8,8 +8,8 @@
 #include "common/Common.hpp"
 #include "common/QLogging.hpp"
 #include "controllers/accounts/AccountController.hpp"
-#include "controllers/commands/Command.hpp"
 #include "controllers/commands/builtin/twitch/Pin.hpp"
+#include "controllers/commands/Command.hpp"
 #include "controllers/commands/CommandController.hpp"
 #include "controllers/emotes/EmoteController.hpp"
 #include "controllers/filters/FilterSet.hpp"
@@ -30,10 +30,10 @@
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/links/LinkInfo.hpp"
 #include "providers/links/LinkResolver.hpp"
+#include "providers/translation/Translator.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
-#include "providers/translation/Translator.hpp"
 #include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
@@ -159,8 +159,7 @@ bool isTranslatableContentElement(const MessageElement &element,
                       MessageElementFlag::RepeatedMessageCounter,
                       MessageElementFlag::ReplyButton,
                       MessageElementFlag::ModeratorTools,
-                      MessageElementFlag::Timestamp,
-                      MessageElementFlag::Badges,
+                      MessageElementFlag::Timestamp, MessageElementFlag::Badges,
                       MessageElementFlag::Username,
                       MessageElementFlag::KickUsername,
                       MessageElementFlag::ChannelName}))
@@ -173,12 +172,11 @@ bool isTranslatableContentElement(const MessageElement &element,
         return false;
     }
 
-    return flags.hasAny({MessageElementFlag::Text, MessageElementFlag::Emote,
-                         MessageElementFlag::EmojiAll,
-                         MessageElementFlag::BitsStatic,
-                         MessageElementFlag::BitsAnimated,
-                         MessageElementFlag::BitsAmount,
-                         MessageElementFlag::Mention});
+    return flags.hasAny(
+        {MessageElementFlag::Text, MessageElementFlag::Emote,
+         MessageElementFlag::EmojiAll, MessageElementFlag::BitsStatic,
+         MessageElementFlag::BitsAnimated, MessageElementFlag::BitsAmount,
+         MessageElementFlag::Mention});
 }
 
 bool shouldPreserveAfterTranslatedContent(const MessageElement &element)
@@ -257,8 +255,9 @@ TranslationRequestText prepareTranslationRequestText(
             continue;
         }
 
-        const auto placeholder = QStringLiteral("MOLTOEMOTE%1").arg(
-            placeholderIndex++, 4, 10, QLatin1Char('0'));
+        const auto placeholder =
+            QStringLiteral("MOLTOEMOTE%1")
+                .arg(placeholderIndex++, 4, 10, QLatin1Char('0'));
         placeholderEmotes.insert(placeholder, *emoteIt);
         word = placeholder;
     }
@@ -331,19 +330,18 @@ void appendTranslatedContent(std::vector<std::unique_ptr<MessageElement>> &out,
         for (const auto &variant :
              getApp()->getEmotes()->getEmojis()->parse(word))
         {
-            std::visit(
-                variant::Overloaded{
-                    [&](const EmotePtr &emote) {
-                        builder.emplace<EmoteElement>(
-                            emote, MessageElementFlag::EmojiAll);
-                    },
-                    [&](QStringView text) {
-                        appendTranslatedTextPart(builder, text, channel,
-                                                 placeholderEmotes,
-                                                 originalEmotes);
-                    },
-                },
-                variant);
+            std::visit(variant::Overloaded{
+                           [&](const EmotePtr &emote) {
+                               builder.emplace<EmoteElement>(
+                                   emote, MessageElementFlag::EmojiAll);
+                           },
+                           [&](QStringView text) {
+                               appendTranslatedTextPart(builder, text, channel,
+                                                        placeholderEmotes,
+                                                        originalEmotes);
+                           },
+                       },
+                       variant);
         }
     }
 
@@ -363,13 +361,10 @@ void appendTranslatedContent(std::vector<std::unique_ptr<MessageElement>> &out,
     }
 }
 
-MessagePtrMut makeTranslatedMessage(const MessagePtr &message,
-                                    const TranslationResult &translation,
-                                    const QString &targetLanguage,
-                                    const QString &targetLanguageName,
-                                    Channel *channel,
-                                    const QHash<QString, EmotePtr>
-                                        &placeholderEmotes)
+MessagePtrMut makeTranslatedMessage(
+    const MessagePtr &message, const TranslationResult &translation,
+    const QString &targetLanguage, const QString &targetLanguageName,
+    Channel *channel, const QHash<QString, EmotePtr> &placeholderEmotes)
 {
     auto sourceMessage = originalMessageForTranslation(message);
     if (sourceMessage == nullptr)
@@ -382,11 +377,11 @@ MessagePtrMut makeTranslatedMessage(const MessagePtr &message,
         translation.translatedText, placeholderEmotes);
     translated->translatedFrom = sourceMessage;
     translated->messageText = translatedText;
-    translated->searchText = sourceMessage->searchText + QStringLiteral(" ") +
-                             translatedText;
+    translated->searchText =
+        sourceMessage->searchText + QStringLiteral(" ") + translatedText;
 
-    const auto contentStart = std::ranges::find_if(
-        sourceMessage->elements, [&](const auto &element) {
+    const auto contentStart =
+        std::ranges::find_if(sourceMessage->elements, [&](const auto &element) {
             return isTranslatableContentElement(*element, *sourceMessage);
         });
     if (contentStart == sourceMessage->elements.end())
@@ -497,11 +492,10 @@ QHash<QString, int> &autoTranslationInFlightByChannel()
     return requests;
 }
 
-bool shouldApplyAutomaticTranslation(const MessagePtr &message,
-                                     const TranslationResult &translation,
-                                     const QString &targetLanguage,
-                                     const QHash<QString, EmotePtr>
-                                         &placeholderEmotes)
+bool shouldApplyAutomaticTranslation(
+    const MessagePtr &message, const TranslationResult &translation,
+    const QString &targetLanguage,
+    const QHash<QString, EmotePtr> &placeholderEmotes)
 {
     const auto detectedLanguage =
         normalizedLanguageCode(translation.detectedLanguage);
@@ -519,8 +513,7 @@ bool shouldApplyAutomaticTranslation(const MessagePtr &message,
 
 void translateMessageForChannel(const ChannelPtr &channel,
                                 const MessagePtr &message, QObject *caller,
-                                bool showErrors,
-                                bool skipSameLanguage,
+                                bool showErrors, bool skipSameLanguage,
                                 std::function<void()> onFinished = {})
 {
     if (channel == nullptr)
@@ -540,8 +533,7 @@ void translateMessageForChannel(const ChannelPtr &channel,
     {
         if (showErrors)
         {
-            channel->addSystemMessage(
-                "There is no message text to translate.");
+            channel->addSystemMessage("There is no message text to translate.");
         }
         if (onFinished)
         {
@@ -557,13 +549,11 @@ void translateMessageForChannel(const ChannelPtr &channel,
     requestTextTranslation(
         requestText.text, targetLanguage, caller,
         [channel, message, targetLanguage, targetLanguageName, showErrors,
-         skipSameLanguage,
-         placeholderEmotes = requestText.placeholderEmotes](
+         skipSameLanguage, placeholderEmotes = requestText.placeholderEmotes](
             const TranslationResult &translation) {
             if (skipSameLanguage &&
-                !shouldApplyAutomaticTranslation(message, translation,
-                                                 targetLanguage,
-                                                 placeholderEmotes))
+                !shouldApplyAutomaticTranslation(
+                    message, translation, targetLanguage, placeholderEmotes))
             {
                 return;
             }
@@ -718,7 +708,8 @@ ScrollbarHighlight scrollbarHighlightForMessage(
     return message->getScrollBarHighlight();
 }
 
-QMenu *addEmoteContextMenuItems(QMenu *menu, const Emote &emote, QStringView kind)
+QMenu *addEmoteContextMenuItems(QMenu *menu, const Emote &emote,
+                                QStringView kind)
 {
     auto *openAction = menu->addAction("&Open");
     auto *openMenu = new QMenu(menu);
@@ -1470,12 +1461,13 @@ void ChannelView::layoutVisibleMessages(
                     .flags = layoutFlags,
                     .width = layoutWidth,
                     .scale = this->scale(),
-                    .imageScale =
-                        this->overrideImageScale_.value_or(
-                            this->scale() *
-                            static_cast<float>(this->devicePixelRatio())),
-                    .emoteScale = this->overrideEmoteScale_.value_or(this->scale()),
-                    .badgeScale = this->overrideBadgeScale_.value_or(this->scale()),
+                    .imageScale = this->overrideImageScale_.value_or(
+                        this->scale() *
+                        static_cast<float>(this->devicePixelRatio())),
+                    .emoteScale =
+                        this->overrideEmoteScale_.value_or(this->scale()),
+                    .badgeScale =
+                        this->overrideBadgeScale_.value_or(this->scale()),
                     .centerBadges = this->centerBadges_,
                     .selectedChannel = selectedChannel,
                     .message = *message->getMessage(),
@@ -1526,10 +1518,9 @@ void ChannelView::updateScrollbar(const std::vector<MessageLayoutPtr> &messages,
                 .flags = flags,
                 .width = layoutWidth,
                 .scale = this->scale(),
-                .imageScale =
-                    this->overrideImageScale_.value_or(
-                        this->scale() *
-                        static_cast<float>(this->devicePixelRatio())),
+                .imageScale = this->overrideImageScale_.value_or(
+                    this->scale() *
+                    static_cast<float>(this->devicePixelRatio())),
                 .emoteScale = this->overrideEmoteScale_.value_or(this->scale()),
                 .badgeScale = this->overrideBadgeScale_.value_or(this->scale()),
                 .centerBadges = this->centerBadges_,
@@ -2266,8 +2257,8 @@ void ChannelView::messageReplaced(size_t hint, const MessagePtr &prev,
     }
 
     this->scrollBar_->replaceHighlight(
-        index,
-        scrollbarHighlightForMessage(replacement, this->nukePreviewMessageIds_));
+        index, scrollbarHighlightForMessage(replacement,
+                                            this->nukePreviewMessageIds_));
 
     this->messages_.replaceItem(index, newItem);
     this->queueLayout();
@@ -2541,7 +2532,8 @@ void ChannelView::paintEvent(QPaintEvent *event)
 
     QPainter painter(this);
 
-    if (!this->transparentBackground_) {
+    if (!this->transparentBackground_)
+    {
         painter.fillRect(this->rect(), this->messageColors_.channelBackground);
     }
 
@@ -2835,14 +2827,13 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                             .flags = flags,
                             .width = this->getLayoutWidth(),
                             .scale = this->scale(),
-                            .imageScale =
-                                this->overrideImageScale_.value_or(
-                                    this->scale() *
-                                    static_cast<float>(this->devicePixelRatio())),
-                            .emoteScale =
-                                this->overrideEmoteScale_.value_or(this->scale()),
-                            .badgeScale =
-                                this->overrideBadgeScale_.value_or(this->scale()),
+                            .imageScale = this->overrideImageScale_.value_or(
+                                this->scale() *
+                                static_cast<float>(this->devicePixelRatio())),
+                            .emoteScale = this->overrideEmoteScale_.value_or(
+                                this->scale()),
+                            .badgeScale = this->overrideBadgeScale_.value_or(
+                                this->scale()),
                             .centerBadges = this->centerBadges_,
                             .selectedChannel = selectedChannel,
                             .message = *snapshot[i - 1]->getMessage(),
@@ -2886,14 +2877,13 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                             .flags = flags,
                             .width = this->getLayoutWidth(),
                             .scale = this->scale(),
-                            .imageScale =
-                                this->overrideImageScale_.value_or(
-                                    this->scale() *
-                                    static_cast<float>(this->devicePixelRatio())),
-                            .emoteScale =
-                                this->overrideEmoteScale_.value_or(this->scale()),
-                            .badgeScale =
-                                this->overrideBadgeScale_.value_or(this->scale()),
+                            .imageScale = this->overrideImageScale_.value_or(
+                                this->scale() *
+                                static_cast<float>(this->devicePixelRatio())),
+                            .emoteScale = this->overrideEmoteScale_.value_or(
+                                this->scale()),
+                            .badgeScale = this->overrideBadgeScale_.value_or(
+                                this->scale()),
                             .centerBadges = this->centerBadges_,
                             .selectedChannel = selectedChannel,
                             .message = *snapshot[i + 1]->getMessage(),
@@ -3780,8 +3770,7 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
     auto chan = this->inferChannel(*layout->getMessage());
 
     // Pin / Unpin action (outside Moderate submenu)
-    if (auto *twitchChannel =
-            dynamic_cast<TwitchChannel *>(chan.get()))
+    if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(chan.get()))
     {
         if (!layout->getMessage()->id.isEmpty() &&
             twitchChannel->hasModRights() &&
@@ -3798,7 +3787,8 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
             else
             {
                 menu->addAction("&Pin message", [twitchChannel, id] {
-                    twitchChannel->pinMessage(id, getSettings()->defaultPinDuration);
+                    twitchChannel->pinMessage(
+                        id, getSettings()->defaultPinDuration);
                 });
             }
         }
@@ -3861,10 +3851,11 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
                 }
                 else
                 {
-                    moderateMenu->addAction("&Pin message", [twitchChannel, id] {
-                        twitchChannel->pinMessage(
-                            id, getSettings()->defaultPinDuration);
-                    });
+                    moderateMenu->addAction(
+                        "&Pin message", [twitchChannel, id] {
+                            twitchChannel->pinMessage(
+                                id, getSettings()->defaultPinDuration);
+                        });
                 }
             }
         }
@@ -4299,7 +4290,8 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
             ChannelPtr channel = this->inferChannel(
                 *layout->getMessage(), InferChannel::SearchParentIfAvailable);
 
-            if (value.startsWith("/pin") && (value == "/pin" || value.startsWith("/pin ")))
+            if (value.startsWith("/pin") &&
+                (value == "/pin" || value.startsWith("/pin ")))
             {
                 auto *tc = dynamic_cast<TwitchChannel *>(channel.get());
                 if (tc)
@@ -4360,9 +4352,8 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
         break;
 
         case Link::AcknowledgeChatWarning: {
-            auto channel =
-                std::dynamic_pointer_cast<TwitchChannel>(
-                    getApp()->getTwitch()->getChannelOrEmptyByID(link.value));
+            auto channel = std::dynamic_pointer_cast<TwitchChannel>(
+                getApp()->getTwitch()->getChannelOrEmptyByID(link.value));
 
             if (channel == nullptr)
             {

@@ -15,7 +15,6 @@ namespace chatterino {
 AccountController::AccountController()
     : accounts_(SharedPtrElementLess<Account>{})
 {
-
     std::ignore =
         this->twitch.accounts.itemInserted.connect([this](const auto &args) {
             this->accounts_.insert(args.item);
@@ -93,4 +92,4 @@ AccountModel *AccountController::createModel(QObject *parent)
     return model;
 }
 
-}
+}  // namespace chatterino

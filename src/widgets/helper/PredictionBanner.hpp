@@ -1,17 +1,17 @@
 #pragma once
 
-#include "widgets/BaseWidget.hpp"
+#include "common/Channel.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
+#include "widgets/BaseWidget.hpp"
+#include "widgets/buttons/SvgButton.hpp"
 
+#include <pajlada/signals/scoped-connection.hpp>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QVBoxLayout>
 #include <QVariantAnimation>
-#include <pajlada/signals/scoped-connection.hpp>
-#include <vector>
+#include <QVBoxLayout>
 
-#include "widgets/buttons/SvgButton.hpp"
-#include "common/Channel.hpp"
+#include <vector>
 
 namespace chatterino {
 
@@ -24,8 +24,9 @@ class PredictionBanner : public BaseWidget
 public:
     explicit PredictionBanner(Split *split, QWidget *parent = nullptr);
 
-    void setPrediction(const std::optional<TwitchChannel::PredictionEvent> &prediction,
-                        TwitchChannel *channel);
+    void setPrediction(
+        const std::optional<TwitchChannel::PredictionEvent> &prediction,
+        TwitchChannel *channel);
 
     bool hasPrediction() const;
 
@@ -84,4 +85,4 @@ private:
     std::vector<pajlada::Signals::ScopedConnection> managedConnections_;
 };
 
-}
+}  // namespace chatterino

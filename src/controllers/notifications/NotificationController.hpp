@@ -71,4 +71,4 @@ private:
         "/notifications/twitch"};
 };
 
-}
+}  // namespace chatterino

@@ -41,7 +41,6 @@ public:
         MessagePlatform platform = MessagePlatform::AnyOrTwitch) const;
 
 private:
-
     void rebuildChecks(Settings &settings);
 
     UniqueAccess<std::vector<HighlightCheck>> checks_;
@@ -51,4 +50,4 @@ private:
     std::vector<boost::signals2::scoped_connection> bConnections;
 };
 
-}
+}  // namespace chatterino

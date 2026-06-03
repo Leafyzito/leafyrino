@@ -120,7 +120,7 @@ bool ButtonEventFilter::eventFilter(QObject *watched, QEvent *event)
     return QObject::eventFilter(watched, event);
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -296,7 +296,6 @@ void SplitOverlay::resizeEvent(QResizeEvent *event)
 void SplitOverlay::mouseMoveEvent(QMouseEvent *event)
 {
     BaseWidget::mouseMoveEvent(event);
-
 }
 
-}
+}  // namespace chatterino

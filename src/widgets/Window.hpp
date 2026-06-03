@@ -64,4 +64,4 @@ private:
     friend class Notebook;
 };
 
-}
+}  // namespace chatterino

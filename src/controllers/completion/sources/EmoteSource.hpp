@@ -18,7 +18,6 @@
 namespace chatterino::completion {
 
 struct EmoteItem {
-
     EmotePtr emote{};
 
     QString searchName{};
@@ -59,4 +58,4 @@ private:
     std::vector<EmoteItem> output_{};
 };
 
-}
+}  // namespace chatterino::completion

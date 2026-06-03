@@ -30,4 +30,4 @@ private:
 
 IntItem *findIntItemInList(QListWidget *list, int value);
 
-}
+}  // namespace chatterino

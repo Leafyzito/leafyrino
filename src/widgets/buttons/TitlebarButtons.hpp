@@ -18,7 +18,6 @@ class TitleBarButton;
 class TitleBarButtons : QObject
 {
 public:
-
     TitleBarButtons(QWidget *window, TitleBarButton *minButton,
                     TitleBarButton *maxButton, TitleBarButton *closeButton);
 
@@ -37,7 +36,6 @@ public:
     void setRegularSize();
 
 private:
-
     TitleBarButton *buttonForHt(size_t ht) const;
 
     QWidget *window_ = nullptr;
@@ -48,4 +46,4 @@ private:
 
 #endif
 
-}
+}  // namespace chatterino

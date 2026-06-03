@@ -117,4 +117,4 @@ QJsonObject MessageThread::toJson() const
     return obj;
 }
 
-}
+}  // namespace chatterino

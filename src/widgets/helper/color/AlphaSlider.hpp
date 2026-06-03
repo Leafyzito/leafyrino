@@ -49,4 +49,4 @@ private:
     void setAlpha(int alpha);
 };
 
-}
+}  // namespace chatterino

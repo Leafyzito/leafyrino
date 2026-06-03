@@ -35,7 +35,7 @@ QJsonObject createDataJson(const QString &typeName, const Condition &condition)
     return data;
 }
 
-}
+}  // namespace
 
 namespace chatterino::seventv::eventapi {
 
@@ -140,4 +140,4 @@ bool ChannelCondition::operator!=(const ChannelCondition &rhs) const
     return !(*this == rhs);
 }
 
-}
+}  // namespace chatterino::seventv::eventapi

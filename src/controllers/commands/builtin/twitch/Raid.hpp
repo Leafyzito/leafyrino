@@ -16,4 +16,4 @@ QString cancelRaid(const CommandContext &ctx);
 
 QString sendRaidNow(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

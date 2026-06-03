@@ -23,7 +23,6 @@ namespace chatterino::commands {
 
 bool IncompleteHelixUser::hydrateFrom(const std::vector<HelixUser> &users)
 {
-
     auto resolvedIt =
         std::find_if(users.begin(), users.end(), [this](const auto &user) {
             if (!this->login.isEmpty())
@@ -68,7 +67,6 @@ Expected<std::vector<PerformChannelAction>, QString> parseChannelAction(
 {
     if (ctx.channel == nullptr)
     {
-
         return makeUnexpected(
             "A " % command %
             " action must be performed with a channel as a context");
@@ -193,7 +191,6 @@ ExpectedStr<StartUserParticipationAction> parseUserParticipationAction(
 {
     if (ctx.twitchChannel == nullptr)
     {
-
         return makeUnexpected("The " % command %
                               " command only works in Twitch channels");
     }
@@ -262,4 +259,4 @@ ExpectedStr<StartUserParticipationAction> parseUserParticipationAction(
     return action;
 }
 
-}
+}  // namespace chatterino::commands

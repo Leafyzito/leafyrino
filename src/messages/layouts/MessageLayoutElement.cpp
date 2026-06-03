@@ -31,8 +31,8 @@ namespace {
 
 QRectF snapRectToDevicePixels(const QRectF &rect, const QPainter &painter)
 {
-    const auto dpr = painter.device() ? painter.device()->devicePixelRatioF()
-                                      : 1.0;
+    const auto dpr =
+        painter.device() ? painter.device()->devicePixelRatioF() : 1.0;
     const auto snap = [dpr](qreal value) {
         return std::round(value * dpr) / dpr;
     };
@@ -51,10 +51,9 @@ void alignRectBottomCenter(QRectF &rect, const QRectF &reference)
     rect.moveCenter(newCenter);
 }
 
-void drawPixmapWithOptionalSmoothing(QPainter &painter, const QRectF &target,
-                                     const QPixmap &pixmap,
-                                     chatterino::FlagsEnum<
-                                         chatterino::MessageElementFlag> flags)
+void drawPixmapWithOptionalSmoothing(
+    QPainter &painter, const QRectF &target, const QPixmap &pixmap,
+    chatterino::FlagsEnum<chatterino::MessageElementFlag> flags)
 {
     const bool smooth =
         flags.has(chatterino::MessageElementFlag::BadgeMoltorino);
@@ -328,8 +327,8 @@ void LayeredImageLayoutElement::paint(QPainter &painter,
             QRectF destRect(0, 0, size.width(), size.height());
             alignRectBottomCenter(destRect, fullRect);
 
-            painter.drawPixmap(snapRectToDevicePixels(destRect, painter), *pixmap,
-                               QRectF());
+            painter.drawPixmap(snapRectToDevicePixels(destRect, painter),
+                               *pixmap, QRectF());
         }
     }
 }
@@ -539,8 +538,7 @@ void TextLayoutElement::paint(QPainter &painter,
     const QFontMetricsF metrics(font);
     if (this->getRect().height() > std::ceil(metrics.height()))
     {
-        const auto baseline =
-            this->getRect().bottom() - metrics.descent();
+        const auto baseline = this->getRect().bottom() - metrics.descent();
         painter.drawText(QPointF(this->getRect().x(), baseline), text);
     }
     else

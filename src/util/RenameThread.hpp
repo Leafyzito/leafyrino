@@ -29,4 +29,4 @@ void renameThread(T &thread, const QString &threadName)
 #endif
 }
 
-}
+}  // namespace chatterino

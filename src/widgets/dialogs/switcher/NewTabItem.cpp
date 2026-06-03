@@ -62,4 +62,4 @@ QSize NewTabItem::sizeHint(const QRect &rect) const
     return QSize(rect.width(), ICON_SIZE.height());
 }
 
-}
+}  // namespace chatterino

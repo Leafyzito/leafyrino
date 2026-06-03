@@ -28,4 +28,4 @@ private:
     ActionCallback action_;
 };
 
-}
+}  // namespace chatterino

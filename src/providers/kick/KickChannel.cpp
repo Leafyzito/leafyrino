@@ -201,7 +201,6 @@ void KickChannel::updateSeventvUser(
 {
     if (dispatch.connectionIndex != this->seventvKickConnectionIndex_)
     {
-
         return;
     }
 
@@ -553,7 +552,6 @@ void KickChannel::setUserInfo(UserInit init)
 
 size_t KickChannel::maxBurstMessages() const
 {
-
     if (this->hasHighRateLimit())
     {
         return 20;
@@ -563,7 +561,6 @@ size_t KickChannel::maxBurstMessages() const
 
 std::chrono::milliseconds KickChannel::minMessageOffset() const
 {
-
     if (this->hasHighRateLimit())
     {
         return 50ms;
@@ -656,7 +653,6 @@ QString KickChannel::prepareMessage(const QString &message) const
     }
     else
     {
-
         outMessage = baseMessage;
     }
     return outMessage;
@@ -750,7 +746,6 @@ void KickChannel::updateSeventvData(const QString &newUserID,
 
             if (oldUserID || oldEmoteSetID)
             {
-
                 getApp()->getTwitch()->dropSeventvChannel(
                     oldUserID.value_or(QString()),
                     oldEmoteSetID.value_or(QString()));
@@ -862,4 +857,4 @@ QDebug operator<<(QDebug dbg, const KickChannel &chan)
     return dbg;
 }
 
-}
+}  // namespace chatterino

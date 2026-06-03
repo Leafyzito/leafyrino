@@ -591,9 +591,8 @@ void HotkeyController::clearRemovedDefaults()
     // The user-facing name changed, but default hotkey names are persisted keys.
     // Remove the accidental duplicate from early cross-tab search builds.
     if (this->tryRemoveDefault(HotkeyCategory::Split,
-                               QKeySequence("Ctrl+Shift+F"),
-                               "showGlobalSearch", {},
-                               "search all open tabs"))
+                               QKeySequence("Ctrl+Shift+F"), "showGlobalSearch",
+                               {}, "search all open tabs"))
     {
         auto addedDefaults =
             pajlada::Settings::Setting<std::vector<QString>>::get(

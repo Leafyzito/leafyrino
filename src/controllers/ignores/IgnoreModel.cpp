@@ -19,7 +19,6 @@ IgnoreModel::IgnoreModel(QObject *parent)
 IgnorePhrase IgnoreModel::getItemFromRow(std::vector<QStandardItem *> &row,
                                          const IgnorePhrase &original)
 {
-
     return IgnorePhrase{row[0]->data(Qt::DisplayRole).toString(),
                         row[1]->data(Qt::CheckStateRole).toBool(),
                         row[3]->data(Qt::CheckStateRole).toBool(),
@@ -37,4 +36,4 @@ void IgnoreModel::getRowFromItem(const IgnorePhrase &item,
     setStringItem(row[4], item.getReplace());
 }
 
-}
+}  // namespace chatterino

@@ -70,7 +70,7 @@ protected:
 private:
     bool selected = false;
 };
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -136,4 +136,4 @@ void MicroNotebook::setShowHeader(bool showHeader)
     this->horizontalSeparator->setVisible(showHeader);
 }
 
-}
+}  // namespace chatterino

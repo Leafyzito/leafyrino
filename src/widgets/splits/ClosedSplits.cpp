@@ -56,4 +56,4 @@ std::size_t ClosedSplits::size()
     return ClosedSplits::closedSplits_.size();
 }
 
-}
+}  // namespace chatterino

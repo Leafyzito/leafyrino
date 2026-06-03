@@ -178,7 +178,6 @@ public:
     Split *appendNewSplit(bool openChannelNameDialog);
 
     struct InsertOptions {
-
         std::optional<Position> position{};
 
         Split *relativeSplit{nullptr};
@@ -268,4 +267,4 @@ private:
     bool isDragging_ = false;
 };
 
-}
+}  // namespace chatterino

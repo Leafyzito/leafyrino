@@ -45,21 +45,18 @@ QString formatBanTimeoutError(const char *operation, HelixBanUserError error,
         break;
 
         case Error::TargetBanned: {
-
             errorMessage += QString("%1 is already banned in this channel.")
                                 .arg(userTarget);
         }
         break;
 
         case Error::CannotBanUser: {
-
             errorMessage +=
                 QString("You cannot %1 %2.").arg(operation, userTarget);
         }
         break;
 
         case Error::UserMissingScope: {
-
             errorMessage += "Missing required scope. "
                             "Re-login with your "
                             "account and try again.";
@@ -67,7 +64,6 @@ QString formatBanTimeoutError(const char *operation, HelixBanUserError error,
         break;
 
         case Error::UserNotAuthorized: {
-
             errorMessage += "You don't have permission to "
                             "perform that action.";
         }
@@ -114,7 +110,7 @@ void timeoutUserByID(const ChannelPtr &channel, const QString &channelID,
         });
 }
 
-}
+}  // namespace
 
 namespace chatterino::commands {
 
@@ -169,7 +165,6 @@ QString sendBan(const CommandContext &ctx)
         }
         else
         {
-
             userIDs.append(action.target.id);
         }
         if (action.channel.id.isEmpty())
@@ -181,13 +176,11 @@ QString sendBan(const CommandContext &ctx)
         }
         else
         {
-
             userIDs.append(action.channel.id);
         }
 
         if (!userLoginsToFetch.isEmpty())
         {
-
             getHelix()->fetchUsers(
                 userIDs, userLoginsToFetch,
                 [channel{ctx.channel}, actionChannel{action.channel},
@@ -220,7 +213,6 @@ QString sendBan(const CommandContext &ctx)
         }
         else
         {
-
             banUserByID(ctx.channel, action.channel.id,
                         currentUser->getUserId(), action.target.id, reason,
                         action.target.id);
@@ -325,7 +317,6 @@ QString sendTimeout(const CommandContext &ctx)
         }
         else
         {
-
             userIDs.append(action.target.id);
         }
         if (action.channel.id.isEmpty())
@@ -337,13 +328,11 @@ QString sendTimeout(const CommandContext &ctx)
         }
         else
         {
-
             userIDs.append(action.channel.id);
         }
 
         if (!userLoginsToFetch.isEmpty())
         {
-
             getHelix()->fetchUsers(
                 userIDs, userLoginsToFetch,
                 [channel{ctx.channel}, duration{action.duration},
@@ -377,7 +366,6 @@ QString sendTimeout(const CommandContext &ctx)
         }
         else
         {
-
             timeoutUserByID(ctx.channel, action.channel.id,
                             currentUser->getUserId(), action.target.id,
                             action.duration, reason, action.target.id);
@@ -387,4 +375,4 @@ QString sendTimeout(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

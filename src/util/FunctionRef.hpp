@@ -58,7 +58,6 @@ public:
     bool operator!=(const FunctionRef &other) const = default;
 
 private:
-
     using Callback = Ret(uintptr_t, Params...);
 
     Callback *callback = nullptr;
@@ -68,10 +67,9 @@ private:
     template <typename Callable>
     static Ret callTrampoline(uintptr_t callable, Params... params)
     {
-
         return (*reinterpret_cast<Callable *>(callable))(
             std::forward<Params>(params)...);
     }
 };
 
-}
+}  // namespace chatterino

@@ -27,4 +27,4 @@ bool LinkPredicate::appliesToImpl(const Message &message)
     return false;
 }
 
-}
+}  // namespace chatterino

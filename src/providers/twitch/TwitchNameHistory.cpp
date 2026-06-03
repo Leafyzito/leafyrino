@@ -5,12 +5,12 @@
 #include "common/network/NetworkResult.hpp"
 #include "singletons/Paths.hpp"
 
+#include <QFile>
 #include <QHash>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
-#include <QFile>
 #include <QSaveFile>
 #include <QSet>
 #include <QUrl>
@@ -230,8 +230,8 @@ TwitchNameHistory historyFromJson(const QJsonObject &object)
 {
     TwitchNameHistory history;
     history.userId = object.value("userId").toString().trimmed();
-    history.currentLogin =
-        normalizeTwitchNameHistoryLogin(object.value("currentLogin").toString());
+    history.currentLogin = normalizeTwitchNameHistoryLogin(
+        object.value("currentLogin").toString());
     history.fetchedAt =
         parseNameHistoryTimestamp(object.value("fetchedAt").toString());
 
@@ -395,8 +395,7 @@ std::optional<TwitchNameHistory> getCachedTwitchNameHistory(
     if (!trimmedUserId.isEmpty())
     {
         if (const auto it = cache.constFind(cacheKeyForUserId(trimmedUserId));
-            it != cache.cend() && *it != nullptr &&
-            nameHistoryIsFresh(**it) &&
+            it != cache.cend() && *it != nullptr && nameHistoryIsFresh(**it) &&
             historyMatchesExpectedLogin(**it, expectedCurrentLogin))
         {
             return **it;
@@ -405,8 +404,7 @@ std::optional<TwitchNameHistory> getCachedTwitchNameHistory(
     if (!expectedCurrentLogin.trimmed().isEmpty())
     {
         if (const auto it = cache.constFind(loginKey);
-            it != cache.cend() && *it != nullptr &&
-            nameHistoryIsFresh(**it) &&
+            it != cache.cend() && *it != nullptr && nameHistoryIsFresh(**it) &&
             historyMatchesExpectedLogin(**it, expectedCurrentLogin))
         {
             return **it;
@@ -465,8 +463,8 @@ void fetchTwitchNameHistoryByUserId(
             cacheNameHistory(history);
             successCallback(std::move(history));
         })
-        .onError([failureCallback = std::move(failureCallback)](
-                     const NetworkResult &result) {
+        .onError([failureCallback =
+                      std::move(failureCallback)](const NetworkResult &result) {
             failureCallback(result.formatError());
         })
         .execute();

@@ -10,7 +10,6 @@ const QSize GenericListItem::ICON_SIZE(32, 32);
 
 GenericListItem *GenericListItem::fromVariant(const QVariant &variant)
 {
-
     return static_cast<GenericListItem *>(variant.value<void *>());
 }
 
@@ -23,4 +22,4 @@ GenericListItem::GenericListItem(const QIcon &icon)
 {
 }
 
-}
+}  // namespace chatterino

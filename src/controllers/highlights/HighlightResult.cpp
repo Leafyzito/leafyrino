@@ -89,4 +89,4 @@ std::ostream &operator<<(std::ostream &os, const HighlightResult &result)
     return os;
 }
 
-}
+}  // namespace chatterino

@@ -110,4 +110,4 @@ const liveupdates::Diag &BttvLiveUpdates::diag() const
     return this->private_->diag;
 }
 
-}
+}  // namespace chatterino

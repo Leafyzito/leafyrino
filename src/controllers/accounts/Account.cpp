@@ -45,4 +45,4 @@ bool Account::operator<(const Account &other) const
     return std::tie(this->category_, a) < std::tie(other.category_, b);
 }
 
-}
+}  // namespace chatterino

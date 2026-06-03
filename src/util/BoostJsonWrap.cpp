@@ -173,4 +173,4 @@ BoostJsonValue BoostJsonArray::at(size_t i) const
     return {(*this->a)[i]};
 }
 
-}
+}  // namespace chatterino

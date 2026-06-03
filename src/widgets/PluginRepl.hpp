@@ -38,7 +38,6 @@ protected:
 
 private:
     struct LogOptions {
-
         size_t maxItems = 10;
     };
 
@@ -97,6 +96,6 @@ private:
     QFont font;
 };
 
-}
+}  // namespace chatterino
 
 #endif

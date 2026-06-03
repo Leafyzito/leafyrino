@@ -1099,7 +1099,8 @@ TEST(Commands, PredictionCommandOpensDialogInsteadOfCreatingViaArgs)
     EXPECT_CALL(mockHelix, createPrediction(_, _, _, _, _, _)).Times(0);
 
     getApp()->getCommands()->execCommand(
-        "/prediction --title \"Question\" --choice \"A\" --choice \"B\" --duration 60",
+        "/prediction --title \"Question\" --choice \"A\" --choice \"B\" "
+        "--duration 60",
         channel, false);
 
     PredictionDialog *openedDialog = nullptr;

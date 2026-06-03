@@ -40,7 +40,7 @@ QString randomMessage()
              (QRandomGenerator::global()->generate64() % MESSAGES.size()));
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -108,4 +108,4 @@ LastRunCrashDialog::LastRunCrashDialog(const Args &args, const Paths &paths)
     });
 }
 
-}
+}  // namespace chatterino

@@ -262,7 +262,7 @@ private:
     QLabel statusLabel;
 };
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -332,7 +332,7 @@ KickLoginPage::KickLoginPage()
     });
 }
 
-void KickLoginPage::paintEvent(QPaintEvent * )
+void KickLoginPage::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
 
@@ -341,4 +341,4 @@ void KickLoginPage::paintEvent(QPaintEvent * )
     painter.drawRect(this->rect());
 }
 
-}
+}  // namespace chatterino

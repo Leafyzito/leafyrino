@@ -40,7 +40,7 @@ constexpr bool isBytes(DebugObject target)
     }
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -92,8 +92,8 @@ QString DebugCount::getDebugText()
                     locale.toString(static_cast<qlonglong>(count.value));
             }
 
-            text += qmagicenum::enumName(static_cast<DebugObject>(key)) %
-                    ": " % formatted % '\n';
+            text += qmagicenum::enumName(static_cast<DebugObject>(key)) % ": " %
+                    formatted % '\n';
         }
     }
 
@@ -114,17 +114,15 @@ QString DebugCount::getDebugText()
         for (size_t i = 0; i < providerUsage.size() && i < MAX_PROVIDERS; ++i)
         {
             const auto &usage = providerUsage[i];
-            const auto percent =
-                (static_cast<double>(usage.bytes) * 100.0) /
-                static_cast<double>(providerBytes);
+            const auto percent = (static_cast<double>(usage.bytes) * 100.0) /
+                                 static_cast<double>(providerBytes);
 
-            text += QStringLiteral("  ") % usage.provider %
-                    QStringLiteral(": ") %
-                    locale.formattedDataSize(usage.bytes) %
-                    QStringLiteral(" (") %
-                    QString::number(percent, 'f', 1) % QStringLiteral("%, ") %
-                    locale.toString(static_cast<qlonglong>(usage.images)) %
-                    QStringLiteral(" img");
+            text +=
+                QStringLiteral("  ") % usage.provider % QStringLiteral(": ") %
+                locale.formattedDataSize(usage.bytes) % QStringLiteral(" (") %
+                QString::number(percent, 'f', 1) % QStringLiteral("%, ") %
+                locale.toString(static_cast<qlonglong>(usage.images)) %
+                QStringLiteral(" img");
             if (usage.animatedImages > 0)
             {
                 text += QStringLiteral(", ") %
@@ -140,4 +138,4 @@ QString DebugCount::getDebugText()
     return text;
 }
 
-}
+}  // namespace chatterino

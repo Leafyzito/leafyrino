@@ -238,9 +238,8 @@ int main(int argc, char **argv)
             << QSslSocket::sslLibraryVersionString();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 1, 0)
         qCInfo(chatterinoApp).noquote()
-            << "Leafyrino Qt SSL active backend:"
-            << QSslSocket::activeBackend() << "of"
-            << QSslSocket::availableBackends().join(", ");
+            << "Leafyrino Qt SSL active backend:" << QSslSocket::activeBackend()
+            << "of" << QSslSocket::availableBackends().join(", ");
 #    if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
         qCInfo(chatterinoApp) << "Leafyrino Qt SSL active backend features:"
                               << QSslSocket::supportedFeatures();

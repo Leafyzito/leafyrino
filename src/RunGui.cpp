@@ -120,7 +120,6 @@ std::unique_ptr<QLocalServer> createGuiActivationServer(const Paths &paths)
 
 void installCustomPalette()
 {
-
     auto dark = QApplication::palette();
 
     dark.setColor(QPalette::Window, QColor(22, 22, 22));
@@ -281,10 +280,8 @@ void clearCache(const QDir &dir)
 
 void clearCrashes(QDir dir)
 {
-
     if (!dir.cd("reports"))
     {
-
         return;
     }
 
@@ -308,7 +305,7 @@ void clearCrashes(QDir dir)
     }
     qCDebug(chatterinoApp) << "Deleted" << deletedCount << "crashdumps";
 }
-}
+}  // namespace
 
 bool activateExistingGuiInstance(const Paths &paths)
 {
@@ -398,4 +395,4 @@ void runGui(QApplication &a, const Paths &paths, Settings &settings,
 #endif
 }
 
-}
+}  // namespace chatterino

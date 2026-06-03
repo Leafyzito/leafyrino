@@ -15,4 +15,4 @@ enum NotebookTabVisibility : int {
     LiveOnly = 1,
 };
 
-}
+}  // namespace chatterino

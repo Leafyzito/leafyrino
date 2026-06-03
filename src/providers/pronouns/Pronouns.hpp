@@ -23,7 +23,6 @@ public:
         const std::function<void()> &callbackFail);
 
 private:
-
     std::optional<UserPronouns> getCachedUserPronoun(const QString &username);
 
     std::shared_mutex mutex;
@@ -32,4 +31,4 @@ private:
     AlejoApi alejoApi;
 };
 
-}
+}  // namespace chatterino::pronouns

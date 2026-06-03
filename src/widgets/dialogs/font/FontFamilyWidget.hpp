@@ -33,4 +33,4 @@ private:
     QSortFilterProxyModel *proxy;
 };
 
-}
+}  // namespace chatterino

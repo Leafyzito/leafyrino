@@ -1,15 +1,15 @@
 #pragma once
 
-#include "widgets/BaseWidget.hpp"
+#include "common/Channel.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
+#include "widgets/BaseWidget.hpp"
+#include "widgets/buttons/SvgButton.hpp"
 
+#include <pajlada/signals/scoped-connection.hpp>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <pajlada/signals/scoped-connection.hpp>
-#include <vector>
 
-#include "widgets/buttons/SvgButton.hpp"
-#include "common/Channel.hpp"
+#include <vector>
 
 namespace chatterino {
 
@@ -23,8 +23,9 @@ class PinnedMessageBanner : public BaseWidget
 public:
     explicit PinnedMessageBanner(Split *split, QWidget *parent = nullptr);
 
-    void setPinnedMessage(const std::optional<TwitchChannel::PinnedMessage> &pin,
-                          TwitchChannel *channel);
+    void setPinnedMessage(
+        const std::optional<TwitchChannel::PinnedMessage> &pin,
+        TwitchChannel *channel);
 
     bool hasPinnedMessage() const;
 
@@ -82,4 +83,4 @@ private:
     std::vector<pajlada::Signals::ScopedConnection> managedConnections_;
 };
 
-}
+}  // namespace chatterino

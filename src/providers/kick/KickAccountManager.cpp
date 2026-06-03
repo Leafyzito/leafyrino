@@ -189,7 +189,6 @@ bool KickAccountManager::removeAccount(KickAccount *account)
 
     if (account->username() == this->currentUsername)
     {
-
         this->currentUsername = "";
     }
 
@@ -205,4 +204,4 @@ void KickAccountManager::refreshAccounts() const
     }
 }
 
-}
+}  // namespace chatterino

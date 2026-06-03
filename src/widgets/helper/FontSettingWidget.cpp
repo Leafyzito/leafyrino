@@ -70,4 +70,4 @@ void FontSettingWidget::showDialog()
     this->dialog->show();
 }
 
-}
+}  // namespace chatterino

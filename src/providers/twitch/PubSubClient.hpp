@@ -27,7 +27,7 @@ struct TopicData {
     friend QDebug operator<<(QDebug debug, const TopicData &data);
 };
 
-}
+}  // namespace chatterino
 
 template <>
 struct std::hash<chatterino::TopicData> {
@@ -46,7 +46,6 @@ struct PubSubListenMessage;
 class PubSubClient : public BasicPubSubClient<TopicData, PubSubClient>
 {
 public:
-
     static constexpr size_t MAX_LISTENS = 50;
 
     struct UnlistenPrefixResponse {
@@ -56,15 +55,13 @@ public:
 
     PubSubClient(PubSub &manager, std::chrono::milliseconds heartbeatInterval);
 
-    void onOpen() ;
-    void onMessage(const QByteArray &msg) ;
+    void onOpen();
+    void onMessage(const QByteArray &msg);
 
     void checkHeartbeat();
 
-    QByteArray encodeSubscription(
-        const Subscription &subscription) ;
-    QByteArray encodeUnsubscription(
-        const Subscription &subscription) ;
+    QByteArray encodeSubscription(const Subscription &subscription);
+    QByteArray encodeUnsubscription(const Subscription &subscription);
 
 private:
     struct NonceInfo {
@@ -83,4 +80,4 @@ private:
     PubSub &manager_;
 };
 
-}
+}  // namespace chatterino

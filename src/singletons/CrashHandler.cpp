@@ -114,7 +114,7 @@ std::optional<bool> readRecoverySettings(const Paths &paths)
     return args;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -130,7 +130,6 @@ CrashHandler::CrashHandler(const Paths &paths_)
     }
     else
     {
-
         this->saveShouldRecover(false);
     }
 }
@@ -156,7 +155,6 @@ void CrashHandler::saveShouldRecover(bool value)
 std::unique_ptr<crashpad::CrashpadClient> installCrashHandler(
     const Args &args, const Paths &paths)
 {
-
     auto crashpadBinDir = QDir(QApplication::applicationDirPath());
 
     if (!crashpadBinDir.cd("crashpad"))
@@ -209,4 +207,4 @@ std::unique_ptr<crashpad::CrashpadClient> installCrashHandler(
 }
 #endif
 
-}
+}  // namespace chatterino

@@ -101,4 +101,4 @@ public Q_SLOTS:
     void reconnect();
 };
 
-}
+}  // namespace chatterino

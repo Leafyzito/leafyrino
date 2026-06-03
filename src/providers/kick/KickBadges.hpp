@@ -14,4 +14,4 @@ public:
         std::string_view name);
 };
 
-}
+}  // namespace chatterino

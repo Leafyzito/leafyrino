@@ -84,18 +84,17 @@ QProcess *createStreamlinkProcess()
         p->deleteLater();
     });
 
-    QObject::connect(
-        p,
-        static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(
-            &QProcess::finished),
-        [=](int , QProcess::ExitStatus ) {
-            p->deleteLater();
-        });
+    QObject::connect(p,
+                     static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(
+                         &QProcess::finished),
+                     [=](int, QProcess::ExitStatus) {
+                         p->deleteLater();
+                     });
 
     return p;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -108,11 +107,10 @@ void getStreamQualities(const QString &channelURL,
         p,
         static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(
             &QProcess::finished),
-        [=](int exitCode, QProcess::ExitStatus ) {
+        [=](int exitCode, QProcess::ExitStatus) {
             if (exitCode != 0)
             {
                 qCWarning(chatterinoStreamlink) << "Got error code" << exitCode;
-
             }
             QString lastLine = QString(p->readAllStandardOutput());
             lastLine = lastLine.trimmed().split('\n').last().trimmed();
@@ -127,7 +125,6 @@ void getStreamQualities(const QString &channelURL,
                     QString option = split.at(i);
                     if (option == "best)")
                     {
-
                         option = split.at(--i);
 
                         options << option.left(option.length() - 7);
@@ -246,4 +243,4 @@ void openStreamlinkForChannel(const QString &channel, QStringView prefixURL)
     openStreamlink(channelURL, quality, args);
 }
 
-}
+}  // namespace chatterino

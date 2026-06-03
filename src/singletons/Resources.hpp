@@ -11,4 +11,4 @@ namespace chatterino {
 Resources2 &getResources();
 void initResources();
 
-}
+}  // namespace chatterino

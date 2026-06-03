@@ -13,12 +13,10 @@ namespace chatterino {
 class LinkPredicate : public MessagePredicate
 {
 public:
-
     LinkPredicate(bool negate);
 
 protected:
-
     bool appliesToImpl(const Message &message) override;
 };
 
-}
+}  // namespace chatterino

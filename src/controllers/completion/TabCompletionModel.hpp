@@ -19,7 +19,6 @@ class Channel;
 class TabCompletionModel : public QStringListModel
 {
 public:
-
     explicit TabCompletionModel(Channel &channel, QObject *parent);
 
     void updateResults(const QString &query, const QString &fullTextContent,
@@ -56,4 +55,4 @@ private:
     std::unique_ptr<completion::Source> source_{};
 };
 
-}
+}  // namespace chatterino

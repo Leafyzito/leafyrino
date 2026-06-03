@@ -24,4 +24,4 @@ QString sendAnnouncementOrange(const CommandContext &ctx);
 
 QString sendAnnouncementPurple(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

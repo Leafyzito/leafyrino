@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include <type_traits>
-
 #include <QFlags>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QWidget>
+
+#include <type_traits>
 
 namespace chatterino {
 
@@ -35,4 +35,4 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
 };
 
-}
+}  // namespace chatterino

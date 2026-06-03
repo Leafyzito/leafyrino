@@ -35,4 +35,4 @@ private:
     std::unique_ptr<completion::Source> source_{};
 };
 
-};
+};  // namespace chatterino

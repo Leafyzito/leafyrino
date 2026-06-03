@@ -41,6 +41,6 @@ int debugTraceback(lua_State *L)
     return 1;
 }
 
-}
+}  // namespace chatterino::lua::api
 
 #endif

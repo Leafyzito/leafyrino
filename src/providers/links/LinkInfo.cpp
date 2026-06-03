@@ -107,4 +107,4 @@ void LinkInfo::setThumbnail(ImagePtr thumbnail)
     this->thumbnail_ = std::move(thumbnail);
 }
 
-}
+}  // namespace chatterino

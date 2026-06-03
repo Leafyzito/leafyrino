@@ -159,4 +159,4 @@ QComboBox *NotificationPage::createToastReactionComboBox()
 
     return toastReactionOptions;
 }
-}
+}  // namespace chatterino

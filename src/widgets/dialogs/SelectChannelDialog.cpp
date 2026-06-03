@@ -554,8 +554,7 @@ IndirectChannel SelectChannelDialog::getSelectedChannel() const
         const auto channelName = this->ui_.channelName->text().trimmed();
         if (this->ui_.channelAnonymous->isChecked())
         {
-            return getApp()->getTwitch()->getOrAddAnonymousChannel(
-                channelName);
+            return getApp()->getTwitch()->getOrAddAnonymousChannel(channelName);
         }
 
         return getApp()->getTwitch()->getOrAddChannel(channelName);

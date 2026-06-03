@@ -65,7 +65,6 @@ int HotkeyModel::beforeInsert(const std::shared_ptr<Hotkey> &item,
 
     if (nextCategoryModelIndex != -1 && proposedIndex >= nextCategoryModelIndex)
     {
-
         return proposedIndex - 1;
     }
 
@@ -120,4 +119,4 @@ std::tuple<int, int> HotkeyModel::getCurrentAndNextCategoryModelIndex(
     return {currentCategoryModelIndex, nextCategoryModelIndex};
 }
 
-}
+}  // namespace chatterino

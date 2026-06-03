@@ -173,4 +173,4 @@ bool EmoteSetCreateDispatch::validate() const
     return !this->emoteSetID.isEmpty();
 }
 
-}
+}  // namespace chatterino::seventv::eventapi

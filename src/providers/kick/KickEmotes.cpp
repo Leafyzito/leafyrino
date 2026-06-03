@@ -18,7 +18,7 @@ using StringMap =
 
 StringMap<EmotePtr> CACHE;
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -44,4 +44,4 @@ EmotePtr KickEmotes::emoteForID(QStringView id, QStringView name)
     return emote;
 }
 
-}
+}  // namespace chatterino

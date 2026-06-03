@@ -47,4 +47,4 @@ private:
     bool shownSingleKeyWarning = false;
 };
 
-}
+}  // namespace chatterino

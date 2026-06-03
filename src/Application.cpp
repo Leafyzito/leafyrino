@@ -41,8 +41,9 @@
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/folhinha/FolhinhaBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
-#include "providers/seventv/SeventvBadges.hpp"
+#include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/repetitions/RepeatedMessageDetector.hpp"
+#include "providers/seventv/SeventvBadges.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/seventv/SeventvPaints.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
@@ -55,8 +56,9 @@
 #include "singletons/CrashHandler.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/helper/LoggingChannel.hpp"
-#include "providers/moltorino/MoltorinoAuth.hpp"
 // #include "providers/moltorino/MoltorinoPresence.hpp"
+#include "common/network/NetworkRequest.hpp"
+#include "common/network/NetworkResult.hpp"
 #include "providers/moltorino/MoltorinoSupporterBadges.hpp"
 #include "singletons/Logging.hpp"
 #include "singletons/Paths.hpp"
@@ -72,13 +74,10 @@
 #include "widgets/splits/Split.hpp"
 #include "widgets/Window.hpp"
 
-#include "common/network/NetworkRequest.hpp"
-#include "common/network/NetworkResult.hpp"
-
 #include <miniaudio.h>
 #include <QApplication>
-#include <QDesktopServices>
 #include <QDateTime>
+#include <QDesktopServices>
 #include <QFontDatabase>
 #include <QTimer>
 #include <QUrl>
@@ -160,7 +159,7 @@ const QString TWITCH_PUBSUB_URL = "wss://pubsub-edge.twitch.tv";
 
 IApplication *INSTANCE = nullptr;
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -232,7 +231,6 @@ Application::Application(Settings &_settings, const Paths &paths,
 
 Application::~Application()
 {
-
     INSTANCE = nullptr;
 }
 
@@ -319,8 +317,7 @@ void Application::initialize(Settings &settings, const Paths &paths)
             }
             else
             {
-                auto expiry =
-                    QDateTime::fromString(expiryStr, Qt::ISODate);
+                auto expiry = QDateTime::fromString(expiryStr, Qt::ISODate);
 
                 needsRefresh =
                     !expiry.isValid() ||
@@ -508,7 +505,6 @@ FfzBadges *Application::getFfzBadges()
 
 BttvBadges *Application::getBttvBadges()
 {
-
     assert(this->bttvBadges);
 
     return this->bttvBadges.get();
@@ -516,7 +512,6 @@ BttvBadges *Application::getBttvBadges()
 
 SeventvBadges *Application::getSeventvBadges()
 {
-
     assert(this->seventvBadges);
 
     return this->seventvBadges.get();
@@ -719,7 +714,6 @@ SeventvEventAPI *Application::getSeventvEventAPI()
 
 pronouns::Pronouns *Application::getPronouns()
 {
-
     assert(this->pronouns);
 
     return this->pronouns.get();
@@ -834,4 +828,4 @@ bool isAppAboutToQuit()
     return ABOUT_TO_QUIT.load();
 }
 
-}
+}  // namespace chatterino

@@ -21,7 +21,6 @@ struct Emote;
 using EmotePtr = std::shared_ptr<const Emote>;
 
 struct EmojiData {
-
     QString value;
 
     QString nonQualified;
@@ -86,4 +85,4 @@ private:
     bool loaded_ = false;
 };
 
-}
+}  // namespace chatterino

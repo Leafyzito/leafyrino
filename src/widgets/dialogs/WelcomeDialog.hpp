@@ -14,4 +14,4 @@ public:
     WelcomeDialog();
 };
 
-}
+}  // namespace chatterino

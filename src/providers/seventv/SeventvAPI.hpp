@@ -48,4 +48,4 @@ public:
                             ErrorCallback &&onError);
 };
 
-}
+}  // namespace chatterino

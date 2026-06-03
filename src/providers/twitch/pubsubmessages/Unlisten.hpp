@@ -16,4 +16,4 @@ struct PubSubUnlistenMessage {
     QByteArray toJson() const;
 };
 
-}
+}  // namespace chatterino

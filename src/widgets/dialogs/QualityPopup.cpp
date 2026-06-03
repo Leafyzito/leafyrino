@@ -85,4 +85,4 @@ void QualityPopup::cancelButtonClicked()
     this->close();
 }
 
-}
+}  // namespace chatterino

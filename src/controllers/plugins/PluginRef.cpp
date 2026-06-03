@@ -61,6 +61,6 @@ bool PluginWeakRef::isAlive() const noexcept
     return !this->weak.expired();
 }
 
-}
+}  // namespace chatterino::lua
 
 #endif

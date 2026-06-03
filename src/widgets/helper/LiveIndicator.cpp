@@ -28,12 +28,12 @@ void LiveIndicator::setViewers(int viewers)
     this->updateScale();
 }
 
-void LiveIndicator::scaleChangedEvent(float )
+void LiveIndicator::scaleChangedEvent(float)
 {
     this->updateScale();
 }
 
-void LiveIndicator::paintEvent(QPaintEvent * )
+void LiveIndicator::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     QColor color = getTheme()->tabs.liveIndicator;
@@ -59,12 +59,12 @@ void LiveIndicator::paintEvent(QPaintEvent * )
     });
 }
 
-void LiveIndicator::enterEvent(QEnterEvent * )
+void LiveIndicator::enterEvent(QEnterEvent *)
 {
     this->hovered = true;
     this->update();
 }
-void LiveIndicator::leaveEvent(QEvent * )
+void LiveIndicator::leaveEvent(QEvent *)
 {
     this->hovered = false;
     this->update();
@@ -77,4 +77,4 @@ void LiveIndicator::updateScale()
     this->update();
 }
 
-}
+}  // namespace chatterino

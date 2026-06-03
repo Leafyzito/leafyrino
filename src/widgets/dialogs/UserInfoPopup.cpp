@@ -15,10 +15,10 @@
 #include "controllers/highlights/HighlightBlacklistUser.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "controllers/userdata/UserDataController.hpp"
+#include "messages/Link.hpp"
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "messages/MessageElement.hpp"
-#include "messages/Link.hpp"
 #include "providers/IvrApi.hpp"
 #include "providers/kick/KickAccount.hpp"
 #include "providers/kick/KickApi.hpp"
@@ -27,8 +27,8 @@
 #include "providers/pronouns/Pronouns.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/api/TwitchGql.hpp"
-#include "providers/twitch/TwitchBadge.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
+#include "providers/twitch/TwitchBadge.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "providers/twitch/TwitchNameHistory.hpp"
@@ -66,12 +66,12 @@
 #include <QFile>
 #include <QFontMetrics>
 #include <QFrame>
-#include <QHash>
-#include <QHBoxLayout>
-#include <QLabel>
 #include <QGridLayout>
 #include <QGuiApplication>
+#include <QHash>
+#include <QHBoxLayout>
 #include <QKeyEvent>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
@@ -83,13 +83,13 @@
 #include <QPainter>
 #include <QPointer>
 #include <QPushButton>
+#include <QShowEvent>
+#include <QStringBuilder>
 #include <QSvgRenderer>
 #include <QTimer>
 #include <QToolTip>
 #include <QUrl>
 #include <QUrlQuery>
-#include <QShowEvent>
-#include <QStringBuilder>
 #include <QVBoxLayout>
 #include <QWidgetAction>
 
@@ -150,11 +150,9 @@ public:
         this->setToolTip("Click to copy " + this->login_);
 
         const auto metrics = this->fontMetrics();
-        const auto loginWidth =
-            std::max(metrics.horizontalAdvance("koplayzenthraquiluxmorive") + 8,
-                     132);
-        const auto dateWidth =
-            metrics.horizontalAdvance("Sep 30, 2026") + 8;
+        const auto loginWidth = std::max(
+            metrics.horizontalAdvance("koplayzenthraquiluxmorive") + 8, 132);
+        const auto dateWidth = metrics.horizontalAdvance("Sep 30, 2026") + 8;
         const auto dashWidth = metrics.horizontalAdvance("-") + 8;
 
         auto *layout = new QGridLayout(this);
@@ -163,8 +161,7 @@ public:
         layout->setVerticalSpacing(0);
 
         auto *loginLabel = new QLabel(
-            metrics.elidedText(this->login_, Qt::ElideRight, loginWidth),
-            this);
+            metrics.elidedText(this->login_, Qt::ElideRight, loginWidth), this);
         loginLabel->setFixedWidth(loginWidth);
         loginLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
         loginLabel->setToolTip(this->login_);
@@ -189,8 +186,7 @@ public:
         layout->addWidget(rightLabel, 0, 3, Qt::AlignVCenter);
 
         const auto height = std::max(metrics.height() + 6, 22);
-        this->setFixedSize(loginWidth + dateWidth * 2 + dashWidth + 36,
-                           height);
+        this->setFixedSize(loginWidth + dateWidth * 2 + dashWidth + 36, height);
     }
 
 protected:
@@ -306,9 +302,8 @@ Label *addCopyableLabel(LayoutCreator<QHBoxLayout> box, const char *tooltip,
     return label.getElement();
 };
 
-void createUsercardStatusRow(LayoutCreator<QVBoxLayout> &vbox,
-                             QWidget **rowOut, QLabel **iconOut,
-                             Label **labelOut)
+void createUsercardStatusRow(LayoutCreator<QVBoxLayout> &vbox, QWidget **rowOut,
+                             QLabel **iconOut, Label **labelOut)
 {
     auto *row = new QWidget;
     auto *layout = new QHBoxLayout(row);
@@ -364,8 +359,7 @@ void createUsercardColorRow(LayoutCreator<QVBoxLayout> &vbox, QWidget **rowOut,
 QPixmap renderUsercardStatusIcon(const QString &path, int size, qreal scale)
 {
     static QHash<QString, QPixmap> cache;
-    const auto key =
-        QStringLiteral("%1:%2:%3").arg(path).arg(size).arg(scale);
+    const auto key = QStringLiteral("%1:%2:%3").arg(path).arg(size).arg(scale);
     if (auto it = cache.find(key); it != cache.end())
     {
         return *it;
@@ -434,10 +428,8 @@ int completeCalendarMonthsBetween(const QDate &from, const QDate &to)
 
 QString formatUsercardCount(int count, const QString &unit)
 {
-    return QStringLiteral("%1 %2%3")
-        .arg(count)
-        .arg(unit)
-        .arg(count == 1 ? QString() : QStringLiteral("s"));
+    return QStringLiteral("%1 %2%3").arg(count).arg(unit).arg(
+        count == 1 ? QString() : QStringLiteral("s"));
 }
 
 QString formatUsercardYearsMonths(int totalMonths)
@@ -473,20 +465,20 @@ QString formatUsercardFollowRelativeTime(const QDate &followedDate)
     }
     if (months >= 1)
     {
-        return QStringLiteral(" (%1)")
-            .arg(formatUsercardCount(months, QStringLiteral("month")));
+        return QStringLiteral(" (%1)").arg(
+            formatUsercardCount(months, QStringLiteral("month")));
     }
 
     const auto days = followedDate.daysTo(today);
     if (days >= 14)
     {
-        return QStringLiteral(" (%1)")
-            .arg(formatUsercardCount(days / 7, QStringLiteral("week")));
+        return QStringLiteral(" (%1)").arg(
+            formatUsercardCount(days / 7, QStringLiteral("week")));
     }
     if (days > 0)
     {
-        return QStringLiteral(" (%1)")
-            .arg(formatUsercardCount(days, QStringLiteral("day")));
+        return QStringLiteral(" (%1)").arg(
+            formatUsercardCount(days, QStringLiteral("day")));
     }
 
     return QStringLiteral(" (today)");
@@ -588,9 +580,9 @@ QString cleanIrcMessageBody(QString value)
 }
 
 MessagePtr makeUsercardModLogMessage(const GqlUsercardMessage &message,
-                                      TwitchChannel *twitchChannel,
-                                      const QString &channelName,
-                                      const QString &fallbackUserId)
+                                     TwitchChannel *twitchChannel,
+                                     const QString &channelName,
+                                     const QString &fallbackUserId)
 {
     auto sentAt = parseIvrTimestamp(message.sentAt);
     if (!sentAt.isValid())
@@ -838,8 +830,7 @@ class ModerationReasonPopup final : public DraggablePopup
 {
 public:
     ModerationReasonPopup(const QString &title, const QString &placeholder,
-                          const QString &initialReason,
-                          bool showSendButton,
+                          const QString &initialReason, bool showSendButton,
                           std::function<void(QString)> onSend,
                           QWidget *parent = nullptr)
         : DraggablePopup(true, parent)
@@ -859,12 +850,12 @@ public:
         this->input_->setPlaceholderText(placeholder);
         this->input_->setText(initialReason);
         this->input_->setMouseTracking(true);
-        this->input_->setSizePolicy(QSizePolicy::Expanding,
-                                    QSizePolicy::Fixed);
+        this->input_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
         if (this->showSendButton_)
         {
-            this->sendButton_ = layout.emplace<QPushButton>("Send").getElement();
+            this->sendButton_ =
+                layout.emplace<QPushButton>("Send").getElement();
             this->sendButton_->setSizePolicy(QSizePolicy::Fixed,
                                              QSizePolicy::Fixed);
             this->sendButton_->setCursor(Qt::PointingHandCursor);
@@ -875,10 +866,9 @@ public:
                                  this->send();
                              });
         }
-        QObject::connect(this->input_, &QLineEdit::returnPressed, this,
-                         [this] {
-                             this->send();
-                         });
+        QObject::connect(this->input_, &QLineEdit::returnPressed, this, [this] {
+            this->send();
+        });
 
         this->applyScaledLayout();
     }
@@ -1136,45 +1126,45 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
         avatar->setScaleIndependentSize(100, 100);
         avatar->setDim(DimButton::Dim::None);
         avatarLayout->addWidget(avatar, 0, 0);
-        QObject::connect(
-            avatar, &Button::clicked,
-            [this](Qt::MouseButton button) {
-                if (this->isKick_)
-                {
-                    this->onKickProfilePictureClick(button);
-                    return;
-                }
+        QObject::connect(avatar, &Button::clicked,
+                         [this](Qt::MouseButton button) {
+                             if (this->isKick_)
+                             {
+                                 this->onKickProfilePictureClick(button);
+                                 return;
+                             }
 
-                QUrl channelURL("https://www.twitch.tv/" +
-                                this->userName_.toLower());
+                             QUrl channelURL("https://www.twitch.tv/" +
+                                             this->userName_.toLower());
 
-                switch (button)
-                {
-                    case Qt::LeftButton: {
-                        QDesktopServices::openUrl(channelURL);
-                    }
-                    break;
+                             switch (button)
+                             {
+                                 case Qt::LeftButton: {
+                                     QDesktopServices::openUrl(channelURL);
+                                 }
+                                 break;
 
-                    case Qt::RightButton: {
-                        if (this->avatarUrl_.isEmpty())
-                        {
-                            return;
-                        }
-                        this->showProfilePictureContextMenu();
-                    }
-                    break;
+                                 case Qt::RightButton: {
+                                     if (this->avatarUrl_.isEmpty())
+                                     {
+                                         return;
+                                     }
+                                     this->showProfilePictureContextMenu();
+                                 }
+                                 break;
 
-                    default:;
-                }
-            });
+                                 default:;
+                             }
+                         });
         auto *bannedLabel = new QLabel("BANNED", avatarFrame);
         bannedLabel->setAlignment(Qt::AlignCenter);
         bannedLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
-        bannedLabel->setStyleSheet(
-            "QLabel { background: rgba(185, 28, 28, 220); color: white; font-weight: 700; "
-            "padding: 2px 6px; border-radius: 3px; }");
+        bannedLabel->setStyleSheet("QLabel { background: rgba(185, 28, 28, "
+                                   "220); color: white; font-weight: 700; "
+                                   "padding: 2px 6px; border-radius: 3px; }");
         bannedLabel->hide();
-        avatarLayout->addWidget(bannedLabel, 0, 0, Qt::AlignHCenter | Qt::AlignBottom);
+        avatarLayout->addWidget(bannedLabel, 0, 0,
+                                Qt::AlignHCenter | Qt::AlignBottom);
         this->ui_.bannedAvatarLabel = bannedLabel;
 
         auto switchAv =
@@ -1228,8 +1218,8 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                         .assign(&this->ui_.nameHistoryButton);
                 nameHistory->setToolTip("Show name history");
                 nameHistory->hide();
-                QObject::connect(nameHistory.getElement(),
-                                 &Button::leftClicked, [this] {
+                QObject::connect(nameHistory.getElement(), &Button::leftClicked,
+                                 [this] {
                                      this->showNameHistoryMenu();
                                  });
                 box->addSpacing(5);
@@ -1259,35 +1249,35 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
 
                 QPointer<UserInfoPopup> self(this);
                 this->currentUserChangedConnection_ =
-                    getApp()->getAccounts()->twitch.currentUserChanged.connect([self] {
-                        runInGuiThread([self] {
-                            if (!self)
-                            {
-                                return;
-                            }
-
-                            if (!self->isKick_ && self->underlyingChannel_)
-                            {
-                                if (auto *twitchChannel =
-                                        dynamic_cast<TwitchChannel *>(
-                                            self->underlyingChannel_.get()))
+                    getApp()->getAccounts()->twitch.currentUserChanged.connect(
+                        [self] {
+                            runInGuiThread([self] {
+                                if (!self)
                                 {
-                                    twitchChannel->refreshLeadModStatus();
+                                    return;
                                 }
-                            }
 
-                            if (!self->isKick_ &&
-                                (!self->userName_.isEmpty() ||
-                                 !self->userId_.isEmpty()))
-                            {
-                                self->resetUsercardInfoRows();
-                                self->updateUserData();
-                            }
-                            self->userStateChanged_.invoke();
+                                if (!self->isKick_ && self->underlyingChannel_)
+                                {
+                                    if (auto *twitchChannel =
+                                            dynamic_cast<TwitchChannel *>(
+                                                self->underlyingChannel_.get()))
+                                    {
+                                        twitchChannel->refreshLeadModStatus();
+                                    }
+                                }
+
+                                if (!self->isKick_ &&
+                                    (!self->userName_.isEmpty() ||
+                                     !self->userId_.isEmpty()))
+                                {
+                                    self->resetUsercardInfoRows();
+                                    self->updateUserData();
+                                }
+                                self->userStateChanged_.invoke();
+                            });
                         });
-                    });
             }
-
 
             // items on the left
             if (getSettings()->showPronouns)
@@ -1457,8 +1447,8 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                 return;
             }
 
-            QDesktopServices::openUrl(QUrl(SEVENTV_USER_PAGE %
-                                           this->seventvUserID_));
+            QDesktopServices::openUrl(
+                QUrl(SEVENTV_USER_PAGE % this->seventvUserID_));
         };
         QObject::connect(sevenTVUser.getElement(), &Button::leftClicked,
                          openSevenTVUser);
@@ -1548,12 +1538,12 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
 
         // We can safely ignore this signal connection since this is a private signal, and
         // we only connect once
-        std::ignore = this->userStateChanged_.connect([this, lineMod,
-                                                       timeout]() mutable {
-            bool visible = this->shouldShowModerationActions();
-            lineMod->setVisible(visible);
-            timeout->setVisible(visible);
-        });
+        std::ignore =
+            this->userStateChanged_.connect([this, lineMod, timeout]() mutable {
+                bool visible = this->shouldShowModerationActions();
+                lineMod->setVisible(visible);
+                timeout->setVisible(visible);
+            });
 
         // We can safely ignore this signal connection since we own the button, and
         // the button will always be destroyed before the UserInfoPopup
@@ -1592,8 +1582,9 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
         loadMore->setToolTip("Load older messages from Twitch mod logs");
         this->ui_.loadMoreMessages = loadMore;
 
-        QObject::connect(loadMore, &Button::leftClicked, this,
-                         [this] { this->requestMoreUsercardMessages(true); });
+        QObject::connect(loadMore, &Button::leftClicked, this, [this] {
+            this->requestMoreUsercardMessages(true);
+        });
         this->usercardScrollConnection_ =
             std::make_unique<pajlada::Signals::ScopedConnection>(
                 this->ui_.latestMessages->getScrollBar()
@@ -1618,8 +1609,9 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
 
     this->installEvents();
     this->updateUsercardStatusIcons();
-    std::ignore = this->userStateChanged_.connect(
-        [this] { this->updateLoadMoreMessagesButton(); });
+    std::ignore = this->userStateChanged_.connect([this] {
+        this->updateLoadMoreMessagesButton();
+    });
     this->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Policy::Ignored);
 }
 
@@ -1858,8 +1850,7 @@ void UserInfoPopup::installEvents()
 
     getSettings()->hideModActionsOnModUsercards.connect(
         [this](bool enabled) {
-            if (enabled &&
-                getSettings()->showModActionsOnModUsercardsAsLeadMod)
+            if (enabled && getSettings()->showModActionsOnModUsercardsAsLeadMod)
             {
                 if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(
                         this->underlyingChannel_.get()))
@@ -1907,8 +1898,7 @@ void UserInfoPopup::installEvents()
         [this](bool enabled) {
             if (enabled && this->seventvUserID_.isEmpty() &&
                 !this->seventvUserLookupInFlight_ &&
-                !this->seventvUserLookupFinished_ &&
-                !this->userId_.isEmpty())
+                !this->seventvUserLookupFinished_ && !this->userId_.isEmpty())
             {
                 auto userID = this->userId_;
                 const QStringView kickPrefix = u"kick:";
@@ -2021,11 +2011,8 @@ bool UserInfoPopup::shouldShowModerationActions() const
             dynamic_cast<TwitchChannel *>(this->underlyingChannel_.get()))
     {
         const bool isMyself =
-            getApp()
-                ->getAccounts()
-                ->twitch.getCurrent()
-                ->getUserName()
-                .compare(this->userName_, Qt::CaseInsensitive) == 0;
+            getApp()->getAccounts()->twitch.getCurrent()->getUserName().compare(
+                this->userName_, Qt::CaseInsensitive) == 0;
         if (isMyself || !twitchChannel->hasModRights())
         {
             return false;
@@ -2136,8 +2123,8 @@ void UserInfoPopup::setData(const QString &name,
     this->refreshTargetModerationStatus();
     if (!this->isKick_)
     {
-        if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(
-                this->underlyingChannel_.get()))
+        if (auto *twitchChannel =
+                dynamic_cast<TwitchChannel *>(this->underlyingChannel_.get()))
         {
             twitchChannel->refreshLeadModStatus();
         }
@@ -2226,9 +2213,8 @@ void UserInfoPopup::updateUsercardMessagesVisibility()
                              this->usercardMessagesChannel_->hasMessages();
     const bool hadMessages = this->ui_.latestMessages->isVisible();
     const bool hadNoMessagesLabel = this->ui_.noMessagesLabel->isVisible();
-    const bool hadLoadMoreButton =
-        this->ui_.loadMoreMessages != nullptr &&
-        this->ui_.loadMoreMessages->isVisible();
+    const bool hadLoadMoreButton = this->ui_.loadMoreMessages != nullptr &&
+                                   this->ui_.loadMoreMessages->isVisible();
     const auto previousNoMessagesText = this->ui_.noMessagesLabel->getText();
     const auto noMessagesText = this->usercardMessagesLoading_
                                     ? QStringLiteral("Loading messages...")
@@ -2239,9 +2225,8 @@ void UserInfoPopup::updateUsercardMessagesVisibility()
     this->ui_.noMessagesLabel->setVisible(!hasMessages);
     this->updateLoadMoreMessagesButton();
 
-    const bool hasLoadMoreButton =
-        this->ui_.loadMoreMessages != nullptr &&
-        this->ui_.loadMoreMessages->isVisible();
+    const bool hasLoadMoreButton = this->ui_.loadMoreMessages != nullptr &&
+                                   this->ui_.loadMoreMessages->isVisible();
     if (hadMessages != hasMessages || hadNoMessagesLabel != !hasMessages ||
         hadLoadMoreButton != hasLoadMoreButton ||
         previousNoMessagesText != noMessagesText)
@@ -2358,8 +2343,7 @@ void UserInfoPopup::requestMoreUsercardMessages(bool enableLazyLoadOnSuccess)
 void UserInfoPopup::maybeLoadMoreUsercardMessagesFromScroll()
 {
     if (!this->usercardMessagesLazyLoadEnabled_ ||
-        this->usercardMessagesLoading_ ||
-        !this->usercardMessagesHasNextPage_)
+        this->usercardMessagesLoading_ || !this->usercardMessagesHasNextPage_)
     {
         return;
     }
@@ -2414,9 +2398,10 @@ void UserInfoPopup::fetchMoreUsercardMessages(int emptyPageSkipsLeft,
     TwitchGql::getUsercardMessagesBySender(
         channelId, targetUserId, cursor, auth.token,
         [self, generation, targetUserId, channelName, emptyPageSkipsLeft,
-         oldestLoadedMessage, enableLazyLoadOnSuccess](
-            GqlUsercardMessagePage page) mutable {
-            if (!self || generation != self->usercardMessagesRequestGeneration_ ||
+         oldestLoadedMessage,
+         enableLazyLoadOnSuccess](GqlUsercardMessagePage page) mutable {
+            if (!self ||
+                generation != self->usercardMessagesRequestGeneration_ ||
                 self->userId_ != targetUserId)
             {
                 return;
@@ -2438,8 +2423,8 @@ void UserInfoPopup::fetchMoreUsercardMessages(int emptyPageSkipsLeft,
 
             std::vector<MessagePtr> messages;
             messages.reserve(static_cast<size_t>(page.messages.size()));
-            auto *renderChannel = dynamic_cast<TwitchChannel *>(
-                self->underlyingChannel_.get());
+            auto *renderChannel =
+                dynamic_cast<TwitchChannel *>(self->underlyingChannel_.get());
             for (auto it = page.messages.crbegin(); it != page.messages.crend();
                  ++it)
             {
@@ -2478,8 +2463,7 @@ void UserInfoPopup::fetchMoreUsercardMessages(int emptyPageSkipsLeft,
                 return;
             }
 
-            if (self->usercardMessagesHasNextPage_ &&
-                emptyPageSkipsLeft > 0)
+            if (self->usercardMessagesHasNextPage_ && emptyPageSkipsLeft > 0)
             {
                 self->fetchMoreUsercardMessages(emptyPageSkipsLeft - 1,
                                                 enableLazyLoadOnSuccess);
@@ -2557,8 +2541,7 @@ void UserInfoPopup::updateUserData()
         }
         if (getSettings()->showUsercardLastLive)
         {
-            this->ui_.lastLiveLabel->setText("Last live: " %
-                                             TEXT_UNAVAILABLE);
+            this->ui_.lastLiveLabel->setText("Last live: " % TEXT_UNAVAILABLE);
         }
         if (getSettings()->showUsercardColor)
         {
@@ -2724,7 +2707,6 @@ void UserInfoPopup::updateUserData()
         this->ui_.ignoreHighlights->setChecked(isIgnoringHighlights);
         this->ui_.notesAdd->setEnabled(true);
 
-
         auto type = this->underlyingChannel_->getType();
 
         if (type == Channel::Type::Twitch)
@@ -2878,8 +2860,8 @@ void UserInfoPopup::updateUserData()
 
                     if (getSettings()->showUsercardChatterCount)
                     {
-                        this->ui_.chatterCountLabel->setText(
-                            "Chatters: " % TEXT_UNAVAILABLE);
+                        this->ui_.chatterCountLabel->setText("Chatters: " %
+                                                             TEXT_UNAVAILABLE);
                     }
                     if (getSettings()->showUsercardLastLive)
                     {
@@ -2889,8 +2871,7 @@ void UserInfoPopup::updateUserData()
                     if (getSettings()->showUsercardColor)
                     {
                         this->ui_.userColorRow->setProperty("copy-color", {});
-                        this->ui_.userColorRow->setProperty("swatch-color",
-                                                            {});
+                        this->ui_.userColorRow->setProperty("swatch-color", {});
                         this->ui_.userColorLabel->setText("Color: " %
                                                           TEXT_UNAVAILABLE);
                         this->updateUsercardStatusIcons();
@@ -3480,9 +3461,8 @@ void UserInfoPopup::updateKickUserData()
                         formatUsercardFollowRelativeTime(followedDate);
                 }
                 QString followingSince = followedDate.toString(Qt::ISODate);
-                self->ui_.followageLabel->setText("Following since " +
-                                                  followingSince +
-                                                  relativeTime);
+                self->ui_.followageLabel->setText(
+                    "Following since " + followingSince + relativeTime);
                 self->ui_.followageLabel->setToolTip(
                     formatLongFriendlyDuration(
                         *res->followingSince, QDateTime::currentDateTimeUtc()) +
@@ -3505,8 +3485,8 @@ void UserInfoPopup::updateKickUserData()
                                       .arg(*res->subscriptionMonths);
                 if (getSettings()->showUsercardSubageRelativeTime)
                 {
-                    subageText += formatUsercardYearsMonths(
-                        *res->subscriptionMonths);
+                    subageText +=
+                        formatUsercardYearsMonths(*res->subscriptionMonths);
                 }
                 self->ui_.subageLabel->setText(subageText);
                 self->updateUsercardStatusIcons();
@@ -3622,7 +3602,8 @@ QString UserInfoPopup::showProfilePictureContextMenu()
     menu->setAttribute(Qt::WA_DeleteOnClose);
 
     auto avatarUrl = this->avatarUrl_;
-    auto channelURL = QUrl("https://www.twitch.tv/" + this->userName_.toLower());
+    auto channelURL =
+        QUrl("https://www.twitch.tv/" + this->userName_.toLower());
 
     menu->addAction("Open &avatar in browser", this, [avatarUrl] {
         QDesktopServices::openUrl(QUrl(avatarUrl));
@@ -3635,8 +3616,7 @@ QString UserInfoPopup::showProfilePictureContextMenu()
     auto loginName = this->userName_.toLower();
     menu->addAction("Open channel in a new &popup window", this, [loginName] {
         auto *app = getApp();
-        auto &window =
-            app->getWindows()->createWindow(WindowType::Popup, true);
+        auto &window = app->getWindows()->createWindow(WindowType::Popup, true);
         auto *split =
             window.getNotebook().getOrAddSelectedPage()->appendNewSplit(false);
         split->setChannel(app->getTwitch()->getOrAddChannel(loginName));
@@ -3678,11 +3658,8 @@ bool UserInfoPopup::canShowRoleManagementMenu() const
     }
 
     const bool isMyself =
-        getApp()
-            ->getAccounts()
-            ->twitch.getCurrent()
-            ->getUserName()
-            .compare(this->userName_, Qt::CaseInsensitive) == 0;
+        getApp()->getAccounts()->twitch.getCurrent()->getUserName().compare(
+            this->userName_, Qt::CaseInsensitive) == 0;
     const bool isChannelOwner =
         this->userName_.compare(twitchChannel->getName(),
                                 Qt::CaseInsensitive) == 0;
@@ -3698,8 +3675,7 @@ bool UserInfoPopup::canShowRoleManagementMenu() const
 
 void UserInfoPopup::showRoleManagementMenu()
 {
-    if (this->ui_.rolesLabel == nullptr ||
-        !this->canShowRoleManagementMenu())
+    if (this->ui_.rolesLabel == nullptr || !this->canShowRoleManagementMenu())
     {
         return;
     }
@@ -3752,9 +3728,8 @@ void UserInfoPopup::runRoleManagementCommand(const QString &command,
     }
 
     auto value = command + ' ' + this->userName_;
-    value = getApp()->getCommands()->execCommand(value,
-                                                 this->underlyingChannel_,
-                                                 false);
+    value = getApp()->getCommands()->execCommand(
+        value, this->underlyingChannel_, false);
     if (!value.isEmpty())
     {
         this->underlyingChannel_->sendMessage(value);
@@ -3880,12 +3855,10 @@ void UserInfoPopup::applyIvrUserProfile(const IvrUserProfile &profile)
     if (settings->showUsercardChatterCount &&
         settings->showUserinfoPopupChatters.getValue())
     {
-        this->ui_.chatterCountLabel->setText(profile.chatterCount
-                                                 ? "Chatters: " +
-                                                       localizeNumbers(
-                                                           *profile.chatterCount)
-                                                 : "Chatters: " %
-                                                       TEXT_UNAVAILABLE);
+        this->ui_.chatterCountLabel->setText(
+            profile.chatterCount
+                ? "Chatters: " + localizeNumbers(*profile.chatterCount)
+                : "Chatters: " % TEXT_UNAVAILABLE);
         this->ui_.chatterCountLabel->setVisible(true);
     }
 
@@ -3895,8 +3868,7 @@ void UserInfoPopup::applyIvrUserProfile(const IvrUserProfile &profile)
         const auto lastLive = formatIvrDate(profile.lastBroadcastStartedAt);
         if (lastLive.isEmpty())
         {
-            this->ui_.lastLiveLabel->setText("Last live: " %
-                                             TEXT_UNAVAILABLE);
+            this->ui_.lastLiveLabel->setText("Last live: " % TEXT_UNAVAILABLE);
             this->ui_.lastLiveLabel->setToolTip({});
         }
         else
@@ -3904,8 +3876,7 @@ void UserInfoPopup::applyIvrUserProfile(const IvrUserProfile &profile)
             this->ui_.lastLiveLabel->setText("Last live: " + lastLive);
             if (!profile.lastBroadcastTitle.isEmpty())
             {
-                this->ui_.lastLiveLabel->setToolTip(
-                    profile.lastBroadcastTitle);
+                this->ui_.lastLiveLabel->setToolTip(profile.lastBroadcastTitle);
                 this->ui_.lastLiveLabel->setMouseTracking(true);
             }
         }
@@ -4031,7 +4002,7 @@ void UserInfoPopup::updateNameHistoryButton()
     this->ui_.nameHistoryButton->setEnabled(canShow &&
                                             !this->userId_.isEmpty());
     this->ui_.nameHistoryButton->setText(this->nameHistoryLoading_ ? "..."
-                                                                    : "aka");
+                                                                   : "aka");
 
     if (!canShow)
     {
@@ -4173,8 +4144,7 @@ void UserInfoPopup::requestNameHistory()
     fetchTwitchNameHistoryByUserId(
         userId, login,
         [self, generation, userId, login](TwitchNameHistory history) mutable {
-            if (!self ||
-                generation != self->nameHistoryRequestGeneration_ ||
+            if (!self || generation != self->nameHistoryRequestGeneration_ ||
                 self->userId_ != userId ||
                 normalizeTwitchNameHistoryLogin(self->userName_) != login)
             {
@@ -4189,8 +4159,7 @@ void UserInfoPopup::requestNameHistory()
             self->openNameHistoryMenu();
         },
         [self, generation, userId, login](const QString &error) {
-            if (!self ||
-                generation != self->nameHistoryRequestGeneration_ ||
+            if (!self || generation != self->nameHistoryRequestGeneration_ ||
                 self->userId_ != userId ||
                 normalizeTwitchNameHistoryLogin(self->userName_) != login)
             {
@@ -4220,11 +4189,10 @@ void UserInfoPopup::appendCommonProfileActions(QMenu *menu)
 {
     if (!this->isKick_ && !this->userName_.isEmpty())
     {
-        menu->addAction(
-            "Open profile in &ChatVault", this,
-            [url = chatVaultTwitchChannelUrl(this->userName_)] {
-                QDesktopServices::openUrl(QUrl(url));
-            });
+        menu->addAction("Open profile in &ChatVault", this,
+                        [url = chatVaultTwitchChannelUrl(this->userName_)] {
+                            QDesktopServices::openUrl(QUrl(url));
+                        });
 
         menu->addAction("Open channel &logs in browser", this,
                         [username = this->userName_] {
@@ -4278,9 +4246,8 @@ void UserInfoPopup::executeUsercardModerationAction(
         break;
     }
 
-    value = getApp()->getCommands()->execCommand(value,
-                                                 this->underlyingChannel_,
-                                                 false);
+    value = getApp()->getCommands()->execCommand(
+        value, this->underlyingChannel_, false);
     this->underlyingChannel_->sendMessage(value);
 }
 
@@ -4392,26 +4359,25 @@ UserInfoPopup::TimeoutWidget::TimeoutWidget()
                 "before sending.");
         }
 
-        QObject::connect(
-            button.getElement(), &Button::clicked,
-            [this, action](Qt::MouseButton button) {
-                if (!shouldHandleModerationButtonClick(button))
-                {
-                    return;
-                }
+        QObject::connect(button.getElement(), &Button::clicked,
+                         [this, action](Qt::MouseButton button) {
+                             if (!shouldHandleModerationButtonClick(button))
+                             {
+                                 return;
+                             }
 
-                UsercardModerationRequest request;
-                request.action = action;
-                if (action == UsercardModerationAction::Ban)
-                {
-                    request.reason = timeoutBanReason();
-                }
-                request.promptForReason =
-                    action != UsercardModerationAction::Unban &&
-                    shouldPromptForModerationReason(button);
+                             UsercardModerationRequest request;
+                             request.action = action;
+                             if (action == UsercardModerationAction::Ban)
+                             {
+                                 request.reason = timeoutBanReason();
+                             }
+                             request.promptForReason =
+                                 action != UsercardModerationAction::Unban &&
+                                 shouldPromptForModerationReason(button);
 
-                this->buttonClicked.invoke(request);
-            });
+                             this->buttonClicked.invoke(request);
+                         });
     };
 
     auto addTimeouts = [&](const QString &title) {
@@ -4432,8 +4398,7 @@ UserInfoPopup::TimeoutWidget::TimeoutWidget()
             this->timeoutButtons.emplace_back(a.getElement(), duration);
 
             QObject::connect(a.getElement(), &LabelButton::clicked,
-                             [this, duration,
-                              reason](Qt::MouseButton button) {
+                             [this, duration, reason](Qt::MouseButton button) {
                                  if (!shouldHandleModerationButtonClick(button))
                                  {
                                      return;
@@ -4459,8 +4424,7 @@ UserInfoPopup::TimeoutWidget::TimeoutWidget()
     addButton(UsercardModerationAction::Unban, "Unban",
               getResources().buttons.unban);
     addTimeouts("Timeouts");
-    addButton(UsercardModerationAction::Ban, "Ban",
-              getResources().buttons.ban);
+    addButton(UsercardModerationAction::Ban, "Ban", getResources().buttons.ban);
 }
 
 void UserInfoPopup::TimeoutWidget::paintEvent(QPaintEvent *)

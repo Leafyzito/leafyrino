@@ -63,4 +63,4 @@ void AccountModel::afterRemoved(const std::shared_ptr<Account> &item,
     }
 }
 
-}
+}  // namespace chatterino

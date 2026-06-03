@@ -23,7 +23,6 @@ public:
     };
 
 protected:
-
     ModerationAction getItemFromRow(std::vector<QStandardItem *> &row,
                                     const ModerationAction &original) override;
 
@@ -33,4 +32,4 @@ protected:
     friend class HighlightController;
 };
 
-}
+}  // namespace chatterino

@@ -20,4 +20,4 @@ struct RawSubscriptionHandle {
 
 using SubscriptionHandle = std::unique_ptr<RawSubscriptionHandle>;
 
-}
+}  // namespace chatterino::eventsub

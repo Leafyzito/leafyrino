@@ -56,7 +56,7 @@ void addEmojis(std::vector<EmoteItem> &out, const std::vector<EmojiPtr> &map)
     };
 }
 
-}
+}  // namespace
 
 EmoteSource::EmoteSource(const Channel *channel,
                          std::unique_ptr<EmoteStrategy> strategy,
@@ -87,7 +87,7 @@ void EmoteSource::addToListModel(GenericListModel &model, size_t maxCount) const
 }
 
 void EmoteSource::addToStringList(QStringList &list, size_t maxCount,
-                                  bool ) const
+                                  bool) const
 {
     addVecToStringList(this->output_, list, maxCount, [](const EmoteItem &e) {
         return e.tabCompletionName + " ";
@@ -177,4 +177,4 @@ const std::vector<EmoteItem> &EmoteSource::output() const
     return this->output_;
 }
 
-}
+}  // namespace chatterino::completion

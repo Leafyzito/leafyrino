@@ -70,7 +70,7 @@ IDs parseIDs(std::string_view channel)
     return IDs{.roomID = v};
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -328,4 +328,4 @@ void KickLiveUpdates::leaveRoom(uint64_t roomID, uint64_t channelID)
                                 QString::number(channelID));
 }
 
-}
+}  // namespace chatterino

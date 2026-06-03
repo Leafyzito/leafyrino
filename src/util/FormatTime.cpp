@@ -124,7 +124,7 @@ BalancedDuration durationBetween(const QDateTime &a, const QDateTime &b)
     };
 }
 
-}
+}  // namespace
 
 QString formatTime(int totalSeconds, int components)
 {
@@ -276,4 +276,4 @@ QString formatLongFriendlyDuration(const QDateTime &from, const QDateTime &to)
     return out;
 }
 
-}
+}  // namespace chatterino

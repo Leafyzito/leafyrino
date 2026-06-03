@@ -19,7 +19,6 @@ class Window;
 class QuickSwitcherPopup : public BasePopup
 {
 public:
-
     explicit QuickSwitcherPopup(Window *parent);
 
 protected:
@@ -43,4 +42,4 @@ private:
     void initWidgets();
 };
 
-}
+}  // namespace chatterino

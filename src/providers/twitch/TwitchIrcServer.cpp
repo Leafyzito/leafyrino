@@ -57,8 +57,7 @@ bool isWarningAcknowledgeNotice(const QString &text)
     return text.startsWith(
                "You received a Warning from a moderator in this channel.",
                Qt::CaseInsensitive) ||
-           text.contains("Acknowledge the Warning at",
-                         Qt::CaseInsensitive);
+           text.contains("Acknowledge the Warning at", Qt::CaseInsensitive);
 }
 
 QString makeWebClientNonce()
@@ -112,9 +111,8 @@ QString makePrivmsg(const QString &channelName, const QString &message,
     QString prefix;
     if (!tags.isEmpty())
     {
-        prefix =
-            QStringLiteral("@") + tags.join(QLatin1Char(';')) +
-            QStringLiteral(" ");
+        prefix = QStringLiteral("@") + tags.join(QLatin1Char(';')) +
+                 QStringLiteral(" ");
     }
 
     return prefix + QStringLiteral("PRIVMSG #") + channelName +
@@ -213,7 +211,7 @@ void sendHelixMessage(const std::shared_ptr<TwitchChannel> &channel,
         });
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -226,7 +224,6 @@ TwitchIrcServer::TwitchIrcServer()
     , automodChannel(new Channel("/automod", Channel::Type::TwitchAutomod))
     , watchingChannel(Channel::getEmpty(), Channel::Type::TwitchWatching)
 {
-
     this->writeConnection_.reset(new IrcConnection);
     this->writeConnection_->moveToThread(
         QCoreApplication::instance()->thread());
@@ -296,7 +293,6 @@ TwitchIrcServer::TwitchIrcServer()
                 << "Read connection reconnect requested. Timeout:" << timeout;
             if (timeout)
             {
-
                 this->addGlobalSystemMessage(
                     "Server connection timed out, reconnecting");
             }
@@ -386,11 +382,13 @@ void TwitchIrcServer::initialize()
             }
             QString topic = data.value("topic").toString();
 
-            if (!topic.startsWith("pinned-chat-updates-v1.")) {
+            if (!topic.startsWith("pinned-chat-updates-v1."))
+            {
                 return;
             }
             QString channelId = topic.mid(23);
-            if (channelId.isEmpty()) {
+            if (channelId.isEmpty())
+            {
                 return;
             }
 
@@ -501,8 +499,9 @@ void TwitchIrcServer::initializeConnection(IrcConnection *connection,
 
     if (anonymous)
     {
-        username = QStringLiteral("justinfan%1").arg(
-            QRandomGenerator::global()->bounded(100000, 1000000));
+        username =
+            QStringLiteral("justinfan%1")
+                .arg(QRandomGenerator::global()->bounded(100000, 1000000));
     }
 
     if (!anonymous && !oauthToken.startsWith("oauth:"))
@@ -588,7 +587,6 @@ void TwitchIrcServer::readConnectionMessageReceived(
 {
     if (message->type() == Communi::IrcMessage::Type::Private)
     {
-
         return;
     }
 
@@ -608,12 +606,10 @@ void TwitchIrcServer::readConnectionMessageReceived(
     }
     else if (command == "USERSTATE")
     {
-
         handler.handleUserStateMessage(message);
     }
     else if (command == "ROOMSTATE")
     {
-
         handler.handleRoomStateMessage(message);
     }
     else if (command == "CLEARCHAT")
@@ -662,12 +658,10 @@ void TwitchIrcServer::writeConnectionMessageReceived(
 
     if (command == "USERSTATE")
     {
-
         handler.handleUserStateMessage(message);
     }
     else if (command == "NOTICE")
     {
-
         handler.handleNoticeMessage(
             static_cast<Communi::IrcNoticeMessage *>(message));
     }
@@ -705,7 +699,6 @@ void TwitchIrcServer::onReadConnected(IrcConnection *connection)
 
     for (const auto &channel : activeChannels)
     {
-
         if (channel->getName().startsWith("/"))
         {
             continue;
@@ -1603,14 +1596,12 @@ ChannelPtr TwitchIrcServer::getOrAddChannel(const QString &dirtyChannelName)
     this->channels.insert(channelName, chan);
     this->signalHolder.managedConnect(
         twitchChannel->destroyed, [this, channelName] {
-
             qCDebug(chatterinoIrc) << "[TwitchIrcServer::addChannel]"
                                    << channelName << "was destroyed";
             this->channels.remove(channelName);
 
             if (this->readConnection_)
             {
-
                 if (!channelName.startsWith("/"))
                 {
                     this->readConnection_->sendRaw("PART #" + channelName);
@@ -1623,7 +1614,6 @@ ChannelPtr TwitchIrcServer::getOrAddChannel(const QString &dirtyChannelName)
 
         if (this->readConnection_ && this->readConnection_->isConnected())
         {
-
             if (!channelName.startsWith("/"))
             {
                 this->joinBucket_->send(channelName);
@@ -1826,4 +1816,4 @@ void TwitchIrcServer::open(ConnectionType type)
     }
 }
 
-}
+}  // namespace chatterino

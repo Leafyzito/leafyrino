@@ -9,8 +9,7 @@ namespace chatterino::lua::api {
 void ConnectionHandle::createUserType(sol::table &c2)
 {
     c2.new_usertype<ConnectionHandle>(
-        "ConnectionHandle", sol::no_constructor,
-        "disconnect",
+        "ConnectionHandle", sol::no_constructor, "disconnect",
         [](ConnectionHandle &hdl) {
             auto locked = hdl.connection.lock();
             if (locked)
@@ -50,6 +49,6 @@ void ConnectionHandle::createUserType(sol::table &c2)
         });
 }
 
-}
+}  // namespace chatterino::lua::api
 
 #endif

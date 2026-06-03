@@ -58,7 +58,6 @@ const std::vector<QColor> &ColorProvider::defaultColors() const
 
 void ColorProvider::initTypeColorMap()
 {
-
     auto initColor = [this](ColorType colorType, QStringSetting &setting,
                             QColor fallbackColor) {
         const auto &colorString = setting.getValue();
@@ -83,7 +82,6 @@ void ColorProvider::initTypeColorMap()
                 QColor color(colorString);
                 if (color.isValid())
                 {
-
                     *this->typeColorMap_.at(colorType) = color;
                 }
                 else
@@ -136,7 +134,6 @@ void ColorProvider::initTypeColorMap()
 
 void ColorProvider::initDefaultColors()
 {
-
     this->defaultColors_.emplace_back(75, 127, 107, 100);
     this->defaultColors_.emplace_back(105, 127, 63, 100);
     this->defaultColors_.emplace_back(63, 83, 127, 100);
@@ -152,4 +149,4 @@ void ColorProvider::initDefaultColors()
     this->defaultColors_.push_back(HighlightPhrase::FALLBACK_SUB_COLOR);
 }
 
-}
+}  // namespace chatterino

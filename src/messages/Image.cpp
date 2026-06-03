@@ -210,7 +210,6 @@ QList<Frame> readFrames(QImageReader &reader, const Url &url)
         auto pixmap = QPixmap::fromImageReader(&reader);
         if (!pixmap.isNull())
         {
-
             int duration = reader.nextImageDelay();
             if (duration <= 10)
             {
@@ -246,7 +245,6 @@ void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed)
         shared->frames_ = std::make_unique<detail::Frames>(std::move(parsed));
         if (shared->autoScale_)
         {
-
             auto firstFrame = shared->frames_->first();
             if (firstFrame)
             {
@@ -278,7 +276,7 @@ void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed)
     postToGuiThread(cb);
 }
 
-}
+}  // namespace chatterino::detail
 
 namespace chatterino {
 
@@ -290,7 +288,6 @@ Image::~Image()
 
     if (this->empty_ && !this->frames_)
     {
-
         return;
     }
 
@@ -472,8 +469,8 @@ bool Image::animated() const
 
 void Image::setFrameCacheLifetime(std::chrono::milliseconds lifetime)
 {
-    this->frameCacheLifetimeMs_.store(
-        std::max<int64_t>(0, lifetime.count()), std::memory_order_relaxed);
+    this->frameCacheLifetimeMs_.store(std::max<int64_t>(0, lifetime.count()),
+                                      std::memory_order_relaxed);
 }
 
 int Image::width() const
@@ -566,7 +563,7 @@ void Image::actuallyLoad()
 
         assignFrames(shared, parsed);
     };
-    auto onError = [weak](const auto & ) {
+    auto onError = [weak](const auto &) {
         auto shared = weak.lock();
         if (!shared)
         {
@@ -690,23 +687,20 @@ void ImageExpirationPool::freeOld()
         auto img = it->second.lock();
         if (!img)
         {
-
             it = this->allImages_.erase(it);
             continue;
         }
 
         if (img->frames_->empty())
         {
-
             ++it;
             continue;
         }
 
         ++eligible;
 
-        const auto diff =
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                now - img->lastUsed_);
+        const auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now - img->lastUsed_);
         const auto customLifetimeMs =
             img->frameCacheLifetimeMs_.load(std::memory_order_relaxed);
         const auto lifetime =
@@ -736,7 +730,7 @@ void ImageExpirationPool::freeOld()
 }
 
 std::vector<ImageExpirationPool::ProviderUsage>
-ImageExpirationPool::getProviderUsageSnapshot()
+    ImageExpirationPool::getProviderUsageSnapshot()
 {
     const auto providerForUrl = [](const QString &url) {
         if (url.isEmpty())
@@ -856,4 +850,4 @@ ImageExpirationPool::getProviderUsageSnapshot()
 
 #endif
 
-}
+}  // namespace chatterino

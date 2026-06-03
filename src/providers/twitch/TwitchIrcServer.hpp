@@ -80,7 +80,6 @@ public:
 
     virtual void initEventAPIs(BttvLiveUpdates *bttvLiveUpdates,
                                SeventvEventAPI *seventvEventAPI) = 0;
-
 };
 
 class TwitchIrcServer final : public ITwitchIrcServer, public QObject
@@ -229,4 +228,4 @@ private:
     QRandomGenerator generator;
 };
 
-}
+}  // namespace chatterino

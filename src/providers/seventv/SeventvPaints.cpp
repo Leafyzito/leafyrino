@@ -128,7 +128,7 @@ std::optional<std::shared_ptr<Paint>> parsePaint(const QJsonObject &paintJson)
     return std::nullopt;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -268,4 +268,4 @@ void SeventvPaints::clearPaintFromUsers(
     }
 }
 
-}
+}  // namespace chatterino

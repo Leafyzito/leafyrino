@@ -20,4 +20,4 @@ public:
                        const QString &query) const = 0;
 };
 
-}
+}  // namespace chatterino::completion

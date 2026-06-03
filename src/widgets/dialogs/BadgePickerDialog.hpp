@@ -34,4 +34,4 @@ private:
     BadgeOpt currentBadge_;
 };
 
-}
+}  // namespace chatterino

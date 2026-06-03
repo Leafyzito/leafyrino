@@ -46,11 +46,9 @@ protected:
     void highlightBlock(const QString &text) override;
 
 private:
-
     void visitWords(
         const QString &text,
-        std::invocable< const QString &, qsizetype,
-                       qsizetype> auto &&cb);
+        std::invocable<const QString &, qsizetype, qsizetype> auto &&cb);
 
     SpellChecker &spellChecker;
     QTextCharFormat spellFmt;
@@ -62,4 +60,4 @@ private:
     QRegularExpression tokenRegex;
 };
 
-}
+}  // namespace chatterino

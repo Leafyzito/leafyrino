@@ -19,7 +19,6 @@ namespace chatterino::lua::api {
 class WebSocket
 {
 public:
-
     WebSocket();
 
     static void createUserType(sol::table &c2, Plugin *plugin);
@@ -31,7 +30,6 @@ public:
     void sendBinary(const QByteArray &data);
 
 private:
-
     sol::main_function onClose;
 
     sol::main_function onText;
@@ -46,6 +44,6 @@ private:
     friend class WebSocketListenerProxy;
 };
 
-}
+}  // namespace chatterino::lua::api
 
 #endif

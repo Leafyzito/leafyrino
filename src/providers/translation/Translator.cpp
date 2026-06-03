@@ -3,9 +3,9 @@
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
 
+#include <QHash>
 #include <QJsonArray>
 #include <QJsonValue>
-#include <QHash>
 #include <QUrl>
 #include <QUrlQuery>
 
@@ -286,8 +286,8 @@ void requestTextTranslation(const QString &text, const QString &targetLanguage,
 
     const auto target = normalizedTranslationTargetLanguage(targetLanguage);
 
-    QUrl url(QStringLiteral(
-        "https://translate.googleapis.com/translate_a/single"));
+    QUrl url(
+        QStringLiteral("https://translate.googleapis.com/translate_a/single"));
     QUrlQuery query;
     query.addQueryItem(QStringLiteral("client"), QStringLiteral("gtx"));
     query.addQueryItem(QStringLiteral("sl"), QStringLiteral("auto"));
@@ -296,41 +296,40 @@ void requestTextTranslation(const QString &text, const QString &targetLanguage,
     query.addQueryItem(QStringLiteral("q"), requestText);
     url.setQuery(query);
 
-    auto request = NetworkRequest(url)
-                       .timeout(8000)
-                       .onSuccess([onSuccess, onError](
-                                      const NetworkResult &result) {
-                           const auto parsed =
-                               parseGoogleTranslationResult(result);
-                           if (!parsed.has_value())
-                           {
-                               if (onError)
-                               {
-                                   onError(QStringLiteral(
-                                       "Translation failed: invalid response."));
-                               }
-                               return;
-                           }
+    auto request =
+        NetworkRequest(url)
+            .timeout(8000)
+            .onSuccess([onSuccess, onError](const NetworkResult &result) {
+                const auto parsed = parseGoogleTranslationResult(result);
+                if (!parsed.has_value())
+                {
+                    if (onError)
+                    {
+                        onError(QStringLiteral(
+                            "Translation failed: invalid response."));
+                    }
+                    return;
+                }
 
-                           if (onSuccess)
-                           {
-                               onSuccess(*parsed);
-                           }
-                       })
-                       .onError([onError](const NetworkResult &result) {
-                           (void)result;
-                           if (onError)
-                           {
-                               onError(QStringLiteral(
-                                   "Translation failed: network error."));
-                           }
-                       })
-                       .finally([onFinished] {
-                           if (onFinished)
-                           {
-                               onFinished();
-                           }
-                       });
+                if (onSuccess)
+                {
+                    onSuccess(*parsed);
+                }
+            })
+            .onError([onError](const NetworkResult &result) {
+                (void)result;
+                if (onError)
+                {
+                    onError(
+                        QStringLiteral("Translation failed: network error."));
+                }
+            })
+            .finally([onFinished] {
+                if (onFinished)
+                {
+                    onFinished();
+                }
+            });
 
     if (caller != nullptr)
     {

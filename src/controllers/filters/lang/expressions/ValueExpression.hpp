@@ -25,4 +25,4 @@ private:
     TokenType type_;
 };
 
-}
+}  // namespace chatterino::filters

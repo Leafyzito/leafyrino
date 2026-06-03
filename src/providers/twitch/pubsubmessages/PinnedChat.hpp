@@ -23,7 +23,7 @@ struct PubSubPinnedChatUpdatesV1Message {
     PubSubPinnedChatUpdatesV1Message(const QJsonObject &root);
 };
 
-}
+}  // namespace chatterino
 
 template <>
 constexpr magic_enum::customize::customize_t magic_enum::customize::enum_name<

@@ -49,4 +49,4 @@ void ModerationActionModel::getRowFromItem(const ModerationAction &item,
     }
 }
 
-}
+}  // namespace chatterino

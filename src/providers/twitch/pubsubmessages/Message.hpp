@@ -57,4 +57,4 @@ std::optional<InnerClass> PubSubMessageMessage::toInner() const
     return InnerClass{this->messageObject};
 }
 
-}
+}  // namespace chatterino

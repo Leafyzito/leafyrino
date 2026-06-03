@@ -27,7 +27,8 @@ namespace {
 using namespace chatterino;
 using namespace literals;
 
-inline const QString HELP_TEXT = u"{1} => first word &nbsp;&nbsp;&nbsp; {1+} => first word and after &nbsp;&nbsp;&nbsp; {{ => { &nbsp;&nbsp;&nbsp; <a href='https://chatterino.com/help/commands'>more info</a>"_s;
+inline const QString HELP_TEXT =
+    u"{1} => first word &nbsp;&nbsp;&nbsp; {1+} => first word and after &nbsp;&nbsp;&nbsp; {{ => { &nbsp;&nbsp;&nbsp; <a href='https://chatterino.com/help/commands'>more info</a>"_s;
 
 QString c1settingsPath()
 {
@@ -78,7 +79,7 @@ void checkCommandDuplicates(EditableModelView *view, QLabel *duplicateWarning)
     }
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -175,4 +176,4 @@ bool CommandPage::filterElements(const QString &query)
     return this->view->filterSearchResults(query, fields);
 }
 
-}
+}  // namespace chatterino

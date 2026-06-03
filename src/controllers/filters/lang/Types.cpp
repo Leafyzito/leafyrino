@@ -102,4 +102,4 @@ QString possibleTypeToString(const PossibleType &possible)
     }
 }
 
-}
+}  // namespace chatterino::filters

@@ -19,7 +19,7 @@ class Channel;
 class NetworkResult;
 using ChannelPtr = std::shared_ptr<Channel>;
 
-}
+}  // namespace chatterino
 
 namespace chatterino::imageuploader::detail {
 
@@ -27,7 +27,7 @@ QString getJSONValue(QJsonValue responseJson, QStringView jsonPattern);
 
 QString getLinkFromResponse(const NetworkResult &response, QString pattern);
 
-}
+}  // namespace chatterino::imageuploader::detail
 
 namespace chatterino {
 
@@ -40,7 +40,6 @@ struct RawImageData {
 class ImageUploader final
 {
 public:
-
     std::pair<std::queue<RawImageData>, QString> getImages(
         const QMimeData *source) const;
 
@@ -62,4 +61,4 @@ private:
     QMutex uploadMutex_;
     std::queue<RawImageData> uploadQueue_;
 };
-}
+}  // namespace chatterino

@@ -49,4 +49,4 @@ void loadPixmapFromUrl(const Url &url, std::function<void(QPixmap)> &&callback)
         .execute();
 }
 
-}
+}  // namespace chatterino

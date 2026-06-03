@@ -56,4 +56,4 @@ private:
     void emitUpdatedColor();
 };
 
-}
+}  // namespace chatterino

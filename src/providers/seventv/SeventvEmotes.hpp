@@ -29,7 +29,7 @@ namespace seventv::eventapi {
 struct EmoteAddDispatch;
 struct EmoteUpdateDispatch;
 struct EmoteRemoveDispatch;
-}
+}  // namespace seventv::eventapi
 
 enum class SeventvActiveEmoteFlag : std::int64_t {
     None = 0LL,
@@ -142,4 +142,4 @@ private:
         managedConnections;
 };
 
-}
+}  // namespace chatterino

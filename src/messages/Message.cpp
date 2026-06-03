@@ -239,7 +239,6 @@ Message::ReplyStatus Message::isReplyable() const
 {
     if (this->loginName.isEmpty())
     {
-
         return ReplyStatus::NotReplyable;
     }
 
@@ -262,7 +261,6 @@ Message::ReplyStatus Message::isReplyable() const
             assert(this != rootPtr.get());
             if (rootPtr->isReplyable() == ReplyStatus::NotReplyable)
             {
-
                 return ReplyStatus::NotReplyableDueToThread;
             }
 
@@ -275,4 +273,4 @@ Message::ReplyStatus Message::isReplyable() const
                             : ReplyStatus::NotReplyable;
 }
 
-}
+}  // namespace chatterino

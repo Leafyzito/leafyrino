@@ -46,7 +46,7 @@ std::optional<QByteArray> convertToPng(const QImage &image)
     return std::nullopt;
 }
 
-}
+}  // namespace
 
 namespace chatterino::imageuploader::detail {
 
@@ -69,7 +69,6 @@ QString getJSONValue(QJsonValue responseJson, QStringView jsonPattern)
         }
         else
         {
-
             break;
         }
     }
@@ -92,7 +91,7 @@ QString getLinkFromResponse(const NetworkResult &response, QString pattern)
     return pattern;
 }
 
-}
+}  // namespace chatterino::imageuploader::detail
 
 namespace chatterino {
 
@@ -232,7 +231,6 @@ void ImageUploader::handleSuccessfulUpload(const NetworkResult &result,
 {
     if (textEdit == nullptr)
     {
-
         while (!this->uploadQueue_.empty())
         {
             this->uploadQueue_.pop();
@@ -348,7 +346,6 @@ std::pair<std::queue<RawImageData>, QString> ImageUploader::getImages(
 
         if (source->hasFormat("image/png"))
         {
-
             images.push({source->data("image/png"), "png", ""});
             return {images, {}};
         }
@@ -418,4 +415,4 @@ void ImageUploader::upload(std::queue<RawImageData> images, ChannelPtr channel,
     this->uploadQueue_.pop();
 }
 
-}
+}  // namespace chatterino

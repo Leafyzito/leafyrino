@@ -12,7 +12,6 @@ ChannelPredicate::ChannelPredicate(const QString &channels, bool negate)
     : MessagePredicate(negate)
     , channels_()
 {
-
     for (const auto &channel : channels.split(',', Qt::SkipEmptyParts))
     {
         this->channels_ << channel;
@@ -24,4 +23,4 @@ bool ChannelPredicate::appliesToImpl(const Message &message)
     return this->channels_.contains(message.channelName, Qt::CaseInsensitive);
 }
 
-}
+}  // namespace chatterino

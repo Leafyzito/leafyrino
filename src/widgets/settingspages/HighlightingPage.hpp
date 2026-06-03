@@ -34,4 +34,4 @@ private:
                          HighlightTab tab);
 };
 
-}
+}  // namespace chatterino

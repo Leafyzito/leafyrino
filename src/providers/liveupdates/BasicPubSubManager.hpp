@@ -37,7 +37,7 @@ concept IsClient = requires(Client &client, const QByteArray &msg) {
     { client.close() } -> std::same_as<void>;
 };
 
-}
+}  // namespace liveupdates
 
 template <typename Derived, typename ClientT>
 class BasicPubSubManager : public QObject
@@ -50,14 +50,12 @@ public:
         : pool_(std::make_optional<WebSocketPool>(shortName))
         , host_(std::move(host))
     {
-
         static_assert(liveupdates::IsManager<Derived, Client>);
         static_assert(liveupdates::IsClient<Client>);
     }
 
     ~BasicPubSubManager() override
     {
-
         assert(this->stopping_);
     }
 
@@ -150,7 +148,6 @@ private:
             this->pendingSubscriptions_.pop_back();
             if (this->isSubscribed(last))
             {
-
                 continue;
             }
 
@@ -305,4 +302,4 @@ private:
     friend BasicPubSubListener<Derived>;
 };
 
-}
+}  // namespace chatterino

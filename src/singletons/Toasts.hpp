@@ -59,4 +59,4 @@ private:
     bool initialized_ = false;
 #endif
 };
-}
+}  // namespace chatterino

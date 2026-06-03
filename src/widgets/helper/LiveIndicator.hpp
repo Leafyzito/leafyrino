@@ -27,4 +27,4 @@ private:
     bool hovered = false;
 };
 
-}
+}  // namespace chatterino

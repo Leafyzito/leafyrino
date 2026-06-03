@@ -31,5 +31,5 @@ struct GetUserColorParams {
 
 std::optional<MessageColor> getUserColor(const GetUserColorParams &params);
 
-}
-}
+}  // namespace twitch
+}  // namespace chatterino

@@ -18,4 +18,4 @@ bool FunctionEventFilter::eventFilter(QObject *watched, QEvent *event)
     return this->function_(watched, event);
 }
 
-}
+}  // namespace chatterino

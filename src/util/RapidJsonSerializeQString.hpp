@@ -35,15 +35,13 @@ struct Deserialize<QString> {
         }
         catch (const std::exception &)
         {
-
         }
         catch (...)
         {
-
         }
 
         return QString{};
     }
 };
 
-}
+}  // namespace pajlada

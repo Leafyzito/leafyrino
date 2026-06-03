@@ -39,7 +39,6 @@ struct CheerEmoteSet {
 };
 
 struct TwitchEmoteSet {
-
     std::shared_ptr<TwitchUser> owner;
 
     std::vector<EmotePtr> emotes;
@@ -90,4 +89,4 @@ private:
         twitchEmotesCache_;
 };
 
-}
+}  // namespace chatterino

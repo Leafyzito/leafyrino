@@ -51,4 +51,4 @@ T *makeWidget(With with)
     return t;
 }
 
-}
+}  // namespace chatterino

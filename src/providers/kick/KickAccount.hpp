@@ -94,4 +94,4 @@ private:
     QString seventvUserID_;
 };
 
-}
+}  // namespace chatterino

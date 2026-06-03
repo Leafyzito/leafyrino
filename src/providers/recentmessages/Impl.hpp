@@ -30,4 +30,4 @@ QUrl constructRecentMessagesUrl(
     std::optional<std::chrono::time_point<std::chrono::system_clock>> after,
     std::optional<std::chrono::time_point<std::chrono::system_clock>> before);
 
-}
+}  // namespace chatterino::recentmessages::detail

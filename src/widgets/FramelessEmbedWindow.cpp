@@ -102,4 +102,4 @@ void FramelessEmbedWindow::showEvent(QShowEvent *)
 }
 #endif
 
-}
+}  // namespace chatterino

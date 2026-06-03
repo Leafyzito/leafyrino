@@ -13,7 +13,7 @@ namespace {
 constexpr QStringView REGEX_START_BOUNDARY(u"(?:\\b|\\s|^)");
 constexpr QStringView REGEX_END_BOUNDARY(u"(?:\\b|\\s|$)");
 
-}
+}  // namespace
 
 QColor HighlightPhrase::FALLBACK_HIGHLIGHT_COLOR = QColor(127, 63, 73, 127);
 QColor HighlightPhrase::FALLBACK_SELF_MESSAGE_HIGHLIGHT_COLOR =
@@ -139,4 +139,4 @@ const std::shared_ptr<QColor> HighlightPhrase::getColor() const
     return this->color_;
 }
 
-}
+}  // namespace chatterino

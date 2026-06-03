@@ -18,4 +18,4 @@ public:
     bool isExternallyPackaged{};
 };
 
-}
+}  // namespace chatterino

@@ -111,4 +111,4 @@ QUrl constructRecentMessagesUrl(
     return url;
 }
 
-}
+}  // namespace chatterino::recentmessages::detail

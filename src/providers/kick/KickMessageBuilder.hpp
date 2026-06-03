@@ -66,4 +66,4 @@ private:
     KickChannel *channel_ = nullptr;
 };
 
-}
+}  // namespace chatterino

@@ -233,15 +233,13 @@ void MessageLayoutContainer::breakLine()
             // letters and lowercase letters with descenders.
             yExtra = -this->descent_ / 2.0;
         }
-        else if (this->centerBadges_ &&
-                 element->getCreator().getFlags().has(
-                     MessageElementFlag::EmoteImage))
+        else if (this->centerBadges_ && element->getCreator().getFlags().has(
+                                            MessageElementFlag::EmoteImage))
         {
             yExtra = -(this->lineHeight_ - element->getRect().height()) / 2.0;
         }
-        else if (this->centerBadges_ &&
-                 element->getCreator().getFlags().has(
-                     MessageElementFlag::EmojiImage))
+        else if (this->centerBadges_ && element->getCreator().getFlags().has(
+                                            MessageElementFlag::EmojiImage))
         {
             yExtra = -this->descent_ * 0.5;
         }
@@ -327,14 +325,18 @@ void MessageLayoutContainer::paintElements(QPainter &painter,
     if (ctx.isCollapsed && this->lines_.size() > 1)
     {
         MessageLayoutElement *lastElement = nullptr;
-        for (const auto &element : this->elements_) {
-            if (element->getLine() == 0) {
+        for (const auto &element : this->elements_)
+        {
+            if (element->getLine() == 0)
+            {
                 lastElement = element.get();
             }
         }
 
-        if (lastElement != nullptr) {
-            auto font = getApp()->getFonts()->getFont(FontStyle::ChatMedium, this->scale_);
+        if (lastElement != nullptr)
+        {
+            auto font = getApp()->getFonts()->getFont(FontStyle::ChatMedium,
+                                                      this->scale_);
             QFontMetrics metrics(font);
             QString ellipsis = "...";
             int ellipsisWidth = metrics.horizontalAdvance(ellipsis);
@@ -343,21 +345,25 @@ void MessageLayoutContainer::paintElements(QPainter &painter,
             int drawY = lastElement->getRect().y();
             int drawHeight = lastElement->getRect().height();
 
-            if (drawX + ellipsisWidth > ctx.canvasWidth) {
+            if (drawX + ellipsisWidth > ctx.canvasWidth)
+            {
                 drawX = ctx.canvasWidth - ellipsisWidth;
             }
 
             // Clear the space underneath
             painter.save();
             painter.setCompositionMode(QPainter::CompositionMode_Clear);
-            painter.fillRect(QRectF(drawX, drawY, ellipsisWidth, drawHeight), Qt::transparent);
+            painter.fillRect(QRectF(drawX, drawY, ellipsisWidth, drawHeight),
+                             Qt::transparent);
             painter.restore();
 
             painter.save();
             painter.setPen(ctx.messageColors.regularText);
             painter.setFont(font);
             // Draw perfectly aligned with the last element
-            painter.drawText(QRectF(drawX, drawY, ellipsisWidth, drawHeight), ellipsis, QTextOption(Qt::AlignRight | Qt::AlignVCenter));
+            painter.drawText(QRectF(drawX, drawY, ellipsisWidth, drawHeight),
+                             ellipsis,
+                             QTextOption(Qt::AlignRight | Qt::AlignVCenter));
             painter.restore();
         }
     }
@@ -655,13 +661,16 @@ qreal MessageLayoutContainer::getHeight() const
 
 int MessageLayoutContainer::getFirstLineHeight() const
 {
-    if (this->lines_.empty()) {
+    if (this->lines_.empty())
+    {
         return 0;
     }
-    if (this->lines_.size() == 1) {
+    if (this->lines_.size() == 1)
+    {
         return static_cast<int>(this->getHeight());
     }
-    return static_cast<int>(std::ceil(this->lines_[0].rect.bottom() + (MARGIN.bottom() * this->scale_)));
+    return static_cast<int>(std::ceil(this->lines_[0].rect.bottom() +
+                                      (MARGIN.bottom() * this->scale_)));
 }
 
 float MessageLayoutContainer::getScale() const

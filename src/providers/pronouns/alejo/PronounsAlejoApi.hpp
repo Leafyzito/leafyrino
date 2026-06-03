@@ -38,4 +38,4 @@ private:
     UserPronouns parsePronoun(const QJsonObject &object);
 };
 
-}
+}  // namespace chatterino::pronouns

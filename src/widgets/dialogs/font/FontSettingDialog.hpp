@@ -20,7 +20,6 @@ public:
                       IntSetting &weight, QWidget *parent = nullptr);
 
 private:
-
     void setSettings();
 
     void restoreSettings();
@@ -34,4 +33,4 @@ private:
     int oldWeight;
 };
 
-}
+}  // namespace chatterino

@@ -161,7 +161,8 @@ QString normalizeGqlRoleError(ModVipAction action, const QString &target,
         case ModVipAction::AddLeadModerator:
             if (upper.contains("ALREADY") || upper.contains("ROLE_ASSIGNED"))
             {
-                return QString("%1 is already a lead moderator of this channel.")
+                return QString(
+                           "%1 is already a lead moderator of this channel.")
                     .arg(target);
             }
             break;
@@ -280,11 +281,11 @@ QString usageForAction(ModVipAction action)
     switch (action)
     {
         case ModVipAction::AddLeadModerator:
-            return QStringLiteral(
-                "Usage: \"/leadmod <username>\" - Grant lead moderator status.");
+            return QStringLiteral("Usage: \"/leadmod <username>\" - Grant lead "
+                                  "moderator status.");
         case ModVipAction::RemoveLeadModerator:
-            return QStringLiteral(
-                "Usage: \"/unleadmod <username>\" - Revoke lead moderator status.");
+            return QStringLiteral("Usage: \"/unleadmod <username>\" - Revoke "
+                                  "lead moderator status.");
         case ModVipAction::AddEditor:
             return QStringLiteral(
                 "Usage: \"/editor <username>\" - Add a channel editor.");
@@ -319,8 +320,7 @@ void addRoleFailureMessage(const ChannelPtr &channel, ModVipAction action,
 void runElevatedRoleMutation(const ChannelPtr &channel, ModVipAction action,
                              const QString &channelId,
                              const QString &targetValue,
-                             const QString &targetDisplay,
-                             const QString &token)
+                             const QString &targetDisplay, const QString &token)
 {
     runGqlRoleMutation(
         action, channelId, targetValue, token,
@@ -373,10 +373,10 @@ QString runElevatedRoleCommand(const CommandContext &ctx, ModVipAction action)
     if (!auth.hasToken())
     {
         const auto info = actionInfo(action);
-        ctx.channel->addSystemMessage(authError.isEmpty()
-                                          ? MoltorinoAuth::authRequiredMessage(
-                                                info.authAction)
-                                          : authError);
+        ctx.channel->addSystemMessage(
+            authError.isEmpty()
+                ? MoltorinoAuth::authRequiredMessage(info.authAction)
+                : authError);
         return "";
     }
 
@@ -450,9 +450,9 @@ QString runElevatedRoleCommand(const CommandContext &ctx, ModVipAction action)
                     return;
                 }
 
-                const auto display =
-                    user->displayName.isEmpty() ? user->login
-                                                : user->displayName;
+                const auto display = user->displayName.isEmpty()
+                                         ? user->login
+                                         : user->displayName;
                 runElevatedRoleMutation(channel, action, channelId, user->id,
                                         display, token);
             },
@@ -464,8 +464,7 @@ QString runElevatedRoleCommand(const CommandContext &ctx, ModVipAction action)
 
     if (targetLogin.isEmpty())
     {
-        ctx.channel->addSystemMessage(
-            "This command needs a Twitch username.");
+        ctx.channel->addSystemMessage("This command needs a Twitch username.");
         return "";
     }
 
@@ -510,16 +509,15 @@ bool tryRunModVipActionWithLeadModGql(const CommandContext &ctx,
         ctx.twitchChannel->roomId(), ctx.twitchChannel->getName(), &authError);
     if (!auth.hasToken())
     {
-        ctx.channel->addSystemMessage(authError.isEmpty()
-                                          ? MoltorinoAuth::authRequiredMessage(
-                                                info.authAction)
-                                          : authError);
+        ctx.channel->addSystemMessage(
+            authError.isEmpty()
+                ? MoltorinoAuth::authRequiredMessage(info.authAction)
+                : authError);
         return true;
     }
 
     runGqlRoleMutation(
-        action, ctx.twitchChannel->roomId(), target, auth.token,
-        [] {},
+        action, ctx.twitchChannel->roomId(), target, auth.token, [] {},
         [channel{ctx.channel}, action, target,
          prefix = info.failurePrefix](const QString &error) {
             runInGuiThread([channel, action, target, prefix, error] {

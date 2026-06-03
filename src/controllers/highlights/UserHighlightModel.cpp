@@ -21,7 +21,6 @@ UserHighlightModel::UserHighlightModel(QObject *parent)
 HighlightPhrase UserHighlightModel::getItemFromRow(
     std::vector<QStandardItem *> &row, const HighlightPhrase &original)
 {
-
     auto highlightColor = original.getColor();
     *highlightColor =
         row[Column::Color]->data(Qt::DecorationRole).value<QColor>();
@@ -39,7 +38,6 @@ HighlightPhrase UserHighlightModel::getItemFromRow(
 
 void UserHighlightModel::afterInit()
 {
-
     std::vector<QStandardItem *> messagesRow = this->createRow();
     setBoolItem(messagesRow[Column::Pattern],
                 getSettings()->enableSelfMessageHighlight.getValue(), true,
@@ -94,14 +92,12 @@ void UserHighlightModel::customRowSetData(
         }
         break;
         case Column::Color: {
-
             if (role == Qt::DecorationRole)
             {
                 auto colorName = value.value<QColor>().name(QColor::HexArgb);
                 if (rowIndex ==
                     HighlightModel::UserHighlightRowIndexes::SelfMessageRow)
                 {
-
                     getSettings()->selfMessageHighlightColor.setValue(
                         colorName);
                 }
@@ -126,4 +122,4 @@ void UserHighlightModel::getRowFromItem(const HighlightPhrase &item,
     setColorItem(row[Column::Color], *item.getColor());
 }
 
-}
+}  // namespace chatterino

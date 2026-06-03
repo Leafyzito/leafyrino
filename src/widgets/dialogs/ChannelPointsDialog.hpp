@@ -4,17 +4,16 @@
 
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
 
-#include "providers/twitch/api/TwitchGql.hpp"
-#include "widgets/DraggablePopup.hpp"
+#    include "providers/twitch/api/TwitchGql.hpp"
+#    include "widgets/DraggablePopup.hpp"
 
-#include <QPointer>
-#include <QString>
-#include <QTimer>
-#include <QVector>
+#    include <pajlada/signals/scoped-connection.hpp>
+#    include <QPointer>
+#    include <QString>
+#    include <QTimer>
+#    include <QVector>
 
-#include <pajlada/signals/scoped-connection.hpp>
-
-#include <vector>
+#    include <vector>
 
 class QButtonGroup;
 class QGridLayout;

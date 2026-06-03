@@ -7,9 +7,9 @@
 #include "providers/twitch/TwitchChannel.hpp"
 #include "singletons/WindowManager.hpp"
 #include "widgets/Notebook.hpp"
-#include "widgets/Window.hpp"
 #include "widgets/splits/Split.hpp"
 #include "widgets/splits/SplitContainer.hpp"
+#include "widgets/Window.hpp"
 
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
 #    include "widgets/dialogs/ChannelPointsDialog.hpp"
@@ -39,8 +39,8 @@ Split *findOpenSplitForChannel(const ChannelPtr &channel)
         return nullptr;
     }
 
-    auto *currentPage = dynamic_cast<SplitContainer *>(
-        window->getNotebook().getSelectedPage());
+    auto *currentPage =
+        dynamic_cast<SplitContainer *>(window->getNotebook().getSelectedPage());
     if (currentPage != nullptr)
     {
         if (auto *selectedSplit = currentPage->getSelectedSplit())

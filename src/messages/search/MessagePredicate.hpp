@@ -36,4 +36,4 @@ protected:
 private:
     const bool isNegated_ = false;
 };
-}
+}  // namespace chatterino

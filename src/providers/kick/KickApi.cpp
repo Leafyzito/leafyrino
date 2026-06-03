@@ -55,7 +55,7 @@ void callDeserialize(auto &&cb, BoostJsonValue data)
 }
 
 template <std::same_as<void> T>
-void callDeserialize(auto &&cb, BoostJsonValue )
+void callDeserialize(auto &&cb, BoostJsonValue)
 {
     cb(ExpectedStr<void>{});
 }
@@ -117,7 +117,7 @@ QString makePublicV1Url(QStringView endpoint)
     return u"https://api.kick.com/public/v1/" % endpoint;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -461,4 +461,4 @@ KickApi *getKickApi()
     return KickApi::instance();
 }
 
-}
+}  // namespace chatterino

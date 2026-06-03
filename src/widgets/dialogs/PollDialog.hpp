@@ -3,11 +3,10 @@
 #include "providers/twitch/TwitchChannel.hpp"
 #include "widgets/DraggablePopup.hpp"
 
+#include <pajlada/signals/scoped-connection.hpp>
 #include <QDateTime>
 #include <QHash>
 #include <QPointer>
-
-#include <pajlada/signals/scoped-connection.hpp>
 
 #include <optional>
 #include <vector>
@@ -108,4 +107,4 @@ private:
     static std::vector<QPointer<PollDialog>> activeDialogs_;
 };
 
-}
+}  // namespace chatterino

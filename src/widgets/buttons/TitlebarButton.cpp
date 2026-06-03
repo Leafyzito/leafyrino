@@ -144,4 +144,4 @@ void TitleBarButton::ncMouseRelease(QPoint at)
     this->update();
 }
 
-}
+}  // namespace chatterino

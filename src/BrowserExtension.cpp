@@ -92,7 +92,7 @@ void runLoop()
         R"({"type":"status","status":"exiting-host","reason":"received EOF"})"});
     _Exit(0);
 }
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -103,4 +103,4 @@ void runBrowserExtensionHost()
     runLoop();
 }
 
-}
+}  // namespace chatterino

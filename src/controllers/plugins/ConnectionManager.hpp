@@ -34,6 +34,6 @@ private:
         connections;
 };
 
-}
+}  // namespace chatterino::lua
 
 #endif

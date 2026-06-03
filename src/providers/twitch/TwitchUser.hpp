@@ -19,7 +19,6 @@ struct HelixBlock;
 struct HelixUser;
 
 struct TwitchUser {
-
     QString id;
 
     mutable QString name;
@@ -57,7 +56,7 @@ struct TwitchUser {
     }
 };
 
-}
+}  // namespace chatterino
 
 namespace pajlada {
 
@@ -98,7 +97,7 @@ struct Deserialize<chatterino::TwitchUser> {
     }
 };
 
-}
+}  // namespace pajlada
 
 template <>
 struct std::hash<chatterino::TwitchUser> {

@@ -24,4 +24,4 @@ QString pinMessage(const CommandContext &ctx);
 
 QString unpinMessage(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

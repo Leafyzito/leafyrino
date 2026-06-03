@@ -21,4 +21,4 @@ public:
     void play(const QUrl &sound) final;
 };
 
-}
+}  // namespace chatterino

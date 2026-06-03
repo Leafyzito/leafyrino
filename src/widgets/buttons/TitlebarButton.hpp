@@ -44,4 +44,4 @@ private:
     TitleBarButtonStyle style_{};
 };
 
-}
+}  // namespace chatterino

@@ -19,7 +19,6 @@
 #include "util/WindowsHelper.hpp"
 
 #include <pajlada/signals/scoped-connection.hpp>
-
 #include <QStringList>
 
 #include <optional>
@@ -64,7 +63,7 @@ QString normalizedOutgoingTranslationChannel(QString channelName)
 }
 
 std::optional<OutgoingTranslationChannelSettings>
-parseOutgoingTranslationChannelSettings(const QString &entry)
+    parseOutgoingTranslationChannelSettings(const QString &entry)
 {
     const auto parts = entry.split('\t');
     if (parts.size() < 3)
@@ -88,8 +87,7 @@ parseOutgoingTranslationChannelSettings(const QString &entry)
 QString formatOutgoingTranslationChannelSettings(
     const OutgoingTranslationChannelSettings &settings)
 {
-    return QStringList{settings.channel, settings.mode,
-                       settings.targetLanguage}
+    return QStringList{settings.channel, settings.mode, settings.targetLanguage}
         .join(QLatin1Char('\t'));
 }
 
@@ -292,8 +290,8 @@ QString Settings::outgoingTranslationTargetLanguageForChannel(
     return this->outgoingTranslationTargetLanguage.getValue();
 }
 
-void Settings::setOutgoingTranslationModeForChannel(
-    const QString &channelName, const QString &mode)
+void Settings::setOutgoingTranslationModeForChannel(const QString &channelName,
+                                                    const QString &mode)
 {
     const auto channel = normalizedOutgoingTranslationChannel(channelName);
     if (channel.isEmpty())
@@ -509,8 +507,8 @@ Settings::Settings(const Args &args, const QString &settingsDirectory,
         const auto enabled = oldHomiesBadgesSetting->IsBool()
                                  ? oldHomiesBadgesSetting->GetBool()
                                  : true;
-        if (settingsInstance->get(
-                this->showBadgesHomiesSupporter.getPath()) == nullptr)
+        if (settingsInstance->get(this->showBadgesHomiesSupporter.getPath()) ==
+            nullptr)
         {
             this->showBadgesHomiesSupporter.setValue(enabled);
         }

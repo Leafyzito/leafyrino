@@ -45,4 +45,4 @@ private:
     void requestClose();
 };
 
-}
+}  // namespace chatterino

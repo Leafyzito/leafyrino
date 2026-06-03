@@ -24,7 +24,7 @@
             return this->string != other.string;                \
         }                                                       \
     };                                                          \
-    }                                 \
+    }                                                           \
     namespace std {                                             \
     template <>                                                 \
     struct hash<chatterino::name> {                             \
@@ -33,7 +33,7 @@
             return qHash(s.string);                             \
         }                                                       \
     };                                                          \
-    }                                        \
+    }                                                           \
     namespace boost {                                           \
     template <>                                                 \
     struct hash<chatterino::name> {                             \

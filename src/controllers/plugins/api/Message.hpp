@@ -25,6 +25,6 @@ enum class ExposedLinkType : std::uint8_t {
 
 void createUserType(sol::table &c2);
 
-}
+}  // namespace chatterino::lua::api::message
 
 #endif

@@ -111,7 +111,7 @@ using CacheData = std::pair<EmotePtr, MessageElementFlag>;
 
 std::array<CacheData, magic_enum::enum_count<BadgeID>()> CACHE{};
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -157,4 +157,4 @@ std::pair<EmotePtr, MessageElementFlag> KickBadges::lookup(
     return entry;
 }
 
-}
+}  // namespace chatterino

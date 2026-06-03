@@ -13,10 +13,9 @@ class Env;
 class NetworkConfigurationProvider
 {
 public:
-
     NetworkConfigurationProvider() = delete;
 
     static void applyFromEnv(const Env &env);
 };
 
-}
+}  // namespace chatterino

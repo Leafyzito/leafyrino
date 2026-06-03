@@ -17,4 +17,4 @@ namespace chatterino::commands {
 QString shieldModeOn(const CommandContext &ctx);
 QString shieldModeOff(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

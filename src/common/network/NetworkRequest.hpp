@@ -20,7 +20,6 @@ class NetworkData;
 
 class NetworkRequest final
 {
-
     std::shared_ptr<NetworkData> data;
 
     bool executed_ = false;
@@ -83,4 +82,4 @@ private:
     void initializeDefaultValues();
 };
 
-}
+}  // namespace chatterino

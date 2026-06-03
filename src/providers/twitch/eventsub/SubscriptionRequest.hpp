@@ -14,7 +14,6 @@
 namespace chatterino::eventsub {
 
 struct SubscriptionRequest {
-
     QString subscriptionType;
 
     QString subscriptionVersion;
@@ -29,7 +28,7 @@ struct SubscriptionRequest {
 bool operator==(const SubscriptionRequest &lhs, const SubscriptionRequest &rhs);
 bool operator!=(const SubscriptionRequest &lhs, const SubscriptionRequest &rhs);
 
-}
+}  // namespace chatterino::eventsub
 
 namespace std {
 
@@ -52,4 +51,4 @@ struct hash<chatterino::eventsub::SubscriptionRequest> {
     }
 };
 
-}
+}  // namespace std

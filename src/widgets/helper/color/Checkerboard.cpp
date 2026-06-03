@@ -30,4 +30,4 @@ void drawCheckerboard(QPainter &painter, QRect rect, int tileSize)
     }
 }
 
-}
+}  // namespace chatterino

@@ -16,10 +16,9 @@
 #include <memory>
 
 #ifdef USEWINSDK
-#    include "util/WindowsHelper.hpp"
-
-#    include "Windows.h"
 #    include "Psapi.h"
+#    include "util/WindowsHelper.hpp"
+#    include "Windows.h"
 
 #    pragma comment(lib, "Dwmapi.lib")
 #endif
@@ -178,7 +177,6 @@ void AttachedWindow::attachToHwnd(void *_attachedPtr)
 
     this->timer_.setInterval(1);
     QObject::connect(&this->timer_, &QTimer::timeout, [this, attached] {
-
         if (!this->validProcessName_)
         {
             DWORD processId;
@@ -195,7 +193,6 @@ void AttachedWindow::attachToHwnd(void *_attachedPtr)
 
             if (!getSettings()->attachExtensionToAnyProcess)
             {
-
                 if (!qfilename.endsWith("chrome.exe") &&
                     !qfilename.endsWith("firefox.exe") &&
                     !qfilename.endsWith("vivaldi.exe") &&
@@ -314,4 +311,4 @@ void AttachedWindow::updateWindowRect(void *_attachedPtr)
 
 std::vector<AttachedWindow::Item> AttachedWindow::items;
 
-}
+}  // namespace chatterino

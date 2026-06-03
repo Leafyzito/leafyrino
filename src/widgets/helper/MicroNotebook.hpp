@@ -34,4 +34,4 @@ private:
     QWidget *horizontalSeparator = nullptr;
 };
 
-}
+}  // namespace chatterino

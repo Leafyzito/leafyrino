@@ -43,7 +43,6 @@ protected:
     Stream stream;
 
 private:
-
     WebSocketConnectionHelper(WebSocketOptions options, int id,
                               std::unique_ptr<WebSocketListener> listener,
                               WebSocketPoolImpl *pool,
@@ -107,4 +106,4 @@ protected:
                                      boost::beast::tcp_stream>;
 };
 
-}
+}  // namespace chatterino::ws::detail

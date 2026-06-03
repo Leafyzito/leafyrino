@@ -26,4 +26,4 @@ struct CommandContext {
     KickChannel *kickChannel;
 };
 
-}
+}  // namespace chatterino

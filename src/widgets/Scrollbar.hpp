@@ -137,4 +137,4 @@ private:
     pajlada::Signals::SignalHolder signalHolder;
 };
 
-}
+}  // namespace chatterino

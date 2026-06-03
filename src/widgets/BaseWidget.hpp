@@ -68,4 +68,4 @@ private:
     friend class OverlayWindow;
 };
 
-}
+}  // namespace chatterino

@@ -48,4 +48,4 @@ private:
     std::unique_ptr<BttvLiveUpdatesPrivate> private_;
 };
 
-}
+}  // namespace chatterino

@@ -87,7 +87,6 @@ public:
     bool isDisabled() const;
 
 private:
-
     void actuallyLayout(const MessageLayoutContext &ctx);
     void updateBuffer(QPixmap *buffer, const MessagePaintContext &ctx);
 
@@ -117,4 +116,4 @@ private:
 
 using MessageLayoutPtr = std::shared_ptr<MessageLayout>;
 
-}
+}  // namespace chatterino

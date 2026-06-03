@@ -61,7 +61,6 @@ public:
     const std::set<QString> &removedOrDeprecatedHotkeys() const;
 
 private:
-
     void loadHotkeys();
 
     void saveHotkeys();
@@ -96,4 +95,4 @@ private:
     pajlada::Signals::SignalHolder signalHolder_;
 };
 
-}
+}  // namespace chatterino

@@ -107,4 +107,4 @@ private:
     friend KickChannel;
 };
 
-}
+}  // namespace chatterino

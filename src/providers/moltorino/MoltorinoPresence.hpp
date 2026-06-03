@@ -4,7 +4,6 @@
 
 #include <boost/signals2/connection.hpp>
 #include <pajlada/signals/signal.hpp>
-
 #include <QByteArray>
 #include <QFile>
 #include <QJsonObject>
@@ -133,4 +132,4 @@ private:
 
 MoltorinoPresence *getMoltorinoPresence();
 
-}
+}  // namespace chatterino

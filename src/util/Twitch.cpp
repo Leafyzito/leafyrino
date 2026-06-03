@@ -25,7 +25,7 @@ const std::unordered_map<QString, QString> HELIX_COLOR_REPLACEMENTS{
     {"yellowgreen", "yellow_green"},
 };
 
-}
+}  // namespace
 
 extern const QStringList VALID_HELIX_COLORS{
     "blue",        "blue_violet", "cadet_blue", "chocolate",    "coral",
@@ -129,4 +129,4 @@ void cleanHelixColorName(QString &color)
     color = it->second;
 }
 
-}
+}  // namespace chatterino

@@ -92,7 +92,7 @@ void addKeyboardModifierSetting(GeneralPageView &layout, const QString &title,
         },
         false);
 }
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -218,7 +218,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                 }
                 else
                 {
-
                     return NotebookTabLocation::Top;
                 }
             },
@@ -1289,8 +1288,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         presetCombo->setCurrentIndex(-1);
 
         QPalette palette = presetCombo->palette();
-        palette.setColor(QPalette::PlaceholderText,
-                         QColor(255, 255, 255));
+        palette.setColor(QPalette::PlaceholderText, QColor(255, 255, 255));
         presetCombo->setPalette(palette);
         s.searchEnabled.connect([presetCombo](bool value) {
             presetCombo->setEnabled(value);
@@ -1493,7 +1491,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             "Username style", usernameDisplayModes, s.usernameDisplayMode,
             [usernameDisplayModes](auto val) {
                 return usernameDisplayModes.at(val - 1);
-
             },
             [](auto args) {
                 return args.index + 1;
@@ -1668,7 +1665,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
 void GeneralPage::initExtra()
 {
-
     if (this->cachePath_)
     {
         getSettings()->cachePath.connect(
@@ -1685,4 +1681,4 @@ void GeneralPage::initExtra()
     }
 }
 
-}
+}  // namespace chatterino

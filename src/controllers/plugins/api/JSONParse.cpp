@@ -84,12 +84,12 @@ struct SaxHandler {
     {
     }
 
-    bool on_document_begin(boost::system::error_code & )
+    bool on_document_begin(boost::system::error_code &)
     {
         return true;
     }
 
-    bool on_document_end(boost::system::error_code & )
+    bool on_document_end(boost::system::error_code &)
     {
         return true;
     }
@@ -115,7 +115,7 @@ struct SaxHandler {
         return true;
     }
 
-    bool on_object_end(size_t , boost::system::error_code &ec)
+    bool on_object_end(size_t, boost::system::error_code &ec)
     {
         if (this->elements.empty())
         {
@@ -150,7 +150,7 @@ struct SaxHandler {
         return true;
     }
 
-    bool on_array_end(size_t , boost::system::error_code &ec)
+    bool on_array_end(size_t, boost::system::error_code &ec)
     {
         if (this->elements.empty())
         {
@@ -164,15 +164,15 @@ struct SaxHandler {
         return this->appendValue(ec);
     }
 
-    bool on_key_part(boost::json::string_view sv, std::size_t ,
-                     boost::system::error_code & )
+    bool on_key_part(boost::json::string_view sv, std::size_t,
+                     boost::system::error_code &)
     {
         this->buffer.append(sv);
         return true;
     }
 
-    bool on_key(boost::json::string_view sv, size_t ,
-                boost::system::error_code & )
+    bool on_key(boost::json::string_view sv, size_t,
+                boost::system::error_code &)
     {
         if (this->buffer.empty())
         {
@@ -189,14 +189,14 @@ struct SaxHandler {
         return true;
     }
 
-    bool on_string_part(boost::json::string_view sv, size_t ,
-                        boost::system::error_code & )
+    bool on_string_part(boost::json::string_view sv, size_t,
+                        boost::system::error_code &)
     {
         this->buffer.append(sv);
         return true;
     }
 
-    bool on_string(boost::json::string_view sv, size_t ,
+    bool on_string(boost::json::string_view sv, size_t,
                    boost::system::error_code &ec)
     {
         if (this->buffer.empty())
@@ -214,21 +214,19 @@ struct SaxHandler {
         return this->appendValue(ec);
     }
 
-    bool on_number_part(boost::json::string_view ,
-                        boost::system::error_code & )
+    bool on_number_part(boost::json::string_view, boost::system::error_code &)
     {
-
         return true;
     }
 
-    bool on_int64(int64_t i, boost::json::string_view ,
+    bool on_int64(int64_t i, boost::json::string_view,
                   boost::system::error_code &ec)
     {
         lua_pushinteger(this->state, static_cast<lua_Integer>(i));
         return this->appendValue(ec);
     }
 
-    bool on_uint64(uint64_t i, boost::json::string_view ,
+    bool on_uint64(uint64_t i, boost::json::string_view,
                    boost::system::error_code &ec)
     {
         if (i <= static_cast<uint64_t>(std::numeric_limits<lua_Integer>::max()))
@@ -242,7 +240,7 @@ struct SaxHandler {
         return this->appendValue(ec);
     }
 
-    bool on_double(double d, boost::json::string_view ,
+    bool on_double(double d, boost::json::string_view,
                    boost::system::error_code &ec)
     {
         lua_pushnumber(this->state, d);
@@ -261,22 +259,17 @@ struct SaxHandler {
         return this->appendValue(ec);
     }
 
-    bool on_comment_part(boost::json::string_view ,
-                         boost::system::error_code & )
+    bool on_comment_part(boost::json::string_view, boost::system::error_code &)
     {
-
         return true;
     }
 
-    bool on_comment(boost::json::string_view ,
-                    boost::system::error_code & )
+    bool on_comment(boost::json::string_view, boost::system::error_code &)
     {
-
         return true;
     }
 
 private:
-
     bool appendValue(boost::system::error_code &ec)
     {
         if (this->elements.empty())
@@ -293,12 +286,10 @@ private:
 
         if (this->elements.back().isObject)
         {
-
             lua_rawset(this->state, -3);
         }
         else
         {
-
             lua_rawseti(this->state, -2, ++this->elements.back().index);
         }
 
@@ -351,7 +342,7 @@ private:
     boost::json::basic_parser<SaxHandler> parser;
 };
 
-}
+}  // namespace
 
 namespace chatterino::lua::api {
 
@@ -385,7 +376,7 @@ int jsonParse(lua_State *L)
     return 1;
 }
 
-}
+}  // namespace chatterino::lua::api
 
 #    include <boost/json/src.hpp>
 

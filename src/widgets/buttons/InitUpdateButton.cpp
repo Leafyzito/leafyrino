@@ -46,7 +46,6 @@ void initUpdateButton(PixmapButton &button,
                     break;
                 }
             });
-
     });
 
     auto updateChange = [&button, relayout](auto) {
@@ -68,4 +67,4 @@ void initUpdateButton(PixmapButton &button,
                                 });
 }
 
-}
+}  // namespace chatterino

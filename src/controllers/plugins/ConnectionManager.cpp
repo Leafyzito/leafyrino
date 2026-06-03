@@ -31,6 +31,6 @@ void ConnectionManager::removeDisconnected()
     this->connections.erase(first, last);
 }
 
-}
+}  // namespace chatterino::lua
 
 #endif

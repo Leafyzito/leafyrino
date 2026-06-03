@@ -94,4 +94,4 @@ QString shieldModeOff(const CommandContext &ctx)
     return toggleShieldMode(ctx, false);
 }
 
-}
+}  // namespace chatterino::commands

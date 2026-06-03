@@ -148,4 +148,4 @@ void MessagePreferences::connectSettings(Settings *settings,
         holder);
 }
 
-}
+}  // namespace chatterino

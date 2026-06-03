@@ -28,4 +28,4 @@ private:
     QString name_;
 };
 
-}
+}  // namespace chatterino

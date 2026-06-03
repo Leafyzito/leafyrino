@@ -52,4 +52,4 @@ struct Deserialize<std::unordered_map<QString, ValueType>, RJValue> {
     }
 };
 
-}
+}  // namespace pajlada

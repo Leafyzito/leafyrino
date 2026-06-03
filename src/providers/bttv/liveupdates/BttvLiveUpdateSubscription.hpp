@@ -57,7 +57,7 @@ struct BttvLiveUpdateSubscription {
                               const BttvLiveUpdateSubscription &subscription);
 };
 
-}
+}  // namespace chatterino
 
 namespace std {
 
@@ -90,4 +90,4 @@ struct hash<chatterino::BttvLiveUpdateSubscription> {
     }
 };
 
-}
+}  // namespace std

@@ -3,8 +3,8 @@
 #include "Application.hpp"
 #include "common/Channel.hpp"
 #include "controllers/accounts/AccountController.hpp"
-#include "controllers/commands/CommandContext.hpp"
 #include "controllers/commands/builtin/twitch/ModVipActions.hpp"
+#include "controllers/commands/CommandContext.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
@@ -55,8 +55,7 @@ QString removeVIP(const CommandContext &ctx)
         [twitchChannel{ctx.twitchChannel},
          channel{ctx.channel}](const HelixUser &targetUser) {
             getHelix()->removeChannelVIP(
-                twitchChannel->roomId(), targetUser.id,
-                [] {},
+                twitchChannel->roomId(), targetUser.id, [] {},
                 [channel](auto error, auto message) {
                     QString errorMessage = QString("Failed to remove VIP - ");
 
@@ -65,7 +64,6 @@ QString removeVIP(const CommandContext &ctx)
                     switch (error)
                     {
                         case Error::UserMissingScope: {
-
                             errorMessage += "Missing required scope. "
                                             "Re-login with your "
                                             "account and try again.";
@@ -73,7 +71,6 @@ QString removeVIP(const CommandContext &ctx)
                         break;
 
                         case Error::UserNotAuthorized: {
-
                             errorMessage += "You don't have permission to "
                                             "perform that action.";
                         }
@@ -87,7 +84,6 @@ QString removeVIP(const CommandContext &ctx)
                         break;
 
                         case Error::Forwarded: {
-
                             errorMessage = message;
                         }
                         break;
@@ -103,11 +99,12 @@ QString removeVIP(const CommandContext &ctx)
         },
         [channel{ctx.channel}, target] {
             channel->addSystemMessage(
-                QString("Could not look up user: %1. Check the username or log in again.")
+                QString("Could not look up user: %1. Check the username or log "
+                        "in again.")
                     .arg(target));
         });
 
     return "";
 }
 
-}
+}  // namespace chatterino::commands

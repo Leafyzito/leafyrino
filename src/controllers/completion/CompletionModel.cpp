@@ -34,4 +34,4 @@ void CompletionModel::updateResults(const QString &query, size_t maxCount)
     }
 }
 
-}
+}  // namespace chatterino

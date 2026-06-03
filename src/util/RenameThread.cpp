@@ -26,6 +26,6 @@ void renameThread(HANDLE hThread, const QString &threadName)
 #    endif
 }
 
-}
+}  // namespace chatterino::windows::detail
 
 #endif

@@ -22,7 +22,7 @@ using namespace chatterino;
 
 std::unordered_map<int, QPointer<UnixSignalHandler>> HANDLERS{};
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -83,5 +83,5 @@ void UnixSignalHandler::handleSignal()
     this->signalFired();
 }
 
-}
+}  // namespace chatterino
 #endif

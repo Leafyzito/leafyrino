@@ -33,4 +33,4 @@ private:
     QObject *obj_;
 };
 
-}
+}  // namespace chatterino

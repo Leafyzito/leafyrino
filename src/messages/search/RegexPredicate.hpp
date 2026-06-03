@@ -14,16 +14,13 @@ namespace chatterino {
 class RegexPredicate : public MessagePredicate
 {
 public:
-
     RegexPredicate(const QString &regex, bool negate);
 
 protected:
-
     bool appliesToImpl(const Message &message) override;
 
 private:
-
     QRegularExpression regex_;
 };
 
-}
+}  // namespace chatterino

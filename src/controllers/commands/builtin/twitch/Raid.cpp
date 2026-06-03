@@ -131,9 +131,9 @@ MoltorinoAuthToken resolveRaidAuth(const CommandContext &ctx,
         return {};
     }
 
-    return MoltorinoAuth::resolveModerationToken(
-        ctx.twitchChannel->roomId(), ctx.twitchChannel->getName(),
-        errorMessage);
+    return MoltorinoAuth::resolveModerationToken(ctx.twitchChannel->roomId(),
+                                                 ctx.twitchChannel->getName(),
+                                                 errorMessage);
 }
 
 QString raidAuthRequiredMessage()
@@ -161,8 +161,7 @@ void startRaidWithHelix(const CommandContext &ctx, const QString &target)
         target,
         [roomId, channel{ctx.channel}](const HelixUser &targetUser) {
             getHelix()->startRaid(
-                roomId, targetUser.id,
-                [] {},
+                roomId, targetUser.id, [] {},
                 [channel](auto error, auto message) {
                     auto errorMessage = formatStartRaidError(error, message);
                     runInGuiThread([channel, errorMessage] {
@@ -173,13 +172,14 @@ void startRaidWithHelix(const CommandContext &ctx, const QString &target)
         [channel{ctx.channel}, target] {
             runInGuiThread([channel, target] {
                 channel->addSystemMessage(
-                    QString("Could not look up user: %1. Check the username or log in again.")
+                    QString("Could not look up user: %1. Check the username or "
+                            "log in again.")
                         .arg(target));
             });
         });
 }
 
-}
+}  // namespace
 
 namespace chatterino::commands {
 
@@ -239,7 +239,6 @@ QString startRaid(const CommandContext &ctx)
             TwitchGql::createRaid(
                 ids.sourceId, ids.targetId, auth.token,
                 [weak, ids](const QString &raidId) {
-
                     runInGuiThread([weak, ids, raidId] {
                         auto shared = std::dynamic_pointer_cast<TwitchChannel>(
                             weak.lock());
@@ -272,13 +271,14 @@ QString startRaid(const CommandContext &ctx)
                 if (error.contains("channel IDs", Qt::CaseInsensitive))
                 {
                     channel->addSystemMessage(
-                        QString("Could not look up user: %1. Check the username or log in again.")
+                        QString("Could not look up user: %1. Check the "
+                                "username or log in again.")
                             .arg(target));
                     return;
                 }
 
-                channel->addSystemMessage(
-                    MoltorinoAuth::normalizeAuthError("starting a raid", error));
+                channel->addSystemMessage(MoltorinoAuth::normalizeAuthError(
+                    "starting a raid", error));
             });
         });
 
@@ -331,9 +331,8 @@ QString cancelRaid(const CommandContext &ctx)
             },
             [channel{ctx.channel}](const QString &error) {
                 runInGuiThread([channel, error] {
-                    channel->addSystemMessage(
-                        MoltorinoAuth::normalizeAuthError("canceling the raid",
-                                                          error));
+                    channel->addSystemMessage(MoltorinoAuth::normalizeAuthError(
+                        "canceling the raid", error));
                 });
             });
         return "";
@@ -419,13 +418,12 @@ QString sendRaidNow(const CommandContext &ctx)
         },
         [channel{ctx.channel}](const QString &error) {
             runInGuiThread([channel, error] {
-                channel->addSystemMessage(
-                    MoltorinoAuth::normalizeAuthError("sending the raid",
-                                                      error));
+                channel->addSystemMessage(MoltorinoAuth::normalizeAuthError(
+                    "sending the raid", error));
             });
         });
 
     return "";
 }
 
-}
+}  // namespace chatterino::commands

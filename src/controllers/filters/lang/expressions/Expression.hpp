@@ -29,4 +29,4 @@ public:
 using ExpressionPtr = std::unique_ptr<Expression>;
 using ExpressionList = std::vector<std::unique_ptr<Expression>>;
 
-}
+}  // namespace chatterino::filters

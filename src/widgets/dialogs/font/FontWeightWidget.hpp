@@ -29,4 +29,4 @@ private:
     QListWidget *list;
 };
 
-}
+}  // namespace chatterino

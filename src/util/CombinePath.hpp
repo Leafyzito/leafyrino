@@ -14,4 +14,4 @@ inline QString combinePath(const QString &a, const QString &b)
     return QDir::cleanPath(a + QDir::separator() + b);
 }
 
-}
+}  // namespace chatterino

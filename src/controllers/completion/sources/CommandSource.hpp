@@ -50,4 +50,4 @@ private:
     std::vector<CommandItem> output_{};
 };
 
-}
+}  // namespace chatterino::completion

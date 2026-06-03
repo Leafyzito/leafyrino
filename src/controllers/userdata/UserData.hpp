@@ -25,7 +25,7 @@ struct UserData {
     }
 };
 
-}
+}  // namespace chatterino
 
 namespace pajlada {
 
@@ -84,4 +84,4 @@ struct Deserialize<chatterino::UserData> {
     }
 };
 
-}
+}  // namespace pajlada

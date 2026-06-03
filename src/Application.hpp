@@ -289,4 +289,4 @@ IApplication *tryGetApp();
 
 bool isAppAboutToQuit();
 
-}
+}  // namespace chatterino

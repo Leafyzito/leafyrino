@@ -29,4 +29,4 @@ public:
     void resolve(LinkInfo *info) override;
 };
 
-}
+}  // namespace chatterino

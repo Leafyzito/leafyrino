@@ -19,7 +19,7 @@ bool tryParseChannelId(QString &channelId)
     return true;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -35,7 +35,6 @@ BttvLiveUpdateEmoteUpdateAddMessage::BttvLiveUpdateEmoteUpdateAddMessage(
 
 bool BttvLiveUpdateEmoteUpdateAddMessage::validate() const
 {
-
     return !this->badChannelID_ && !this->channelID.isEmpty() &&
            !this->emoteID.isEmpty() && !this->emoteName.isEmpty();
 }
@@ -71,4 +70,4 @@ bool BttvLiveUpdateUserUpdateMessage::hasBadge() const
     return !this->badgeObject.isEmpty();
 }
 
-}
+}  // namespace chatterino

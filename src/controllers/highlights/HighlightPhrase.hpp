@@ -68,7 +68,7 @@ private:
     QRegularExpression regex_;
 };
 
-}
+}  // namespace chatterino
 
 namespace pajlada {
 
@@ -78,7 +78,7 @@ chatterino::HighlightPhrase constructError()
     return chatterino::HighlightPhrase(QString(), false, false, false, false,
                                        false, QString(), QColor());
 }
-}
+}  // namespace
 
 template <>
 struct Serialize<chatterino::HighlightPhrase> {
@@ -143,4 +143,4 @@ struct Deserialize<chatterino::HighlightPhrase> {
     }
 };
 
-}
+}  // namespace pajlada

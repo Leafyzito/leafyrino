@@ -37,7 +37,6 @@ class TwitchBadges
     using BadgeIconCallback = std::function<void(QString, const QIconPtr)>;
 
 public:
-
     std::optional<EmotePtr> badge(const QString &set,
                                   const QString &version) const;
 
@@ -71,4 +70,4 @@ private:
         badgeSets_;
 };
 
-}
+}  // namespace chatterino

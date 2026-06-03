@@ -34,4 +34,4 @@ void CommandModel::getRowFromItem(const Command &item,
                 item.showInMsgContextMenu);
 }
 
-}
+}  // namespace chatterino

@@ -47,7 +47,7 @@ std::optional<InnerClass> PubSubMessage::toInner()
 
 std::optional<PubSubMessage> parsePubSubBaseMessage(const QByteArray &blob);
 
-}
+}  // namespace chatterino
 
 template <>
 constexpr magic_enum::customize::customize_t

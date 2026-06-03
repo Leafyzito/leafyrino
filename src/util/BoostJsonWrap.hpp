@@ -253,4 +253,4 @@ private:
     friend BoostJsonValue;
 };
 
-}
+}  // namespace chatterino

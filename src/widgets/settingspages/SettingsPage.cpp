@@ -155,4 +155,4 @@ QSpinBox *SettingsPage::createSpinBox(pajlada::Settings::Setting<int> &setting,
     return w;
 }
 
-}
+}  // namespace chatterino

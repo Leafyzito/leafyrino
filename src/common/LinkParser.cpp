@@ -58,7 +58,6 @@ bool isValidTld(QStringView tld)
 
 bool isValidIpv4(QStringView host)
 {
-
     char16_t sectionValue = 0;
     uint8_t octetNumber = 0;
     uint8_t sectionDigits = 0;
@@ -147,7 +146,7 @@ Q_ALWAYS_INLINE bool isValidDomainChar(char16_t c)
            (u'a' <= c && c <= u'z') || c == u'_' || c == u'-' || c == u'.';
 }
 
-}
+}  // namespace
 
 namespace chatterino::linkparser {
 
@@ -166,7 +165,6 @@ std::optional<Parsed> parse(QStringView source) noexcept
     if (remaining.startsWith(u"http", Qt::CaseInsensitive) &&
         remaining.length() >= 4 + 3 + 1)
     {
-
         auto withProto = remaining.mid(4);
 
         if (withProto[0] == QChar(u's') || withProto[0] == QChar(u'S'))
@@ -176,7 +174,6 @@ std::optional<Parsed> parse(QStringView source) noexcept
 
         if (withProto.startsWith(u"://"))
         {
-
             remaining = withProto.mid(3);
             protocol = {link.begin(), remaining.begin()};
         }
@@ -241,7 +238,6 @@ std::optional<Parsed> parse(QStringView source) noexcept
     if ((nDots == 3 && isValidIpv4(host)) ||
         isValidTld(host.mid(lastDotPos + 1)))
     {
-
         if (link.end() != source.end() && !rest.empty())
         {
             size_t nestingLevel = 0;
@@ -279,4 +275,4 @@ std::optional<Parsed> parse(QStringView source) noexcept
     return result;
 }
 
-}
+}  // namespace chatterino::linkparser

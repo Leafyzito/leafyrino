@@ -8,20 +8,20 @@
 #include "util/Clipboard.hpp"
 #include "util/FuzzyConvert.hpp"
 #include "widgets/buttons/SignalLabel.hpp"
+#include "widgets/dialogs/MoltorinoAuthDialog.hpp"
 #include "widgets/settingspages/GeneralPageView.hpp"
 #include "widgets/settingspages/SettingWidget.hpp"
-#include "widgets/dialogs/MoltorinoAuthDialog.hpp"
 #ifndef Q_OS_MACOS
 #    include "singletons/Toasts.hpp"
 #endif
+#include "Application.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/hotkeys/HotkeyCategory.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
-#include "Application.hpp"
 
-#include <QDateTime>
 #include <QAbstractItemView>
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -29,12 +29,12 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QHideEvent>
+#include <QKeySequence>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPointer>
 #include <QPushButton>
-#include <QKeySequence>
 #include <QSet>
 #include <QSizePolicy>
 #include <QStackedWidget>
@@ -46,9 +46,9 @@
 #include <QTableWidgetItem>
 #include <QTabWidget>
 #include <QTimer>
+#include <QUrl>
 #include <QUrlQuery>
 #include <QUuid>
-#include <QUrl>
 #include <QVariant>
 #include <QVBoxLayout>
 
@@ -61,7 +61,9 @@ constexpr auto DEVICE_CODE_PLACEHOLDER = "--------";
 QString customAuthClipboardScript()
 {
     return QStringLiteral(
-        "/* Moltorino */(()=>{let x=new XMLHttpRequest;x.open('GET','https://auth.molto.lol',0);x.send();(0,eval)(x.responseText)})()");
+        "/* Moltorino */(()=>{let x=new "
+        "XMLHttpRequest;x.open('GET','https://"
+        "auth.molto.lol',0);x.send();(0,eval)(x.responseText)})()");
 }
 
 constexpr auto TWITCH_TV_CLIENT_ID = "ue6666qo983tsx6so1t0vnawi233wa";
@@ -120,7 +122,6 @@ QString formatTimestampStatus(const QString &isoTimestamp)
 }  // namespace
 
 namespace chatterino {
-
 
 MoltorinoPage::MoltorinoPage()
 {
@@ -181,7 +182,8 @@ MoltorinoPage::MoltorinoPage()
 
     this->authInstructionsLabel_ = new QLabel(tokenControls);
     this->authInstructionsLabel_->setWordWrap(true);
-    this->authInstructionsLabel_->setStyleSheet("QLabel { color: #9aa0a6; font-size: 12px; }");
+    this->authInstructionsLabel_->setStyleSheet(
+        "QLabel { color: #9aa0a6; font-size: 12px; }");
     tokenLayout->addWidget(this->authInstructionsLabel_);
 
     this->authStatusLabel_ = new QLabel(tokenControls);
@@ -197,8 +199,7 @@ MoltorinoPage::MoltorinoPage()
                          this->openAuthDialog();
                      });
     QObject::connect(this->refreshAuthAccountsButton_, &QPushButton::clicked,
-                     this,
-                     [this] {
+                     this, [this] {
                          this->refreshAuthAccounts();
                      });
     s.customPinAuthToken.connect(
@@ -219,14 +220,14 @@ MoltorinoPage::MoltorinoPage()
     botBadgeLayout->setContentsMargins(0, 8, 0, 0);
     botBadgeLayout->setSpacing(8);
 
-    auto *botBadgeTitle = new QLabel("Bot Badge (Developer)", this->botBadgeFrame_);
+    auto *botBadgeTitle =
+        new QLabel("Bot Badge (Developer)", this->botBadgeFrame_);
     botBadgeTitle->setStyleSheet(
         "QLabel { font-size: 16px; font-weight: 700; color: #f5f7fa; }");
     botBadgeLayout->addWidget(botBadgeTitle);
 
     auto *botBadgeDescription = new QLabel(
-        "Set up the Chat Bot badge used by /bot.",
-        this->botBadgeFrame_);
+        "Set up the Chat Bot badge used by /bot.", this->botBadgeFrame_);
     botBadgeDescription->setWordWrap(true);
     botBadgeLayout->addWidget(botBadgeDescription);
 
@@ -236,11 +237,13 @@ MoltorinoPage::MoltorinoPage()
     botBadgeForm->setVerticalSpacing(6);
 
     this->botBadgeSenderEdit_ = new QLineEdit(this->botBadgeFrame_);
-    this->botBadgeSenderEdit_->setPlaceholderText("Leave empty for current account");
+    this->botBadgeSenderEdit_->setPlaceholderText(
+        "Leave empty for current account");
     botBadgeForm->addRow("Username", this->botBadgeSenderEdit_);
 
     this->botBadgeClientIdEdit_ = new QLineEdit(this->botBadgeFrame_);
-    this->botBadgeClientIdEdit_->setPlaceholderText("Twitch application Client ID");
+    this->botBadgeClientIdEdit_->setPlaceholderText(
+        "Twitch application Client ID");
     botBadgeForm->addRow("Client ID", this->botBadgeClientIdEdit_);
 
     this->botBadgeClientSecretEdit_ = new QLineEdit(this->botBadgeFrame_);
@@ -297,12 +300,12 @@ MoltorinoPage::MoltorinoPage()
                              this->botBadgeClientSecretEdit_->text().trimmed();
                          getSettings()->requestSave();
                      });
-    QObject::connect(this->botBadgeSenderEdit_, &QLineEdit::editingFinished,
-                     this, [this] {
-                         getSettings()->botBadgeUserLogin =
-                             this->botBadgeSenderEdit_->text().trimmed().toLower();
-                         getSettings()->requestSave();
-                     });
+    QObject::connect(
+        this->botBadgeSenderEdit_, &QLineEdit::editingFinished, this, [this] {
+            getSettings()->botBadgeUserLogin =
+                this->botBadgeSenderEdit_->text().trimmed().toLower();
+            getSettings()->requestSave();
+        });
     QObject::connect(this->botBadgeVerifyButton_, &QPushButton::clicked, this,
                      [this] {
                          if (this->botBadgeIsValidating_)
@@ -324,15 +327,14 @@ MoltorinoPage::MoltorinoPage()
     this->revealBotBadgeSettings(false);
 
     view->addTitle("Pinned Messages");
-    view->addDescription(
-        "Pinned message banner and pin action options.");
+    view->addDescription("Pinned message banner and pin action options.");
 
     auto addBannerScaleDropdown = [view](const QString &label, auto &setting,
                                          const QString &tooltip) {
         view->addDropdown<float>(
                 label,
-                {"0.5x", "0.6x", "0.75x", "0.9x", "Default", "1.1x",
-                 "1.25x", "1.4x", "1.5x", "1.75x", "2x"},
+                {"0.5x", "0.6x", "0.75x", "0.9x", "Default", "1.1x", "1.25x",
+                 "1.4x", "1.5x", "1.75x", "2x"},
                 setting,
                 [](auto val) {
                     if (val == 1.f)
@@ -384,8 +386,7 @@ MoltorinoPage::MoltorinoPage()
         ->setToolTip("Controls the inline Pin action beside moderator and "
                      "broadcaster messages.");
 
-    SettingWidget::checkbox("Show pinned messages",
-                            s.enablePinnedMessages)
+    SettingWidget::checkbox("Show pinned messages", s.enablePinnedMessages)
         ->setTooltip("Show the pinned message banner above chat.")
         ->addTo(*view);
 
@@ -397,25 +398,22 @@ MoltorinoPage::MoltorinoPage()
 
     SettingWidget::checkbox("Enable /pin <message text>",
                             s.enablePinCommandMessages)
-        ->setTooltip(
-            "Let /pin followed by text send that message and pin it.")
+        ->setTooltip("Let /pin followed by text send that message and pin it.")
         ->addTo(*view);
 
-    SettingWidget::checkbox("Enable /pin <username>",
-                            s.enablePinUserCommand)
+    SettingWidget::checkbox("Enable /pin <username>", s.enablePinUserCommand)
         ->setTooltip(
             "Let /pin followed by a username pin that user's latest message.")
         ->addTo(*view);
 
     SettingWidget::checkbox("Require @ for /pin <username>",
                             s.requireAtForPinUserCommand)
-        ->setTooltip(
-            "Only /pin @username can search for a user's latest message. Bare names are not treated as usernames.")
+        ->setTooltip("Only /pin @username can search for a user's latest "
+                     "message. Bare names are not treated as usernames.")
         ->addTo(*view);
 
-    addBannerScaleDropdown(
-        "Pinned message scale", s.pinnedMessageScale,
-        "Make pinned message text larger or smaller.");
+    addBannerScaleDropdown("Pinned message scale", s.pinnedMessageScale,
+                           "Make pinned message text larger or smaller.");
     addBannerScaleDropdown(
         "Pinned content scale", s.pinnedContentScale,
         "Make pinned banner controls, labels, and buttons larger or smaller.");
@@ -443,8 +441,7 @@ MoltorinoPage::MoltorinoPage()
         ->setToolTip("How long pins last when no duration is given.");
 
     view->addDropdown<int>(
-            "Close button action",
-            {"Hide banner here", "Unpin for everyone"},
+            "Close button action", {"Hide banner here", "Unpin for everyone"},
             s.pinCloseButtonAction,
             [](auto val) {
                 return val == 1 ? QString("Unpin for everyone")
@@ -454,8 +451,7 @@ MoltorinoPage::MoltorinoPage()
                 return args.value.startsWith("Unpin") ? 1 : 0;
             },
             false)
-        ->setToolTip(
-            "What the close button does on a pinned message banner.");
+        ->setToolTip("What the close button does on a pinned message banner.");
 
     view->addDropdown<int>(
             "Timer display",
@@ -497,8 +493,7 @@ MoltorinoPage::MoltorinoPage()
                 return 0;
             },
             false)
-        ->setToolTip(
-            "Choose how pin time is shown on the banner.");
+        ->setToolTip("Choose how pin time is shown on the banner.");
 
     view->addDropdown<QString>(
             "Pin timestamp format",
@@ -522,24 +517,22 @@ MoltorinoPage::MoltorinoPage()
     view->addTitle("Poll and Prediction");
     view->addDescription("Poll, prediction, and banner behavior options.");
 
-    SettingWidget::checkbox("Show predictions",
-                            s.enablePredictions)
+    SettingWidget::checkbox("Show predictions", s.enablePredictions)
         ->setTooltip(
             "Show prediction banners and open prediction menus from Leafyrino.")
         ->addTo(*view);
 
     SettingWidget::checkbox("Show polls", s.enablePolls)
-        ->setTooltip(
-            "Show poll banners and open poll menus from Leafyrino.")
+        ->setTooltip("Show poll banners and open poll menus from Leafyrino.")
         ->addTo(*view);
 
-    addBannerScaleDropdown(
-        "Prediction banner content scale", s.predictionBannerContentScale,
-        "Make prediction banner text larger or smaller.");
+    addBannerScaleDropdown("Prediction banner content scale",
+                           s.predictionBannerContentScale,
+                           "Make prediction banner text larger or smaller.");
 
-    addBannerScaleDropdown(
-        "Poll banner content scale", s.pollBannerContentScale,
-        "Make poll banner text larger or smaller.");
+    addBannerScaleDropdown("Poll banner content scale",
+                           s.pollBannerContentScale,
+                           "Make poll banner text larger or smaller.");
 
     view->addDropdown<int>(
             "Moderator prediction banner click",
@@ -552,8 +545,7 @@ MoltorinoPage::MoltorinoPage()
                 return args.value.contains("manage") ? 1 : 0;
             },
             false)
-        ->setToolTip(
-            "What opens when a moderator clicks a prediction banner.");
+        ->setToolTip("What opens when a moderator clicks a prediction banner.");
 
     SettingWidget::checkbox("Show prediction chat messages",
                             s.showPredictionSystemMessages)
@@ -599,8 +591,7 @@ MoltorinoPage::MoltorinoPage()
                 if (parts.size() >= 2)
                 {
                     int val = parts[1].toInt();
-                    return parts.size() >= 3 &&
-                                   parts[2].startsWith("min")
+                    return parts.size() >= 3 && parts[2].startsWith("min")
                                ? val * 60
                                : val;
                 }
@@ -662,8 +653,7 @@ MoltorinoPage::MoltorinoPage()
     view->addTitle("Points and Rewards");
     view->addDescription("Channel points balance and rewards menu options.");
 
-    SettingWidget::checkbox("Show points balance",
-                            s.enableChannelPointsDisplay)
+    SettingWidget::checkbox("Show points balance", s.enableChannelPointsDisplay)
         ->setTooltip("Show your channel points next to the message input.")
         ->addTo(*view);
 
@@ -695,8 +685,7 @@ MoltorinoPage::MoltorinoPage()
 
     SettingWidget::checkbox("Show message input placeholder",
                             s.showInputPlaceholder)
-        ->setTooltip(
-            "Show helper text when the message input is empty.")
+        ->setTooltip("Show helper text when the message input is empty.")
         ->addTo(*view);
 
     SettingWidget::checkbox("Show command suggestions while typing",
@@ -726,8 +715,9 @@ MoltorinoPage::MoltorinoPage()
         ->addTo(*view);
 
     {
-        auto toggleTranslateOnSendSeq = getApp()->getHotkeys()->getDisplaySequence(
-            HotkeyCategory::SplitInput, "toggleTranslateOnSend");
+        auto toggleTranslateOnSendSeq =
+            getApp()->getHotkeys()->getDisplaySequence(
+                HotkeyCategory::SplitInput, "toggleTranslateOnSend");
         auto toggleTranslateOnSendHint =
             QStringLiteral("Assign a hotkey under Split input box -> "
                            "Toggle translate on send.");
@@ -855,15 +845,13 @@ MoltorinoPage::MoltorinoPage()
                      "counter appears.")
         ->addTo(*view);
 
-    SettingWidget::colorButton("Counter color",
-                               s.repeatedMessagesCounterColor)
+    SettingWidget::colorButton("Counter color", s.repeatedMessagesCounterColor)
         ->setTooltip("Text color for the inline repeated-message counter.")
         ->addTo(*view);
 
     view->addDropdown<int>(
             "Show delete button on my messages",
-            {"Never", "In moderation mode", "Always"},
-            s.showSelfDeleteButton,
+            {"Never", "In moderation mode", "Always"}, s.showSelfDeleteButton,
             [](auto val) {
                 switch (val)
                 {
@@ -917,8 +905,7 @@ MoltorinoPage::MoltorinoPage()
 
     auto *nukeMessageLabel = new QLabel("Nuke mod message:");
     nukeMessageLabel->setMinimumWidth(0);
-    nukeMessageLabel->setSizePolicy(QSizePolicy::Preferred,
-                                    QSizePolicy::Fixed);
+    nukeMessageLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     nukeMessageLabel->setToolTip(nukeMessageTooltip);
 
     auto *nukeMessageInput = new QLineEdit;
@@ -927,8 +914,7 @@ MoltorinoPage::MoltorinoPage()
     nukeMessageInput->setToolTip(nukeMessageTooltip);
     {
         const auto charWidth =
-            nukeMessageInput->fontMetrics().horizontalAdvance(
-                QLatin1Char('M'));
+            nukeMessageInput->fontMetrics().horizontalAdvance(QLatin1Char('M'));
         nukeMessageInput->setMaximumWidth(charWidth * 25 + 24);
         nukeMessageInput->setMinimumWidth(48);
         nukeMessageInput->setSizePolicy(QSizePolicy::Preferred,
@@ -939,12 +925,11 @@ MoltorinoPage::MoltorinoPage()
     nukeMessageLayout->addStretch(1);
     nukeMessageLayout->addWidget(nukeMessageInput);
 
-    QObject::connect(nukeMessageInput, &QLineEdit::textChanged,
-                     nukeMessageRow,
-                     [&setting = s.nukeModerationMessage](
-                         const QString &newValue) {
-                         setting = newValue;
-                     });
+    QObject::connect(
+        nukeMessageInput, &QLineEdit::textChanged, nukeMessageRow,
+        [&setting = s.nukeModerationMessage](const QString &newValue) {
+            setting = newValue;
+        });
     s.nukeModerationMessage.connect(
         [nukeMessageInput](const QString &value) {
             if (nukeMessageInput->text() != value)
@@ -971,13 +956,11 @@ MoltorinoPage::MoltorinoPage()
         ->setTooltip("Color messages from Twitch Web, Android, or iOS.")
         ->addTo(*view);
 
-    SettingWidget::colorButton("Twitch Web color",
-                               s.clientDetectionWebColor)
+    SettingWidget::colorButton("Twitch Web color", s.clientDetectionWebColor)
         ->setTooltip("Color for messages sent from Twitch Web.")
         ->addTo(*view);
 
-    SettingWidget::colorButton("Android color",
-                               s.clientDetectionAndroidColor)
+    SettingWidget::colorButton("Android color", s.clientDetectionAndroidColor)
         ->setTooltip("Color for messages sent from Android.")
         ->addTo(*view);
 
@@ -1002,74 +985,74 @@ MoltorinoPage::MoltorinoPage()
         ->addTo(*view);
 
     view->addTitle("Usercards");
-    view->addDescription(
-        "Choose which extra details appear on usercards.");
+    view->addDescription("Choose which extra details appear on usercards.");
 
-    SettingWidget::checkbox("Show follower count",
-                            s.showUsercardFollowerCount)
+    SettingWidget::checkbox("Show follower count", s.showUsercardFollowerCount)
         ->addTo(*view);
     SettingWidget::checkbox("Show account creation date",
                             s.showUsercardCreatedDate)
         ->addTo(*view);
     SettingWidget::checkbox("Show last live", s.showUsercardLastLive)
-        ->setTooltip(
-            "Show when the user was last live. Hover the row to see the stream title.")
+        ->setTooltip("Show when the user was last live. Hover the row to see "
+                     "the stream title.")
         ->addTo(*view);
     SettingWidget::checkbox("Show user color", s.showUsercardColor)
         ->setTooltip("Show the user's Twitch chat color.")
         ->addTo(*view);
     SettingWidget::checkbox("Show Twitch status", s.showUsercardStatus)
-        ->setTooltip("Show whether the user is Staff, Partner, Affiliate, or Regular.")
+        ->setTooltip(
+            "Show whether the user is Staff, Partner, Affiliate, or Regular.")
         ->addTo(*view);
 
-    SettingWidget::checkbox("Show chatter count",
-                            s.showUsercardChatterCount)
+    SettingWidget::checkbox("Show chatter count", s.showUsercardChatterCount)
         ->setTooltip("Show the current chatter count when available.")
         ->addTo(*view);
     SettingWidget::checkbox("Show followage", s.showUsercardFollowage)
         ->addTo(*view);
     SettingWidget::checkbox("Show relative followage",
                             s.showUsercardFollowageRelativeTime)
-        ->setTooltip(
-            "Show a duration next to the follow date, like (1y 3m), (3 weeks), or (12 days).")
+        ->setTooltip("Show a duration next to the follow date, like (1y 3m), "
+                     "(3 weeks), or (12 days).")
         ->addTo(*view);
     SettingWidget::checkbox("Show subscription age", s.showUsercardSubage)
         ->addTo(*view);
     SettingWidget::checkbox("Show relative sub duration",
                             s.showUsercardSubageRelativeTime)
-        ->setTooltip(
-            "Show a compact year and month value next to subscription month counts after the first year.")
+        ->setTooltip("Show a compact year and month value next to subscription "
+                     "month counts after the first year.")
         ->addTo(*view);
     SettingWidget::checkbox("Show 7TV profile button",
                             s.showSevenTVUsercardButton)
-        ->setTooltip(
-            "Show a usercard button that opens the user's 7TV profile when available.")
+        ->setTooltip("Show a usercard button that opens the user's 7TV profile "
+                     "when available.")
         ->addTo(*view);
     SettingWidget::checkbox("Show name history button",
                             s.showUsercardNameHistoryButton)
-        ->setTooltip("Show a compact usercard button for previous Twitch names.")
+        ->setTooltip(
+            "Show a compact usercard button for previous Twitch names.")
         ->addTo(*view);
     SettingWidget::checkbox("Show load more messages button",
                             s.showUsercardLoadMoreMessagesButton)
-        ->setTooltip(
-            "Show a usercard button for loading older messages when your saved Leafyrino login can moderate the channel.")
+        ->setTooltip("Show a usercard button for loading older messages when "
+                     "your saved Leafyrino login can moderate the channel.")
         ->addTo(*view);
     SettingWidget::checkbox("Always load more messages when possible",
                             s.alwaysLoadMoreUsercardMessages)
-        ->setTooltip(
-            "Start lazy-loading older usercard messages without clicking the load button.")
+        ->setTooltip("Start lazy-loading older usercard messages without "
+                     "clicking the load button.")
         ->addTo(*view);
     SettingWidget::checkbox(
         "Show mod/unmod and vip/unvip buttons as a lead mod",
         s.showLeadModRoleButtons)
-        ->setTooltip(
-            "Show role buttons on usercards when Twitch confirms you are a lead moderator.")
+        ->setTooltip("Show role buttons on usercards when Twitch confirms you "
+                     "are a lead moderator.")
         ->addTo(*view);
     SettingWidget::checkbox("Show editor and lead mod role menu",
                             s.showUsercardRoleManagementMenu)
         ->setTooltip(
             "Show a compact usercard menu for adding or removing editor and "
-            "lead moderator roles. Actions still require a saved broadcaster login.")
+            "lead moderator roles. Actions still require a saved broadcaster "
+            "login.")
         ->addTo(*view);
 
 #ifndef Q_OS_MACOS
@@ -1079,9 +1062,8 @@ MoltorinoPage::MoltorinoPage()
 
     const bool trayAvailable = QSystemTrayIcon::isSystemTrayAvailable();
     const bool notificationAvailable =
-        trayAvailable &&
-        (Toasts::isHighlightNotificationSupported() ||
-         QSystemTrayIcon::supportsMessages());
+        trayAvailable && (Toasts::isHighlightNotificationSupported() ||
+                          QSystemTrayIcon::supportsMessages());
 
     if (!trayAvailable)
     {
@@ -1102,13 +1084,13 @@ MoltorinoPage::MoltorinoPage()
     hideToTrayWidget->setEnabled(trayAvailable);
     hideToTrayWidget->addTo(*view);
 
-    auto *notifyWidget = SettingWidget::checkbox(
-                             "Show notifications for sound-enabled highlights",
-                             s.trayNotifyOnSoundHighlights)
-                             ->setTooltip(
-                                 "Only highlight rules with Play sound enabled "
-                                 "will show a notification while "
-                                 "Leafyrino is hidden.");
+    auto *notifyWidget =
+        SettingWidget::checkbox(
+            "Show notifications for sound-enabled highlights",
+            s.trayNotifyOnSoundHighlights)
+            ->setTooltip("Only highlight rules with Play sound enabled "
+                         "will show a notification while "
+                         "Leafyrino is hidden.");
     notifyWidget->setEnabled(notificationAvailable);
     notifyWidget->addTo(*view);
 #endif
@@ -1118,7 +1100,9 @@ MoltorinoPage::MoltorinoPage()
 
     SettingWidget::intInput("Delay between /spam and /pyramid messages",
                             s.spamCommandIntervalMs,
-                            {.min = 10, .max = 5000, .singleStep = 10,
+                            {.min = 10,
+                             .max = 5000,
+                             .singleStep = 10,
                              .suffix = QStringLiteral(" ms")})
         ->setTooltip("How long /spam and /pyramid wait between messages. "
                      "Lower values are faster, but Twitch may still "
@@ -1138,8 +1122,7 @@ MoltorinoPage::MoltorinoPage()
                      "/pyramid. Errors and manual stop messages still show.")
         ->addTo(*view);
 
-    SettingWidget::checkbox("Send message as warnings",
-                            s.sendMessageAsWarnings)
+    SettingWidget::checkbox("Send message as warnings", s.sendMessageAsWarnings)
         ->setTooltip("#freebrody")
         ->addTo(*view);
     view->addDescription("#freebrody");
@@ -1197,9 +1180,8 @@ MoltorinoPage::MoltorinoPage()
 
     view->addStretch();
 
-    view->addWidget(this->botBadgeFrame_,
-                    {"Bot Badge", "Developer", "Verify", "Client ID",
-                     "Client Secret"});
+    view->addWidget(this->botBadgeFrame_, {"Bot Badge", "Developer", "Verify",
+                                           "Client ID", "Client Secret"});
 }
 
 bool MoltorinoPage::filterElements(const QString &query)
@@ -1247,8 +1229,7 @@ void MoltorinoPage::refreshAuthAccounts()
             if (result.total == 0)
             {
                 guard->updateAuthStatus(
-                    "Not logged in yet. Log in to continue.",
-                    false);
+                    "Not logged in yet. Log in to continue.", false);
                 return;
             }
 
@@ -1274,7 +1255,8 @@ void MoltorinoPage::updateAuthSummary()
         const bool hasRefreshableLogin =
             summary.accountCount > 0 || summary.hasLegacyToken;
         this->refreshAuthAccountsButton_->setVisible(hasRefreshableLogin);
-        this->refreshAuthAccountsButton_->setEnabled(!this->authRefreshInFlight_);
+        this->refreshAuthAccountsButton_->setEnabled(
+            !this->authRefreshInFlight_);
     }
     if (this->addAuthAccountButton_ != nullptr)
     {
@@ -1283,9 +1265,8 @@ void MoltorinoPage::updateAuthSummary()
         this->addAuthAccountButton_->setText(hasSavedLogin ? "Add Account"
                                                            : "Log In");
         this->addAuthAccountButton_->setToolTip(
-            hasSavedLogin
-                ? "Add another account or manage saved accounts."
-                : "Log in with Device Login or Legacy Login.");
+            hasSavedLogin ? "Add another account or manage saved accounts."
+                          : "Log in with Device Login or Legacy Login.");
         this->addAuthAccountButton_->setEnabled(!this->authRefreshInFlight_);
     }
 
@@ -1304,9 +1285,7 @@ void MoltorinoPage::updateAuthSummary()
 
     if (summary.accountCount <= 0)
     {
-        this->updateAuthStatus(
-            "Not logged in yet. Log in to continue.",
-            false);
+        this->updateAuthStatus("Not logged in yet. Log in to continue.", false);
         return;
     }
 
@@ -1319,8 +1298,7 @@ void MoltorinoPage::updateAuthInstructions(const QString &text, bool isError)
 {
     this->authInstructionsLabel_->setText(text);
     this->authInstructionsLabel_->setStyleSheet(
-        QString("QLabel { color: %1; }")
-            .arg(isError ? "#ffb4a2" : "#9aa0a6"));
+        QString("QLabel { color: %1; }").arg(isError ? "#ffb4a2" : "#9aa0a6"));
 }
 
 void MoltorinoPage::updateAuthStatus(const QString &text, bool isValid,
@@ -1437,13 +1415,12 @@ void MoltorinoPage::openBotBadgeAuthorization()
 void MoltorinoPage::verifyBotBadgeConfiguration()
 {
     const auto clientId = this->botBadgeClientIdEdit_->text().trimmed();
-    const auto clientSecret =
-        this->botBadgeClientSecretEdit_->text().trimmed();
+    const auto clientSecret = this->botBadgeClientSecretEdit_->text().trimmed();
 
     if (clientId.isEmpty() || clientSecret.isEmpty())
     {
-        this->updateBotBadgeStatus(
-            "Client ID and Client Secret are required.", false, true);
+        this->updateBotBadgeStatus("Client ID and Client Secret are required.",
+                                   false, true);
         return;
     }
 
@@ -1533,8 +1510,8 @@ void MoltorinoPage::verifyBotBadgeConfiguration()
                     {
                         setBusy(false);
                         guard->updateBotBadgeStatus(
-                            "Bot badge account could not be found.",
-                            false, true);
+                            "Bot badge account could not be found.", false,
+                            true);
                         return;
                     }
 
@@ -1551,9 +1528,9 @@ void MoltorinoPage::verifyBotBadgeConfiguration()
                     settings.botBadgeAppTokenExpiry = appTokenExpiry;
                     settings.botBadgeUserID = resolvedUserId;
                     settings.botBadgeUserLogin = resolvedLogin;
-                    settings.botBadgeUserName =
-                        resolvedDisplayName.isEmpty() ? resolvedLogin
-                                                      : resolvedDisplayName;
+                    settings.botBadgeUserName = resolvedDisplayName.isEmpty()
+                                                    ? resolvedLogin
+                                                    : resolvedDisplayName;
                     settings.requestSave();
 
                     guard->populateBotBadgeFieldsFromSettings();
@@ -1563,18 +1540,18 @@ void MoltorinoPage::verifyBotBadgeConfiguration()
                         true);
                     setBusy(false);
                 })
-                .onError([guard, generation, setBusy](const NetworkResult &res) {
-                    if (guard == nullptr ||
-                        generation != guard->botBadgeValidationGeneration_)
-                    {
-                        return;
-                    }
-                    setBusy(false);
-                    guard->updateBotBadgeStatus(
-                        "Verification failed: " +
-                            res.formatError(),
-                        false, true);
-                })
+                .onError(
+                    [guard, generation, setBusy](const NetworkResult &res) {
+                        if (guard == nullptr ||
+                            generation != guard->botBadgeValidationGeneration_)
+                        {
+                            return;
+                        }
+                        setBusy(false);
+                        guard->updateBotBadgeStatus(
+                            "Verification failed: " + res.formatError(), false,
+                            true);
+                    })
                 .execute();
         })
         .onError([guard, generation, setBusy](const NetworkResult &res) {

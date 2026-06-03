@@ -67,7 +67,7 @@ QJsonValue getForArchitecture(const QJsonObject &obj, const QString &key)
     return val;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -429,8 +429,7 @@ void Updates::checkForUpdates()
     };
 
     auto apiVersion = std::make_shared<uint8_t>(3);
-    constexpr auto maxApiVersion =
-        3;
+    constexpr auto maxApiVersion = 3;
     auto fmtUrl = [apiVersion]() -> QString {
         return u"https://7tv.io/v" % QString::number(*apiVersion) %
                "/chatterino/version/" % CHATTERINO_OS % "/" % currentBranch();
@@ -528,4 +527,4 @@ void Updates::setStatus_(Status status)
     }
 }
 
-}
+}  // namespace chatterino

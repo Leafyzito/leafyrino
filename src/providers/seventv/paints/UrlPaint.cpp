@@ -43,4 +43,4 @@ const std::vector<PaintDropShadow> &UrlPaint::getDropShadows() const
     return this->dropShadows_;
 }
 
-}
+}  // namespace chatterino

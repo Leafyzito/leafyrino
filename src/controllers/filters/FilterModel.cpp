@@ -19,10 +19,9 @@ FilterModel::FilterModel(QObject *parent)
 FilterRecordPtr FilterModel::getItemFromRow(std::vector<QStandardItem *> &row,
                                             const FilterRecordPtr &original)
 {
-    auto item =
-        std::make_shared<FilterRecord>(row[0]->data(Qt::DisplayRole).toString(),
-                                       row[1]->data(Qt::DisplayRole).toString(),
-                                       original->getId());
+    auto item = std::make_shared<FilterRecord>(
+        row[0]->data(Qt::DisplayRole).toString(),
+        row[1]->data(Qt::DisplayRole).toString(), original->getId());
 
     setBoolItem(row[2], item->valid(), false, false);
     setStringItem(row[2], item->valid() ? "Valid" : "Show errors");
@@ -39,4 +38,4 @@ void FilterModel::getRowFromItem(const FilterRecordPtr &item,
     setStringItem(row[2], item->valid() ? "Valid" : "Show errors");
 }
 
-}
+}  // namespace chatterino

@@ -58,7 +58,7 @@ void withUser(KickChannel *channel, const QString &userSpec,
         });
 }
 
-}
+}  // namespace
 
 namespace chatterino::commands {
 
@@ -168,4 +168,4 @@ QString doKickDelete(const CommandContext &ctx)
     return {};
 }
 
-}
+}  // namespace chatterino::commands

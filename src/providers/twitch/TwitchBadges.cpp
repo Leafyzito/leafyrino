@@ -112,7 +112,6 @@ void TwitchBadges::loadLocalBadges()
     QFile file(":/twitch-badges.json");
     if (!file.open(QFile::ReadOnly))
     {
-
         qCWarning(chatterinoTwitch)
             << "Error loading Twitch Badges from the local backup file";
         this->loaded();
@@ -219,7 +218,6 @@ void TwitchBadges::getBadgeIcon(const QString &name, BadgeIconCallback callback)
 
         if (!this->loaded_)
         {
-
             std::unique_lock queueLock(this->queueMutex_);
             this->callbackQueue_.emplace(name, std::move(callback));
             return;
@@ -279,4 +277,4 @@ void TwitchBadges::loadEmoteImage(const QString &name, const ImagePtr &image,
                       });
 }
 
-}
+}  // namespace chatterino

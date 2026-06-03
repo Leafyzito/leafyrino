@@ -14,16 +14,13 @@ namespace chatterino {
 class BadgePredicate : public MessagePredicate
 {
 public:
-
     BadgePredicate(const QString &badges, bool negate);
 
 protected:
-
     bool appliesToImpl(const Message &message) override;
 
 private:
-
     QStringList badges_;
 };
 
-}
+}  // namespace chatterino

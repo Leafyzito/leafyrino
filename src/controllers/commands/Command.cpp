@@ -34,4 +34,4 @@ QString Command::toString() const
     return this->name + " " + this->func;
 }
 
-}
+}  // namespace chatterino

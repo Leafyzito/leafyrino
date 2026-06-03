@@ -26,4 +26,4 @@ public:
                                  bool isFirstWord = false) const = 0;
 };
 
-};
+};  // namespace chatterino::completion

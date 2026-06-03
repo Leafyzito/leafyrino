@@ -53,9 +53,9 @@ void BadgeHighlightModel::getRowFromItem(const HighlightBadge &item,
     setColorItem(row[Column::Color], *item.getColor());
 
     getApp()->getTwitchBadges()->getBadgeIcon(
-        item.badgeName(), [item, row](QString , const QIconPtr pixmap) {
+        item.badgeName(), [item, row](QString, const QIconPtr pixmap) {
             row[Column::Badge]->setData(QVariant(*pixmap), Qt::DecorationRole);
         });
 }
 
-}
+}  // namespace chatterino

@@ -44,4 +44,4 @@ private:
     void moveRow(int dir);
 };
 
-}
+}  // namespace chatterino

@@ -36,7 +36,7 @@ QColor blendColors(const QColor &base, const QColor &apply)
                    base.blueF() * (1 - alpha) + apply.blueF() * alpha);
     return result;
 }
-}
+}  // namespace
 
 MessageLayout::MessageLayout(MessagePtr message)
     : message_(std::move(message))
@@ -82,7 +82,6 @@ size_t MessageLayout::getLineCount() const
 bool MessageLayout::layout(const MessageLayoutContext &ctx,
                            bool shouldInvalidateBuffer)
 {
-
     bool layoutRequired = false;
 
     bool widthChanged = ctx.width != this->currentLayoutWidth_;
@@ -173,7 +172,6 @@ void MessageLayout::actuallyLayout(const MessageLayoutContext &ctx)
         if (hideBlockedTermAutomodMessages &&
             this->message_->flags.has(MessageFlag::AutoModBlockedTerm))
         {
-
             continue;
         }
 
@@ -181,7 +179,6 @@ void MessageLayout::actuallyLayout(const MessageLayoutContext &ctx)
         {
             if (getApp()->getStreamerMode()->shouldHideRestrictedUsers())
             {
-
                 continue;
             }
         }
@@ -191,7 +188,6 @@ void MessageLayout::actuallyLayout(const MessageLayoutContext &ctx)
             if (hideModerationActions ||
                 getApp()->getStreamerMode()->shouldHideModActions())
             {
-
                 continue;
             }
         }
@@ -243,8 +239,8 @@ MessagePaintResult MessageLayout::paint(const MessagePaintContext &ctx)
 
     ctx.painter.drawPixmap(QPoint{0, ctx.y}, *pixmap);
 
-    result.hasAnimatedElements =
-        this->container_.paintAnimatedElements(ctx.painter, ctx.y, ctx.isCollapsed);
+    result.hasAnimatedElements = this->container_.paintAnimatedElements(
+        ctx.painter, ctx.y, ctx.isCollapsed);
 
     if (this->message_->flags.has(MessageFlag::Disabled))
     {
@@ -407,7 +403,6 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
         assert(this->message_->highlightColor);
         if (this->message_->highlightColor)
         {
-
             backgroundColor =
                 blendColors(backgroundColor, *this->message_->highlightColor);
         }
@@ -415,7 +410,6 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
     else if (this->message_->flags.has(MessageFlag::Subscription) &&
              ctx.preferences.enableSubHighlight)
     {
-
         backgroundColor = blendColors(
             backgroundColor, *ctx.colorProvider.color(ColorType::Subscription));
     }
@@ -424,7 +418,6 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
                   MessageFlag::RedeemedChannelPointReward)) &&
              ctx.preferences.enableRedeemedHighlight)
     {
-
         backgroundColor =
             blendColors(backgroundColor,
                         *ctx.colorProvider.color(ColorType::RedeemedHighlight));
@@ -432,9 +425,9 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
     else if (this->message_->flags.has(MessageFlag::ChatWarning) &&
              ctx.preferences.enableAutomodHighlight)
     {
-        backgroundColor = blendColors(
-            backgroundColor,
-            *ctx.colorProvider.color(ColorType::AutomodHighlight));
+        backgroundColor =
+            blendColors(backgroundColor,
+                        *ctx.colorProvider.color(ColorType::AutomodHighlight));
     }
     else if (this->message_->flags.has(MessageFlag::AutoMod) ||
              this->message_->flags.has(MessageFlag::LowTrustUsers))
@@ -463,11 +456,11 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
         switch (this->message_->clientDetection)
         {
             case Message::ClientDetectionStatus::Web:
-                backgroundColor = blendColors(
-                    backgroundColor,
-                    ctx.preferences.enableClientDetectionHighlight
-                        ? ctx.preferences.clientDetectionWebColor
-                        : QColor(getSettings()->webchatColor));
+                backgroundColor =
+                    blendColors(backgroundColor,
+                                ctx.preferences.enableClientDetectionHighlight
+                                    ? ctx.preferences.clientDetectionWebColor
+                                    : QColor(getSettings()->webchatColor));
                 break;
             case Message::ClientDetectionStatus::Android:
                 backgroundColor = blendColors(
@@ -477,11 +470,11 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
                         : QColor(getSettings()->androidColor));
                 break;
             case Message::ClientDetectionStatus::IOS:
-                backgroundColor = blendColors(
-                    backgroundColor,
-                    ctx.preferences.enableClientDetectionHighlight
-                        ? ctx.preferences.clientDetectionIosColor
-                        : QColor(getSettings()->iosColor));
+                backgroundColor =
+                    blendColors(backgroundColor,
+                                ctx.preferences.enableClientDetectionHighlight
+                                    ? ctx.preferences.clientDetectionIosColor
+                                    : QColor(getSettings()->iosColor));
                 break;
             case Message::ClientDetectionStatus::Unknown:
             case Message::ClientDetectionStatus::Abnormal:
@@ -535,14 +528,12 @@ void MessageLayout::deleteCache()
 
 const MessageLayoutElement *MessageLayout::getElementAt(QPointF point) const
 {
-
     return this->container_.getElementAt(point);
 }
 
 std::pair<int, int> MessageLayout::getWordBounds(
     const MessageLayoutElement *hoveredElement, QPointF relativePos) const
 {
-
     if (hoveredElement->getWordId() != -1)
     {
         return this->container_.getWordBounds(hoveredElement);
@@ -578,4 +569,4 @@ void MessageLayout::addSelectionText(QString &str, uint32_t from, uint32_t to,
     this->container_.addSelectionText(str, from, to, copymode);
 }
 
-}
+}  // namespace chatterino

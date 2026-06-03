@@ -50,7 +50,6 @@ int getUsernameBoldness()
         }
         else
         {
-
             break;
         }
     }
@@ -187,7 +186,7 @@ QString fontFamily(FontStyle style)
     return QStringLiteral(DEFAULT_FONT_FAMILY);
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -231,7 +230,6 @@ Fonts::FontData &Fonts::getOrCreateFontData(FontStyle type, float scale)
     auto it = map.find(scale);
     if (it != map.end())
     {
-
         return it->second;
     }
 
@@ -270,4 +268,4 @@ Fonts::FontData Fonts::createFontData(FontStyle type, float scale)
     return font;
 }
 
-}
+}  // namespace chatterino

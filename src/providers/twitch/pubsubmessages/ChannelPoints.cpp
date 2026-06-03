@@ -28,4 +28,4 @@ PubSubCommunityPointsUserV1Message::PubSubCommunityPointsUserV1Message(
     }
 }
 
-}
+}  // namespace chatterino

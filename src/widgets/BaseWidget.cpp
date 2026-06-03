@@ -138,7 +138,6 @@ void BaseWidget::childEvent(QChildEvent *event)
 {
     if (event->added())
     {
-
         if (auto *widget = dynamic_cast<BaseWidget *>(event->child()))
         {
             this->widgets_.push_back(widget);
@@ -146,7 +145,6 @@ void BaseWidget::childEvent(QChildEvent *event)
     }
     else if (event->removed())
     {
-
         auto it = std::find_if(this->widgets_.begin(), this->widgets_.end(),
                                [&](auto &&x) {
                                    return x == event->child();
@@ -171,7 +169,6 @@ void BaseWidget::scaleChangedEvent(float newDpi)
 
 void BaseWidget::themeChangedEvent()
 {
-
 }
 
-}
+}  // namespace chatterino

@@ -24,4 +24,4 @@ void ClassicUserStrategy::apply(const std::vector<UserItem> &items,
         }
     }
 }
-}
+}  // namespace chatterino::completion

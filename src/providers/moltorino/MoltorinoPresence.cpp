@@ -1,10 +1,10 @@
 #include "providers/moltorino/MoltorinoPresence.hpp"
 
 #include "Application.hpp"
-#include "common/QLogging.hpp"
-#include "common/Version.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
+#include "common/QLogging.hpp"
+#include "common/Version.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "providers/moltorino/MoltorinoSupporterBadges.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
@@ -43,8 +43,8 @@
 
 namespace chatterino {
 
-Q_LOGGING_CATEGORY(chatterinoMoltorinoPresence,
-                   "chatterino.moltorino.presence", QtWarningMsg)
+Q_LOGGING_CATEGORY(chatterinoMoltorinoPresence, "chatterino.moltorino.presence",
+                   QtWarningMsg)
 
 namespace {
 
@@ -95,13 +95,13 @@ bool badgeSocketConfigured()
 {
     const auto url = badgeSocketUrl();
     return url.isValid() &&
-           url.host().compare("presence.example.com",
-                              Qt::CaseInsensitive) != 0;
+           url.host().compare("presence.example.com", Qt::CaseInsensitive) != 0;
 }
 
 QString savedClientId()
 {
-    QSettings settings(QStringLiteral("Leafyrino"), QStringLiteral("Leafyrino7"));
+    QSettings settings(QStringLiteral("Leafyrino"),
+                       QStringLiteral("Leafyrino7"));
     auto id = settings.value(QStringLiteral("presence/clientInstanceId"))
                   .toString()
                   .trimmed();
@@ -218,8 +218,8 @@ QString powershellPath()
         systemRoot = "C:/Windows";
     }
 
-    auto path =
-        QDir(systemRoot).filePath("System32/WindowsPowerShell/v1.0/powershell.exe");
+    auto path = QDir(systemRoot)
+                    .filePath("System32/WindowsPowerShell/v1.0/powershell.exe");
     if (QFileInfo::exists(path))
     {
         return QDir::toNativeSeparators(path);
@@ -249,18 +249,13 @@ bool launchAfterThisProcessExits(const QString &installerPath,
                  quotePowerShell(joinWindowsArgs(installerArgs)),
                  quotePowerShell(QDir::toNativeSeparators(workingDirectory)));
 
-    const QByteArray scriptBytes(
-        reinterpret_cast<const char *>(script.utf16()), script.size() * 2);
+    const QByteArray scriptBytes(reinterpret_cast<const char *>(script.utf16()),
+                                 script.size() * 2);
 
     return QProcess::startDetached(
         powershellPath(),
-        {"-NoProfile",
-         "-ExecutionPolicy",
-         "Bypass",
-         "-WindowStyle",
-         "Hidden",
-         "-EncodedCommand",
-         QString::fromLatin1(scriptBytes.toBase64())},
+        {"-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden",
+         "-EncodedCommand", QString::fromLatin1(scriptBytes.toBase64())},
         workingDirectory);
 }
 
@@ -282,7 +277,7 @@ void quitForInstaller()
 
 #endif
 
-}
+}  // namespace
 
 class MoltorinoBadgeSocketListener : public WebSocketListener
 {
@@ -295,13 +290,13 @@ public:
 
     void onOpen() override
     {
-        runInGuiThread([presence = this->presence_,
-                        generation = this->generation_] {
-            if (presence != nullptr)
-            {
-                presence->handleBadgeSocketOpen(generation);
-            }
-        });
+        runInGuiThread(
+            [presence = this->presence_, generation = this->generation_] {
+                if (presence != nullptr)
+                {
+                    presence->handleBadgeSocketOpen(generation);
+                }
+            });
     }
 
     void onTextMessage(QByteArray data) override
@@ -311,8 +306,7 @@ public:
                         data = std::move(data)]() mutable {
             if (presence != nullptr)
             {
-                presence->handleBadgeSocketMessage(generation,
-                                                   std::move(data));
+                presence->handleBadgeSocketMessage(generation, std::move(data));
             }
         });
     }
@@ -324,13 +318,13 @@ public:
 
     void onClose(std::unique_ptr<WebSocketListener>) override
     {
-        runInGuiThread([presence = this->presence_,
-                        generation = this->generation_] {
-            if (presence != nullptr)
-            {
-                presence->handleBadgeSocketClosed(generation);
-            }
-        });
+        runInGuiThread(
+            [presence = this->presence_, generation = this->generation_] {
+                if (presence != nullptr)
+                {
+                    presence->handleBadgeSocketClosed(generation);
+                }
+            });
     }
 
 private:
@@ -484,8 +478,9 @@ bool MoltorinoPresence::setAvailableUpdate(
     std::optional<MoltorinoUpdateInfo> update)
 {
     const auto oldFingerprint =
-        this->availableUpdate_ ? this->updateFingerprint(*this->availableUpdate_)
-                               : QString();
+        this->availableUpdate_
+            ? this->updateFingerprint(*this->availableUpdate_)
+            : QString();
     const auto newFingerprint =
         update ? this->updateFingerprint(*update) : QString();
 
@@ -780,10 +775,8 @@ bool MoltorinoPresence::showDownloadPrompt(bool force)
 #endif
 
     auto *box = new QMessageBox(QMessageBox::Information,
-                                QStringLiteral("Leafyrino update"),
-                                text,
-                                QMessageBox::NoButton,
-                                this->dialogParent());
+                                QStringLiteral("Leafyrino update"), text,
+                                QMessageBox::NoButton, this->dialogParent());
     box->setAttribute(Qt::WA_DeleteOnClose);
     box->setModal(false);
     box->setWindowModality(Qt::NonModal);
@@ -805,23 +798,24 @@ bool MoltorinoPresence::showDownloadPrompt(bool force)
                          this->updatePrompt_.clear();
                      });
 
-    QObject::connect(box, &QMessageBox::buttonClicked, this,
-                     [this, box, downloadButton, update](QAbstractButton *button) {
-                         if (button != downloadButton)
-                         {
-                             return;
-                         }
+    QObject::connect(
+        box, &QMessageBox::buttonClicked, this,
+        [this, box, downloadButton, update](QAbstractButton *button) {
+            if (button != downloadButton)
+            {
+                return;
+            }
 
 #ifdef Q_OS_WIN
-                         box->accept();
-                         this->beginInstallerDownload(true);
+            box->accept();
+            this->beginInstallerDownload(true);
 #else
-                         if (this->openDownloadPage(update))
-                         {
-                             box->accept();
-                         }
+            if (this->openDownloadPage(update))
+            {
+                box->accept();
+            }
 #endif
-                     });
+        });
 
     this->updatePrompt_ = box;
     box->show();
@@ -866,18 +860,15 @@ bool MoltorinoPresence::showInstallPrompt(bool force)
             .arg(update.version.toHtmlEscaped());
 
     auto *box = new QMessageBox(QMessageBox::Information,
-                                QStringLiteral("Leafyrino update ready"),
-                                text,
-                                QMessageBox::NoButton,
-                                this->dialogParent());
+                                QStringLiteral("Leafyrino update ready"), text,
+                                QMessageBox::NoButton, this->dialogParent());
     box->setAttribute(Qt::WA_DeleteOnClose);
     box->setModal(false);
     box->setWindowModality(Qt::NonModal);
     box->setTextFormat(Qt::RichText);
 
-    auto *installButton =
-        box->addButton(QStringLiteral("Restart and install"),
-                       QMessageBox::AcceptRole);
+    auto *installButton = box->addButton(QStringLiteral("Restart and install"),
+                                         QMessageBox::AcceptRole);
     auto *laterButton =
         box->addButton(QStringLiteral("Not now"), QMessageBox::RejectRole);
     box->setDefaultButton(installButton);
@@ -964,8 +955,8 @@ void MoltorinoPresence::beginInstallerDownload(bool showProgress)
     const auto scheme = url.scheme().toLower();
     if (!url.isValid() || (scheme != "https" && scheme != "http"))
     {
-        this->finishInstallerDownload(false,
-                                      "The update link from the server was not valid.");
+        this->finishInstallerDownload(
+            false, "The update link from the server was not valid.");
         return;
     }
 
@@ -982,10 +973,7 @@ void MoltorinoPresence::beginInstallerDownload(bool showProgress)
     {
         progress = new QProgressDialog(
             QStringLiteral("Downloading Leafyrino update..."),
-            QStringLiteral("Cancel"),
-            0,
-            100,
-            this->dialogParent());
+            QStringLiteral("Cancel"), 0, 100, this->dialogParent());
         progress->setAttribute(Qt::WA_DeleteOnClose);
         progress->setModal(false);
         progress->setWindowModality(Qt::NonModal);
@@ -1001,7 +989,8 @@ void MoltorinoPresence::beginInstallerDownload(bool showProgress)
 
     auto *reply = this->updateNetwork_.get(request);
     this->updateReply_ = reply;
-    auto hash = std::make_shared<QCryptographicHash>(QCryptographicHash::Sha256);
+    auto hash =
+        std::make_shared<QCryptographicHash>(QCryptographicHash::Sha256);
 
     if (progress)
     {
@@ -1010,28 +999,28 @@ void MoltorinoPresence::beginInstallerDownload(bool showProgress)
         });
     }
 
-    QObject::connect(reply, &QNetworkReply::downloadProgress, this,
-                     [this, reply](qint64 received, qint64 total) {
-                         if (this->updateReply_ != reply || !this->updateProgress_)
-                         {
-                             return;
-                         }
+    QObject::connect(
+        reply, &QNetworkReply::downloadProgress, this,
+        [this, reply](qint64 received, qint64 total) {
+            if (this->updateReply_ != reply || !this->updateProgress_)
+            {
+                return;
+            }
 
-                         if (total > 0)
-                         {
-                             this->updateProgress_->setMaximum(100);
-                             this->updateProgress_->setValue(
-                                 static_cast<int>((received * 100) / total));
-                             this->updateProgress_->setLabelText(
-                                 QStringLiteral("Downloading update... %1 / %2")
-                                     .arg(formatBytes(received),
-                                          formatBytes(total)));
-                         }
-                         else
-                         {
-                             this->updateProgress_->setMaximum(0);
-                         }
-                     });
+            if (total > 0)
+            {
+                this->updateProgress_->setMaximum(100);
+                this->updateProgress_->setValue(
+                    static_cast<int>((received * 100) / total));
+                this->updateProgress_->setLabelText(
+                    QStringLiteral("Downloading update... %1 / %2")
+                        .arg(formatBytes(received), formatBytes(total)));
+            }
+            else
+            {
+                this->updateProgress_->setMaximum(0);
+            }
+        });
 
     QObject::connect(reply, &QIODevice::readyRead, this, [this, reply, hash] {
         if (this->updateReply_ != reply)
@@ -1054,81 +1043,83 @@ void MoltorinoPresence::beginInstallerDownload(bool showProgress)
         }
     });
 
-    QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, hash] {
-        if (this->updateReply_ != reply)
-        {
+    QObject::connect(
+        reply, &QNetworkReply::finished, this, [this, reply, hash] {
+            if (this->updateReply_ != reply)
+            {
+                reply->deleteLater();
+                return;
+            }
+
+            const auto tail = reply->readAll();
+            if (!tail.isEmpty())
+            {
+                hash->addData(tail);
+                if (this->installerFile_.write(tail) != tail.size())
+                {
+                    this->installerDownloadError_ = QStringLiteral(
+                        "Could not write the installer to disk.");
+                    this->finishInstallerDownload(
+                        false, this->installerDownloadError_);
+                    return;
+                }
+            }
+
+            this->installerFile_.flush();
+            this->installerFile_.close();
+            this->installerHash_ = hash->result().toHex();
+
+            const auto status =
+                reply->attribute(QNetworkRequest::HttpStatusCodeAttribute)
+                    .toInt();
+            const auto failed = reply->error() != QNetworkReply::NoError ||
+                                status < 200 || status >= 300;
+            const auto errorText = reply->errorString();
+            const auto quietCancel =
+                this->installerDownloadCanceled_ &&
+                this->installerDownloadError_.isEmpty() &&
+                reply->error() == QNetworkReply::OperationCanceledError;
+
+            this->updateReply_.clear();
             reply->deleteLater();
-            return;
-        }
 
-        const auto tail = reply->readAll();
-        if (!tail.isEmpty())
-        {
-            hash->addData(tail);
-            if (this->installerFile_.write(tail) != tail.size())
+            if (failed)
             {
-                this->installerDownloadError_ =
-                    QStringLiteral("Could not write the installer to disk.");
+                if (quietCancel)
+                {
+                    this->updateDownloadInFlight_ = false;
+                    this->updateReady_ = false;
+                    this->updateError_ = false;
+                    this->installerDownloadCanceled_ = false;
+                    this->cleanupInstallerDownload(true);
+                    this->updateStateChanged.invoke();
+                    return;
+                }
+
                 this->finishInstallerDownload(
-                    false, this->installerDownloadError_);
+                    false,
+                    !this->installerDownloadError_.isEmpty()
+                        ? this->installerDownloadError_
+                        : (errorText.isEmpty()
+                               ? QStringLiteral("Installer download failed.")
+                               : errorText));
                 return;
             }
-        }
 
-        this->installerFile_.flush();
-        this->installerFile_.close();
-        this->installerHash_ = hash->result().toHex();
-
-        const auto status =
-            reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        const auto failed =
-            reply->error() != QNetworkReply::NoError || status < 200 ||
-            status >= 300;
-        const auto errorText = reply->errorString();
-        const auto quietCancel =
-            this->installerDownloadCanceled_ &&
-            this->installerDownloadError_.isEmpty() &&
-            reply->error() == QNetworkReply::OperationCanceledError;
-
-        this->updateReply_.clear();
-        reply->deleteLater();
-
-        if (failed)
-        {
-            if (quietCancel)
+            const auto expected =
+                this->availableUpdate_->sha256.trimmed().toLower();
+            const auto actual =
+                QString::fromLatin1(this->installerHash_).toLower();
+            if (!expected.isEmpty() && expected != actual)
             {
-                this->updateDownloadInFlight_ = false;
-                this->updateReady_ = false;
-                this->updateError_ = false;
-                this->installerDownloadCanceled_ = false;
-                this->cleanupInstallerDownload(true);
-                this->updateStateChanged.invoke();
+                this->finishInstallerDownload(
+                    false, QStringLiteral("The downloaded installer did not "
+                                          "match the update checksum."));
                 return;
             }
 
-            this->finishInstallerDownload(
-                false,
-                !this->installerDownloadError_.isEmpty()
-                    ? this->installerDownloadError_
-                    : (errorText.isEmpty()
-                           ? QStringLiteral("Installer download failed.")
-                           : errorText));
-            return;
-        }
-
-        const auto expected =
-            this->availableUpdate_->sha256.trimmed().toLower();
-        const auto actual = QString::fromLatin1(this->installerHash_).toLower();
-        if (!expected.isEmpty() && expected != actual)
-        {
-            this->finishInstallerDownload(
-                false,
-                QStringLiteral("The downloaded installer did not match the update checksum."));
-            return;
-        }
-
-        this->finishInstallerDownload(true);
-    });
+            this->finishInstallerDownload(true);
+        });
 }
 
 void MoltorinoPresence::finishInstallerDownload(bool success,
@@ -1167,13 +1158,10 @@ void MoltorinoPresence::finishInstallerDownload(bool success,
         this->cleanupInstallerDownload(true);
         this->updateStateChanged.invoke();
 
-        auto *box = new QMessageBox(QMessageBox::Warning,
-                                    QStringLiteral("Leafyrino update"),
-                                    error.isEmpty()
-                                        ? QStringLiteral("Update failed.")
-                                        : error,
-                                    QMessageBox::Ok,
-                                    this->dialogParent());
+        auto *box = new QMessageBox(
+            QMessageBox::Warning, QStringLiteral("Leafyrino update"),
+            error.isEmpty() ? QStringLiteral("Update failed.") : error,
+            QMessageBox::Ok, this->dialogParent());
         box->setAttribute(Qt::WA_DeleteOnClose);
         box->show();
         return;
@@ -1256,7 +1244,8 @@ QStringList MoltorinoPresence::installerArgs(const QString &logPath) const
 
     if (!logPath.isEmpty())
     {
-        args << QStringLiteral("/LOG=%1").arg(QDir::toNativeSeparators(logPath));
+        args << QStringLiteral("/LOG=%1").arg(
+            QDir::toNativeSeparators(logPath));
     }
 
     return args;
@@ -1268,9 +1257,9 @@ QString MoltorinoPresence::archiveToolPath() const
         .filePath(QStringLiteral("support/7zip/7z.exe"));
 }
 
-bool MoltorinoPresence::extractInstallerArchive(
-    const QString &archivePath, const QString &targetDirectory,
-    QString &error) const
+bool MoltorinoPresence::extractInstallerArchive(const QString &archivePath,
+                                                const QString &targetDirectory,
+                                                QString &error) const
 {
     const auto toolPath = this->archiveToolPath();
     if (!QFileInfo::exists(toolPath))
@@ -1298,7 +1287,8 @@ bool MoltorinoPresence::extractInstallerArchive(
         QStringLiteral("x"),
         QStringLiteral("-y"),
         QStringLiteral("-aoa"),
-        QStringLiteral("-o%1").arg(QDir::toNativeSeparators(target.absolutePath())),
+        QStringLiteral("-o%1").arg(
+            QDir::toNativeSeparators(target.absolutePath())),
         QDir::toNativeSeparators(archivePath),
     });
     process.setWorkingDirectory(target.absolutePath());
@@ -1320,15 +1310,17 @@ bool MoltorinoPresence::extractInstallerArchive(
 
     if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
     {
-        auto details = QString::fromLocal8Bit(process.readAllStandardError()).trimmed();
+        auto details =
+            QString::fromLocal8Bit(process.readAllStandardError()).trimmed();
         if (details.isEmpty())
         {
-            details = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
+            details = QString::fromLocal8Bit(process.readAllStandardOutput())
+                          .trimmed();
         }
 
         error = details.isEmpty()
-            ? QStringLiteral("Installer archive extraction failed.")
-            : details;
+                    ? QStringLiteral("Installer archive extraction failed.")
+                    : details;
         return false;
     }
 
@@ -1340,7 +1332,8 @@ QStringList MoltorinoPresence::downloadFolders() const
     QStringList folders;
     folders << getApp()->getPaths().miscDirectory + "/Updates";
 
-    const auto temp = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    const auto temp =
+        QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     if (!temp.isEmpty())
     {
         folders << QDir(temp).filePath("Leafyrino/Updates");
@@ -1366,15 +1359,15 @@ bool MoltorinoPresence::openInstallerFile(QString &error)
         QFile::remove(path);
 
         this->installerFile_.setFileName(path);
-        if (this->installerFile_.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        if (this->installerFile_.open(QIODevice::WriteOnly |
+                                      QIODevice::Truncate))
         {
             this->installerPath_ = path;
             return true;
         }
 
-        tried << QStringLiteral("%1 (%2)")
-                     .arg(QDir::toNativeSeparators(path),
-                          this->installerFile_.errorString());
+        tried << QStringLiteral("%1 (%2)").arg(
+            QDir::toNativeSeparators(path), this->installerFile_.errorString());
     }
 
     error = QStringLiteral("Could not prepare the installer download.");
@@ -1491,4 +1484,4 @@ MoltorinoPresence *getMoltorinoPresence()
     return &MoltorinoPresence::instance();
 }
 
-}
+}  // namespace chatterino

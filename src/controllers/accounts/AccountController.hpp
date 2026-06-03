@@ -34,4 +34,4 @@ private:
     SignalVector<std::shared_ptr<Account>> accounts_;
 };
 
-}
+}  // namespace chatterino

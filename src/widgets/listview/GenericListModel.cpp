@@ -11,12 +11,12 @@ GenericListModel::GenericListModel(QObject *parent)
 {
 }
 
-int GenericListModel::rowCount(const QModelIndex & ) const
+int GenericListModel::rowCount(const QModelIndex &) const
 {
     return this->items_.size();
 }
 
-QVariant GenericListModel::data(const QModelIndex &index, int ) const
+QVariant GenericListModel::data(const QModelIndex &index, int) const
 {
     if (!index.isValid())
     {
@@ -35,7 +35,6 @@ QVariant GenericListModel::data(const QModelIndex &index, int ) const
 
 void GenericListModel::addItem(std::unique_ptr<GenericListItem> item)
 {
-
     this->beginInsertRows(QModelIndex(), this->items_.size(),
                           this->items_.size());
     this->items_.push_back(std::move(item));
@@ -61,4 +60,4 @@ void GenericListModel::reserve(size_t capacity)
     this->items_.reserve(capacity);
 }
 
-}
+}  // namespace chatterino

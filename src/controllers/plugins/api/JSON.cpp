@@ -54,7 +54,7 @@ void setLightuserdataMetatable(lua_State *L)
     lua_pop(L, 1);
 }
 
-}
+}  // namespace
 
 namespace chatterino::lua::api {
 
@@ -62,14 +62,11 @@ sol::object loadJson(sol::state_view lua)
 {
     setLightuserdataMetatable(lua.lua_state());
 
-    return lua.create_table_with(
-        "parse", jsonParse,
-        "stringify", jsonStringify,
+    return lua.create_table_with("parse", jsonParse, "stringify", jsonStringify,
 
-        "null", static_cast<void *>(nullptr)
-    );
+                                 "null", static_cast<void *>(nullptr));
 }
 
-}
+}  // namespace chatterino::lua::api
 
 #endif

@@ -105,4 +105,4 @@ void WebSocketPoolImpl::removeConnection(WebSocketConnection *conn)
     });
 }
 
-}
+}  // namespace chatterino::ws::detail

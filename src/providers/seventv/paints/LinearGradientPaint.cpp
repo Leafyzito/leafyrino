@@ -99,4 +99,4 @@ const std::vector<PaintDropShadow> &LinearGradientPaint::getDropShadows() const
     return this->dropShadows_;
 }
 
-}
+}  // namespace chatterino

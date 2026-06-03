@@ -18,7 +18,6 @@ using XDGEntries = std::unordered_map<QString, QString>;
 class XDGDesktopFile
 {
 public:
-
     explicit XDGDesktopFile(const QString &filename);
 
     XDGEntries getEntries(const QString &groupHeader) const;
@@ -36,6 +35,6 @@ private:
     std::unordered_map<QString, XDGEntries> groups;
 };
 
-}
+}  // namespace chatterino
 
 #endif

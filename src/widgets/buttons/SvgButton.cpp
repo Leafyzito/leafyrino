@@ -22,7 +22,6 @@ SvgButton::SvgButton(Src source, BaseWidget *parent, QSize padding)
 
 void SvgButton::setSource(Src source)
 {
-
     this->source_ = std::move(source);
     this->loadSource();
     this->invalidateContent();
@@ -105,4 +104,4 @@ void SvgButton::loadSource()
     this->svg_->setAspectRatioMode(Qt::KeepAspectRatio);
 }
 
-}
+}  // namespace chatterino

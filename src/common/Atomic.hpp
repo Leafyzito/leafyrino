@@ -59,7 +59,6 @@ private:
 template <typename T>
 class Atomic<std::shared_ptr<T>>
 {
-
 };
 
 template <typename T>
@@ -117,4 +116,4 @@ private:
 
 #endif
 
-}
+}  // namespace chatterino

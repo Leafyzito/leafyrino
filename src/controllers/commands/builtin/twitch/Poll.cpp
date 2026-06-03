@@ -5,16 +5,16 @@
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/commands/CommandContext.hpp"
 #include "controllers/commands/common/ChannelAction.hpp"
+#include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/api/TwitchGql.hpp"
-#include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/WindowManager.hpp"
 #include "util/PostToThread.hpp"
-#include "widgets/Notebook.hpp"
 #include "widgets/dialogs/PollDialog.hpp"
+#include "widgets/Notebook.hpp"
 #include "widgets/splits/Split.hpp"
 #include "widgets/splits/SplitContainer.hpp"
 #include "widgets/Window.hpp"
@@ -52,8 +52,8 @@ Split *findOpenSplitForChannel(const ChannelPtr &channel)
         return nullptr;
     }
 
-    auto *currentPage = dynamic_cast<SplitContainer *>(
-        window->getNotebook().getSelectedPage());
+    auto *currentPage =
+        dynamic_cast<SplitContainer *>(window->getNotebook().getSelectedPage());
     if (currentPage != nullptr)
     {
         if (auto *selectedSplit = currentPage->getSelectedSplit())
@@ -91,8 +91,7 @@ QString moltorinoAuthRequiredMessage(const QString &action)
     return MoltorinoAuth::authRequiredMessage(action);
 }
 
-QString normalizeMoltorinoAuthError(const QString &action,
-                                    const QString &error)
+QString normalizeMoltorinoAuthError(const QString &action, const QString &error)
 {
     return MoltorinoAuth::normalizeAuthError(action, error);
 }
@@ -119,17 +118,17 @@ std::optional<MoltorinoAuthToken> moltorinoAuthTokenOrWarn(
     return auth;
 }
 
-using PollCallback = std::function<void(
-    ChannelPtr, std::shared_ptr<TwitchChannel>, TwitchChannel::PollEvent,
-    MoltorinoAuthToken)>;
+using PollCallback =
+    std::function<void(ChannelPtr, std::shared_ptr<TwitchChannel>,
+                       TwitchChannel::PollEvent, MoltorinoAuthToken)>;
 
 void withActiveMoltorinoPoll(const CommandContext &ctx, const QString &action,
                              PollCallback callback)
 {
     if (ctx.twitchChannel == nullptr)
     {
-        const auto err = QStringLiteral(
-            "This poll command only works in Twitch channels");
+        const auto err =
+            QStringLiteral("This poll command only works in Twitch channels");
         if (ctx.channel != nullptr)
         {
             ctx.channel->addSystemMessage(err);
@@ -153,35 +152,32 @@ void withActiveMoltorinoPoll(const CommandContext &ctx, const QString &action,
 
     TwitchGql::getActivePoll(
         channelLogin, token->token,
-        [channel, weak, action, token = *token,
-         callback = std::move(callback)](
+        [channel, weak, action, token = *token, callback = std::move(callback)](
             std::optional<TwitchChannel::PollEvent> poll) mutable {
-            runInGuiThread(
-                [channel, weak, action, token, poll = std::move(poll),
-                 callback = std::move(callback)]() mutable {
-                    auto shared =
-                        std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
-                    if (!shared)
-                    {
-                        return;
-                    }
+            runInGuiThread([channel, weak, action, token,
+                            poll = std::move(poll),
+                            callback = std::move(callback)]() mutable {
+                auto shared =
+                    std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+                if (!shared)
+                {
+                    return;
+                }
 
-                    if (!poll ||
-                        poll->status.compare("ACTIVE", Qt::CaseInsensitive) !=
-                            0)
+                if (!poll ||
+                    poll->status.compare("ACTIVE", Qt::CaseInsensitive) != 0)
+                {
+                    if (channel != nullptr)
                     {
-                        if (channel != nullptr)
-                        {
-                            channel->addSystemMessage(
-                                "Could not find an active poll.");
-                        }
-                        shared->setActivePoll(std::nullopt);
-                        return;
+                        channel->addSystemMessage(
+                            "Could not find an active poll.");
                     }
+                    shared->setActivePoll(std::nullopt);
+                    return;
+                }
 
-                    callback(channel, std::move(shared), std::move(*poll),
-                             token);
-                });
+                callback(channel, std::move(shared), std::move(*poll), token);
+            });
         },
         [channel, action](const QString &error) {
             runInGuiThread([channel, action, error] {
@@ -200,8 +196,7 @@ void clearPollAfterCommand(const ChannelPtr &channel,
                            const QString &message)
 {
     runInGuiThread([channel, weak, message] {
-        if (auto shared =
-                std::dynamic_pointer_cast<TwitchChannel>(weak.lock()))
+        if (auto shared = std::dynamic_pointer_cast<TwitchChannel>(weak.lock()))
         {
             shared->setActivePoll(std::nullopt);
         }
@@ -218,8 +213,7 @@ void finishPollAfterCommand(const ChannelPtr &channel,
                             const QString &message)
 {
     runInGuiThread([channel, weak, poll = std::move(poll), message]() mutable {
-        if (auto shared =
-                std::dynamic_pointer_cast<TwitchChannel>(weak.lock()))
+        if (auto shared = std::dynamic_pointer_cast<TwitchChannel>(weak.lock()))
         {
             poll.status = "COMPLETED";
             poll.remainingDurationMilliseconds = 0;
@@ -303,8 +297,8 @@ QString createPoll(const CommandContext &ctx)
 
     if (ctx.twitchChannel == nullptr)
     {
-        const auto err = QStringLiteral(
-            "The /poll command only works in Twitch channels");
+        const auto err =
+            QStringLiteral("The /poll command only works in Twitch channels");
         if (ctx.channel != nullptr)
         {
             ctx.channel->addSystemMessage(err);
@@ -492,8 +486,9 @@ QString endPoll(const CommandContext &ctx)
         [](ChannelPtr channel, std::shared_ptr<TwitchChannel> twitchChannel,
            TwitchChannel::PollEvent poll, const MoltorinoAuthToken &token) {
             const auto weak = twitchChannel->weak_from_this();
-            const auto userId =
-                poll.currentUserId.isEmpty() ? token.userId : poll.currentUserId;
+            const auto userId = poll.currentUserId.isEmpty()
+                                    ? token.userId
+                                    : poll.currentUserId;
             const auto channelLogin = twitchChannel->getName();
             const auto tokenText = token.token;
             const auto originalPoll = poll;
@@ -505,19 +500,18 @@ QString endPoll(const CommandContext &ctx)
                 },
                 [channel, weak, channelLogin, tokenText,
                  originalPoll](const QString &error) {
-                    if (error.contains("service error",
-                                       Qt::CaseInsensitive))
+                    if (error.contains("service error", Qt::CaseInsensitive))
                     {
                         TwitchGql::getActivePoll(
                             channelLogin, tokenText,
-                            [channel, weak,
-                             originalPoll](std::optional<TwitchChannel::PollEvent>
-                                                refreshedPoll) mutable {
+                            [channel, weak, originalPoll](
+                                std::optional<TwitchChannel::PollEvent>
+                                    refreshedPoll) mutable {
                                 if (!refreshedPoll)
                                 {
-                                    finishPollAfterCommand(
-                                        channel, weak, originalPoll,
-                                        "Poll ended");
+                                    finishPollAfterCommand(channel, weak,
+                                                           originalPoll,
+                                                           "Poll ended");
                                     return;
                                 }
 
@@ -526,26 +520,28 @@ QString endPoll(const CommandContext &ctx)
                                         "ACTIVE", Qt::CaseInsensitive) != 0)
                                 {
                                     finishPollAfterCommand(
-                                        channel, weak, std::move(*refreshedPoll),
+                                        channel, weak,
+                                        std::move(*refreshedPoll),
                                         "Poll ended");
                                     return;
                                 }
 
                                 showPollCommandError(
-                                    channel, "Failed to end poll: ",
-                                    "ending polls",
+                                    channel,
+                                    "Failed to end poll: ", "ending polls",
                                     "Twitch API Error: service error");
                             },
                             [channel](const QString &refreshError) {
                                 showPollCommandError(
-                                    channel, "Failed to end poll: ",
-                                    "ending polls", refreshError);
+                                    channel,
+                                    "Failed to end poll: ", "ending polls",
+                                    refreshError);
                             });
                         return;
                     }
 
-                    showPollCommandError(channel, "Failed to end poll: ",
-                                         "ending polls", error);
+                    showPollCommandError(
+                        channel, "Failed to end poll: ", "ending polls", error);
                 });
         });
     return "";
@@ -566,8 +562,7 @@ QString cancelPoll(const CommandContext &ctx)
             TwitchGql::archivePoll(
                 poll.id, token.token,
                 [channel, weak] {
-                    clearPollAfterCommand(channel, weak,
-                                          "Poll deleted");
+                    clearPollAfterCommand(channel, weak, "Poll deleted");
                 },
                 [channel](const QString &error) {
                     runInGuiThread([channel, error] {

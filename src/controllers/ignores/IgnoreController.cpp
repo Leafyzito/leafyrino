@@ -71,7 +71,6 @@ QString makeRegexReplacement(QStringView source,
     SizeType lastEnd = 0;
     for (const QStringCapture &backReference : std::as_const(backReferences))
     {
-
         len = backReference.pos - lastEnd;
         if (len > 0)
         {
@@ -106,7 +105,7 @@ QString makeRegexReplacement(QStringView source,
     return dst;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -114,7 +113,6 @@ bool isIgnoredMessage(IgnoredMessageParameters &&params)
 {
     if (!params.message.isEmpty())
     {
-
         auto phrases = getSettings()->ignoredMessages.readOnly();
         for (const auto &phrase : *phrases)
         {
@@ -185,11 +183,9 @@ void processIgnorePhrases(const std::vector<IgnorePhrase> &phrases,
     using SizeType = QString::size_type;
 
     auto removeEmotesInRange = [&twitchEmotes](SizeType pos, SizeType len) {
-
         auto it = std::partition(
             twitchEmotes.begin(), twitchEmotes.end(),
             [pos, len](const auto &item) {
-
                 return !((item.start >= pos) && item.start < (pos + len));
             });
         std::vector<TwitchEmoteOccurrence> emotesInRange(it,
@@ -360,4 +356,4 @@ void processIgnorePhrases(const std::vector<IgnorePhrase> &phrases,
     }
 }
 
-}
+}  // namespace chatterino

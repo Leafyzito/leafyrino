@@ -47,7 +47,7 @@ QColor parseHexColor(const QString &text)
     return col;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -158,7 +158,6 @@ void ColorInput::setColor(QColor color)
     }
     this->currentColor_ = color;
     this->updateComponents();
-
 }
 
 void ColorInput::emitUpdate()
@@ -168,4 +167,4 @@ void ColorInput::emitUpdate()
     this->colorChanged(this->currentColor_);
 }
 
-}
+}  // namespace chatterino

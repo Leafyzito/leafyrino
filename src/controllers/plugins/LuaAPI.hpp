@@ -31,7 +31,6 @@ struct CompletionList {
 };
 
 struct CompletionEvent {
-
     QString query;
 
     QString full_text_content;
@@ -165,6 +164,6 @@ struct SharedPtrUserData : public UserData {
     }
 };
 
-}
+}  // namespace chatterino::lua::api
 
 #endif

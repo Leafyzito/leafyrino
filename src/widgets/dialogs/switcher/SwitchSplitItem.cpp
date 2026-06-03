@@ -49,7 +49,6 @@ void SwitchSplitItem::paint(QPainter *painter, const QRect &rect) const
 
     if (this->split_)
     {
-
         const auto availableTextWidth = rect.width() - iconRect.width();
         QRect leftTextRect =
             QRect(iconRect.topRight(),
@@ -69,7 +68,6 @@ void SwitchSplitItem::paint(QPainter *painter, const QRect &rect) const
     }
     else if (!this->split_ && this->container_)
     {
-
         QRect textRect =
             QRect(iconRect.topRight(),
                   QSize(rect.width() - iconRect.width(), iconRect.height()));
@@ -86,4 +84,4 @@ QSize SwitchSplitItem::sizeHint(const QRect &rect) const
     return QSize(rect.width(), ICON_SIZE.height());
 }
 
-}
+}  // namespace chatterino

@@ -29,4 +29,4 @@ private:
     std::atomic<bool> flag = false;
 };
 
-}
+}  // namespace chatterino

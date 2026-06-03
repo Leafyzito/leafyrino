@@ -9,7 +9,6 @@ namespace chatterino {
 InvisibleSizeGrip::InvisibleSizeGrip(QWidget *parent)
     : QSizeGrip(parent)
 {
-
     this->setMouseTracking(true);
 }
 
@@ -17,4 +16,4 @@ void InvisibleSizeGrip::paintEvent(QPaintEvent *event)
 {
 }
 
-}
+}  // namespace chatterino

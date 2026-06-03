@@ -19,7 +19,7 @@ namespace tag {
 struct DisplayName {
 };
 
-}
+}  // namespace tag
 
 template <typename E, typename Tag, E V>
 constexpr auto buildEnumValueTaggedData() noexcept
@@ -44,7 +44,6 @@ constexpr auto buildEnumValueTaggedData() noexcept
     }
     else
     {
-
         return magic_enum::detail::enum_name_v<E, V>;
     }
 }
@@ -56,7 +55,8 @@ inline constexpr auto TAGGED_DATA_STORAGE =
 template <typename C, typename E, typename Tag, E V>
 consteval auto enumTaggedDataStorage()
 {
-    constexpr std::string_view utf8 = TAGGED_DATA_STORAGE<decltype(V), Tag, V>.str();
+    constexpr std::string_view utf8 =
+        TAGGED_DATA_STORAGE<decltype(V), Tag, V>.str();
 
     static_assert(isLatin1<utf8.size()>(utf8),
                   "Can't convert non-latin1 UTF8 to UTF16");
@@ -75,7 +75,7 @@ inline constexpr auto TAGGED_DATA =
     enumTaggedDataStorage<char16_t, E, Tag, V>();
 
 template <typename E, typename Tag, std::size_t... I>
-consteval auto taggedDataStorage(std::index_sequence<I...> )
+consteval auto taggedDataStorage(std::index_sequence<I...>)
 {
     return std::array<QStringView, sizeof...(I)>{{detail::fromArray(
         TAGGED_DATA<E, Tag, magic_enum::enum_values<E>()[I]>)...}};
@@ -104,7 +104,7 @@ template <detail::IsEnum E, typename Tag>
     return {};
 }
 
-}
+}  // namespace detail
 
 template <detail::IsEnum auto V>
 [[nodiscard]] consteval QStringView enumDisplayName() noexcept
@@ -144,4 +144,4 @@ template <detail::IsEnum E>
     return detail::staticString(enumDisplayName<D>(value));
 }
 
-}
+}  // namespace chatterino::qmagicenum

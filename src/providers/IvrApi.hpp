@@ -144,7 +144,6 @@ struct IvrUserProfile {
 class IvrApi final
 {
 public:
-
     void getSubage(QString userName, QString channelName,
                    ResultCallback<IvrSubage> resultCallback,
                    IvrFailureCallback failureCallback);
@@ -172,7 +171,8 @@ public:
             resultCallback,
         IvrFailureCallback failureCallback);
 
-    void getUser(QString userName, ResultCallback<IvrUserProfile> resultCallback,
+    void getUser(QString userName,
+                 ResultCallback<IvrUserProfile> resultCallback,
                  IvrFailureCallback failureCallback);
 
     static void initialize();
@@ -191,4 +191,4 @@ private:
 
 IvrApi *getIvr();
 
-}
+}  // namespace chatterino

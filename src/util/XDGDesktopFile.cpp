@@ -39,11 +39,9 @@ XDGDesktopFile::XDGDesktopFile(const QString &filename)
 
         if (line.startsWith('['))
         {
-
             auto end = line.indexOf(']', 1);
             if (end == -1 || end == 1)
             {
-
                 continue;
             }
             auto groupName = line.mid(1, end - 1);
@@ -55,14 +53,12 @@ XDGDesktopFile::XDGDesktopFile(const QString &filename)
 
         if (!entries.has_value())
         {
-
             continue;
         }
 
         auto delimiter = line.indexOf('=');
         if (delimiter == -1)
         {
-
             continue;
         }
 
@@ -107,6 +103,6 @@ std::optional<XDGDesktopFile> XDGDesktopFile::findDesktopFile(
     return {};
 }
 
-}
+}  // namespace chatterino
 
 #endif

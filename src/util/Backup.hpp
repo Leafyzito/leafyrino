@@ -38,7 +38,6 @@ struct BackupFile {
 };
 
 struct FileData {
-
     QString fileName;
     QString directory;
 
@@ -53,6 +52,6 @@ std::vector<BackupFile> findBackupsFor(const QString &directory,
 void loadWithBackups(const FileData &fileData,
                      const std::function<ExpectedStr<void>()> &load);
 
-}
+}  // namespace chatterino::backup
 
 Q_DECLARE_METATYPE(chatterino::backup::BackupFile);

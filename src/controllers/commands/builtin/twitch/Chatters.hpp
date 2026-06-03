@@ -18,4 +18,4 @@ QString chatters(const CommandContext &ctx);
 
 QString testChatters(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

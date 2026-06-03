@@ -39,7 +39,7 @@ struct PubSubCommunityPointsUserV1Message {
     PubSubCommunityPointsUserV1Message(const QJsonObject &root);
 };
 
-}
+}  // namespace chatterino
 
 template <>
 constexpr magic_enum::customize::customize_t magic_enum::customize::enum_name<
@@ -70,7 +70,8 @@ constexpr magic_enum::customize::customize_t magic_enum::customize::enum_name<
             return "points-earned";
         case chatterino::PubSubCommunityPointsUserV1Message::Type::PointsSpent:
             return "points-spent";
-        case chatterino::PubSubCommunityPointsUserV1Message::Type::ClaimAvailable:
+        case chatterino::PubSubCommunityPointsUserV1Message::Type::
+            ClaimAvailable:
             return "claim-available";
         default:
             return default_tag;

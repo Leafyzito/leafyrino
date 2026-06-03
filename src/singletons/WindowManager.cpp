@@ -316,8 +316,7 @@ void WindowManager::updateWordTypeMask()
     flags.set(settings->showBadgesHomiesCustom.getValue()
                   ? MEF::BadgeHomiesCustom
                   : MEF::None);
-    flags.set(settings->showBadgesMoltorino ? MEF::BadgeMoltorino
-                                            : MEF::None);
+    flags.set(settings->showBadgesMoltorino ? MEF::BadgeMoltorino : MEF::None);
     flags.set(settings->showBadgesFolhinha ? MEF::BadgeFolhinha : MEF::None);
 
     // username
@@ -576,8 +575,8 @@ void WindowManager::openChannelOrMessageFromTray(const QString &channelName,
         return;
     }
 
-    split->setChannel(getApp()->getTwitch()->getOrAddChannel(
-        normalizedChannel));
+    split->setChannel(
+        getApp()->getTwitch()->getOrAddChannel(normalizedChannel));
     mainWindow.getNotebook().select(page);
     page->setSelected(split);
     split->setFocus();
@@ -645,14 +644,14 @@ bool WindowManager::hideMainWindowToTray()
         return false;
     }
 
-#ifndef QT_NO_SESSIONMANAGER
+#    ifndef QT_NO_SESSIONMANAGER
     if (qApp != nullptr && qApp->isSavingSession())
     {
         qCDebug(chatterinoWindowmanager)
             << "Skipping tray hide during session shutdown";
         return false;
     }
-#endif
+#    endif
 
     if (this->trayController_ == nullptr ||
         !this->trayController_->canHideToTray())
@@ -973,7 +972,8 @@ QJsonArray WindowManager::getOpenTabSnapshot() const
             QJsonObject tabObj;
             tabObj["index"] = tabIndex;
             tabObj["selected"] = selectedPage == page;
-            if (auto *tab = page->getTab(); tab != nullptr && tab->hasCustomTitle())
+            if (auto *tab = page->getTab();
+                tab != nullptr && tab->hasCustomTitle())
             {
                 tabObj["customTitle"] = tab->getCustomTitle();
             }

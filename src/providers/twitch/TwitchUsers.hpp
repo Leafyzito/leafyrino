@@ -40,10 +40,9 @@ public:
     std::shared_ptr<TwitchUser> resolveID(const UserId &id) override;
 
 private:
-
     std::shared_ptr<TwitchUsersPrivate> private_;
 
     friend TwitchUsersPrivate;
 };
 
-}
+}  // namespace chatterino

@@ -45,7 +45,6 @@ using namespace literals;
 
 QString avatarFilePath(const QString &channelName)
 {
-
     return getApp()->getPaths().twitchProfileAvatars % '/' % channelName %
            u".png";
 }
@@ -60,8 +59,8 @@ bool hasAvatarForChannel(const QString &channelName)
 bool isRunningFromBuildTree()
 {
     const QFileInfo appFile(QCoreApplication::applicationFilePath());
-    if (appFile.fileName().compare(u"Leafyrino7.exe"_s,
-                                   Qt::CaseInsensitive) != 0)
+    if (appFile.fileName().compare(u"Leafyrino7.exe"_s, Qt::CaseInsensitive) !=
+        0)
     {
         return false;
     }
@@ -161,7 +160,7 @@ void onAction(NotifyNotification *notif, const char *actionRaw, void *userData)
     notify_notification_close(notif, nullptr);
 }
 
-void onActionClosed(NotifyNotification *notif, void * )
+void onActionClosed(NotifyNotification *notif, void *)
 {
     g_object_unref(notif);
 }
@@ -172,8 +171,7 @@ void onNotificationDestroyed(void *data)
     delete channelNameHeap;
 }
 
-void onHighlightAction(NotifyNotification *notif, const char * ,
-                       void *userData)
+void onHighlightAction(NotifyNotification *notif, const char *, void *userData)
 {
     const auto *data = static_cast<HighlightNotificationData *>(userData);
     if (data != nullptr)
@@ -196,7 +194,7 @@ void onHighlightNotificationDestroyed(void *data)
 }
 #endif
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -287,7 +285,6 @@ void Toasts::sendChannelNotification(const QString &channelName,
         getHelix()->getUserByName(
             channelName,
             [channelName, sendChannelNotification](const auto &user) {
-
                 auto *downloader =
                     new AvatarDownloader(user.profileImageUrl, channelName);
                 QObject::connect(downloader,
@@ -466,8 +463,7 @@ bool Toasts::ensureActionCenterActivation()
     if (!this->actionCenterActivationAvailable_)
     {
         qCWarning(chatterinoNotification)
-            << "Failed to prepare WinToast Action Center activation:"
-            << result;
+            << "Failed to prepare WinToast Action Center activation:" << result;
     }
 
     return this->actionCenterActivationAvailable_;
@@ -594,12 +590,12 @@ bool Toasts::sendLibnotifyHighlightNotification(const QString &channelName,
         .messageId = messageId,
     };
 
-    notify_notification_add_action(
-        notif, "default", "Open", (NotifyActionCallback)onHighlightAction,
-        data, onHighlightNotificationDestroyed);
-    notify_notification_add_action(
-        notif, "open", "Open", (NotifyActionCallback)onHighlightAction, data,
-        nullptr);
+    notify_notification_add_action(notif, "default", "Open",
+                                   (NotifyActionCallback)onHighlightAction,
+                                   data, onHighlightNotificationDestroyed);
+    notify_notification_add_action(notif, "open", "Open",
+                                   (NotifyActionCallback)onHighlightAction,
+                                   data, nullptr);
 
     g_signal_connect(notif, "closed", (GCallback)onActionClosed, nullptr);
 
@@ -686,7 +682,7 @@ void Toasts::sendLibnotify(const QString &channelName,
 }
 #endif
 
-}
+}  // namespace chatterino
 
 namespace {
 
@@ -723,4 +719,4 @@ AvatarDownloader::AvatarDownloader(const QString &avatarURL,
 
 #include "Toasts.moc"
 
-}
+}  // namespace

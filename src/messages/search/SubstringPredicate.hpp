@@ -13,16 +13,13 @@ namespace chatterino {
 class SubstringPredicate : public MessagePredicate
 {
 public:
-
     SubstringPredicate(const QString &search);
 
 protected:
-
     bool appliesToImpl(const Message &message) override;
 
 private:
-
     const QString search_;
 };
 
-}
+}  // namespace chatterino

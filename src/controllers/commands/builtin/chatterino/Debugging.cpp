@@ -148,25 +148,25 @@ QString forceImageUnload(const CommandContext &ctx)
     return "";
 }
 
-QString forceLayoutChannelViews(const CommandContext & )
+QString forceLayoutChannelViews(const CommandContext &)
 {
     getApp()->getWindows()->forceLayoutChannelViews();
     return {};
 }
 
-QString incrementImageGeneration(const CommandContext & )
+QString incrementImageGeneration(const CommandContext &)
 {
     getApp()->getWindows()->incGeneration();
     return {};
 }
 
-QString invalidateBuffers(const CommandContext & )
+QString invalidateBuffers(const CommandContext &)
 {
     getApp()->getWindows()->invalidateChannelViewBuffers();
     return {};
 }
 
-QString eventsub(const CommandContext & )
+QString eventsub(const CommandContext &)
 {
     getApp()->getEventSub()->debug();
     return {};
@@ -251,4 +251,4 @@ QString debugTest(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

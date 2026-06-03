@@ -23,4 +23,4 @@ private:
     ExpressionList list_;
 };
 
-}
+}  // namespace chatterino::filters

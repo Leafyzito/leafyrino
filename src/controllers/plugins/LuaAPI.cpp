@@ -58,7 +58,7 @@ QDebug qdebugStreamForLogLevel(lua::api::LogLevel lvl)
     }
 }
 
-}
+}  // namespace
 
 namespace chatterino::lua::api {
 
@@ -71,11 +71,9 @@ CompletionList::CompletionList(const sol::table &table)
 sol::table toTable(lua_State *L, const CompletionEvent &ev)
 {
     return sol::state_view(L).create_table_with(
-        "query", ev.query,
-        "full_text_content", ev.full_text_content,
-        "cursor_position", ev.cursor_position,
-        "is_first_word", ev.is_first_word
-    );
+        "query", ev.query, "full_text_content", ev.full_text_content,
+        "cursor_position", ev.cursor_position, "is_first_word",
+        ev.is_first_word);
 }
 
 void c2_register_callback(ThisPluginState L, EventType evtType,
@@ -159,7 +157,6 @@ int loadfile(lua_State *L, const QString &str)
 
     if (!dir.isParentOf(str))
     {
-
         lua::push(
             L, QString("requested module is outside of the plugin directory"));
         return 1;
@@ -241,7 +238,6 @@ int searcherRelative(lua_State *L)
 
 void g_print(ThisPluginState L, sol::variadic_args args)
 {
-
     auto stream =
         (QMessageLogger(QT_MESSAGELOG_FILE, QT_MESSAGELOG_LINE,
                         QT_MESSAGELOG_FUNC, chatterinoLua().categoryName())
@@ -254,6 +250,6 @@ void package_loadlib(sol::variadic_args args)
     throw std::runtime_error("package.loadlib: this function is a stub!");
 }
 
-}
+}  // namespace chatterino::lua::api
 
 #endif

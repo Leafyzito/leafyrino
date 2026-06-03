@@ -41,4 +41,4 @@ struct HighlightResult {
                                     const HighlightResult &result);
 };
 
-}
+}  // namespace chatterino

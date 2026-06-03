@@ -70,4 +70,4 @@ protected:
     pajlada::Signals::SignalHolder connections_;
 };
 
-}
+}  // namespace chatterino

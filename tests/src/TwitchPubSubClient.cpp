@@ -162,10 +162,10 @@ TEST(TwitchPubSubClient, UnlistenResponseIsTrackedSeparately)
     ASSERT_FALSE(nonce.isEmpty());
 
     client.onMessage(QJsonDocument(QJsonObject{
-                         {"type", "RESPONSE"},
-                         {"nonce", nonce},
-                         {"error", ""},
-                     })
+                                       {"type", "RESPONSE"},
+                                       {"nonce", nonce},
+                                       {"error", ""},
+                                   })
                          .toJson());
 
     EXPECT_EQ(pubSub.diag.listenResponses, 0);

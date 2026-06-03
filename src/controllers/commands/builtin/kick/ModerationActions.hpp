@@ -18,4 +18,4 @@ QString doKickUnban(const CommandContext &ctx);
 
 QString doKickDelete(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

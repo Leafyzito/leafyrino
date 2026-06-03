@@ -158,4 +158,4 @@ private:
 
 KickApi *getKickApi();
 
-}
+}  // namespace chatterino

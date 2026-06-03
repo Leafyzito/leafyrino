@@ -151,11 +151,11 @@ void addOrReplaceDeleteAction(TwitchChannel *channel, MessagePtr message)
     }
 
     const auto messages = channel->getMessageSnapshot();
-    auto it = std::find_if(messages.rbegin(), messages.rend(),
-                           [&](const auto &m) {
-                               const auto existingID = deletedMessageID(m);
-                               return existingID && *existingID == *messageID;
-                           });
+    auto it =
+        std::find_if(messages.rbegin(), messages.rend(), [&](const auto &m) {
+            const auto existingID = deletedMessageID(m);
+            return existingID && *existingID == *messageID;
+        });
     if (it != messages.rend())
     {
         channel->replaceMessage(*it, message);
@@ -314,8 +314,8 @@ void Connection::onChannelModerate(
                 auto msg = builder.release();
                 if constexpr (std::is_same_v<Action, channel_moderate::Mod>)
                 {
-                    const auto key = roleEventKey(payload.event,
-                                                  action.userLogin);
+                    const auto key =
+                        roleEventKey(payload.event, action.userLogin);
                     runInGuiThread([channelPtr, msg, key] {
                         auto *roleChannel =
                             dynamic_cast<TwitchChannel *>(channelPtr.get());
@@ -329,10 +329,10 @@ void Connection::onChannelModerate(
                     });
                 }
                 else if constexpr (std::is_same_v<Action,
-                                                   channel_moderate::Unvip>)
+                                                  channel_moderate::Unvip>)
                 {
-                    const auto key = roleEventKey(payload.event,
-                                                  action.userLogin);
+                    const auto key =
+                        roleEventKey(payload.event, action.userLogin);
                     runInGuiThread([channelPtr, msg, key] {
                         QTimer::singleShot(1500, [channelPtr, msg, key] {
                             if (hasRecentRoleMod(key))
@@ -341,8 +341,7 @@ void Connection::onChannelModerate(
                             }
 
                             auto *delayedChannel =
-                                dynamic_cast<TwitchChannel *>(
-                                    channelPtr.get());
+                                dynamic_cast<TwitchChannel *>(channelPtr.get());
                             if (delayedChannel == nullptr ||
                                 delayedChannel->isEmpty())
                             {
@@ -357,15 +356,14 @@ void Connection::onChannelModerate(
                 else
                 {
                     runInGuiThread([channel, msg] {
-                        if constexpr (std::is_same_v<
-                                          Action, channel_moderate::Delete>)
+                        if constexpr (std::is_same_v<Action,
+                                                     channel_moderate::Delete>)
                         {
                             addOrReplaceDeleteAction(channel, msg);
                         }
                         else
                         {
-                            channel->addMessage(msg,
-                                                MessageContext::Original);
+                            channel->addMessage(msg, MessageContext::Original);
                         }
                     });
                 }

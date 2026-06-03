@@ -221,4 +221,4 @@ private:
     void setLockNotebookLayout(bool value) override;
 };
 
-}
+}  // namespace chatterino

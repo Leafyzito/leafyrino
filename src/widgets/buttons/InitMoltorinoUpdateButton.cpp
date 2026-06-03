@@ -5,9 +5,9 @@
 
 namespace chatterino {
 
-void initMoltorinoUpdateButton(PixmapButton &button,
-                               const std::function<void()> & /*relayout*/,
-                               pajlada::Signals::SignalHolder & /*signalHolder*/)
+void initMoltorinoUpdateButton(
+    PixmapButton &button, const std::function<void()> & /*relayout*/,
+    pajlada::Signals::SignalHolder & /*signalHolder*/)
 {
     button.hide();
 
@@ -33,4 +33,4 @@ void initMoltorinoUpdateButton(PixmapButton &button,
     //                             });
 }
 
-}
+}  // namespace chatterino

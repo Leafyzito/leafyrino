@@ -36,4 +36,4 @@ std::vector<TwitchEmoteOccurrence> parseTwitchEmotes(const QVariantMap &tags,
                                                      const QString &content,
                                                      int messageOffset);
 
-}
+}  // namespace chatterino

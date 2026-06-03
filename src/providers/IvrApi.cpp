@@ -107,8 +107,8 @@ void IvrApi::getModVip(
 {
     this->getModVip(
         std::move(channelName),
-        [successCallback = std::move(successCallback)](
-            const IvrModVip &modVip) mutable {
+        [successCallback =
+             std::move(successCallback)](const IvrModVip &modVip) mutable {
             std::vector<HelixModerator> mods;
             mods.reserve(modVip.mods.size());
             for (const auto &entry : modVip.mods)
@@ -138,10 +138,10 @@ void IvrApi::getModVip(
         std::move(failureCallback));
 }
 
-void IvrApi::getFounders(QString channelName,
-                         ResultCallback<std::vector<HelixModerator>>
-                             successCallback,
-                         IvrFailureCallback failureCallback)
+void IvrApi::getFounders(
+    QString channelName,
+    ResultCallback<std::vector<HelixModerator>> successCallback,
+    IvrFailureCallback failureCallback)
 {
     this->getFounders(
         std::move(channelName),
@@ -219,4 +219,4 @@ IvrApi *getIvr()
     return instance;
 }
 
-}
+}  // namespace chatterino

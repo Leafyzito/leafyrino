@@ -332,8 +332,8 @@ public:
         return data;
     }
 
-    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int ,
-                      int , const QModelIndex &parent) override
+    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int, int,
+                      const QModelIndex &parent) override
     {
         if (data->hasFormat("chatterino_row_id") &&
             action & (Qt::DropAction::MoveAction | Qt::DropAction::CopyAction))
@@ -488,7 +488,6 @@ private:
     }
 
 public:
-
     int getModelIndexFromVectorIndex(int vectorIndex) const
     {
         int modelIndex = 0;
@@ -512,4 +511,4 @@ public:
     }
 };
 
-}
+}  // namespace chatterino

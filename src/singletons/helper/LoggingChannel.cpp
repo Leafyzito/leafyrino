@@ -56,7 +56,7 @@ QString generateDateString(const QDateTime &now)
     return now.toString("yyyy-MM-dd");
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -216,7 +216,6 @@ void LoggingChannel::addMessage(const MessagePtr &message,
     QString messageText;
     if (message->loginName.isEmpty())
     {
-
         messageText = message->messageText;
     }
     else
@@ -246,7 +245,6 @@ void LoggingChannel::addMessage(const MessagePtr &message,
             }
             else
             {
-
                 rootMessageChatter = message->replyThread->root()->loginName;
             }
             messageText.insert(colonIndex + 1, " @" + rootMessageChatter);
@@ -268,4 +266,4 @@ void LoggingChannel::addMessage(const MessagePtr &message,
     }
 }
 
-}
+}  // namespace chatterino

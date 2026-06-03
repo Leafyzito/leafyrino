@@ -54,7 +54,7 @@ void connectSignals(D *dialog, W *widget)
     QObject::connect(dialog, &D::colorChanged, widget, &W::setColor);
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -159,4 +159,4 @@ void ColorPickerDialog::setColor(const QColor &color)
     this->colorChanged(color);
 }
 
-}
+}  // namespace chatterino

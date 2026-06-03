@@ -37,20 +37,17 @@ namespace chatterino::lua::api {
 void HTTPRequest::createUserType(sol::table &c2)
 {
     c2.new_usertype<HTTPRequest>(
-        "HTTPRequest", sol::no_constructor,
-        sol::meta_method::to_string, &HTTPRequest::to_string,
+        "HTTPRequest", sol::no_constructor, sol::meta_method::to_string,
+        &HTTPRequest::to_string,
 
-        "on_success", &HTTPRequest::on_success,
-        "on_error", &HTTPRequest::on_error,
-        "finally", &HTTPRequest::finally,
+        "on_success", &HTTPRequest::on_success, "on_error",
+        &HTTPRequest::on_error, "finally", &HTTPRequest::finally,
 
-        "set_timeout", &HTTPRequest::set_timeout,
-        "set_payload", &HTTPRequest::set_payload,
-        "set_header", &HTTPRequest::set_header,
+        "set_timeout", &HTTPRequest::set_timeout, "set_payload",
+        &HTTPRequest::set_payload, "set_header", &HTTPRequest::set_header,
         "execute", &HTTPRequest::execute,
 
-        "create", &HTTPRequest::create
-    );
+        "create", &HTTPRequest::create);
 }
 
 void HTTPRequest::on_success(sol::main_protected_function func)
@@ -152,7 +149,6 @@ void HTTPRequest::execute(sol::this_state L)
             auto self = hack.lock();
             if (!self)
             {
-
                 return;
             }
             for (auto it = pl->httpRequests.begin();
@@ -176,8 +172,7 @@ void HTTPRequest::execute(sol::this_state L)
         .execute();
 }
 
-HTTPRequest::HTTPRequest(HTTPRequest::ConstructorAccessTag ,
-                         NetworkRequest req)
+HTTPRequest::HTTPRequest(HTTPRequest::ConstructorAccessTag, NetworkRequest req)
     : req_(std::move(req))
 {
     DebugCount::increase(DebugObject::LuaHTTPRequest);
@@ -193,5 +188,5 @@ QString HTTPRequest::to_string()
     return "<HTTPRequest>";
 }
 
-}
+}  // namespace chatterino::lua::api
 #endif

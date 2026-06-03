@@ -71,7 +71,7 @@ QString formatStartCommercialError(HelixStartCommercialError error,
     return errorMessage;
 }
 
-}
+}  // namespace
 
 namespace chatterino::commands {
 
@@ -133,4 +133,4 @@ QString startCommercial(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

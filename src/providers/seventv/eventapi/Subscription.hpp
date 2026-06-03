@@ -89,7 +89,7 @@ struct Subscription {
     friend QDebug &operator<<(QDebug &dbg, const Subscription &subscription);
 };
 
-}
+}  // namespace chatterino::seventv::eventapi
 
 template <>
 constexpr magic_enum::customize::customize_t magic_enum::customize::enum_name<
@@ -163,4 +163,4 @@ struct hash<chatterino::seventv::eventapi::Subscription> {
     }
 };
 
-}
+}  // namespace std

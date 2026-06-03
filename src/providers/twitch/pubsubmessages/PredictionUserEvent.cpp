@@ -16,4 +16,4 @@ PubSubPredictionUserV1Message::PubSubPredictionUserV1Message(
     }
 }
 
-}
+}  // namespace chatterino

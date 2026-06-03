@@ -39,4 +39,4 @@ GIFTimer *EmoteController::getGIFTimer() const
     return this->gifTimer_.get();
 }
 
-}
+}  // namespace chatterino

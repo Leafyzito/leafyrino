@@ -20,4 +20,4 @@ QString sendBanById(const CommandContext &ctx);
 
 QString sendTimeout(const CommandContext &ctx);
 
-}
+}  // namespace chatterino::commands

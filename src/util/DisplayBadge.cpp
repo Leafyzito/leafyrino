@@ -17,4 +17,4 @@ QString DisplayBadge::badgeName() const
     return this->badgeName_;
 }
 
-}
+}  // namespace chatterino

@@ -32,4 +32,4 @@ void NicknamesModel::getRowFromItem(const Nickname &item,
     setBoolItem(row[3], item.isCaseSensitive());
 }
 
-}
+}  // namespace chatterino

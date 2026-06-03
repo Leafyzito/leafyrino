@@ -18,4 +18,4 @@ QValidator::State TrimRegExpValidator::validate(QString &input, int &pos) const
     return QRegularExpressionValidator::validate(input, pos);
 }
 
-}
+}  // namespace chatterino

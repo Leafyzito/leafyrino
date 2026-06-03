@@ -46,4 +46,4 @@ void FontSettingDialog::restoreSettings()
     this->weightSetting.setValue(this->oldWeight);
 }
 
-}
+}  // namespace chatterino

@@ -25,4 +25,4 @@ public:
     const std::optional<QString> proxyUrl;
 };
 
-}
+}  // namespace chatterino

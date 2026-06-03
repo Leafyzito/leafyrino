@@ -37,4 +37,4 @@ private:
     static std::vector<SplitInfo> closedSplits_;
 };
 
-}
+}  // namespace chatterino

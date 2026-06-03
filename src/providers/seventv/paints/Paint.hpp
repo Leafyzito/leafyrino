@@ -36,4 +36,4 @@ protected:
                                              const QGradientStops &stops);
 };
 
-}
+}  // namespace chatterino

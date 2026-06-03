@@ -49,7 +49,6 @@ void parseEmoji(const std::shared_ptr<EmojiData> &emojiData,
     }
     else
     {
-
         const auto &shortNames = unparsedEmoji["short_names"];
         for (const auto &shortName : shortNames.GetArray())
         {
@@ -150,7 +149,7 @@ QString getToneNames(const QString &tones)
     return toneNameResults.join('-');
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -171,7 +170,6 @@ void Emojis::load()
 
 void Emojis::loadEmojis()
 {
-
     QFile file(":/emoji.json");
     if (!file.open(QFile::ReadOnly))
     {
@@ -262,14 +260,19 @@ void Emojis::loadEmojiSet()
         {
             QString emojiSetToUse = emojiSet;
 
-            static std::map<QString, QString, QCompareCaseInsensitive> emojiSets = {
+            static std::map<QString, QString, QCompareCaseInsensitive>
+                emojiSets = {
 
-                {"Twitter", "https://pajbot.com/static/emoji-v2/img/twitter/64/"},
-                {"Facebook", "https://pajbot.com/static/emoji-v2/img/facebook/64/"},
-                {"Apple", "https://pajbot.com/static/emoji-v2/img/apple/64/"},
-                {"Google", "https://pajbot.com/static/emoji-v2/img/google/64/"},
+                    {"Twitter",
+                     "https://pajbot.com/static/emoji-v2/img/twitter/64/"},
+                    {"Facebook",
+                     "https://pajbot.com/static/emoji-v2/img/facebook/64/"},
+                    {"Apple",
+                     "https://pajbot.com/static/emoji-v2/img/apple/64/"},
+                    {"Google",
+                     "https://pajbot.com/static/emoji-v2/img/google/64/"},
 
-            };
+                };
 
             if (!emoji->capabilities.has(setCapability))
             {
@@ -313,7 +316,6 @@ std::vector<std::variant<EmotePtr, QStringView>> Emojis::parse(
         auto it = this->emojiFirstByte_.find(character);
         if (it == this->emojiFirstByte_.end())
         {
-
             continue;
         }
 
@@ -332,7 +334,6 @@ std::vector<std::variant<EmotePtr, QStringView>> Emojis::parse(
             auto emojiExtraCharacters = emoji->value.length() - 1;
             if (remainingCharacters >= emojiExtraCharacters)
             {
-
                 bool match = QStringView{emoji->value}.mid(1) ==
                              text.mid(i + 1, emojiExtraCharacters);
 
@@ -347,7 +348,6 @@ std::vector<std::variant<EmotePtr, QStringView>> Emojis::parse(
             if (!emoji->nonQualified.isNull() &&
                 remainingCharacters >= emojiNonQualifiedExtraCharacters)
             {
-
                 bool match = QStringView{emoji->nonQualified}.mid(1) ==
                              text.mid(i + 1, emojiNonQualifiedExtraCharacters);
 
@@ -374,7 +374,6 @@ std::vector<std::variant<EmotePtr, QStringView>> Emojis::parse(
 
         if (charactersFromLastParsedEmoji > 0)
         {
-
             result.emplace_back(text.mid(lastParsedEmojiEndIndex,
                                          charactersFromLastParsedEmoji));
         }
@@ -388,7 +387,6 @@ std::vector<std::variant<EmotePtr, QStringView>> Emojis::parse(
 
     if (lastParsedEmojiEndIndex < text.length())
     {
-
         result.emplace_back(text.mid(lastParsedEmojiEndIndex));
     }
 
@@ -439,4 +437,4 @@ const std::vector<QString> &Emojis::getShortCodes() const
     return this->shortCodes;
 }
 
-}
+}  // namespace chatterino

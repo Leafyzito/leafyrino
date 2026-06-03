@@ -45,4 +45,4 @@ private:
     QString text_;
 };
 
-}
+}  // namespace chatterino

@@ -17,7 +17,7 @@ struct EmoteAddDispatch;
 struct EmoteRemoveDispatch;
 struct EmoteUpdateDispatch;
 struct UserConnectionUpdateDispatch;
-}
+}  // namespace seventv::eventapi
 
 class MessageThread;
 class EmoteMap;
@@ -145,7 +145,6 @@ protected:
     void messageRemovedFromStart(const MessagePtr &msg) override;
 
 private:
-
     std::unordered_map<QString, std::weak_ptr<MessageThread>> threads_;
 
     uint64_t roomID_ = 0;
@@ -206,4 +205,4 @@ private:
     StreamData streamData_;
 };
 
-}
+}  // namespace chatterino

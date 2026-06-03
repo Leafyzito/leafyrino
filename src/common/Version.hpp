@@ -74,4 +74,4 @@ private:
 #endif
 };
 
-};
+};  // namespace chatterino

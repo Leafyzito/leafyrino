@@ -28,4 +28,4 @@ bool Link::isUrl() const
     return this->type == Url;
 }
 
-}
+}  // namespace chatterino

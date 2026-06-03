@@ -121,11 +121,9 @@ Message::ClientDetectionStatus performClientDetection(const QString &nonce)
 
     if (nonce.size() == 32)
     {
-        const bool web = std::all_of(nonce.cbegin(), nonce.cend(),
-                                     [](QChar c) {
-                                         return isDigit(c) ||
-                                                isLowerHexLetter(c);
-                                     });
+        const bool web = std::all_of(nonce.cbegin(), nonce.cend(), [](QChar c) {
+            return isDigit(c) || isLowerHexLetter(c);
+        });
         return web ? Status::Web : Status::Abnormal;
     }
 
@@ -206,8 +204,7 @@ bool hasBadge(const QString &badges, const QString &badgeName)
     return false;
 }
 
-char32_t codePointBefore(const QString &text, qsizetype end,
-                         qsizetype &start)
+char32_t codePointBefore(const QString &text, qsizetype end, qsizetype &start)
 {
     start = end - 1;
     const auto last = text.at(start).unicode();
@@ -285,8 +282,8 @@ void appendRepeatedMessageCounter(MessageBuilder &builder, Channel *channel,
         .channelCanModerate = channel->hasModRights(),
         .senderIsModerator = tags.value("user-type").toString() == u"mod"_s ||
                              hasBadge(badges, u"moderator"_s),
-        .senderIsBroadcaster = senderIsBroadcaster ||
-                               hasBadge(badges, u"broadcaster"_s),
+        .senderIsBroadcaster =
+            senderIsBroadcaster || hasBadge(badges, u"broadcaster"_s),
         .senderIsVip = hasBadge(badges, u"vip"_s),
     };
 
@@ -1364,8 +1361,8 @@ void MessageBuilder::triggerHighlights(const Channel *channel,
         return;
     }
 
-    actuallyTriggerHighlights(channelName, alert.playSound,
-                              alert.customSound, alert.windowAlert);
+    actuallyTriggerHighlights(channelName, alert.playSound, alert.customSound,
+                              alert.windowAlert);
 
     if (alert.playSound)
     {

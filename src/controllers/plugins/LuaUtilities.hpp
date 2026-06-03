@@ -41,7 +41,6 @@ class StackGuard
     lua_State *L;
 
 public:
-
     StackGuard(lua_State *L)
         : expected(lua_gettop(L))
         , L(L)
@@ -65,8 +64,8 @@ public:
         {
             stackDump(this->L, "StackGuard check tripped");
 
-            assert(false && "internal error: lua stack was not in an expected state");
-
+            assert(false &&
+                   "internal error: lua stack was not in an expected state");
         }
     }
 
@@ -104,6 +103,6 @@ void fail(lua_State *L, const char *fmt, auto &&...args)
     std::terminate();
 }
 
-}
+}  // namespace chatterino::lua
 
 #endif

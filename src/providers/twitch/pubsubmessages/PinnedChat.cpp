@@ -16,4 +16,4 @@ PubSubPinnedChatUpdatesV1Message::PubSubPinnedChatUpdatesV1Message(
     }
 }
 
-}
+}  // namespace chatterino

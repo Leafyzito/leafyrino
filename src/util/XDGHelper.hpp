@@ -18,4 +18,4 @@ QString parseDesktopExecProgram(const QString &execKey);
 
 #endif
 
-}
+}  // namespace chatterino

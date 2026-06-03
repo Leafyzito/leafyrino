@@ -87,8 +87,7 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
 
         if (!selectedText.isEmpty() && EditUserNotesDialog::isBold(line, pos))
         {
-            cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor,
-                                1);
+            cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, 1);
             cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, 2);
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor,
                                 static_cast<int>(selectedText.length() + 4));
@@ -143,8 +142,7 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
 
         if (!selectedText.isEmpty() && EditUserNotesDialog::isItalic(line, pos))
         {
-            cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor,
-                                1);
+            cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, 1);
             cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, 1);
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor,
                                 static_cast<int>(selectedText.length() + 2));
@@ -456,4 +454,4 @@ bool EditUserNotesDialog::isHeading(const QString &line, const int pos)
     return match.hasMatch() && pos == match.capturedEnd();
 }
 
-}
+}  // namespace chatterino

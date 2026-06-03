@@ -21,6 +21,6 @@ bool importSettings(const QJsonObject &settingsObj, Settings &s);
 
 ExpectedStr<QJsonObject> validateImportJson(const QString &clipboardText);
 
-}
+}  // namespace imageuploader::detail
 
-}
+}  // namespace chatterino

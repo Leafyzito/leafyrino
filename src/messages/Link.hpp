@@ -40,4 +40,4 @@ public:
     bool isUrl() const;
 };
 
-}
+}  // namespace chatterino

@@ -12,7 +12,7 @@ using namespace chatterino;
 
 static Resources2 *resources = nullptr;
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -30,4 +30,4 @@ void initResources()
     resources = new Resources2;
 }
 
-}
+}  // namespace chatterino

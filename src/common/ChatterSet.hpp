@@ -17,7 +17,6 @@ namespace chatterino {
 class ChatterSet
 {
 public:
-
     static constexpr size_t CHATTER_LIMIT = 2000;
 
     ChatterSet();
@@ -34,10 +33,9 @@ public:
     std::vector<std::pair<QString, QString>> all() const;
 
 private:
-
     cache::lru_cache<QString, QString> items;
 };
 
 using ChatterSet = ChatterSet;
 
-}
+}  // namespace chatterino

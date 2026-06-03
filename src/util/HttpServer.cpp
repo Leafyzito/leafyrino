@@ -157,12 +157,12 @@ private:
     Parser parser;
 };
 
-std::pair<unsigned, QByteArray> defaultHandler(const QString & )
+std::pair<unsigned, QByteArray> defaultHandler(const QString &)
 {
     return {404, {}};
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -196,4 +196,4 @@ const HttpServer::HandlerCb &HttpServer::handler() const
     return this->handler_;
 }
 
-}
+}  // namespace chatterino

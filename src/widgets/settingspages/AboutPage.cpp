@@ -75,11 +75,18 @@ AboutPage::AboutPage()
         {
             auto l = aboutChatterino.emplace<QVBoxLayout>();
 
-            l.emplace<QLabel>("Chatterino Wiki can be found <a href=\"" % LINK_CHATTERINO_WIKI % "\">here</a>")->setOpenExternalLinks(true);
-            l.emplace<QLabel>("All about Chatterino's <a href=\"" % LINK_CHATTERINO_FEATURES % "\">features</a>")->setOpenExternalLinks(true);
-            l.emplace<QLabel>("Join the official Chatterino <a href=\"" % LINK_CHATTERINO_DISCORD % "\">Discord</a>")->setOpenExternalLinks(true);
-            l.emplace<QLabel>("Join the official 7TV <a href=\"" % LINK_SEVENTV_DISCORD % "\">Discord</a>")->setOpenExternalLinks(true);
-
+            l.emplace<QLabel>("Chatterino Wiki can be found <a href=\"" %
+                              LINK_CHATTERINO_WIKI % "\">here</a>")
+                ->setOpenExternalLinks(true);
+            l.emplace<QLabel>("All about Chatterino's <a href=\"" %
+                              LINK_CHATTERINO_FEATURES % "\">features</a>")
+                ->setOpenExternalLinks(true);
+            l.emplace<QLabel>("Join the official Chatterino <a href=\"" %
+                              LINK_CHATTERINO_DISCORD % "\">Discord</a>")
+                ->setOpenExternalLinks(true);
+            l.emplace<QLabel>("Join the official 7TV <a href=\"" %
+                              LINK_SEVENTV_DISCORD % "\">Discord</a>")
+                ->setOpenExternalLinks(true);
         }
 
         auto licenses =
@@ -167,13 +174,29 @@ AboutPage::AboutPage()
         {
             auto l = attributions.emplace<QVBoxLayout>();
 
-            l.emplace<QLabel>("Twemoji emojis provided by <a href=\"https://github.com/twitter/twemoji\">Twitter's Twemoji</a>")->setOpenExternalLinks(true);
-            l.emplace<QLabel>("Facebook emojis provided by <a href=\"https://facebook.com\">Facebook</a>")->setOpenExternalLinks(true);
-            l.emplace<QLabel>("Apple emojis provided by <a href=\"https://apple.com\">Apple</a>")->setOpenExternalLinks(true);
-            l.emplace<QLabel>("Google emojis provided by <a href=\"https://google.com\">Google</a>")->setOpenExternalLinks(true);
-            l.emplace<QLabel>("Emoji datasource provided by <a href=\"https://www.iamcal.com/\">Cal Henderson</a> "
-                              "(<a href=\"https://github.com/iamcal/emoji-data/blob/master/LICENSE\">show license</a>)")->setOpenExternalLinks(true);
-            l.emplace<QLabel>("Twitch emote data provided by <a href=\"https://chatvau.lt/\">Chat Vault</a>")->setOpenExternalLinks(true);
+            l.emplace<QLabel>("Twemoji emojis provided by <a "
+                              "href=\"https://github.com/twitter/"
+                              "twemoji\">Twitter's Twemoji</a>")
+                ->setOpenExternalLinks(true);
+            l.emplace<QLabel>("Facebook emojis provided by <a "
+                              "href=\"https://facebook.com\">Facebook</a>")
+                ->setOpenExternalLinks(true);
+            l.emplace<QLabel>("Apple emojis provided by <a "
+                              "href=\"https://apple.com\">Apple</a>")
+                ->setOpenExternalLinks(true);
+            l.emplace<QLabel>("Google emojis provided by <a "
+                              "href=\"https://google.com\">Google</a>")
+                ->setOpenExternalLinks(true);
+            l.emplace<QLabel>(
+                 "Emoji datasource provided by <a "
+                 "href=\"https://www.iamcal.com/\">Cal Henderson</a> "
+                 "(<a "
+                 "href=\"https://github.com/iamcal/emoji-data/blob/master/"
+                 "LICENSE\">show license</a>)")
+                ->setOpenExternalLinks(true);
+            l.emplace<QLabel>("Twitch emote data provided by <a "
+                              "href=\"https://chatvau.lt/\">Chat Vault</a>")
+                ->setOpenExternalLinks(true);
             // clang-format on
         }
 
@@ -242,7 +265,6 @@ AboutPage::AboutPage()
                     QPixmap avatarPixmap;
                     if (avatarUrl.isEmpty())
                     {
-
                         avatarPixmap.load(":/avatars/anon.png");
                     }
                     else
@@ -311,4 +333,4 @@ void AboutPage::addLicense(QFormLayout *form, const QString &name,
     form->addRow(a, b);
 }
 
-}
+}  // namespace chatterino

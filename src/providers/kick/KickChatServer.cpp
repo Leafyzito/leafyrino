@@ -24,7 +24,7 @@ namespace {
 using namespace Qt::Literals::StringLiterals;
 
 template <typename T>
-T stringSwitch(std::string_view )
+T stringSwitch(std::string_view)
 {
     return {};
 }
@@ -40,7 +40,7 @@ T stringSwitch(std::string_view provided, std::string_view match, T &&value,
     return stringSwitch<T>(provided, std::forward<decltype(rest)>(rest)...);
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -186,23 +186,20 @@ bool KickChatServer::onAppEvent(uint64_t roomID, uint64_t channelID,
 {
     using Fn = void (KickChatServer::*)(KickChannel *, BoostJsonObject);
     auto fn = stringSwitch<Fn>(
-        event,
-        "ChatMessageEvent", &KickChatServer::onChatMessage,
+        event, "ChatMessageEvent", &KickChatServer::onChatMessage,
         "MessageDeletedEvent", &KickChatServer::onMessageDeleted,
         "ChatroomClearEvent", &KickChatServer::onChatroomClear,
-        "UserBannedEvent", &KickChatServer::onUserBanned,
-        "UserUnbannedEvent", &KickChatServer::onUserUnbanned,
-        "SubscriptionEvent", &KickChatServer::onSubscriptionEvent,
-        "GiftedSubscriptionsEvent",
-        &KickChatServer::onGiftedSubscriptionEvent,
-        "PinnedMessageCreatedEvent",
+        "UserBannedEvent", &KickChatServer::onUserBanned, "UserUnbannedEvent",
+        &KickChatServer::onUserUnbanned, "SubscriptionEvent",
+        &KickChatServer::onSubscriptionEvent, "GiftedSubscriptionsEvent",
+        &KickChatServer::onGiftedSubscriptionEvent, "PinnedMessageCreatedEvent",
         &KickChatServer::onPinnedMessageCreatedEvent,
         "PinnedMessageDeletedEvent",
-        &KickChatServer::onPinnedMessageDeletedEvent,
-        "RewardRedeemedEvent", &KickChatServer::onRewardRedeemedEvent,
-        "KicksGifted", &KickChatServer::onKicksGiftedEvent,
-        "StreamHostEvent", &KickChatServer::onStreamHostEvent,
-        "ChatroomUpdatedEvent", &KickChatServer::onChatroomUpdatedEvent,
+        &KickChatServer::onPinnedMessageDeletedEvent, "RewardRedeemedEvent",
+        &KickChatServer::onRewardRedeemedEvent, "KicksGifted",
+        &KickChatServer::onKicksGiftedEvent, "StreamHostEvent",
+        &KickChatServer::onStreamHostEvent, "ChatroomUpdatedEvent",
+        &KickChatServer::onChatroomUpdatedEvent,
 
         "KicksLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,
         "GiftsLeaderboardUpdated", &KickChatServer::onKnownIgnoredMessage,
@@ -214,8 +211,7 @@ bool KickChatServer::onAppEvent(uint64_t roomID, uint64_t channelID,
 
         "StreamHostedEvent", &KickChatServer::onKnownIgnoredMessage,
 
-        "ChatMessageSentEvent", &KickChatServer::onKnownIgnoredMessage
-    );
+        "ChatMessageSentEvent", &KickChatServer::onKnownIgnoredMessage);
 
     if (!fn)
     {
@@ -262,7 +258,6 @@ void KickChatServer::onChatMessage(KickChannel *channel, BoostJsonObject data)
 
         if (highlighted && showInMentions)
         {
-
             getApp()->getTwitch()->getMentionsChannel()->addMessage(
                 msg, MessageContext::Original);
         }
@@ -327,8 +322,7 @@ void KickChatServer::onMessageDeleted(KickChannel *channel,
     }
 }
 
-void KickChatServer::onChatroomClear(KickChannel *channel,
-                                     BoostJsonObject )
+void KickChatServer::onChatroomClear(KickChannel *channel, BoostJsonObject)
 {
     auto now = QDateTime::currentDateTime();
     auto clear = KickMessageBuilder::makeClearChatMessage(now, {});
@@ -344,7 +338,7 @@ void KickChatServer::onPinnedMessageCreatedEvent(KickChannel *channel,
 }
 
 void KickChatServer::onPinnedMessageDeletedEvent(KickChannel *channel,
-                                                 BoostJsonObject )
+                                                 BoostJsonObject)
 {
     channel->addSystemMessage(u"The pinned message was unpinned."_s);
 }
@@ -455,10 +449,8 @@ void KickChatServer::onChatroomUpdatedEvent(KickChannel *channel,
     channel->updateRoomModes(newMode);
 }
 
-void KickChatServer::onKnownIgnoredMessage(KickChannel * ,
-                                           BoostJsonObject )
+void KickChatServer::onKnownIgnoredMessage(KickChannel *, BoostJsonObject)
 {
-
 }
 
 void KickChatServer::onJoin(uint64_t roomID) const
@@ -611,4 +603,4 @@ void KickChatServer::initializeSeventvEventApi(SeventvEventAPI *api)
         });
 }
 
-}
+}  // namespace chatterino

@@ -15,4 +15,4 @@ bool weakOwnerEquals(const std::weak_ptr<T> &a,
     return !a.owner_before(b) && !b.owner_before(a);
 }
 
-}
+}  // namespace chatterino

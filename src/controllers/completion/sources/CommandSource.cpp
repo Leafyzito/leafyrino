@@ -9,8 +9,8 @@
 #include "controllers/commands/CommandController.hpp"
 #include "controllers/completion/sources/Helpers.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
-#include "providers/twitch/TwitchCommon.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
+#include "providers/twitch/TwitchCommon.hpp"
 #include "singletons/Settings.hpp"
 #include "widgets/splits/InputCompletionItem.hpp"
 
@@ -147,10 +147,9 @@ QString commandUsage(const QString &command)
 
 void addCommand(const QString &command, std::vector<CommandItem> &out)
 {
-    const auto normalized =
-        command.startsWith('/') || command.startsWith('.')
-            ? command
-            : QStringLiteral("/") + command;
+    const auto normalized = command.startsWith('/') || command.startsWith('.')
+                                ? command
+                                : QStringLiteral("/") + command;
     const auto usage = commandUsage(normalized);
 
     if (command.startsWith('/') || command.startsWith('.'))
@@ -237,16 +236,11 @@ const QSet<QString> &currentAccountModCommands()
 const QSet<QString> &moltorinoModerationCommands()
 {
     static const QSet<QString> commands{
-        "/blockterm",
-        "/cancelpoll",
-        "/cancelprediction",
-        "/completeprediction",
-        "/endpoll",
-        "/lockprediction",
-        "/modlogs",
-        "/pin",
-        "/unblockterm",
-        "/unpin",
+        "/blockterm",        "/cancelpoll",
+        "/cancelprediction", "/completeprediction",
+        "/endpoll",          "/lockprediction",
+        "/modlogs",          "/pin",
+        "/unblockterm",      "/unpin",
     };
     return commands;
 }
@@ -325,8 +319,8 @@ bool hasBotBadgeAuth()
 
 QString normalizedCommand(const CommandItem &item)
 {
-    const auto prefix = item.prefix.isEmpty() ? QStringLiteral("/")
-                                              : item.prefix;
+    const auto prefix =
+        item.prefix.isEmpty() ? QStringLiteral("/") : item.prefix;
     return (prefix + item.name).toLower();
 }
 
@@ -430,8 +424,7 @@ bool shouldHideCommand(const CommandItem &item, bool hideUnavailable,
     {
         return !hasCurrentAccountBroadcasterRights &&
                !(moltorinoFeatureHandlesCommand(command) &&
-                 (hasMoltorinoBroadcasterAccess ||
-                  hasCurrentAccountModRights ||
+                 (hasMoltorinoBroadcasterAccess || hasCurrentAccountModRights ||
                   hasMoltorinoModerationAccess));
     }
 
@@ -441,8 +434,7 @@ bool shouldHideCommand(const CommandItem &item, bool hideUnavailable,
     }
 
     if (moltorinoModerationCommands().contains(command) &&
-        moltorinoFeatureHandlesCommand(command) &&
-        hasMoltorinoModerationAccess)
+        moltorinoFeatureHandlesCommand(command) && hasMoltorinoModerationAccess)
     {
         return false;
     }
@@ -468,8 +460,7 @@ void CommandSource::update(const QString &query)
     if (this->strategy_)
     {
         this->strategy_->apply(this->items_, this->output_, query);
-        const bool hideUnavailable =
-            getSettings()->hideUnavailableModCommands;
+        const bool hideUnavailable = getSettings()->hideUnavailableModCommands;
         const bool hasCurrentAccountModRights =
             this->channel_ != nullptr && this->channel_->hasModRights();
         const bool hasCurrentAccountBroadcasterRights =
@@ -493,8 +484,7 @@ void CommandSource::update(const QString &query)
                                    item, hideUnavailable,
                                    hasCurrentAccountModRights,
                                    hasCurrentAccountBroadcasterRights,
-                                   moltorinoAccess,
-                                   moltorinoBroadcasterAccess,
+                                   moltorinoAccess, moltorinoBroadcasterAccess,
                                    moltorinoRoleManagementAccess, botBadgeAuth);
                            }),
             this->output_.end());

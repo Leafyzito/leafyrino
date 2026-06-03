@@ -34,4 +34,4 @@ float fuzzyToFloat(const QString &str, float default_)
     return default_;
 }
 
-}
+}  // namespace chatterino

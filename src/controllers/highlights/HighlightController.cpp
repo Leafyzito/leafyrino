@@ -37,7 +37,6 @@ auto highlightPhraseCheck(const HighlightPhrase &highlight) -> HighlightCheck
 
             if (self)
             {
-
                 return std::nullopt;
             }
 
@@ -94,11 +93,8 @@ void rebuildSubscriptionHighlights(Settings &settings,
                     ColorProvider::instance().color(ColorType::Subscription);
 
                 return HighlightResult{
-                    highlightAlert,
-                    highlightSound,
-                    highlightSoundUrl,
-                    highlightColor,
-                    false,
+                    highlightAlert, highlightSound, highlightSoundUrl,
+                    highlightColor, false,
                 };
             }});
     }
@@ -163,8 +159,7 @@ void rebuildReplyThreadHighlight(Settings &settings,
         auto highlightInMentions =
             settings.showThreadHighlightInMentions.getValue();
         checks.emplace_back(HighlightCheck{
-            [=](const auto & , const auto & ,
-                const auto & , const auto & ,
+            [=](const auto &, const auto &, const auto &, const auto &,
                 const auto &flags,
                 const auto self) -> std::optional<HighlightResult> {
                 if (flags.has(MessageFlag::SubscribedThread) && !self)
@@ -235,11 +230,10 @@ void rebuildMessageHighlights(Settings &settings,
         auto highlightColor =
             ColorProvider::instance().color(ColorType::AutomodHighlight);
 
-        checks.emplace_back(HighlightCheck{
-            [=](const auto & , const auto & ,
-                const auto & , const auto & ,
-                const auto &flags,
-                const auto ) -> std::optional<HighlightResult> {
+        checks.emplace_back(
+            HighlightCheck{[=](const auto &, const auto &, const auto &,
+                               const auto &, const auto &flags,
+                               const auto) -> std::optional<HighlightResult> {
                 if (!flags.has(MessageFlag::AutoModOffendingMessage))
                 {
                     return std::nullopt;
@@ -252,11 +246,8 @@ void rebuildMessageHighlights(Settings &settings,
                 }
 
                 return HighlightResult{
-                    highlightAlert,
-                    highlightSound,
-                    highlightSoundUrl,
-                    highlightColor,
-                    false,
+                    highlightAlert, highlightSound, highlightSoundUrl,
+                    highlightColor, false,
                 };
             }});
     }
@@ -321,10 +312,8 @@ void rebuildUserHighlights(Settings &settings,
                 }
 
                 return HighlightResult{
-                    highlight.hasAlert(),
-                    highlight.hasSound(),
-                    highlightSoundUrl,
-                    highlight.getColor(),
+                    highlight.hasAlert(),       highlight.hasSound(),
+                    highlightSoundUrl,          highlight.getColor(),
                     highlight.showInMentions(),
                 };
             }});
@@ -360,10 +349,8 @@ void rebuildBadgeHighlights(Settings &settings,
                         }
 
                         return HighlightResult{
-                            highlight.hasAlert(),
-                            highlight.hasSound(),
-                            highlightSoundUrl,
-                            highlight.getColor(),
+                            highlight.hasAlert(),       highlight.hasSound(),
+                            highlightSoundUrl,          highlight.getColor(),
                             highlight.showInMentions(),
                         };
                     }
@@ -374,7 +361,7 @@ void rebuildBadgeHighlights(Settings &settings,
     }
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -470,7 +457,6 @@ HighlightController::HighlightController(Settings &settings,
 
 void HighlightController::rebuildChecks(Settings &settings)
 {
-
     auto checks = this->checks_.access();
     checks->clear();
 
@@ -563,7 +549,6 @@ std::pair<bool, HighlightResult> HighlightController::check(
 
             if (result.full())
             {
-
                 break;
             }
         }
@@ -572,4 +557,4 @@ std::pair<bool, HighlightResult> HighlightController::check(
     return {highlighted, result};
 }
 
-}
+}  // namespace chatterino

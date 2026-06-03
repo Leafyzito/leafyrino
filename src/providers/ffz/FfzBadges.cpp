@@ -110,7 +110,6 @@ void FfzBadges::load()
                             std::move(userIDString), {badgeID}));
                     if (!created)
                     {
-
                         userBadges->second.emplace(badgeID);
                     }
                 }
@@ -145,4 +144,4 @@ void FfzBadges::assignBadgeToUser(const UserId &userID, int badgeID)
     }
 }
 
-}
+}  // namespace chatterino

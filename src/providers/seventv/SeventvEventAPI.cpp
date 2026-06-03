@@ -213,4 +213,4 @@ const liveupdates::Diag &SeventvEventAPI::diag() const
     return this->private_->diag;
 }
 
-}
+}  // namespace chatterino

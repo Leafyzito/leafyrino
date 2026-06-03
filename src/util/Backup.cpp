@@ -38,7 +38,7 @@ bool anyBackupsOf(const QString &directory, const QString &filename)
                                });
 }
 
-}
+}  // namespace
 
 namespace chatterino::backup {
 
@@ -137,4 +137,4 @@ void loadWithBackups(const FileData &fileData,
     }
 }
 
-}
+}  // namespace chatterino::backup

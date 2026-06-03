@@ -20,7 +20,7 @@ using ChannelPtr = std::shared_ptr<Channel>;
 struct Message;
 using MessagePtr = std::shared_ptr<const Message>;
 
-}
+}  // namespace chatterino
 
 namespace chatterino::recentmessages {
 
@@ -34,4 +34,4 @@ void load(
     std::optional<std::chrono::time_point<std::chrono::system_clock>> before,
     bool jitter);
 
-}
+}  // namespace chatterino::recentmessages

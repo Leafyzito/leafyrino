@@ -84,7 +84,7 @@ float inMessages(const MessagePtr &msg, const T &messages)
     return similarityPercent;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -117,4 +117,4 @@ void setSimilarityFlags(const MessagePtr &message, const T &messages)
 template void setSimilarityFlags<std::vector<MessagePtr>>(
     const MessagePtr &msg, const std::vector<MessagePtr> &messages);
 
-}
+}  // namespace chatterino

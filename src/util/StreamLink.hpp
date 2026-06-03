@@ -30,4 +30,4 @@ void openStreamlink(const QString &channelURL, const QString &quality,
 void openStreamlinkForChannel(const QString &channel,
                               QStringView prefixURL = u"twitch.tv/");
 
-}
+}  // namespace chatterino

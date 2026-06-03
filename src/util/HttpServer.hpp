@@ -21,4 +21,4 @@ private:
     HandlerCb handler_;
 };
 
-}
+}  // namespace chatterino

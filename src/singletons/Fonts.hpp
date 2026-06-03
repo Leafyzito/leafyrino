@@ -84,4 +84,4 @@ private:
     pajlada::SettingListener fontChangedListener;
 };
 
-}
+}  // namespace chatterino

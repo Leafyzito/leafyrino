@@ -137,4 +137,4 @@ struct Selection {
         }
     }
 };
-}
+}  // namespace chatterino

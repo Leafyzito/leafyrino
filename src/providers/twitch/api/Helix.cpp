@@ -25,7 +25,7 @@ constexpr auto NUM_MODERATORS_TO_FETCH_PER_REQUEST = 100;
 
 constexpr auto NUM_CHATTERS_TO_FETCH = 1000;
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -82,8 +82,7 @@ void Helix::fetchUsers(QStringList userIds, QStringList userLogins,
 
             successCallback(users);
         })
-        .onError([failureCallback](auto ) {
-
+        .onError([failureCallback](auto) {
             failureCallback();
         })
         .execute();
@@ -201,8 +200,7 @@ void Helix::fetchStreams(
 
             successCallback(streams);
         })
-        .onError([failureCallback](auto ) {
-
+        .onError([failureCallback](auto) {
             failureCallback();
         })
         .finally(finallyCallback)
@@ -289,8 +287,7 @@ void Helix::fetchGames(QStringList gameIds, QStringList gameNames,
 
             successCallback(games);
         })
-        .onError([failureCallback](auto ) {
-
+        .onError([failureCallback](auto) {
             failureCallback();
         })
         .execute();
@@ -323,8 +320,7 @@ void Helix::searchGames(QString gameName,
 
             successCallback(games);
         })
-        .onError([failureCallback](auto ) {
-
+        .onError([failureCallback](auto) {
             failureCallback();
         })
         .execute();
@@ -391,13 +387,11 @@ void Helix::createClip(
             switch (result.status().value_or(0))
             {
                 case 503: {
-
                     failureCallback(HelixClipError::ClipsUnavailable, message);
                 }
                 break;
 
                 case 401: {
-
                     failureCallback(HelixClipError::UserNotAuthenticated,
                                     message);
                 }
@@ -473,7 +467,7 @@ void Helix::fetchChannels(
 
             successCallback(channels);
         })
-        .onError([failureCallback](auto ) {
+        .onError([failureCallback](auto) {
             failureCallback();
         })
         .execute();
@@ -501,7 +495,7 @@ void Helix::getChannel(QString broadcasterId,
 
             successCallback(channel);
         })
-        .onError([failureCallback](auto ) {
+        .onError([failureCallback](auto) {
             failureCallback();
         })
         .execute();
@@ -540,13 +534,11 @@ void Helix::createStreamMarker(
             switch (result.status().value_or(0))
             {
                 case 403: {
-
                     failureCallback(HelixStreamMarkerError::UserNotAuthorized);
                 }
                 break;
 
                 case 401: {
-
                     failureCallback(
                         HelixStreamMarkerError::UserNotAuthenticated);
                 }
@@ -579,7 +571,7 @@ void Helix::loadBlocks(QString userId,
     this->paginate(
         u"users/blocks"_s, query,
         [pageCallback, receivedItems](const QJsonObject &json,
-                                      const auto & ) mutable {
+                                      const auto &) mutable {
             const auto data = json["data"_L1].toArray();
 
             if (data.isEmpty())
@@ -623,11 +615,10 @@ void Helix::blockUser(QString targetUserId, const QObject *caller,
 
     this->makePut("users/blocks", urlQuery)
         .caller(caller)
-        .onSuccess([successCallback](auto ) {
+        .onSuccess([successCallback](auto) {
             successCallback();
         })
-        .onError([failureCallback](auto ) {
-
+        .onError([failureCallback](auto) {
             failureCallback();
         })
         .execute();
@@ -642,11 +633,10 @@ void Helix::unblockUser(QString targetUserId, const QObject *caller,
 
     this->makeDelete("users/blocks", urlQuery)
         .caller(caller)
-        .onSuccess([successCallback](auto ) {
+        .onSuccess([successCallback](auto) {
             successCallback();
         })
-        .onError([failureCallback](auto ) {
-
+        .onError([failureCallback](auto) {
             failureCallback();
         })
         .execute();
@@ -766,28 +756,24 @@ void Helix::manageAutoModMessages(
             switch (result.status().value_or(0))
             {
                 case 400: {
-
                     failureCallback(
                         HelixAutoModMessageError::MessageAlreadyProcessed);
                 }
                 break;
 
                 case 401: {
-
                     failureCallback(
                         HelixAutoModMessageError::UserNotAuthenticated);
                 }
                 break;
 
                 case 403: {
-
                     failureCallback(
                         HelixAutoModMessageError::UserNotAuthorized);
                 }
                 break;
 
                 case 404: {
-
                     failureCallback(HelixAutoModMessageError::MessageNotFound);
                 }
                 break;
@@ -866,7 +852,6 @@ void Helix::getEmoteSetData(QString emoteSetId,
             successCallback(emoteSetData);
         })
         .onError([failureCallback](NetworkResult result) {
-
             failureCallback();
         })
         .execute();
@@ -901,7 +886,6 @@ void Helix::getChannelEmotes(
             successCallback(channelEmotes);
         })
         .onError([failureCallback](auto result) {
-
             failureCallback();
         })
         .execute();
@@ -948,7 +932,6 @@ void Helix::updateUserChatColor(
                     if (message.startsWith("invalid color",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::InvalidColor, message);
                     }
                     else
@@ -962,7 +945,6 @@ void Helix::updateUserChatColor(
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else
@@ -998,7 +980,6 @@ void Helix::deleteChatMessages(
 
     if (!messageID.isEmpty())
     {
-
         urlQuery.addQueryItem("message_id", messageID);
     }
 
@@ -1027,19 +1008,16 @@ void Helix::deleteChatMessages(
             switch (*result.status())
             {
                 case 404: {
-
                     failureCallback(Error::MessageUnavailable, message);
                 }
                 break;
 
                 case 400: {
-
                     failureCallback(Error::Forwarded, message);
                 }
                 break;
 
                 case 403: {
-
                     failureCallback(Error::Forwarded, message);
                 }
                 break;
@@ -1048,7 +1026,6 @@ void Helix::deleteChatMessages(
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else
@@ -1109,13 +1086,11 @@ void Helix::addChannelModerator(
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else if (message.compare("incorrect user authorization",
                                              Qt::CaseInsensitive) == 0)
                     {
-
                         failureCallback(Error::UserNotAuthorized, message);
                     }
                     else
@@ -1129,25 +1104,21 @@ void Helix::addChannelModerator(
                     if (message.compare("user is already a mod",
                                         Qt::CaseInsensitive) == 0)
                     {
-
                         failureCallback(Error::TargetAlreadyModded, message);
                     }
                     else
                     {
-
                         failureCallback(Error::Forwarded, message);
                     }
                 }
                 break;
 
                 case 422: {
-
                     failureCallback(Error::TargetIsVIP, message);
                 }
                 break;
 
                 case 429: {
-
                     failureCallback(Error::Ratelimited, message);
                 }
                 break;
@@ -1203,7 +1174,6 @@ void Helix::removeChannelModerator(
                     if (message.compare("user is not a mod",
                                         Qt::CaseInsensitive) == 0)
                     {
-
                         failureCallback(Error::TargetNotModded, message);
                     }
                     else
@@ -1217,7 +1187,6 @@ void Helix::removeChannelModerator(
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else if (message.compare("incorrect user authorization",
@@ -1291,13 +1260,11 @@ void Helix::sendChatAnnouncement(
             switch (*result.status())
             {
                 case 400: {
-
                     failureCallback(Error::Forwarded, message);
                 }
                 break;
 
                 case 403: {
-
                     failureCallback(Error::Forwarded, message);
                 }
                 break;
@@ -1306,7 +1273,6 @@ void Helix::sendChatAnnouncement(
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else
@@ -1367,7 +1333,6 @@ void Helix::addChannelVIP(
                 case 409:
                 case 422:
                 case 425: {
-
                     failureCallback(Error::Forwarded, message);
                 }
                 break;
@@ -1376,7 +1341,6 @@ void Helix::addChannelVIP(
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else if (message.compare("incorrect user authorization",
@@ -1385,7 +1349,6 @@ void Helix::addChannelVIP(
                                                 "match the user id",
                                                 Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserNotAuthorized, message);
                     }
                     else
@@ -1450,7 +1413,6 @@ void Helix::removeChannelVIP(
                 case 400:
                 case 409:
                 case 422: {
-
                     failureCallback(Error::Forwarded, message);
                 }
                 break;
@@ -1459,7 +1421,6 @@ void Helix::removeChannelVIP(
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else if (message.compare("incorrect user authorization",
@@ -1468,7 +1429,6 @@ void Helix::removeChannelVIP(
                                                 "match the user id",
                                                 Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserNotAuthorized, message);
                     }
                     else
@@ -1555,7 +1515,6 @@ void Helix::unbanUser(
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else if (message.compare("incorrect user authorization",
@@ -1564,7 +1523,6 @@ void Helix::unbanUser(
                                                 "match the user id",
                                                 Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserNotAuthorized, message);
                     }
                     else
@@ -1609,7 +1567,7 @@ void Helix::startRaid(
     urlQuery.addQueryItem("to_broadcaster_id", toBroadcasterID);
 
     this->makePost("raids", urlQuery)
-        .onSuccess([successCallback, failureCallback](auto ) {
+        .onSuccess([successCallback, failureCallback](auto) {
             successCallback();
         })
         .onError([failureCallback](const auto &result) -> void {
@@ -1650,7 +1608,6 @@ void Helix::startRaid(
                                  "found in the request's OAuth token.",
                                  Qt::CaseInsensitive) == 0)
                     {
-
                         failureCallback(Error::UserNotAuthorized, message);
                     }
                     else
@@ -1728,7 +1685,6 @@ void Helix::cancelRaid(
                                  "found in the request's OAuth token.",
                                  Qt::CaseInsensitive) == 0)
                     {
-
                         failureCallback(Error::UserNotAuthorized, message);
                     }
                     else
@@ -1905,7 +1861,6 @@ void Helix::updateChatSettings(
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else
@@ -1953,7 +1908,6 @@ void Helix::onFetchChattersSuccess(
     if (chatters.cursor.isEmpty() ||
         finalChatters->chatters.size() >= maxChattersToFetch)
     {
-
         successCallback(*finalChatters);
         return;
     }
@@ -2067,7 +2021,6 @@ void Helix::onFetchModeratorsSuccess(
     if (moderators.cursor.isEmpty() ||
         finalModerators->size() >= maxModeratorsToFetch)
     {
-
         successCallback(*finalModerators);
         return;
     }
@@ -2241,7 +2194,6 @@ void Helix::banUser(QString broadcasterID, QString moderatorID, QString userID,
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else
@@ -2520,7 +2472,6 @@ void Helix::sendWhisper(
                     if (message.startsWith("Missing scope",
                                            Qt::CaseInsensitive))
                     {
-
                         failureCallback(Error::UserMissingScope, message);
                     }
                     else if (message.startsWith("the sender does not have a "
@@ -2666,7 +2617,6 @@ void Helix::getChannelVIPs(
                                  "ID found in the request's OAuth token.",
                                  Qt::CaseInsensitive) == 0)
                     {
-
                         failureCallback(Error::UserNotBroadcaster, message);
                     }
                     else
@@ -2779,7 +2729,6 @@ void Helix::startCommercial(
                 break;
 
                 case 429: {
-
                     failureCallback(Error::Ratelimited, message);
                 }
                 break;
@@ -3286,7 +3235,6 @@ void Helix::createPoll(QString broadcasterID, QString title,
                        ResultCallback<> successCallback,
                        FailureCallback<QString> failureCallback)
 {
-
     QJsonArray choiceArray;
     for (auto choice : choices)
     {
@@ -3440,7 +3388,6 @@ void Helix::createPrediction(const QString broadcasterID, const QString title,
                              ResultCallback<> successCallback,
                              FailureCallback<QString> failureCallback)
 {
-
     QJsonArray outcomeArray;
     for (auto outcome : outcomes)
     {
@@ -3563,7 +3510,8 @@ void Helix::endPrediction(const QString broadcasterID, const QString id,
 
     this->makePatch("predictions", {})
         .json(payload)
-        .onSuccess([successCallback, failureCallback](const NetworkResult &result) {
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
             if (result.status() != 200)
             {
                 qCWarning(chatterinoTwitch)
@@ -3575,8 +3523,8 @@ void Helix::endPrediction(const QString broadcasterID, const QString id,
             const auto data = HelixPredictions(response);
             if (data.predictions.empty())
             {
-                qCWarning(chatterinoTwitch)
-                    << "Prediction end response did not contain any predictions";
+                qCWarning(chatterinoTwitch) << "Prediction end response did "
+                                               "not contain any predictions";
                 failureCallback("Twitch API Error: empty prediction response");
                 return;
             }
@@ -3779,14 +3727,12 @@ NetworkRequest Helix::makeRequest(const QString &url, const QUrlQuery &urlQuery,
     {
         qCDebug(chatterinoTwitch)
             << "Helix::makeRequest called without a client ID set BabyRage";
-
     }
 
     if (this->oauthToken.isEmpty())
     {
         qCDebug(chatterinoTwitch)
             << "Helix::makeRequest called without an oauth token set BabyRage";
-
     }
 
     QString baseUrl("https://api.twitch.tv/helix/");
@@ -3871,7 +3817,6 @@ void Helix::paginate(
 
         if (!onPage(json, state))
         {
-
             qCDebug(chatterinoTwitch)
                 << "paginate onPage returned false for" << url;
             return;
@@ -3925,4 +3870,4 @@ IHelix *getHelix()
     return instance;
 }
 
-}
+}  // namespace chatterino

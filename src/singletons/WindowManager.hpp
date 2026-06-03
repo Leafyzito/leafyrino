@@ -9,8 +9,8 @@
 #include "widgets/splits/SplitContainer.hpp"
 
 #include <pajlada/settings/settinglistener.hpp>
-#include <QObject>
 #include <QJsonArray>
+#include <QObject>
 #include <QPoint>
 #include <QTimer>
 
@@ -178,4 +178,4 @@ private:
     friend class Window;
 };
 
-}
+}  // namespace chatterino

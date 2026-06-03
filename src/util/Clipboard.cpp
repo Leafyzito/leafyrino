@@ -26,4 +26,4 @@ QString getClipboardText()
     return QApplication::clipboard()->text();
 }
 
-}
+}  // namespace chatterino

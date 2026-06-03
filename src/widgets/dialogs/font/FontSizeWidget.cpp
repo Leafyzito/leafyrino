@@ -80,4 +80,4 @@ void FontSizeWidget::setListSelected(int size)
     this->list->setCurrentItem(this->customItem);
 }
 
-}
+}  // namespace chatterino

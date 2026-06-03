@@ -84,7 +84,7 @@ std::pair<QKeySequence, bool> toggleIntertiaShortcut()
     };
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -163,7 +163,7 @@ OverlayWindow::OverlayWindow(IndirectChannel channel,
         },
         this->signalHolder_, false);
 
-    auto applyIt = [this](auto ) {
+    auto applyIt = [this](auto) {
         this->applyTheme();
     };
     settings->overlayShadowOffsetX.connect(applyIt, this->signalHolder_, false);
@@ -184,7 +184,7 @@ OverlayWindow::OverlayWindow(IndirectChannel channel,
             this->updateScale();
         },
         this->signalHolder_, false);
-    std::ignore = this->scaleChanged.connect([this](float ) {
+    std::ignore = this->scaleChanged.connect([this](float) {
         this->channelView_.queueLayout();
     });
     this->updateScale();
@@ -224,7 +224,7 @@ float OverlayWindow::desiredScale() const
            getSettings()->getClampedOverlayScale();
 }
 
-bool OverlayWindow::eventFilter(QObject * , QEvent *event)
+bool OverlayWindow::eventFilter(QObject *, QEvent *event)
 {
 #ifndef OVERLAY_NATIVE_MOVE
     switch (event->type())
@@ -292,14 +292,14 @@ void OverlayWindow::toggleInertia()
     this->setInert(!this->inert_);
 }
 
-void OverlayWindow::enterEvent(EnterEvent * )
+void OverlayWindow::enterEvent(EnterEvent *)
 {
 #ifndef OVERLAY_NATIVE_MOVE
     this->startInteraction();
 #endif
 }
 
-void OverlayWindow::leaveEvent(QEvent * )
+void OverlayWindow::leaveEvent(QEvent *)
 {
 #ifndef OVERLAY_NATIVE_MOVE
     this->endInteraction();
@@ -310,7 +310,6 @@ void OverlayWindow::leaveEvent(QEvent * )
 bool OverlayWindow::nativeEvent(const QByteArray &eventType, void *message,
                                 NativeResult *result)
 {
-
     MSG *msg = reinterpret_cast<MSG *>(message);
 
     bool returnValue = false;
@@ -334,7 +333,6 @@ bool OverlayWindow::nativeEvent(const QByteArray &eventType, void *message,
             this->startShortInteraction();
             break;
         case WM_SETCURSOR: {
-
             if (LOWORD(msg->lParam) == HTCAPTION)
             {
                 ::SetCursor(this->sizeAllCursor_);
@@ -345,7 +343,6 @@ bool OverlayWindow::nativeEvent(const QByteArray &eventType, void *message,
         break;
 #    endif
         case WM_DPICHANGED: {
-
             postToThread([] {
                 getApp()->getWindows()->invalidateChannelViewBuffers();
             });
@@ -361,7 +358,6 @@ bool OverlayWindow::nativeEvent(const QByteArray &eventType, void *message,
 
 void OverlayWindow::handleNCHITTEST(MSG *msg, NativeResult *result)
 {
-
     const LONG borderWidth = 8;
 
     auto rect = this->rect();
@@ -607,8 +603,8 @@ void OverlayWindow::setInert(bool inert)
     }
 }
 
-void OverlayWindow::drawOutline(QPainter & )
+void OverlayWindow::drawOutline(QPainter &)
 {
 }
 
-}
+}  // namespace chatterino

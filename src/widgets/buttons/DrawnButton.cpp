@@ -51,12 +51,10 @@ void DrawnButton::themeChangedEvent()
 
             if (this->theme->isLightTheme())
             {
-
                 o.foreground = QColor("#424242");
             }
             else
             {
-
                 o.foreground = QColor("#c0c0c0");
             }
             o.foregroundHover = this->theme->messages.textColors.regular;
@@ -208,4 +206,4 @@ QColor DrawnButton::getForegroundHover() const
     return v;
 }
 
-}
+}  // namespace chatterino

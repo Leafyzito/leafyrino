@@ -49,4 +49,4 @@ std::optional<MessageColor> getUserColor(const GetUserColorParams &params)
     return std::nullopt;
 }
 
-}
+}  // namespace chatterino::twitch

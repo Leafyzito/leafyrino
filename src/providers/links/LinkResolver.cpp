@@ -22,7 +22,6 @@ void LinkResolver::resolve(LinkInfo *info)
 
     if (info->state() != State::Created)
     {
-
         return;
     }
 
@@ -73,4 +72,4 @@ void LinkResolver::resolve(LinkInfo *info)
         .execute();
 }
 
-}
+}  // namespace chatterino

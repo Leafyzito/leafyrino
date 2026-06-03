@@ -150,7 +150,6 @@ void addTwitchEmoteSets(const std::shared_ptr<const EmoteMap> &local,
     {
         if (set.owner->id == currentChannelID)
         {
-
             addEmotes(subChannel, set.emotes, set.title());
         }
         else
@@ -198,7 +197,6 @@ void loadEmojis(ChannelView &view, const std::vector<EmojiPtr> &emojiMap)
 
     for (auto &it : emoteCategoryMap)
     {
-
         if (it.first == "Component")
         {
             continue;
@@ -255,7 +253,7 @@ std::vector<EmotePtr> filterEmoteVec(const QString &text,
     return filtered;
 }
 
-}
+}  // namespace
 
 namespace chatterino {
 
@@ -265,7 +263,6 @@ EmotePopup::EmotePopup(QWidget *parent)
     , search_(new QLineEdit())
     , notebook_(new Notebook(this))
 {
-
     auto bounds = getApp()->getWindows()->emotePopupBounds();
     if (bounds.size().isEmpty())
     {
@@ -346,10 +343,9 @@ EmotePopup::EmotePopup(QWidget *parent)
 
     this->signalHolder_.managedConnect(
         getApp()->getAccounts()->twitch.emotesReloaded,
-        [this](auto * , const auto &result) {
+        [this](auto *, const auto &result) {
             if (!result)
             {
-
                 return;
             }
             this->reloadEmotes();
@@ -485,7 +481,6 @@ void EmotePopup::reloadEmotes()
 
     if (this->twitchChannel_)
     {
-
         addTwitchEmoteSets(
             twitchChannel_->localTwitchEmotes(),
             *getApp()->getAccounts()->twitch.getCurrent()->accessEmoteSets(),
@@ -517,7 +512,6 @@ void EmotePopup::reloadEmotes()
     }
     if (this->kickChannel_)
     {
-
         addEmotes(*globalChannel,
                   *getApp()->getKickChatServer()->globalEmotes(), "Kick");
 
@@ -772,4 +766,4 @@ void EmotePopup::closeEvent(QCloseEvent *event)
     BasePopup::closeEvent(event);
 }
 
-}
+}  // namespace chatterino

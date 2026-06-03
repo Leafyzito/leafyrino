@@ -15,4 +15,4 @@ Url parseFfzUrl(const QString &ffzUrl)
     return {asURL.toString()};
 }
 
-}
+}  // namespace chatterino

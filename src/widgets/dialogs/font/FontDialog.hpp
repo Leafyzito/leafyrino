@@ -36,4 +36,4 @@ private:
     FontWeightWidget *weightW;
 };
 
-}
+}  // namespace chatterino

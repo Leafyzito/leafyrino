@@ -51,4 +51,4 @@ IntItem *findIntItemInList(QListWidget *list, int value)
     return nullptr;
 }
 
-}
+}  // namespace chatterino

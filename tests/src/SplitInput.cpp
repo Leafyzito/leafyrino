@@ -34,8 +34,8 @@ class TestableSplitInput : public SplitInput
 {
 public:
     using SplitInput::SplitInput;
-    using SplitInput::updateActionRowCompactness;
     using SplitInput::ui_;
+    using SplitInput::updateActionRowCompactness;
 };
 
 class MockApplication : public mock::BaseApplication

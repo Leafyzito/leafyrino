@@ -33,7 +33,7 @@ QString targetChannelLogin(const CommandContext &ctx)
     return {};
 }
 
-}
+}  // namespace
 
 namespace chatterino::commands {
 
@@ -54,8 +54,7 @@ QString getFounders(const CommandContext &ctx)
 
     getIvr()->getFounders(
         channelLogin,
-        [channel{ctx.channel}](
-            const std::vector<HelixModerator> &founders) {
+        [channel{ctx.channel}](const std::vector<HelixModerator> &founders) {
             if (founders.empty())
             {
                 channel->addSystemMessage(
@@ -75,4 +74,4 @@ QString getFounders(const CommandContext &ctx)
     return "";
 }
 
-}
+}  // namespace chatterino::commands

@@ -102,4 +102,4 @@ private:
     QTimer clickTimer_;
 };
 
-}
+}  // namespace chatterino

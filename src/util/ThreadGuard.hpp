@@ -44,4 +44,4 @@ struct ThreadGuard {
     }
 };
 
-}
+}  // namespace chatterino

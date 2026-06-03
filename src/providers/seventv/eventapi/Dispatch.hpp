@@ -124,4 +124,4 @@ struct PersonalEmoteSetAdded {
     std::shared_ptr<const EmoteMap> emoteSet;
 };
 
-}
+}  // namespace chatterino::seventv::eventapi

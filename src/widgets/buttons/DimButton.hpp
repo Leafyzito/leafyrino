@@ -32,4 +32,4 @@ private:
     Dim dim_ = Dim::Some;
 };
 
-}
+}  // namespace chatterino

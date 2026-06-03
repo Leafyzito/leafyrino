@@ -85,7 +85,7 @@ void importImageUploaderSettings(QWidget *parent)
     }
 }
 
-}
+}  // namespace
 
 ExternalToolsPage::ExternalToolsPage()
     : view(GeneralPageView::withoutNavigation(this))
@@ -236,7 +236,6 @@ void ExternalToolsPage::initLayout(GeneralPageView &layout)
 
 #ifdef CHATTERINO_WITH_SPELLCHECK
     {
-
         layout.addTitle("Spell checker (experimental)");
 
         layout.addDescription(
@@ -292,4 +291,4 @@ void ExternalToolsPage::initLayout(GeneralPageView &layout)
     layout.addStretch();
 }
 
-}
+}  // namespace chatterino

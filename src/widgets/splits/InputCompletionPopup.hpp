@@ -59,4 +59,4 @@ private:
     ChannelPtr currentChannel_{};
 };
 
-}
+}  // namespace chatterino

@@ -47,5 +47,5 @@ bool checkJsonValue(const rapidjson::Value &obj, const char *key)
     return obj.IsObject() && !obj.IsNull() && obj.HasMember(key);
 }
 
-}
-}
+}  // namespace rj
+}  // namespace chatterino

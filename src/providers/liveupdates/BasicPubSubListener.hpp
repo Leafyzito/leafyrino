@@ -52,7 +52,7 @@ struct BasicPubSubListener : public WebSocketListener {
         }
     }
 
-    void onClose(std::unique_ptr<WebSocketListener> ) override
+    void onClose(std::unique_ptr<WebSocketListener>) override
     {
         runInGuiThread([manager = this->manager, id = this->id] {
             if (manager)
@@ -67,4 +67,4 @@ struct BasicPubSubListener : public WebSocketListener {
     size_t id;
 };
 
-}
+}  // namespace chatterino
