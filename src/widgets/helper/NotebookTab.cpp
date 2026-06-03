@@ -173,6 +173,11 @@ NotebookTab::NotebookTab(Notebook *notebook)
             this->update();
         },
         this->managedConnections_);
+    getSettings()->tabHighlightsUseThemeColor.connect(
+        [this](auto, auto) {
+            this->update();
+        },
+        this->managedConnections_);
 
     this->setMouseTracking(true);
 
@@ -1099,7 +1104,8 @@ void NotebookTab::paintEvent(QPaintEvent *)
     auto lineColor = this->mouseOver_ ? colors.line.hover
                                       : (windowFocused ? colors.line.regular
                                                        : colors.line.unfocused);
-    if (this->highlightState_ == HighlightState::Highlighted &&
+    if (!getSettings()->tabHighlightsUseThemeColor &&
+        this->highlightState_ == HighlightState::Highlighted &&
         getSettings()->colorTabHighlightsByMessage && this->highlightColor_)
     {
         lineColor = tabHighlightLineColor(*this->highlightColor_,

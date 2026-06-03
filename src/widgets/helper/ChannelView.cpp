@@ -3791,13 +3791,13 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
             auto pinnedMessage = twitchChannel->accessPinnedMessage();
             if (pinnedMessage->has_value() && (*pinnedMessage)->messageId == id)
             {
-                menu->addAction("Unpin message", [twitchChannel] {
+                menu->addAction("&Unpin message", [twitchChannel] {
                     twitchChannel->unpinMessage();
                 });
             }
             else
             {
-                menu->addAction("Pin message", [twitchChannel, id] {
+                menu->addAction("&Pin message", [twitchChannel, id] {
                     twitchChannel->pinMessage(id, getSettings()->defaultPinDuration);
                 });
             }
@@ -3855,13 +3855,13 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
                 if (pinnedMessage->has_value() &&
                     (*pinnedMessage)->messageId == id)
                 {
-                    moderateMenu->addAction("Unpin message", [twitchChannel] {
+                    moderateMenu->addAction("&Unpin message", [twitchChannel] {
                         twitchChannel->unpinMessage();
                     });
                 }
                 else
                 {
-                    moderateMenu->addAction("Pin message", [twitchChannel, id] {
+                    moderateMenu->addAction("&Pin message", [twitchChannel, id] {
                         twitchChannel->pinMessage(
                             id, getSettings()->defaultPinDuration);
                     });

@@ -44,6 +44,7 @@
 #include "widgets/splits/SplitInput.hpp"
 #include "widgets/helper/PinnedMessageBanner.hpp"
 #include "widgets/helper/PredictionBanner.hpp"
+#include "widgets/splits/SplitMpsOverlay.hpp"
 #include "widgets/splits/SplitOverlay.hpp"
 #include "widgets/Window.hpp"
 
@@ -52,6 +53,7 @@
 #include <QDesktopServices>
 #include <QDrag>
 #include <QElapsedTimer>
+#include <QEvent>
 #include <QJsonArray>
 #include <QLabel>
 #include <QListWidget>
@@ -260,6 +262,20 @@ Split::Split(QWidget *parent)
 
     this->header_->updateIcons();
     this->overlay_->hide();
+
+    this->mpsOverlay_ = new SplitMpsOverlay(this);
+    this->mpsOverlay_->setGeometry(this->rect());
+    this->updateMpsOverlayAnchor();
+
+    this->view_->installEventFilter(this);
+    this->pinnedBanner_->installEventFilter(this);
+    this->predictionBanner_->installEventFilter(this);
+    this->pollBanner_->installEventFilter(this);
+    this->installEventFilter(this);
+
+    QTimer::singleShot(0, this, [this] {
+        this->updateMpsOverlayAnchor();
+    });
 
     this->setSizePolicy(QSizePolicy::MinimumExpanding,
                         QSizePolicy::MinimumExpanding);
@@ -1974,15 +1990,18 @@ void Split::setChannel(IndirectChannel newChannel)
     QObject::connect(
         this->view_, &ChannelView::messageAddedToChannel, this,
         [this](MessagePtr &message) {
-            if (!getSettings()->pulseTextInputOnSelfMessage)
+            if (getSettings()->pulseTextInputOnSelfMessage)
             {
-                return;
+                auto user = getApp()->getAccounts()->twitch.getCurrent();
+                if (!user->isAnon() && message->userID == user->getUserId())
+                {
+                    this->input_->triggerSelfMessageReceived();
+                }
             }
-            auto user = getApp()->getAccounts()->twitch.getCurrent();
-            if (!user->isAnon() && message->userID == user->getUserId())
+
+            if (this->mpsOverlay_)
             {
-                // A message from yourself was just received in this split
-                this->input_->triggerSelfMessageReceived();
+                this->mpsOverlay_->onMessageAdded();
             }
         });
 
@@ -2103,6 +2122,45 @@ void Split::resizeEvent(QResizeEvent *event)
     BaseWidget::resizeEvent(event);
 
     this->overlay_->setGeometry(this->rect());
+    if (this->mpsOverlay_)
+    {
+        this->mpsOverlay_->setGeometry(this->rect());
+        this->updateMpsOverlayAnchor();
+    }
+}
+
+bool Split::eventFilter(QObject *watched, QEvent *event)
+{
+    switch (event->type())
+    {
+        case QEvent::Move:
+        case QEvent::Resize:
+        case QEvent::Show:
+        case QEvent::Hide:
+        case QEvent::LayoutRequest: {
+            if (watched == this || watched == this->view_ ||
+                watched == this->pinnedBanner_ ||
+                watched == this->predictionBanner_ ||
+                watched == this->pollBanner_)
+            {
+                this->updateMpsOverlayAnchor();
+            }
+        }
+        break;
+        default:
+            break;
+    }
+
+    return BaseWidget::eventFilter(watched, event);
+}
+
+void Split::updateMpsOverlayAnchor()
+{
+    if (!this->mpsOverlay_)
+    {
+        return;
+    }
+    this->mpsOverlay_->setViewRect(this->view_->geometry());
 }
 
 void Split::enterEvent(QEnterEvent * /*event*/)

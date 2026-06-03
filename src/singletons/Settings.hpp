@@ -102,6 +102,13 @@ enum class EmoteTooltipScale : std::uint8_t {
     Huge,
 };
 
+enum class SplitMpsCorner : std::uint8_t {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+};
+
 constexpr std::optional<std::string_view> qmagicenumDisplayName(
     EmoteTooltipScale value) noexcept
 {
@@ -115,6 +122,23 @@ constexpr std::optional<std::string_view> qmagicenumDisplayName(
         case EmoteTooltipScale::Huge:
             return {};
     }
+}
+
+constexpr std::optional<std::string_view> qmagicenumDisplayName(
+    SplitMpsCorner value) noexcept
+{
+    switch (value)
+    {
+        case SplitMpsCorner::TopLeft:
+            return "Top left";
+        case SplitMpsCorner::TopRight:
+            return "Top right";
+        case SplitMpsCorner::BottomLeft:
+            return "Bottom left";
+        case SplitMpsCorner::BottomRight:
+            return "Bottom right";
+    }
+    return {};
 }
 
 /// Settings which are available for reading and writing on the gui thread.
@@ -225,6 +249,8 @@ public:
         "/appearance/tabs/colorHighlightsByMessage",
         false,
     };
+    BoolSetting tabHighlightsUseThemeColor = {
+        "/appearance/tabHighlightsUseThemeColor", false};
     EnumStringSetting<TabStyle> tabStyle = {
         "/appearance/tabStyle",
         TabStyle::Normal,
@@ -251,6 +277,13 @@ public:
                                      false};
     BoolSetting headerGame = {"/appearance/splitheader/showGame", false};
     BoolSetting headerUptime = {"/appearance/splitheader/showUptime", false};
+    BoolSetting showSplitMps = {"/appearance/splits/showMps", false};
+    EnumStringSetting<SplitMpsCorner> splitMpsCorner = {
+        "/appearance/splits/mpsCorner",
+        SplitMpsCorner::TopRight,
+    };
+    BoolSetting showSplitMpsWhenZero = {"/appearance/splits/showMpsWhenZero",
+                                        false};
     FloatSetting customThemeMultiplier = {"/appearance/customThemeMultiplier",
                                           -0.5f};
     // BoolSetting useCustomWindowFrame = {"/appearance/useCustomWindowFrame",

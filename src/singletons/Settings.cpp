@@ -538,6 +538,18 @@ Settings::Settings(const Args &args, const QString &settingsDirectory,
         }
         settingsInstance->removeSetting(OLD_PIN_MODERATOR_BUTTON_SETTING);
     }
+
+    if (settingsInstance->get(this->tabHighlightsUseThemeColor.getPath()) ==
+        nullptr)
+    {
+        if (auto *colorByMessage = settingsInstance->get(
+                this->colorTabHighlightsByMessage.getPath());
+            colorByMessage != nullptr && colorByMessage->IsBool())
+        {
+            this->tabHighlightsUseThemeColor.setValue(
+                !colorByMessage->GetBool());
+        }
+    }
 }
 
 Settings::~Settings()

@@ -31,6 +31,7 @@ class PredictionBanner;
 class SplitInput;
 class SplitContainer;
 class SplitOverlay;
+class SplitMpsOverlay;
 class SelectChannelDialog;
 class OverlayWindow;
 class TwitchChannel;
@@ -133,6 +134,7 @@ protected:
 
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     void channelNameUpdated(const QString &newChannelName);
@@ -166,6 +168,7 @@ private:
     void refreshModerationMode();
 
     void updateBannerVisibility();
+    void updateMpsOverlayAnchor();
     void noteBannerStateChanged(TwitchChannel *channel, int bannerId);
     void clearBannerAttention();
     void runDeferredTwitchRefresh();
@@ -194,6 +197,7 @@ private:
     ChannelView *const view_;
     SplitInput *const input_;
     SplitOverlay *const overlay_;
+    SplitMpsOverlay *mpsOverlay_{};
 
     QPointer<OverlayWindow> overlayWindow_;
 
