@@ -41,4 +41,4 @@ DebugPopup::DebugPopup()
     });
 }
 
-}  // namespace chatterino
+}

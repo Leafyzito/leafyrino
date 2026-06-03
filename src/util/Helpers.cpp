@@ -31,6 +31,21 @@ const QRegularExpression ESCAPE_TAG_REGEX(
     QStringLiteral("(?<!\U000E0002)\U000E0002"),
     QRegularExpression::UseUnicodePropertiesOption);
 
+QString formatCompactWithSuffix(double value, QChar suffix,
+                                const QLocale &locale)
+{
+    auto text = locale.toString(value, 'f', 1);
+    const auto trailingZero = QString(locale.decimalPoint()) + QChar('0');
+
+    if (text.endsWith(trailingZero))
+    {
+        text.chop(trailingZero.size());
+    }
+
+    text += suffix;
+    return text;
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -193,6 +208,80 @@ QString kFormatNumbers(const int &number)
     return QString("%1K").arg(number / 1000);
 }
 
+QString formatCompactNumber(qint64 number)
+{
+    const auto locale = getSystemLocale();
+    const bool negative = number < 0;
+    const quint64 absolute =
+        negative ? quint64(-(number + 1)) + 1U : quint64(number);
+
+    auto withSign = [negative](QString text) {
+        return negative ? QStringLiteral("-") + text : text;
+    };
+
+    if (absolute < 1000)
+    {
+        return locale.toString(number);
+    }
+
+    if (absolute < 10'000)
+    {
+        return withSign(
+            formatCompactWithSuffix(absolute / 1000.0, u'k', locale));
+    }
+
+    if (absolute < 1'000'000)
+    {
+        return withSign(locale.toString(absolute / 1000) + QChar('k'));
+    }
+
+    if (absolute < 10'000'000)
+    {
+        return withSign(
+            formatCompactWithSuffix(absolute / 1'000'000.0, u'm', locale));
+    }
+
+    if (absolute < 1'000'000'000)
+    {
+        return withSign(locale.toString(absolute / 1'000'000) + QChar('m'));
+    }
+
+    if (absolute < 10'000'000'000)
+    {
+        return withSign(
+            formatCompactWithSuffix(absolute / 1'000'000'000.0, u'b', locale));
+    }
+
+    if (absolute < 1'000'000'000'000)
+    {
+        return withSign(locale.toString(absolute / 1'000'000'000) + QChar('b'));
+    }
+
+    if (absolute < 10'000'000'000'000)
+    {
+        return withSign(formatCompactWithSuffix(
+            absolute / 1'000'000'000'000.0, u'T', locale));
+    }
+
+    return withSign(locale.toString(absolute / 1'000'000'000'000) +
+                    QChar('T'));
+}
+
+QString formatChannelPoints(qint64 points)
+{
+    if (points < 0)
+    {
+        return QStringLiteral("...");
+    }
+
+    if (points >= 100'000'000)
+    {
+        return formatCompactNumber(points);
+    }
+
+    return getSystemLocale().toString(points);
+}
+
 QColor getRandomColor(const QString &userId)
 {
     bool ok = true;
@@ -318,7 +407,8 @@ QString unescapeZeroWidthJoiner(QString escaped)
 QLocale getSystemLocale()
 {
 #ifdef CHATTERINO_WITH_TESTS
-    if (getApp()->isTest())
+    auto *app = tryGetApp();
+    if (app == nullptr || app->isTest())
     {
         return {QLocale::English};
     }
@@ -381,12 +471,20 @@ QStringView codepointSlice(QStringView str, qsizetype begin, qsizetype end)
 
 void removeFirstQS(QString &str)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     str.removeFirst();
+#else
+    str.remove(0, 1);
+#endif
 }
 
 void removeLastQS(QString &str)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     str.removeLast();
+#else
+    str.chop(1);
+#endif
 }
 
 void writeProviderEmotesCache(const QString &id, const QString &provider,

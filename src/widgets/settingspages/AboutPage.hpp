@@ -23,4 +23,4 @@ private:
     QLabel *logo_{};
 };
 
-}  // namespace chatterino
+}

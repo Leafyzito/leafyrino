@@ -32,6 +32,22 @@ TEST(Helpers, formatUserMention)
     EXPECT_EQ(formatUserMention(userName, false, false), "pajlada");
 }
 
+TEST(Helpers, formatCompactNumber)
+{
+    EXPECT_EQ(formatCompactNumber(999), "999");
+    EXPECT_EQ(formatCompactNumber(1000), "1k");
+    EXPECT_EQ(formatCompactNumber(1100), "1.1k");
+    EXPECT_EQ(formatCompactNumber(15'000), "15k");
+    EXPECT_EQ(formatCompactNumber(1'000'000), "1m");
+    EXPECT_EQ(formatCompactNumber(1'500'000), "1.5m");
+    EXPECT_EQ(formatCompactNumber(10'000'000), "10m");
+    EXPECT_EQ(formatCompactNumber(1'500'000'000), "1.5b");
+    EXPECT_EQ(formatCompactNumber(1'000'000'000'000), "1T");
+    EXPECT_EQ(formatChannelPoints(-1), "...");
+    EXPECT_EQ(formatChannelPoints(99'999'999), "99,999,999");
+    EXPECT_EQ(formatChannelPoints(100'000'000), "100m");
+}
+
 TEST(Helpers, BatchTwoParts)
 {
     QStringList input{

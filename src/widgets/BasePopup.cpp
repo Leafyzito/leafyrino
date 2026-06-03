@@ -88,4 +88,4 @@ bool BasePopup::handleEnter(QKeyEvent *e, QDialogButtonBox *buttonBox)
     return false;
 }
 
-}  // namespace chatterino
+}

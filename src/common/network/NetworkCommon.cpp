@@ -13,8 +13,6 @@ std::vector<std::pair<QByteArray, QByteArray>> parseHeaderList(
 {
     std::vector<std::pair<QByteArray, QByteArray>> res;
 
-    // Split the string into a list of header pairs
-    // e.g. "Authorization:secretkey;NextHeader:boo" turning into ["Authorization:secretkey","NextHeader:boo"]
     auto headerPairs = headerListString.split(";");
 
     for (const auto &headerPair : headerPairs)
@@ -25,8 +23,7 @@ std::vector<std::pair<QByteArray, QByteArray>> parseHeaderList(
 
         if (headerName.isEmpty() || headerValue.isEmpty())
         {
-            // The header part either didn't contain a : or the name/value was empty
-            // Skip the value
+
             continue;
         }
 
@@ -36,4 +33,4 @@ std::vector<std::pair<QByteArray, QByteArray>> parseHeaderList(
     return res;
 }
 
-}  // namespace chatterino
+}

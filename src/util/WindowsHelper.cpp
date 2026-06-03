@@ -26,7 +26,6 @@ using namespace literals;
 using GetDpiForMonitor_ = HRESULT(CALLBACK *)(HMONITOR, MONITOR_DPI_TYPE,
                                               UINT *, UINT *);
 
-// TODO: This should be changed to `GetDpiForWindow`.
 std::optional<UINT> getWindowDpi(HWND hwnd)
 {
     static HINSTANCE shcore = LoadLibrary(L"Shcore.dll");
@@ -93,14 +92,12 @@ void setRegisteredForStartup(bool isRegistered)
 
 QString getAssociatedExecutable(AssociationQueryType queryType, LPCWSTR query)
 {
-    // always error out instead of returning a truncated string when the
-    // buffer is too small - avoids race condition when the user changes their
-    // default browser between calls to AssocQueryString
+
     ASSOCF flags = ASSOCF_NOTRUNCATE;
 
     if (queryType == AssociationQueryType::Protocol)
     {
-        // ASSOCF_IS_PROTOCOL was introduced in Windows 8
+
         if (IsWindows8OrGreater())
         {
             flags |= ASSOCF_IS_PROTOCOL;
@@ -120,8 +117,7 @@ QString getAssociatedExecutable(AssociationQueryType queryType, LPCWSTR query)
 
     if (resultSize <= 1)
     {
-        // resultSize includes the null terminator. if resultSize is 1, the
-        // returned value would be the empty string.
+
         return {};
     }
 
@@ -130,15 +126,13 @@ QString getAssociatedExecutable(AssociationQueryType queryType, LPCWSTR query)
     if (SUCCEEDED(AssocQueryStringW(flags, ASSOCSTR_EXECUTABLE, query, nullptr,
                                     buf, &resultSize)))
     {
-        // QString::fromWCharArray expects the length in characters *not
-        // including* the null terminator, but AssocQueryStringW calculates
-        // length including the null terminator
+
         result = QString::fromWCharArray(buf, resultSize - 1);
     }
     delete[] buf;
     return result;
 }
 
-}  // namespace chatterino
+}
 
 #endif

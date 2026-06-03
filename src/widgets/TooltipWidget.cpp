@@ -15,12 +15,11 @@
 
 namespace {
 
-// number of columns in grid mode
 constexpr int GRID_NUM_COLS = 3;
 
 #ifdef Q_OS_WIN
 template <typename T>
-inline constexpr T *tooltipParentFor(T * /*desiredParent*/)
+inline constexpr T *tooltipParentFor(T * )
 {
     return nullptr;
 }
@@ -32,7 +31,7 @@ inline constexpr T *tooltipParentFor(T *desiredParent)
 }
 #endif
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -66,7 +65,6 @@ TooltipWidget::TooltipWidget(BaseWidget *parent)
     this->setAttribute(Qt::WA_TransparentForMouseEvents);
     this->setWindowFlag(Qt::WindowStaysOnTopHint, true);
 
-    // Default to using vertical layout
     this->initializeVLayout();
     this->setLayout(this->vLayout_);
     this->currentStyle_ = TooltipStyle::Vertical;
@@ -133,7 +131,7 @@ void TooltipWidget::set(const std::vector<TooltipEntry> &entries,
     int delta = entries.size() - this->currentLayoutCount();
     if (delta > 0)
     {
-        // Need to add more TooltipEntry instances
+
         int base = this->currentLayoutCount();
         for (int i = 0; i < delta; ++i)
         {
@@ -190,7 +188,7 @@ void TooltipWidget::addNewEntry(int absoluteIndex)
         case TooltipStyle::Grid:
             if (absoluteIndex == 0)
             {
-                // Top row spans all columns
+
                 this->gLayout_->addWidget(new TooltipEntryWidget(), 0, 0, 1,
                                           GRID_NUM_COLS, Qt::AlignCenter);
             }
@@ -207,7 +205,6 @@ void TooltipWidget::addNewEntry(int absoluteIndex)
     }
 }
 
-// May be nullptr
 QLayout *TooltipWidget::currentLayout() const
 {
     switch (this->currentStyle_)
@@ -230,7 +227,6 @@ int TooltipWidget::currentLayoutCount() const
     return 0;
 }
 
-// May be nullptr
 TooltipEntryWidget *TooltipWidget::entryAt(int n)
 {
     if (auto *layout = this->currentLayout())
@@ -244,7 +240,7 @@ void TooltipWidget::setCurrentStyle(TooltipStyle style)
 {
     if (this->currentStyle_ == style)
     {
-        // Nothing to update
+
         return;
     }
 
@@ -307,7 +303,7 @@ void TooltipWidget::initializeGLayout()
 
 void TooltipWidget::themeChangedEvent()
 {
-    //    this->setStyleSheet("color: #fff; background: #000");
+
 }
 
 void TooltipWidget::paintEvent(QPaintEvent *)
@@ -357,12 +353,12 @@ void TooltipWidget::showEvent(QShowEvent *)
 
 void TooltipWidget::changeEvent(QEvent *)
 {
-    // clear parents event
+
 }
 
 void TooltipWidget::leaveEvent(QEvent *)
 {
-    // clear parents event
+
 }
 
-}  // namespace chatterino
+}

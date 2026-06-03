@@ -14,9 +14,9 @@ class BinaryOperation : public Expression
 public:
     BinaryOperation(TokenType op, ExpressionPtr left, ExpressionPtr right);
 
-    QVariant execute(RunContext context) const override;
-    PossibleType synthesizeType() const override;
-    QString debug() const override;
+    QVariant execute(const ContextMap &context) const override;
+    PossibleType synthesizeType(const TypingContext &context) const override;
+    QString debug(const TypingContext &context) const override;
     QString filterString() const override;
 
 private:
@@ -25,4 +25,4 @@ private:
     ExpressionPtr right_;
 };
 
-}  // namespace chatterino::filters
+}

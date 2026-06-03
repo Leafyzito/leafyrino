@@ -14,7 +14,7 @@ namespace chatterino {
 
 class Paths;
 
-}  // namespace chatterino
+}
 
 namespace chatterino::ipc {
 
@@ -33,9 +33,6 @@ public:
 
     static bool remove(const char *name);
 
-    // TODO: use std::expected
-    /// Try to receive a message.
-    /// In the case of an error, the buffer is empty.
     QByteArray receive();
 
 private:
@@ -46,4 +43,4 @@ private:
     friend class IpcQueuePrivate;
 };
 
-}  // namespace chatterino::ipc
+}

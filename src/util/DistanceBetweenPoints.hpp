@@ -19,4 +19,4 @@ inline qreal distanceBetweenPoints(const QPointF &p1, const QPointF &p2)
     return std::sqrt(distance);
 }
 
-}  // namespace chatterino
+}

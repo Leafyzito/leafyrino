@@ -72,24 +72,6 @@
                     "type": "TimestampElement"
                 },
                 {
-                    "color": "Text",
-                    "fallbackColor": "System",
-                    "flags": "Text|Mention",
-                    "link": {
-                        "type": "None",
-                        "value": ""
-                    },
-                    "style": "ChatMedium",
-                    "tooltip": "",
-                    "trailingSpace": true,
-                    "type": "MentionElement",
-                    "userColor": "System",
-                    "userLoginName": "testaccount_420",
-                    "words": [
-                        "테스트계정420"
-                    ]
-                },
-                {
                     "color": "System",
                     "flags": "Text",
                     "link": {
@@ -101,25 +83,22 @@
                     "trailingSpace": true,
                     "type": "TextElement",
                     "words": [
-                        "deleted",
+                        "A",
                         "message",
                         "from"
                     ]
                 },
                 {
-                    "color": "Text",
-                    "fallbackColor": "System",
-                    "flags": "Text|Mention",
+                    "color": "System",
+                    "flags": "Username",
                     "link": {
-                        "type": "None",
-                        "value": ""
+                        "type": "UserInfo",
+                        "value": "testaccount_420"
                     },
-                    "style": "ChatMedium",
+                    "style": "ChatMediumBold",
                     "tooltip": "",
                     "trailingSpace": true,
-                    "type": "MentionElement",
-                    "userColor": "System",
-                    "userLoginName": "testaccount_420",
+                    "type": "TextElement",
                     "words": [
                         "테스트계정420"
                     ]
@@ -136,7 +115,8 @@
                     "trailingSpace": true,
                     "type": "TextElement",
                     "words": [
-                        "saying:"
+                        "was",
+                        "deleted:"
                     ]
                 },
                 {
@@ -161,9 +141,9 @@
             "frozen": true,
             "id": "",
             "localizedName": "",
-            "loginName": "testaccount_420",
-            "messageText": "testaccount_420 deleted message from testaccount_420 saying: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa…",
-            "searchText": "testaccount_420 deleted message from testaccount_420 saying: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa…",
+            "loginName": "",
+            "messageText": "A message from testaccount_420 was deleted: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa…",
+            "searchText": "A message from testaccount_420 was deleted: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa…",
             "serverReceivedTime": "2024-05-14T12:31:47Z",
             "timeoutUser": "testaccount_420",
             "twitchBadgeInfos": {

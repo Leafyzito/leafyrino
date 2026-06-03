@@ -34,11 +34,8 @@ ChannelPtr SearchPopup::filter(const QString &text, const QString &channelName,
 {
     ChannelPtr channel(new Channel(channelName, Channel::Type::None));
 
-    // Parse predicates from tags in "text"
     auto predicates = parsePredicates(text);
 
-    // Check for every message whether it fulfills all predicates that have
-    // been registered
     for (size_t i = 0; i < snapshot.size(); ++i)
     {
         MessagePtr message = snapshot[i];
@@ -46,7 +43,7 @@ ChannelPtr SearchPopup::filter(const QString &text, const QString &channelName,
         bool accept = true;
         for (const auto &pred : predicates)
         {
-            // Discard the message as soon as one predicate fails
+
             if (!pred->appliesTo(*message))
             {
                 accept = false;
@@ -54,7 +51,6 @@ ChannelPtr SearchPopup::filter(const QString &text, const QString &channelName,
             }
         }
 
-        // If all predicates match, add the message to the channel
         if (accept)
         {
             auto overrideFlags = std::optional<MessageFlags>(message->flags);
@@ -173,7 +169,9 @@ void SearchPopup::updateWindowTitle()
 
     if (this->searchChannels_.size() > 1)
     {
-        historyName = "multiple channels'";
+        this->setWindowTitle("Searching all open tabs");
+        this->searchInput_->setPlaceholderText("Search all open tabs");
+        return;
     }
     else if (this->channelName_ == "/automod")
     {
@@ -196,6 +194,7 @@ void SearchPopup::updateWindowTitle()
         historyName = QString("%1's").arg(this->channelName_);
     }
     this->setWindowTitle("Searching in " + historyName + " history");
+    this->searchInput_->setPlaceholderText("Type to search");
 }
 
 void SearchPopup::showEvent(QShowEvent *e)
@@ -239,7 +238,7 @@ void SearchPopup::search()
 
 std::vector<MessagePtr> SearchPopup::buildSnapshot()
 {
-    // no point in filtering/sorting if it's a single channel search
+
     if (this->searchChannels_.length() == 1)
     {
         const auto channelPtr = this->searchChannels_.at(0);
@@ -267,7 +266,6 @@ std::vector<MessagePtr> SearchPopup::buildSnapshot()
         }
     }
 
-    // remove any duplicate messages from splits containing the same channel
     std::sort(combinedSnapshot.begin(), combinedSnapshot.end(),
               [](MessagePtr &a, MessagePtr &b) {
                   return a->id > b->id;
@@ -276,13 +274,12 @@ std::vector<MessagePtr> SearchPopup::buildSnapshot()
     auto uniqueIterator =
         std::unique(combinedSnapshot.begin(), combinedSnapshot.end(),
                     [](MessagePtr &a, MessagePtr &b) {
-                        // nullptr check prevents system messages from being dropped
+
                         return (a->id != nullptr) && a->id == b->id;
                     });
 
     combinedSnapshot.erase(uniqueIterator, combinedSnapshot.end());
 
-    // resort by time for presentation
     std::sort(combinedSnapshot.begin(), combinedSnapshot.end(),
               [](MessagePtr &a, MessagePtr &b) {
                   return a->serverReceivedTime < b->serverReceivedTime;
@@ -293,19 +290,17 @@ std::vector<MessagePtr> SearchPopup::buildSnapshot()
 
 void SearchPopup::initLayout()
 {
-    // VBOX
+
     {
         auto *layout1 = new QVBoxLayout(this);
         layout1->setContentsMargins(0, 0, 0, 0);
         layout1->setSpacing(0);
 
-        // HBOX
         {
             auto *layout2 = new QHBoxLayout();
             layout2->setContentsMargins(8, 8, 8, 8);
             layout2->setSpacing(8);
 
-            // SEARCH INPUT
             {
                 this->searchInput_ = new QLineEdit(this);
                 layout2->addWidget(this->searchInput_);
@@ -322,7 +317,6 @@ void SearchPopup::initLayout()
             layout1->addLayout(layout2);
         }
 
-        // CHANNELVIEW
         {
             this->channelView_ = new ChannelView(
                 this, this->split_, ChannelView::Context::Search,
@@ -340,11 +334,7 @@ void SearchPopup::initLayout()
 std::vector<std::unique_ptr<MessagePredicate>> SearchPopup::parsePredicates(
     const QString &input)
 {
-    // This regex captures all name:value predicate pairs into named capturing
-    // groups and matches all other inputs seperated by spaces as normal
-    // strings.
-    // It also ignores whitespaces in values when being surrounded by quotation
-    // marks, to enable inputs like this => regex:"kappa 123"
+
     static QRegularExpression predicateRegex(
         R"lit((?<negation>[!\-])?(?:(?<name>\w+):(?<value>".+?"|[^\s]+))|[^\s]+?(?=$|\s))lit");
     static QRegularExpression trimQuotationMarksRegex(R"(^"|"$)");
@@ -361,8 +351,6 @@ std::vector<std::unique_ptr<MessagePredicate>> SearchPopup::parsePredicates(
         bool isNegated = !match.captured("negation").isEmpty();
         QString value = match.captured("value");
         value.remove(trimQuotationMarksRegex);
-
-        // match predicates
 
         if (name == "from")
         {
@@ -408,4 +396,4 @@ std::vector<std::unique_ptr<MessagePredicate>> SearchPopup::parsePredicates(
     return predicates;
 }
 
-}  // namespace chatterino
+}

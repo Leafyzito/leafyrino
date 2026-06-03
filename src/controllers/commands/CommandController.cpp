@@ -15,12 +15,17 @@
 #include "controllers/commands/builtin/twitch/Announce.hpp"
 #include "controllers/commands/builtin/twitch/Ban.hpp"
 #include "controllers/commands/builtin/twitch/Block.hpp"
+#include "controllers/commands/builtin/twitch/BlockedTerms.hpp"
+#include "controllers/commands/builtin/twitch/ChannelPoints.hpp"
 #include "controllers/commands/builtin/twitch/ChatSettings.hpp"
 #include "controllers/commands/builtin/twitch/Chatters.hpp"
 #include "controllers/commands/builtin/twitch/DeleteMessages.hpp"
 #include "controllers/commands/builtin/twitch/GetModerators.hpp"
+#include "controllers/commands/builtin/twitch/GetFounders.hpp"
 #include "controllers/commands/builtin/twitch/GetVIPs.hpp"
 #include "controllers/commands/builtin/twitch/LowTrust.hpp"
+#include "controllers/commands/builtin/twitch/ModVipActions.hpp"
+#include "controllers/commands/builtin/twitch/Nuke.hpp"
 #include "controllers/commands/builtin/twitch/Pin.hpp"
 #include "controllers/commands/builtin/twitch/Poll.hpp"
 #include "controllers/commands/builtin/twitch/Prediction.hpp"
@@ -49,10 +54,12 @@
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchCommon.hpp"
 #include "singletons/Paths.hpp"
+#include "singletons/Settings.hpp"
 #include "util/CombinePath.hpp"
 #include "util/QStringHash.hpp"
 
 #include <QString>
+#include <QStringBuilder>
 
 #include <unordered_map>
 
@@ -350,6 +357,14 @@ CommandController::CommandController(const Paths &paths)
 
     /// Supported commands
 
+    this->registerCommand("/namehistory", &commands::nameHistory);
+    this->registerCommand("/logs", &commands::logs);
+    this->registerCommand("/modlogs", &commands::modLogs);
+    this->registerCommand("/translate", &commands::translate);
+    this->registerCommand("/translateto", &commands::translateTo);
+    this->registerCommand("/saytranslate", &commands::sayTranslate);
+    this->registerCommand("/tl", &commands::sayTranslate);
+
     this->registerCommand("/debug-args", &commands::listArgs);
 
     this->registerCommand("/debug-env", &commands::listEnvironmentVariables);
@@ -357,8 +372,10 @@ CommandController::CommandController(const Paths &paths)
     this->registerCommand("/uptime", &commands::uptime);
 
     this->registerCommand("/block", &commands::blockUser);
+    this->registerCommand("/blockterm", &commands::blockTerm);
 
     this->registerCommand("/unblock", &commands::unblockUser);
+    this->registerCommand("/unblockterm", &commands::unblockTerm);
 
     this->registerCommand("/user", &commands::user);
 
@@ -373,6 +390,7 @@ CommandController::CommandController(const Paths &paths)
     this->registerCommand("/test-chatters", &commands::testChatters);
 
     this->registerCommand("/mods", &commands::getModerators);
+    this->registerCommand("/founders", &commands::getFounders);
 
     this->registerCommand("/clip", &commands::clip);
 
@@ -424,12 +442,19 @@ CommandController::CommandController(const Paths &paths)
 
     this->registerCommand("/unvip", &commands::removeVIP);
 
+    this->registerCommand("/leadmod", &commands::addLeadModerator);
+    this->registerCommand("/unleadmod", &commands::removeLeadModerator);
+    this->registerCommand("/editor", &commands::addEditor);
+    this->registerCommand("/uneditor", &commands::removeEditor);
+
     this->registerCommand("/unban", &commands::unbanUser);
     this->registerCommand("/untimeout", &commands::unbanUser);
 
     this->registerCommand("/raid", &commands::startRaid);
 
     this->registerCommand("/unraid", &commands::cancelRaid);
+    this->registerCommand("/raidcancel", &commands::cancelRaid);
+    this->registerCommand("/raidsend", &commands::sendRaidNow);
 
     this->registerCommand("/emoteonly", &commands::emoteOnly);
     this->registerCommand("/emoteonlyoff", &commands::emoteOnlyOff);
@@ -494,35 +519,82 @@ CommandController::CommandController(const Paths &paths)
 
     this->registerCommand("/debug-test", &commands::debugTest);
 
-#ifdef Q_OS_WIN
-    this->registerCommand("/debug-relaunch-with-console",
-                          &commands::relaunchWithConsole);
-#endif
-
-    this->registerCommand("/debug-disable-logfile", &commands::disableLogfile);
-    this->registerCommand("/debug-enable-logfile", &commands::enableLogfile);
-    this->registerCommand("/debug-relaunch-with-logfile",
-                          &commands::relaunchWithLogfile);
-
     this->registerCommand("/shield", &commands::shieldModeOn);
     this->registerCommand("/shieldoff", &commands::shieldModeOff);
 
     this->registerCommand("/shoutout", &commands::sendShoutout);
 
+    this->registerCommand("/pin", &commands::pinMessage);
+    this->registerCommand("/unpin", &commands::unpinMessage);
+    this->registerCommand("/spam", &commands::sendSpam);
+    this->registerCommand("/pyramid", &commands::sendPyramid);
+    this->registerCommand("/nuke", &commands::sendNuke);
+
     this->registerCommand("/poll", &commands::createPoll);
+    this->registerCommand("/redeem", &commands::openChannelPointRewards);
     this->registerCommand("/cancelpoll", &commands::cancelPoll);
     this->registerCommand("/endpoll", &commands::endPoll);
 
-    this->registerCommand("/prediction", &commands::createPrediction);
+    this->registerCommand("/prediction", &commands::showPredictions);
     this->registerCommand("/lockprediction", &commands::lockPrediction);
     this->registerCommand("/cancelprediction", &commands::cancelPrediction);
     this->registerCommand("/completeprediction", &commands::completePrediction);
 
-    this->registerCommand("/pin", &commands::pin);
-    this->registerCommand("/unpin", &commands::unpin);
-
     this->registerCommand("/c2-set-logging-rules", &commands::setLoggingRules);
     this->registerCommand("/c2-theme-autoreload", &commands::toggleThemeReload);
+
+    this->registerCommand("/bot", [](const CommandContext &ctx) -> QString {
+        if (!ctx.twitchChannel)
+        {
+            ctx.channel->addSystemMessage(
+                "/bot only works in Twitch channels.");
+            return "";
+        }
+
+        auto &s = *getSettings();
+        const auto usage = QStringLiteral("Usage: /bot <message>");
+        const bool botBadgeConfigured =
+            !s.botBadgeAppAccessToken.getValue().trimmed().isEmpty() &&
+            !s.botBadgeClientID.getValue().trimmed().isEmpty() &&
+            !s.botBadgeUserID.getValue().trimmed().isEmpty();
+        const auto lockedMessage = [&usage] {
+            return QStringLiteral("Bot mode is locked. Ask Molto about it. ") +
+                   usage;
+        };
+
+        if (ctx.words.size() < 2)
+        {
+            const bool enabling = !s.botBadgeAlwaysUse.getValue();
+            if (enabling && !botBadgeConfigured)
+            {
+                ctx.channel->addSystemMessage(lockedMessage());
+                return "";
+            }
+
+            s.botBadgeAlwaysUse = enabling;
+            s.requestSave();
+
+            ctx.channel->addSystemMessage(
+                enabling ? (s.botBadgeOverrideAllAccounts.getValue()
+                                ? QStringLiteral(
+                                      "Bot mode enabled for all accounts.")
+                                : QStringLiteral(
+                                      "Bot mode enabled for the bot account only."))
+                         : QStringLiteral("Bot mode disabled."));
+            return "";
+        }
+
+        if (!botBadgeConfigured)
+        {
+            ctx.channel->addSystemMessage(lockedMessage());
+            return "";
+        }
+
+        auto message = ctx.words.mid(1).join(' ');
+        ctx.twitchChannel->sendBotMessage(message);
+
+        return "";
+    });
 }
 
 void CommandController::save()
@@ -585,10 +657,12 @@ QString CommandController::execCommand(const QString &textNoEmoji,
                     std::get_if<CommandFunctionWithContext>(&it->second))
             {
                 CommandContext ctx{
-                    words,
-                    channel,
-                    dynamic_cast<TwitchChannel *>(channel.get()),
-                    dynamic_cast<KickChannel *>(channel.get()),
+                    .words = words,
+                    .rawText = text,
+                    .channel = channel,
+                    .twitchChannel =
+                        dynamic_cast<TwitchChannel *>(channel.get()),
+                    .kickChannel = dynamic_cast<KickChannel *>(channel.get()),
                 };
                 return (*command)(ctx);
             }

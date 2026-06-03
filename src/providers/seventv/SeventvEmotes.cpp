@@ -23,10 +23,14 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QNetworkReply>
+#include <QScopeGuard>
 #include <QStringView>
 #include <QThread>
+#include <QTimer>
 
 #include <array>
+#include <chrono>
 #include <utility>
 
 /**
@@ -46,6 +50,9 @@ using namespace seventv::eventapi;
 // These declarations won't throw an exception.
 const QString CHANNEL_HAS_NO_EMOTES("This channel has no 7TV channel emotes.");
 const QString EMOTE_LINK_FORMAT("https://7tv.app/emotes/%1");
+constexpr int CHANNEL_EMOTE_TIMEOUT_RETRY_DELAY_MS = 2000;
+constexpr int CHANNEL_EMOTE_TIMEOUT_MAX_ATTEMPTS = 3;
+constexpr std::chrono::minutes SEVENTV_DECODED_FRAME_CACHE_LIFETIME{4};
 
 // This is non-const, but only used on the GUI thread
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
@@ -197,6 +204,31 @@ EmotePtr createUpdatedEmote(const EmotePtr &oldEmote,
     return emote;
 }
 
+template <typename ChannelT, typename RetryFn, typename ErrorFn>
+void maybeRetryTimeoutRequest(const QString &channelId,
+                              const std::weak_ptr<ChannelT> &channel,
+                              const NetworkResult &result, int attempt,
+                              RetryFn &&retry, ErrorFn &&finalError)
+{
+    (void)channel;
+
+    if (result.error() == QNetworkReply::TimeoutError &&
+        attempt < CHANNEL_EMOTE_TIMEOUT_MAX_ATTEMPTS)
+    {
+        qCWarning(chatterinoSeventv)
+            << "Timed out fetching 7TV channel emotes for" << channelId
+            << "- retrying attempt" << (attempt + 1);
+        QTimer::singleShot(
+            CHANNEL_EMOTE_TIMEOUT_RETRY_DELAY_MS,
+            [retry = std::forward<RetryFn>(retry)]() mutable {
+                retry();
+            });
+        return;
+    }
+
+    finalError();
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -210,7 +242,7 @@ EmoteMap seventv::detail::parseEmotes(const QJsonArray &emoteSetEmotes,
 {
     auto emotes = EmoteMap();
 
-    for (const auto activeEmoteJson : emoteSetEmotes)
+    for (const auto &activeEmoteJson : emoteSetEmotes)
     {
         auto activeEmote = activeEmoteJson.toObject();
         auto emoteData = activeEmote["data"].toObject();
@@ -309,13 +341,21 @@ void SeventvEmotes::loadChannelEmotes(
     std::function<void(EmoteMap &&, ChannelInfo)> callback, bool manualRefresh,
     bool cacheHit)
 {
+    auto loadAttempt = std::make_shared<std::function<void(int)>>();
+    *loadAttempt = [channel, channelId, callback = std::move(callback),
+                    manualRefresh, cacheHit,
+                    loadAttempt](int attempt) mutable -> void {
     qCDebug(chatterinoSeventv)
-        << "Reloading 7TV Channel Emotes" << channelId << manualRefresh;
+        << "Reloading 7TV Channel Emotes" << channelId << manualRefresh
+        << "attempt" << attempt;
 
     getApp()->getSeventvAPI()->getUserByTwitchID(
         channelId,
-        [callback = std::move(callback), channel, channelId,
-         manualRefresh](const auto &json) {
+        [callback, channel, channelId, manualRefresh,
+         loadAttempt](const auto &json) {
+            auto cleanup = qScopeGuard([loadAttempt] {
+                *loadAttempt = {};
+            });
             writeProviderEmotesCache(channelId, "seventv",
                                      QJsonDocument(json).toJson());
             const auto emoteSet = json["emote_set"].toObject();
@@ -343,9 +383,13 @@ void SeventvEmotes::loadChannelEmotes(
                     connectionIdx++;
                 }
 
-                callback(std::move(emoteMap),
-                         {user["id"].toString(), emoteSet["id"].toString(),
-                          connectionIdx});
+                if (callback)
+                {
+                    callback(
+                        std::move(emoteMap),
+                        {user["id"].toString(), emoteSet["id"].toString(),
+                         connectionIdx});
+                }
             }
 
             auto shared = channel.lock();
@@ -366,40 +410,62 @@ void SeventvEmotes::loadChannelEmotes(
                 }
             }
         },
-        [channelId, channel, manualRefresh, cacheHit](const auto &result) {
-            auto shared = channel.lock();
-            if (!shared)
-            {
-                return;
-            }
-            if (result.status() == 404)
-            {
-                qCWarning(chatterinoSeventv)
-                    << "Error occurred fetching 7TV emotes: "
-                    << result.parseJson();
-                if (manualRefresh)
-                {
-                    shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
-                }
-            }
-            else
-            {
-                // TODO: Auto retry in case of a timeout, with a delay
-                auto errorString = result.formatError();
-                qCWarning(chatterinoSeventv)
-                    << "Error fetching 7TV emotes for channel" << channelId
-                    << ", error" << errorString;
-                shared->addSystemMessage(
-                    QStringLiteral("Failed to fetch 7TV channel "
-                                   "emotes. (Error: %1)")
-                        .arg(errorString));
-                if (cacheHit)
-                {
-                    shared->addSystemMessage(
-                        "Using cached 7TV emotes as fallback.");
-                }
-            }
+        [channelId, channel, manualRefresh, cacheHit, attempt,
+         loadAttempt](const auto &result) mutable {
+            maybeRetryTimeoutRequest(
+                channelId, channel, result, attempt,
+                [channel, loadAttempt, attempt]() mutable {
+                    if (channel.expired())
+                    {
+                        *loadAttempt = {};
+                        return;
+                    }
+                    if (*loadAttempt)
+                    {
+                        (*loadAttempt)(attempt + 1);
+                    }
+                },
+                [channelId, channel, manualRefresh, cacheHit, result,
+                 loadAttempt]() {
+                    auto cleanup = qScopeGuard([loadAttempt] {
+                        *loadAttempt = {};
+                    });
+                    auto shared = channel.lock();
+                    if (!shared)
+                    {
+                        return;
+                    }
+                    if (result.status() == 404)
+                    {
+                        qCWarning(chatterinoSeventv)
+                            << "Error occurred fetching 7TV emotes: "
+                            << result.parseJson();
+                        if (manualRefresh)
+                        {
+                            shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
+                        }
+                    }
+                    else
+                    {
+                        auto errorString = result.formatError();
+                        qCWarning(chatterinoSeventv)
+                            << "Error fetching 7TV emotes for channel"
+                            << channelId << ", error" << errorString;
+                        shared->addSystemMessage(
+                            QStringLiteral("Failed to fetch 7TV channel "
+                                           "emotes. (Error: %1)")
+                                .arg(errorString));
+                        if (cacheHit)
+                        {
+                            shared->addSystemMessage(
+                                "Using cached 7TV emotes as fallback.");
+                        }
+                    }
+                });
         });
+    };
+
+    (*loadAttempt)(1);
 }
 
 // FIXME: This is mostly a duplicate of the Twitch loading. However, there's an
@@ -409,13 +475,21 @@ void SeventvEmotes::loadKickChannelEmotes(
     std::function<void(EmoteMap &&, ChannelInfo)> callback, bool manualRefresh,
     bool cacheHit)
 {
+    auto loadAttempt = std::make_shared<std::function<void(int)>>();
+    *loadAttempt = [channel, userID, callback = std::move(callback),
+                    manualRefresh, cacheHit,
+                    loadAttempt](int attempt) mutable -> void {
     qCDebug(chatterinoSeventv)
-        << "Reloading Kick 7TV Channel Emotes" << userID << manualRefresh;
+        << "Reloading Kick 7TV Channel Emotes" << userID << manualRefresh
+        << "attempt" << attempt;
 
     getApp()->getSeventvAPI()->getUserByKickID(
         userID,
-        [callback = std::move(callback), channel, manualRefresh,
-         userID](const auto &json) {
+        [callback, channel, manualRefresh, userID,
+         loadAttempt](const auto &json) {
+            auto cleanup = qScopeGuard([loadAttempt] {
+                *loadAttempt = {};
+            });
             writeProviderEmotesCache(u"kick." % QString::number(userID),
                                      "seventv", QJsonDocument(json).toJson());
             const auto emoteSet = json["emote_set"].toObject();
@@ -443,9 +517,13 @@ void SeventvEmotes::loadKickChannelEmotes(
                     connectionIdx++;
                 }
 
-                callback(std::move(emoteMap),
-                         {user["id"].toString(), emoteSet["id"].toString(),
-                          connectionIdx});
+                if (callback)
+                {
+                    callback(
+                        std::move(emoteMap),
+                        {user["id"].toString(), emoteSet["id"].toString(),
+                         connectionIdx});
+                }
             }
 
             auto shared = channel.lock();
@@ -466,40 +544,62 @@ void SeventvEmotes::loadKickChannelEmotes(
                 }
             }
         },
-        [userID, channel, manualRefresh, cacheHit](const auto &result) {
-            auto shared = channel.lock();
-            if (!shared)
-            {
-                return;
-            }
-            if (result.status() == 404)
-            {
-                qCWarning(chatterinoSeventv)
-                    << "Error occurred fetching 7TV emotes: "
-                    << result.parseJson();
-                if (manualRefresh)
-                {
-                    shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
-                }
-            }
-            else
-            {
-                // TODO: Auto retry in case of a timeout, with a delay
-                auto errorString = result.formatError();
-                qCWarning(chatterinoSeventv)
-                    << "Error fetching 7TV emotes for channel" << userID
-                    << ", error" << errorString;
-                shared->addSystemMessage(
-                    QStringLiteral("Failed to fetch 7TV channel "
-                                   "emotes. (Error: %1)")
-                        .arg(errorString));
-                if (cacheHit)
-                {
-                    shared->addSystemMessage(
-                        "Using cached 7TV emotes as fallback.");
-                }
-            }
+        [userID, channel, manualRefresh, cacheHit, attempt,
+         loadAttempt](const auto &result) mutable {
+            maybeRetryTimeoutRequest(
+                QString::number(userID), channel, result, attempt,
+                [channel, loadAttempt, attempt]() mutable {
+                    if (channel.expired())
+                    {
+                        *loadAttempt = {};
+                        return;
+                    }
+                    if (*loadAttempt)
+                    {
+                        (*loadAttempt)(attempt + 1);
+                    }
+                },
+                [userID, channel, manualRefresh, cacheHit, result,
+                 loadAttempt]() {
+                    auto cleanup = qScopeGuard([loadAttempt] {
+                        *loadAttempt = {};
+                    });
+                    auto shared = channel.lock();
+                    if (!shared)
+                    {
+                        return;
+                    }
+                    if (result.status() == 404)
+                    {
+                        qCWarning(chatterinoSeventv)
+                            << "Error occurred fetching 7TV emotes: "
+                            << result.parseJson();
+                        if (manualRefresh)
+                        {
+                            shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
+                        }
+                    }
+                    else
+                    {
+                        auto errorString = result.formatError();
+                        qCWarning(chatterinoSeventv)
+                            << "Error fetching 7TV emotes for channel"
+                            << userID << ", error" << errorString;
+                        shared->addSystemMessage(
+                            QStringLiteral("Failed to fetch 7TV channel "
+                                           "emotes. (Error: %1)")
+                                .arg(errorString));
+                        if (cacheHit)
+                        {
+                            shared->addSystemMessage(
+                                "Using cached 7TV emotes as fallback.");
+                        }
+                    }
+                });
         });
+    };
+
+    (*loadAttempt)(1);
 }
 
 std::optional<EmotePtr> SeventvEmotes::addEmote(
@@ -679,6 +779,7 @@ ImageSet SeventvEmotes::createImageSet(const QJsonObject &emoteData,
         auto image =
             Image::fromUrl({QString("https:%1/%2").arg(baseUrl, name)}, scale,
                            {static_cast<int>(width), file["height"].toInt(16)});
+        image->setFrameCacheLifetime(SEVENTV_DECODED_FRAME_CACHE_LIFETIME);
 
         sizes.at(nextSize) = image;
         nextSize++;

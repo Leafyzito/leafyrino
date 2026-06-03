@@ -41,4 +41,4 @@ private:
     QColor customColor_;
 };
 
-}  // namespace chatterino
+}

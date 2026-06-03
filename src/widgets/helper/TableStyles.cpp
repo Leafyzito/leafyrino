@@ -19,7 +19,11 @@ TableRowDragStyle::TableRowDragStyle(const QString &name)
 
 void TableRowDragStyle::applyTo(QTableView *view)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 1, 0)
     auto styleName = view->style()->name();
+#else
+    QString styleName = "fusion";
+#endif
     auto *proxyStyle = new TableRowDragStyle(styleName);
     proxyStyle->setParent(view);
     view->setStyle(proxyStyle);
@@ -48,24 +52,23 @@ void TableRowDragStyle::drawPrimitive(QStyle::PrimitiveElement element,
         return;
     }
 
-    // Get the direction a row is dragged in
     auto selected = view->currentIndex();
     auto hovered = view->indexAt(option->rect.center());
     if (!selected.isValid() || !hovered.isValid())
     {
-        // This shouldn't happen as we're in a drag operation
+
         assert(false && "Got bad indices");
         return;
     }
 
-    int y = option->rect.top();  // move up
+    int y = option->rect.top();
     if (hovered.row() >= selected.row())
     {
-        y = option->rect.bottom();  // move down
+        y = option->rect.bottom();
     }
 
     painter->setPen({Qt::white, 2});
     painter->drawLine(0, y, widget->width(), y);
 }
 
-}  // namespace chatterino
+}

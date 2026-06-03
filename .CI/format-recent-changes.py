@@ -1,11 +1,60 @@
 from datetime import datetime, timezone
 import os
 import subprocess
+import re
+
+LINE_REGEX = re.compile(
+    r"""(?x)
+^(?P<commit>[A-Fa-f0-9]+)\s+
+\(
+    <(?P<email>[^>]+)>\s+
+    (?P<date>[^\s]+\s[^\s]+\s[^\s]+)\s+
+    (?P<line>\d+)
+\)\s
+(?P<content>.*)$
+"""
+)
+VERSION_REGEX = re.compile(r"^#+\s*v?\d")
 
 
-def run_git_command(args: list[str]) -> str:
+def get_unreleased_lines(file: str):
+    # contains lines in the form of
+    # {commit-sha} (<{email}>\s+{date}\s+{line-no}) {line}
     p = subprocess.run(
-        ["git", *args],
+        ["git", "blame", "-e", "--date=iso", file],
+        cwd=os.path.dirname(os.path.realpath(__file__)),
+        text=True,
+        check=True,
+        capture_output=True,
+    )
+
+    unreleased_lines: list[tuple[datetime, str]] = []
+    for line in p.stdout.splitlines():
+        if not line:
+            continue
+        m = LINE_REGEX.match(line)
+        assert m, f"Failed to match '{line}'"
+        content = m.group("content")
+
+        if not content:
+            continue
+        if content.startswith("#"):
+            if VERSION_REGEX.match(content):
+                break
+            continue  # ignore lines with '#'
+
+        d = datetime.fromisoformat(m.group("date"))
+        d = d.astimezone(tz=timezone.utc)
+        content = content.replace("- ", f"- [{d.strftime('%Y-%m-%d')}] ", 1)
+        unreleased_lines.append((d, content))
+
+    unreleased_lines.sort(key=lambda it: it[0], reverse=True)
+    return unreleased_lines
+
+
+def get_current_stable():
+    p = subprocess.run(
+        ["git", "describe", "--tags", "--abbrev=0", "--match", "v7.*.[0-9]"],
         cwd=os.path.dirname(os.path.realpath(__file__)),
         text=True,
         check=True,
@@ -14,48 +63,19 @@ def run_git_command(args: list[str]) -> str:
     return p.stdout.strip()
 
 
-def get_last_version_tag() -> str | None:
-    try:
-        return run_git_command(["describe", "--tags", "--abbrev=0", "--match", "v7*"])
-    except subprocess.CalledProcessError:
-        return None
+print("> [!WARNING]")
+print(
+    "> This is an experimental version that may break. "
+    "If you're looking for the latest stable release, see "
+    f"https://github.com/SevenTV/chatterino7/releases/tag/{get_current_stable()}.\n"
+)
 
 
-def get_unreleased_commits():
-    last_tag = get_last_version_tag()
-    if last_tag:
-        log_range = f"{last_tag}..HEAD"
-        limit = None
-    else:
-        # no version tag -> just take a few recent commits
-        log_range = "HEAD"
-        limit = 10
-    args = [
-        "log",
-        log_range,
-        "--pretty=format:%cI|%an|%s",
-        "--no-merges",
-    ]
-    if limit:
-        args.insert(1, f"-n{limit}")
-    log_output = run_git_command(args)
-    unreleased: list[tuple[datetime, str]] = []
-    for line in log_output.splitlines():
-        if not line.strip():
-            continue
-        date_str, author, subject = line.split("|", 2)
-        if author.lower() == "dependabot[bot]":
-            continue
-        if subject.startswith("Merge "):
-            continue
-        d = datetime.fromisoformat(date_str).astimezone(timezone.utc)
-        content = f"- [{d.strftime('%Y-%m-%d')}] {subject}"
-        unreleased.append((d, content))
-    unreleased.sort(key=lambda it: it[0], reverse=True)
-    return unreleased
+unreleased_lines = get_unreleased_lines("../CHANGELOG.md")
+seventv_changes = get_unreleased_lines("../CHANGELOG.c7.md")
 
-
-unreleased_lines = get_unreleased_commits()
+unreleased_lines += seventv_changes
+unreleased_lines.sort(key=lambda it: it[0], reverse=True)
 
 if len(unreleased_lines) == 0:
     print("No changes since last release.")
@@ -66,5 +86,11 @@ for _, line in unreleased_lines[:5]:
 if len(unreleased_lines) > 5:
     print("<details><summary>More Changes</summary>\n")
     for _, line in unreleased_lines[5:]:
+        print(line)
+    print("</details>")
+
+if len(seventv_changes) > 0:
+    print("<details><summary>Chatterino7 Changes</summary>\n")
+    for _, line in seventv_changes:
         print(line)
     print("</details>")

@@ -1,13 +1,10 @@
-// SPDX-FileCopyrightText: 2023 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #include "controllers/commands/builtin/twitch/RemoveVIP.hpp"
 
 #include "Application.hpp"
 #include "common/Channel.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/commands/CommandContext.hpp"
+#include "controllers/commands/builtin/twitch/ModVipActions.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
@@ -48,18 +45,19 @@ QString removeVIP(const CommandContext &ctx)
     auto target = ctx.words.at(1);
     stripChannelName(target);
 
+    if (tryRunModVipActionWithLeadModGql(ctx, target, ModVipAction::RemoveVIP))
+    {
+        return "";
+    }
+
     getHelix()->getUserByName(
         target,
         [twitchChannel{ctx.twitchChannel},
          channel{ctx.channel}](const HelixUser &targetUser) {
             getHelix()->removeChannelVIP(
                 twitchChannel->roomId(), targetUser.id,
-                [channel, targetUser] {
-                    channel->addSystemMessage(
-                        QString("You have removed %1 as a VIP of this channel.")
-                            .arg(targetUser.displayName));
-                },
-                [channel, targetUser](auto error, auto message) {
+                [] {},
+                [channel](auto error, auto message) {
                     QString errorMessage = QString("Failed to remove VIP - ");
 
                     using Error = HelixRemoveChannelVIPError;
@@ -67,7 +65,7 @@ QString removeVIP(const CommandContext &ctx)
                     switch (error)
                     {
                         case Error::UserMissingScope: {
-                            // TODO(pajlada): Phrase MISSING_REQUIRED_SCOPE
+
                             errorMessage += "Missing required scope. "
                                             "Re-login with your "
                                             "account and try again.";
@@ -75,7 +73,7 @@ QString removeVIP(const CommandContext &ctx)
                         break;
 
                         case Error::UserNotAuthorized: {
-                            // TODO(pajlada): Phrase MISSING_PERMISSION
+
                             errorMessage += "You don't have permission to "
                                             "perform that action.";
                         }
@@ -89,7 +87,7 @@ QString removeVIP(const CommandContext &ctx)
                         break;
 
                         case Error::Forwarded: {
-                            // These are actually the IRC equivalents, so we can ditch the prefix
+
                             errorMessage = message;
                         }
                         break;
@@ -104,12 +102,12 @@ QString removeVIP(const CommandContext &ctx)
                 });
         },
         [channel{ctx.channel}, target] {
-            // Equivalent error from IRC
             channel->addSystemMessage(
-                QString("Invalid username: %1").arg(target));
+                QString("Could not look up user: %1. Check the username or log in again.")
+                    .arg(target));
         });
 
     return "";
 }
 
-}  // namespace chatterino::commands
+}

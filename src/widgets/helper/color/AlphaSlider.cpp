@@ -14,7 +14,7 @@ namespace {
 constexpr int SLIDER_WIDTH = 256;
 constexpr int SLIDER_HEIGHT = 12;
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -126,7 +126,7 @@ void AlphaSlider::updatePixmap()
     painter.drawRect(QRect({0, 0}, this->size()));
 }
 
-void AlphaSlider::paintEvent(QPaintEvent * /*event*/)
+void AlphaSlider::paintEvent(QPaintEvent * )
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -164,4 +164,4 @@ void AlphaSlider::setAlpha(int alpha)
     this->update();
 }
 
-}  // namespace chatterino
+}

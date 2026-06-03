@@ -27,8 +27,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
     }
 
     auto broadcasterUserID =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvbroadcasterUserID);
+        boost::json::try_value_to<String>(*jvbroadcasterUserID);
 
     if (broadcasterUserID.has_error())
     {
@@ -43,8 +42,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
     }
 
     auto broadcasterUserLogin =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvbroadcasterUserLogin);
+        boost::json::try_value_to<String>(*jvbroadcasterUserLogin);
 
     if (broadcasterUserLogin.has_error())
     {
@@ -59,8 +57,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
     }
 
     auto broadcasterUserName =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvbroadcasterUserName);
+        boost::json::try_value_to<String>(*jvbroadcasterUserName);
 
     if (broadcasterUserName.has_error())
     {
@@ -73,8 +70,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
         EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
     }
 
-    auto userID =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(*jvuserID);
+    auto userID = boost::json::try_value_to<String>(*jvuserID);
 
     if (userID.has_error())
     {
@@ -87,9 +83,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
         EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
     }
 
-    auto userLogin =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvuserLogin);
+    auto userLogin = boost::json::try_value_to<String>(*jvuserLogin);
 
     if (userLogin.has_error())
     {
@@ -102,9 +96,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
         EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
     }
 
-    auto userName =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvuserName);
+    auto userName = boost::json::try_value_to<String>(*jvuserName);
 
     if (userName.has_error())
     {
@@ -118,8 +110,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
     }
 
     auto moderatorUserID =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvmoderatorUserID);
+        boost::json::try_value_to<String>(*jvmoderatorUserID);
 
     if (moderatorUserID.has_error())
     {
@@ -133,8 +124,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
     }
 
     auto moderatorUserLogin =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvmoderatorUserLogin);
+        boost::json::try_value_to<String>(*jvmoderatorUserLogin);
 
     if (moderatorUserLogin.has_error())
     {
@@ -148,8 +138,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
     }
 
     auto moderatorUserName =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvmoderatorUserName);
+        boost::json::try_value_to<String>(*jvmoderatorUserName);
 
     if (moderatorUserName.has_error())
     {
@@ -164,8 +153,8 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
         EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
     }
 
-    auto lowTrustStatus = boost::json::try_value_to<
-        chatterino::eventsub::lib::suspicious_users::Status>(*jvlowTrustStatus);
+    auto lowTrustStatus =
+        boost::json::try_value_to<suspicious_users::Status>(*jvlowTrustStatus);
 
     if (lowTrustStatus.has_error())
     {
@@ -202,9 +191,8 @@ boost::json::result_for<Payload, boost::json::value>::type tag_invoke(
         EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
     }
 
-    auto subscription = boost::json::try_value_to<
-        chatterino::eventsub::lib::payload::subscription::Subscription>(
-        *jvsubscription);
+    auto subscription =
+        boost::json::try_value_to<subscription::Subscription>(*jvsubscription);
 
     if (subscription.has_error())
     {

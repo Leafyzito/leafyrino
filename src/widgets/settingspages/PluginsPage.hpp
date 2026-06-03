@@ -29,6 +29,6 @@ private:
     QFrame *dataFrame_;
 };
 
-}  // namespace chatterino
+}
 
 #endif

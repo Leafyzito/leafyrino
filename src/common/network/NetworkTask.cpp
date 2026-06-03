@@ -18,30 +18,25 @@
 #include <QtConcurrent>
 
 #ifndef signals
-#    define signals public  // the file uses signals: but we build without that
+#    define signals public
 #endif
-#include <private/qnetworkreplyhttpimpl_p.h>  // for QNetworkReplyHttpImplPrivate
+#include <private/qnetworkreplyhttpimpl_p.h>
 #undef signals
 
 namespace {
 
-/// For DELETE requests, Qt remaps the operation to `DeleteOperation`:
-/// https://github.com/qt/qtbase/blob/bc60fa052b6163bcf444dab027bd6c1e717c9845/src/network/access/qnetworkreplyhttpimpl.cpp#L141-L161
-/// If we specified a body on the request. That will get dropped, because
-/// `DeleteOperation` has a special handler that won't use the body.
 void forceCustomOperation(QNetworkReply *reply)
 {
-    // We can't use dynamic_cast here, since some Qt builds are without RTTI.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
+
     auto *d = static_cast<QNetworkReplyPrivate *>(QObjectPrivate::get(reply));
     if (!d)
     {
-        return;  // not an HTTP request?
+        return;
     }
     d->operation = QNetworkAccessManager::CustomOperation;
 }
 
-}  // namespace
+}
 
 namespace chatterino::network::detail {
 
@@ -70,6 +65,7 @@ void NetworkTask::run()
     const auto &timeout = this->data_->timeout;
     if (timeout.has_value())
     {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)
         QObject::connect(this->reply_, &QNetworkReply::requestSent, this,
                          [this]() {
                              const auto &timeout = this->data_->timeout;
@@ -79,6 +75,13 @@ void NetworkTask::run()
                              QObject::connect(this->timer_, &QTimer::timeout,
                                               this, &NetworkTask::timeout);
                          });
+#else
+        this->timer_ = new QTimer(this);
+        this->timer_->setSingleShot(true);
+        this->timer_->start(timeout.value());
+        QObject::connect(this->timer_, &QTimer::timeout, this,
+                         &NetworkTask::timeout);
+#endif
     }
 
     QObject::connect(this->reply_, &QNetworkReply::finished, this,
@@ -184,7 +187,7 @@ void NetworkTask::logReply()
     else
     {
         QUtf8StringView payload = this->data_->payload;
-#if defined(NDEBUG) || QT_VERSION < QT_VERSION_CHECK(6, 10, 0)
+#ifdef NDEBUG
         if (this->data_->hideRequestBody)
 #else
         static bool alwaysShowRequestBodies =
@@ -236,7 +239,6 @@ void NetworkTask::timeout()
 {
     AbandonObject guard(this);
 
-    // prevent abort() from calling finished()
     QObject::disconnect(this->reply_, &QNetworkReply::finished, this,
                         &NetworkTask::finished);
     this->reply_->abort();
@@ -263,7 +265,7 @@ void NetworkTask::finished()
 
     if (reply->error() == QNetworkReply::OperationCanceledError)
     {
-        // Operation cancelled, most likely timed out
+
         qCDebug(chatterinoHTTP).noquote()
             << this->data_->typeString() << "[cancelled]"
             << this->data_->request.url().toString();
@@ -292,4 +294,4 @@ void NetworkTask::finished()
     this->data_->emitFinally();
 }
 
-}  // namespace chatterino::network::detail
+}

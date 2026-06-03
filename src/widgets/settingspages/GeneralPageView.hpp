@@ -7,9 +7,9 @@
 #include "Application.hpp"
 #include "common/ChatterinoSetting.hpp"
 #include "singletons/WindowManager.hpp"
-#include "util/Variant.hpp"
 #include "widgets/buttons/SignalLabel.hpp"
 
+#include <boost/variant.hpp>
 #include <pajlada/signals/signalholder.hpp>
 #include <QComboBox>
 #include <QDebug>
@@ -18,7 +18,6 @@
 #include <QVBoxLayout>
 
 #include <utility>
-#include <variant>
 
 class QScrollArea;
 
@@ -95,7 +94,7 @@ public:
     SpinBox(QWidget *parent = nullptr)
         : QSpinBox(parent)
     {
-        // QAbstractSpinBox defaults to Qt::WheelFocus
+
         this->setFocusPolicy(Qt::StrongFocus);
     }
 
@@ -123,12 +122,9 @@ public:
 
     void addWidget(QWidget *widget, const QStringList &keywords = {});
 
-    /// Register the widget with the given keywords.
-    /// This assumes that the widget is being held by a layout that has been added previously
     void registerWidget(QWidget *widget, const QStringList &keywords,
                         QWidget *parentElement);
 
-    /// Pushes the widget into the current layout
     void pushWidget(QWidget *widget);
 
     void addLayout(QLayout *layout);
@@ -162,22 +158,22 @@ public:
     }
 
     template <typename T>
-    ComboBox *addDropdown(const QString &text, const QStringList &items,
-                          pajlada::Settings::Setting<T> &setting,
-                          std::function<std::variant<int, QString>(T)> getValue,
-                          std::function<T(DropdownArgs)> setValue,
-                          bool editable = true, QString toolTipText = {},
-                          bool listenToActivated = false)
+    ComboBox *addDropdown(
+        const QString &text, const QStringList &items,
+        pajlada::Settings::Setting<T> &setting,
+        std::function<boost::variant<int, QString>(T)> getValue,
+        std::function<T(DropdownArgs)> setValue, bool editable = true,
+        QString toolTipText = {}, bool listenToActivated = false)
     {
         auto items2 = items;
         auto selected = getValue(setting.getValue());
 
-        if (auto *str = std::get_if<QString>(&selected))
+        if (selected.which() == 1)
         {
-            // QString
-            if (!editable && !items2.contains(*str))
+
+            if (!editable && !items2.contains(boost::get<QString>(selected)))
             {
-                items2.insert(0, *str);
+                items2.insert(0, boost::get<QString>(selected));
             }
         }
 
@@ -187,31 +183,33 @@ public:
             combo->setEditable(true);
         }
 
-        std::visit(variant::Overloaded{
-                       [&](int value) {
-                           if (value >= 0 && value < items2.size())
-                           {
-                               combo->setCurrentIndex(value);
-                           }
-                       },
-                       [&](const QString &str) {
-                           combo->setEditText(str);
-                       },
-                   },
-                   selected);
+        if (selected.which() == 0)
+        {
+
+            auto value = boost::get<int>(selected);
+            if (value >= 0 && value < items2.size())
+            {
+                combo->setCurrentIndex(value);
+            }
+        }
+        else if (selected.which() == 1)
+        {
+
+            combo->setEditText(boost::get<QString>(selected));
+        }
 
         setting.connect(
             [getValue = std::move(getValue), combo](const T &value, auto) {
-                std::visit(variant::Overloaded{
-                               [&](int value) {
-                                   combo->setCurrentIndex(value);
-                               },
-                               [&](const QString &str) {
-                                   combo->setCurrentText(str);
-                                   combo->setEditText(str);
-                               },
-                           },
-                           getValue(value));
+                auto var = getValue(value);
+                if (var.which() == 0)
+                {
+                    combo->setCurrentIndex(boost::get<int>(var));
+                }
+                else
+                {
+                    combo->setCurrentText(boost::get<QString>(var));
+                    combo->setEditText(boost::get<QString>(var));
+                }
             },
             this->managedConnections_);
 
@@ -256,12 +254,10 @@ private:
     void addToolTip(QWidget &widget, QString text) const;
 
     struct Widget {
-        /// The element of the register widget
-        /// This can point to the label of the widget, or the action widget (e.g. the spinbox)
+
         QWidget *element{};
         QStringList keywords;
 
-        /// The optional parent element of the widget (usually pointing at a SettingWidget)
         QWidget *parentElement{};
     };
 
@@ -281,4 +277,4 @@ private:
     pajlada::Signals::SignalHolder managedConnections_;
 };
 
-}  // namespace chatterino
+}

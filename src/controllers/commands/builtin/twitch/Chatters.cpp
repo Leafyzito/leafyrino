@@ -59,7 +59,7 @@ QString formatChattersError(HelixGetChattersError error, const QString &message)
     return errorMessage;
 }
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -77,7 +77,6 @@ QString chatters(const CommandContext &ctx)
         return "";
     }
 
-    // Refresh chatter list via helix api for mods
     getHelix()->getChatters(
         ctx.twitchChannel->roomId(),
         getApp()->getAccounts()->twitch.getCurrent()->getUserId(), 1,
@@ -140,4 +139,4 @@ QString testChatters(const CommandContext &ctx)
     return "";
 }
 
-}  // namespace chatterino::commands
+}

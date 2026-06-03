@@ -22,7 +22,7 @@ public:
     explicit UserHighlightModel(QObject *parent);
 
 protected:
-    // vector into model row
+
     HighlightPhrase getItemFromRow(std::vector<QStandardItem *> &row,
                                    const HighlightPhrase &original) override;
 
@@ -36,4 +36,4 @@ protected:
                           int rowIndex) override;
 };
 
-}  // namespace chatterino
+}

@@ -11,17 +11,9 @@ namespace chatterino {
 class NewPopupItem : public AbstractSwitcherItem
 {
 public:
-    /**
-     * @brief   Construct a new NewPopupItem that opens a passed channel in a new
-     *          popup.
-     *
-     * @param   channelName name of channel to open
-     */
+
     NewPopupItem(const QString &channelName);
 
-    /**
-     * @brief   Open the channel passed in the constructor in a new popup.
-     */
     void action() override;
 
     void paint(QPainter *painter, const QRect &rect) const override;
@@ -34,4 +26,4 @@ private:
     QString text_;
 };
 
-}  // namespace chatterino
+}

@@ -28,7 +28,6 @@ QString toggleShieldMode(const CommandContext &ctx, bool isActivating)
 
     auto user = getApp()->getAccounts()->twitch.getCurrent();
 
-    // Avoid Helix calls without Client ID and/or OAuth Token
     if (user->isAnon())
     {
         ctx.channel->addSystemMessage(
@@ -95,4 +94,4 @@ QString shieldModeOff(const CommandContext &ctx)
     return toggleShieldMode(ctx, false);
 }
 
-}  // namespace chatterino::commands
+}

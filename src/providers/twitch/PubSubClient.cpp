@@ -10,7 +10,7 @@
 
 namespace chatterino {
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 QDebug operator<<(QDebug debug, const TopicData &data)
 {
@@ -103,6 +103,10 @@ void PubSubClient::checkHeartbeat()
 QByteArray PubSubClient::encodeSubscription(const Subscription &subscription)
 {
     PubSubListenMessage listen({subscription.topic});
+    if (!subscription.authToken.isEmpty())
+    {
+        listen.setToken(subscription.authToken);
+    }
     this->nonces_[listen.nonce] = NonceInfo{
         .isListen = true,
     };
@@ -113,7 +117,7 @@ QByteArray PubSubClient::encodeUnsubscription(const Subscription &subscription)
 {
     PubSubUnlistenMessage unlisten({subscription.topic});
     this->nonces_[unlisten.nonce] = NonceInfo{
-        .isListen = true,
+        .isListen = false,
     };
     return unlisten.toJson();
 }
@@ -130,7 +134,7 @@ void PubSubClient::handleResponse(const PubSubMessage &message)
 
     if (message.nonce.isEmpty())
     {
-        // Can't do any specific handling since no nonce was specified
+
         return;
     }
 
@@ -162,39 +166,271 @@ void PubSubClient::handleResponse(const PubSubMessage &message)
 
 void PubSubClient::handleMessageResponse(const PubSubMessageMessage &message)
 {
-    if (!message.topic.startsWith("community-points-channel-v1."))
+    if (message.topic.startsWith("community-points-channel-v1."))
     {
-        return;
-    }
-
-    auto oInnerMessage =
-        message.toInner<PubSubCommunityPointsChannelV1Message>();
-    if (!oInnerMessage)
-    {
-        qCDebug(chatterinoPubSub)
-            << "Malformed community-points-channel-v1 message";
-        return;
-    }
-
-    const auto &innerMessage = *oInnerMessage;
-
-    switch (innerMessage.type)
-    {
-        case PubSubCommunityPointsChannelV1Message::Type::
-            AutomaticRewardRedeemed:
-        case PubSubCommunityPointsChannelV1Message::Type::RewardRedeemed: {
-            auto redemption = innerMessage.data.value("redemption").toObject();
-            this->manager_.pointReward.redeemed.invoke(redemption);
-        }
-        break;
-
-        case PubSubCommunityPointsChannelV1Message::Type::INVALID:
-        default: {
+        auto oInnerMessage =
+            message.toInner<PubSubCommunityPointsChannelV1Message>();
+        if (!oInnerMessage)
+        {
             qCDebug(chatterinoPubSub)
-                << "Invalid point event type:" << innerMessage.typeString;
+                << "Malformed community-points-channel-v1 message";
+            return;
         }
-        break;
+
+        const auto &innerMessage = *oInnerMessage;
+
+        switch (innerMessage.type)
+        {
+            case PubSubCommunityPointsChannelV1Message::Type::
+                AutomaticRewardRedeemed:
+            case PubSubCommunityPointsChannelV1Message::Type::RewardRedeemed: {
+                auto redemption = innerMessage.data.value("redemption").toObject();
+                this->manager_.pointReward.redeemed.invoke(redemption);
+            }
+            break;
+
+            case PubSubCommunityPointsChannelV1Message::Type::INVALID:
+            default: {
+                qCDebug(chatterinoPubSub)
+                    << "Invalid point event type:" << innerMessage.typeString;
+            }
+            break;
+        }
+    }
+    else if (message.topic.startsWith("pinned-chat-updates-v1."))
+    {
+        auto oInnerMessage =
+            message.toInner<PubSubPinnedChatUpdatesV1Message>();
+        if (!oInnerMessage)
+        {
+            qCDebug(chatterinoPubSub)
+                << "Malformed pinned-chat-updates-v1 message";
+            return;
+        }
+
+        const auto &innerMessage = *oInnerMessage;
+
+        switch (innerMessage.type)
+        {
+            case PubSubPinnedChatUpdatesV1Message::Type::Pin:
+            case PubSubPinnedChatUpdatesV1Message::Type::Update:
+            case PubSubPinnedChatUpdatesV1Message::Type::Unpin: {
+
+                QJsonObject payload;
+                payload["type"] = innerMessage.typeString;
+                payload["topic"] = message.topic;
+
+                payload["data"] = innerMessage.data;
+
+                this->manager_.pinnedChat.updated.invoke(payload);
+            }
+            break;
+
+            case PubSubPinnedChatUpdatesV1Message::Type::INVALID:
+            default: {
+                qCDebug(chatterinoPubSub)
+                    << "Invalid pinned chat event type:" << innerMessage.typeString;
+            }
+            break;
+        }
+    }
+    else if (message.topic.startsWith("predictions-channel-v1."))
+    {
+        auto oInnerMessage =
+            message.toInner<PubSubPredictionChannelV1Message>();
+        if (!oInnerMessage)
+        {
+            qCDebug(chatterinoPubSub)
+                << "Malformed predictions-channel-v1 message";
+            return;
+        }
+
+        const auto &innerMessage = *oInnerMessage;
+
+        switch (innerMessage.type)
+        {
+            case PubSubPredictionChannelV1Message::Type::EventCreated:
+            case PubSubPredictionChannelV1Message::Type::EventUpdated:
+            case PubSubPredictionChannelV1Message::Type::EventLocked:
+            case PubSubPredictionChannelV1Message::Type::EventResolved:
+            case PubSubPredictionChannelV1Message::Type::EventCanceled: {
+                QJsonObject payload;
+                payload["type"] = innerMessage.typeString;
+                payload["topic"] = message.topic;
+                payload["data"] = innerMessage.data;
+
+                this->manager_.prediction.updated.invoke(payload);
+            }
+            break;
+
+            case PubSubPredictionChannelV1Message::Type::INVALID:
+            default: {
+                qCDebug(chatterinoPubSub)
+                    << "Invalid prediction event type:"
+                    << innerMessage.typeString;
+            }
+            break;
+        }
+    }
+    else if (message.topic.startsWith("polls."))
+    {
+        if (message.messageObject.empty())
+        {
+            qCDebug(chatterinoPubSub) << "Malformed polls message";
+            return;
+        }
+
+        const auto type = message.messageObject.value("type").toString();
+        if (type != "POLL_CREATE" && type != "POLL_UPDATE" &&
+            type != "POLL_END")
+        {
+            qCDebug(chatterinoPubSub) << "Invalid poll event type:" << type;
+            return;
+        }
+
+        QJsonObject payload;
+        payload["type"] = type;
+        payload["topic"] = message.topic;
+        payload["data"] = message.messageObject.value("data");
+
+        this->manager_.poll.updated.invoke(payload);
+    }
+    else if (message.topic.startsWith("raid."))
+    {
+        if (message.messageObject.empty())
+        {
+            qCDebug(chatterinoPubSub) << "Malformed raid message";
+            return;
+        }
+
+        const auto type = message.messageObject.value("type").toString();
+        if (type != "raid_update_v2")
+        {
+            qCDebug(chatterinoPubSub) << "Invalid raid event type:" << type;
+            return;
+        }
+
+        auto raid = message.messageObject.value("raid").toObject();
+        if (raid.isEmpty())
+        {
+            raid = message.messageObject.value("data")
+                       .toObject()
+                       .value("raid")
+                       .toObject();
+        }
+        if (raid.isEmpty())
+        {
+            qCDebug(chatterinoPubSub) << "Raid event missing raid payload";
+            return;
+        }
+
+        QJsonObject payload;
+        payload["type"] = type;
+        payload["topic"] = message.topic;
+        payload["raid"] = raid;
+
+        this->manager_.raid.updated.invoke(payload);
+    }
+    else if (message.topic.startsWith("community-points-user-v1."))
+    {
+        auto oInnerMessage =
+            message.toInner<PubSubCommunityPointsUserV1Message>();
+        if (!oInnerMessage)
+        {
+            qCDebug(chatterinoPubSub)
+                << "Malformed community-points-user-v1 message";
+            return;
+        }
+
+        const auto &innerMessage = *oInnerMessage;
+
+        switch (innerMessage.type)
+        {
+            case PubSubCommunityPointsUserV1Message::Type::PointsEarned:
+            case PubSubCommunityPointsUserV1Message::Type::PointsSpent:
+            case PubSubCommunityPointsUserV1Message::Type::ClaimAvailable: {
+                QJsonObject payload;
+                payload["type"] = innerMessage.typeString;
+                payload["topic"] = message.topic;
+
+                payload["data"] = innerMessage.data;
+
+                this->manager_.userPoints.updated.invoke(payload);
+            }
+            break;
+
+            case PubSubCommunityPointsUserV1Message::Type::INVALID:
+            default: {
+                qCDebug(chatterinoPubSub)
+                    << "Invalid community points user event type:"
+                    << innerMessage.typeString;
+            }
+            break;
+        }
+    }
+    else if (message.topic.startsWith("predictions-user-v1."))
+    {
+        auto oInnerMessage =
+            message.toInner<PubSubPredictionUserV1Message>();
+        if (!oInnerMessage)
+        {
+            qCDebug(chatterinoPubSub)
+                << "Malformed predictions-user-v1 message";
+            return;
+        }
+
+        const auto &innerMessage = *oInnerMessage;
+
+        switch (innerMessage.type)
+        {
+            case PubSubPredictionUserV1Message::Type::PredictionMade:
+            case PubSubPredictionUserV1Message::Type::PredictionResult: {
+                QJsonObject payload;
+                payload["type"] = innerMessage.typeString;
+                payload["topic"] = message.topic;
+                payload["data"] = innerMessage.data;
+
+                this->manager_.prediction.userResult.invoke(payload);
+            }
+            break;
+
+            case PubSubPredictionUserV1Message::Type::INVALID:
+            default: {
+                qCDebug(chatterinoPubSub)
+                    << "Invalid prediction user event type:"
+                    << innerMessage.typeString;
+            }
+            break;
+        }
+    }
+    else if (message.topic.startsWith("chatrooms-user-v1."))
+    {
+        if (message.messageObject.empty())
+        {
+            qCDebug(chatterinoPubSub)
+                << "Malformed chatrooms-user-v1 message";
+            return;
+        }
+
+        const auto type = message.messageObject.value("type").toString();
+        const auto data = message.messageObject.value("data").toObject();
+        const auto action = data.value("action").toString();
+        if (type != "user_moderation_action" ||
+            (action != "warn" && action != "acknowledge_warning"))
+        {
+            qCDebug(chatterinoPubSub)
+                << "Invalid chat warning event type:" << type
+                << "action:" << action;
+            return;
+        }
+
+        QJsonObject payload;
+        payload["type"] = type;
+        payload["topic"] = message.topic;
+        payload["data"] = data;
+
+        this->manager_.chatWarning.updated.invoke(payload);
     }
 }
 
-}  // namespace chatterino
+}

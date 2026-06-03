@@ -15,15 +15,16 @@
 #include <QAbstractEventDispatcher>
 #include <QDebug>
 #include <QProcess>
+#include <QSet>
 #include <QThread>
 #include <QTimer>
 
 #ifdef Q_OS_WIN
-// clang-format off
+
 #    include <Windows.h>
 #    include <VersionHelpers.h>
 #    include <WtsApi32.h>
-// clang-format on
+
 #endif
 
 #include <atomic>
@@ -33,21 +34,28 @@ namespace {
 using namespace chatterino;
 using namespace literals;
 
-/// Number of timeouts to skip if nothing called `isEnabled` in the meantime.
-constexpr uint8_t SKIPPED_TIMEOUTS = 5;
+constexpr auto CHECK_INTERVAL = std::chrono::seconds(20);
 
-const QStringList &broadcastingBinaries()
+const QSet<QString> &broadcastingBinaries()
 {
-#ifdef USEWINSDK
-    static QStringList bins = {
-        u"obs.exe"_s,         u"obs64.exe"_s,        u"PRISMLiveStudio.exe"_s,
-        u"XSplit.Core.exe"_s, u"TwitchStudio.exe"_s, u"vMix64.exe"_s,
+#ifdef Q_OS_WIN
+    static const QSet<QString> bins = {
+        u"obs.exe"_s.toLower(),
+        u"obs64.exe"_s.toLower(),
+        u"prismlivestudio.exe"_s,
+        u"xsplit.core.exe"_s,
+        u"twitchstudio.exe"_s,
+        u"twitch studio.exe"_s.toLower(),
+        u"vmix64.exe"_s,
+        u"streamlabs desktop.exe"_s.toLower(),
+        u"streamlabs obs.exe"_s.toLower(),
+        u"streamlabsdesktop.exe"_s,
     };
 #else
-    static QStringList bins = {
+    static const QSet<QString> bins = {
         u"obs"_s,
-        u"Twitch Studio"_s,
-        u"Streamlabs Desktop"_s,
+        u"twitch studio"_s,
+        u"streamlabs desktop"_s,
     };
 #endif
     return bins;
@@ -63,12 +71,14 @@ bool isBroadcasterSoftwareActive()
     if (Version::instance().isFlatpak())
     {
         p.start("flatpak-spawn",
-                {"--host", "pgrep", "-xi", broadcastingBinaries().join("|")},
+                {"--host", "pgrep", "-xi",
+                 QStringList(broadcastingBinaries().values()).join("|")},
                 QIODevice::NotOpen);
     }
     else
     {
-        p.start("pgrep", {"-xi", broadcastingBinaries().join("|")},
+        p.start("pgrep",
+                {"-xi", QStringList(broadcastingBinaries().values()).join("|")},
                 QIODevice::NotOpen);
     }
 
@@ -76,8 +86,6 @@ bool isBroadcasterSoftwareActive()
     {
         return (p.exitCode() == 0);
     }
-
-    // Fallback to false and showing a warning
 
     switch (p.error())
     {
@@ -138,10 +146,12 @@ bool isBroadcasterSoftwareActive()
     if (WTSEnumerateProcesses(WTS_CURRENT_SERVER_HANDLE, 0, 1, &pProcessInfo,
                               &dwProcCount))
     {
-        //Go through all processes retrieved
+
         for (DWORD i = 0; i < dwProcCount; i++)
         {
-            QStringView processName(pProcessInfo[i].pProcessName);
+            const auto processName =
+                QStringView(pProcessInfo[i].pProcessName).trimmed().toString()
+                    .toLower();
 
             if (broadcastingBinaries().contains(processName))
             {
@@ -195,7 +205,6 @@ private:
     QTimer *timer_;
 
     std::atomic<bool> enabled_ = false;
-    mutable std::atomic<uint8_t> timeouts_ = 0;
     StreamerModeSetting currentSetting_ = StreamerModeSetting::Disabled;
 };
 
@@ -238,13 +247,6 @@ StreamerModePrivate::StreamerModePrivate(StreamerMode *parent)
     this->thread_.setObjectName("StreamerMode");
     this->timer_->moveToThread(&this->thread_);
     QObject::connect(this->timer_, &QTimer::timeout, [this] {
-        auto timeouts =
-            this->timeouts_.fetch_add(1, std::memory_order::relaxed);
-        if (timeouts < SKIPPED_TIMEOUTS)
-        {
-            return;
-        }
-        this->timeouts_.store(0, std::memory_order::relaxed);
         this->check();
     });
 
@@ -282,7 +284,6 @@ StreamerModePrivate::~StreamerModePrivate()
 
 bool StreamerModePrivate::isEnabled() const
 {
-    this->timeouts_.store(SKIPPED_TIMEOUTS, std::memory_order::relaxed);
     return this->enabled_.load(std::memory_order::relaxed);
 }
 
@@ -320,11 +321,9 @@ void StreamerModePrivate::settingChanged(StreamerModeSetting value)
         break;
         case StreamerModeSetting::DetectStreamingSoftware: {
             QMetaObject::invokeMethod(this->timer_, [this] {
-                if (!this->timer_->isActive())
-                {
-                    this->timer_->start(20s);
-                    this->check();
-                }
+                this->timer_->stop();
+                this->timer_->start(CHECK_INTERVAL);
+                this->check();
             });
         }
         break;

@@ -14,10 +14,9 @@ namespace chatterino::completion {
 
 namespace {
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 const auto &LOG = chatterinoCompletion;
 
-}  // namespace
+}
 
 void ClassicEmoteStrategy::apply(const std::vector<EmoteItem> &items,
                                  std::vector<EmoteItem> &output,
@@ -36,7 +35,6 @@ void ClassicEmoteStrategy::apply(const std::vector<EmoteItem> &items,
         zeroWidthOnly = true;
     }
 
-    // First pass: filter by zero-width only and contains match
     for (const auto &item : items)
     {
         if (zeroWidthOnly && !item.emote->zeroWidth)
@@ -50,12 +48,10 @@ void ClassicEmoteStrategy::apply(const std::vector<EmoteItem> &items,
         }
     }
 
-    // Second pass: if there is an exact match, put that emote first
     for (size_t i = 1; i < output.size(); i++)
     {
         auto emoteText = output.at(i).searchName;
 
-        // test for match or match with colon at start for emotes like ":)"
         if (emoteText.compare(normalizedQuery, Qt::CaseInsensitive) == 0 ||
             emoteText.compare(":" + normalizedQuery, Qt::CaseInsensitive) == 0)
         {
@@ -83,7 +79,7 @@ void ClassicTabEmoteStrategy::apply(const std::vector<EmoteItem> &items,
     QStringView normalizedQuery = query;
     if (colonStart)
     {
-        // TODO(Qt6): use sliced
+
         normalizedQuery = normalizedQuery.mid(1);
     }
 
@@ -100,7 +96,7 @@ void ClassicTabEmoteStrategy::apply(const std::vector<EmoteItem> &items,
             }
             else
             {
-                continue;  // ignore emojis when not completing with ':'
+                continue;
             }
         }
         else
@@ -120,4 +116,4 @@ void ClassicTabEmoteStrategy::apply(const std::vector<EmoteItem> &items,
     output.assign(emotes.begin(), emotes.end());
 }
 
-}  // namespace chatterino::completion
+}

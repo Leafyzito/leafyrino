@@ -11,4 +11,4 @@ namespace chatterino {
 void openInCustomPlayer(QStringView channel,
                         QStringView prefixURL = u"https://www.twitch.tv/");
 
-}  // namespace chatterino
+}

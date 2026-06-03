@@ -1,343 +1,626 @@
-// SPDX-FileCopyrightText: 2026 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
+#include "controllers/commands/builtin/twitch/Pin.hpp"
 
 #include "Application.hpp"
 #include "common/Channel.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/commands/CommandContext.hpp"
+#include "messages/MessageFlag.hpp"
 #include "messages/Message.hpp"
-#include "messages/MessageBuilder.hpp"
-#include "messages/MessageElement.hpp"
-#include "providers/twitch/api/Helix.hpp"
+#include "providers/moltorino/MoltorinoAuth.hpp"
+#include "providers/twitch/api/TwitchGql.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
-#include "util/Expected.hpp"
-#include "util/Helpers.hpp"
+#include "singletons/Settings.hpp"
+#include "util/Twitch.hpp"
 
-#include <controllers/commands/builtin/twitch/Pin.hpp>
-#include <QCommandLineParser>
-#include <QProcess>
+#include <pajlada/signals/scoped-connection.hpp>
+
+#include <QRegularExpression>
+#include <QSet>
+#include <QTimer>
+#include <QUuid>
+
+#include <memory>
+#include <optional>
 
 namespace {
 
-using namespace Qt::Literals;
 using namespace chatterino;
+using chatterino::commands::PinDurationParseResult;
 
-struct Action {
-    QString text;
-    QString messageID;
-    std::optional<std::chrono::seconds> duration;
-};
+constexpr int MAX_TIMED_PIN_DURATION = 30 * 60;
+constexpr int SENT_MESSAGE_PIN_TIMEOUT_MS = 3000;
 
-// Duration of pin when sending message with "Send Chat Message".
-// See https://dev.twitch.tv/docs/api/reference#send-chat-message.
-constexpr std::chrono::minutes SEND_CHAT_MESSAGE_PIN_DURATION(20);
-
-void sendPinnedMessage(const std::shared_ptr<TwitchChannel> &chan,
-                       const std::shared_ptr<TwitchAccount> &moderator,
-                       const QString &text,
-                       std::optional<std::chrono::seconds> duration)
+QString usage()
 {
-    getHelix()->sendChatMessage(
-        {
-            .broadcasterID = chan->roomId(),
-            .senderID = moderator->getUserId(),
-            .message = text,
-            .pin = true,
-        },
-        [weak = std::weak_ptr(chan), origText = text, duration,
-         moderator](const HelixSentMessage &res) {
-            auto chan = weak.lock();
-            if (!chan)
-            {
-                return;
-            }
+    QStringList forms{QStringLiteral("/pin <message-id> [duration]")};
 
-            if (!res.isSent)
-            {
-                if (res.dropReason)
-                {
-                    chan->addSystemMessage(res.dropReason->message);
-                }
-                else
-                {
-                    chan->addSystemMessage("Your message was not pinned.");
-                }
-                return;
-            }
+    if (getSettings()->enablePinUserCommand)
+    {
+        forms.push_back(getSettings()->requireAtForPinUserCommand
+                            ? QStringLiteral("/pin @<username> [duration]")
+                            : QStringLiteral("/pin <username> [duration]"));
+    }
 
-            // Default duration, no need to update it once more.
-            if (duration == SEND_CHAT_MESSAGE_PIN_DURATION)
-            {
-                chan->addMessage(
-                    MessageBuilder::makePinSuccessMessage(origText, res.id),
-                    MessageContext::Original);
-                return;
-            }
+    if (getSettings()->enablePinCommandMessages)
+    {
+        forms.push_back(QStringLiteral("/pin <message text>"));
+    }
 
-            chan->updatePinnedMessageAs(res.id, duration, *moderator, origText);
-        },
-        [weak = std::weak_ptr(chan)](auto error, auto message) {
-            auto chan = weak.lock();
-            if (!chan)
-            {
-                return;
-            }
-
-            if (message.isEmpty())
-            {
-                message = "(empty message)";
-            }
-
-            using Error = HelixSendMessageError;
-
-            auto errorMessage = [&]() -> QString {
-                switch (error)
-                {
-                    case Error::MissingText:
-                        return "You can't pin an empty message.";
-                    case Error::BadRequest:
-                        return "Failed to pin message: " + message;
-                    case Error::Forbidden:
-                        return "You are not allowed to pin messages in this "
-                               "channel.";
-                    case Error::MessageTooLarge:
-                        return "Your message was too long.";
-                    case Error::UserMissingScope:
-                        return "Missing required scope. Re-login with your "
-                               "account and try again.";
-                    case Error::Forwarded:
-                        return message;
-                    case Error::Unknown:
-                    default:
-                        return "Unknown error: " + message;
-                }
-            }();
-            chan->addSystemMessage(errorMessage);
-        });
+    return QStringLiteral("Usage: %1.").arg(forms.join(", "));
 }
 
-ExpectedStr<Action> parseAction(const CommandContext &ctx)
+QString pinTextDisabledMessage()
 {
-    QCommandLineParser parser;
-    parser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsLongOptions);
-    parser.setOptionsAfterPositionalArgumentsMode(
-        QCommandLineParser::ParseAsOptions);
-    QCommandLineOption idOption(u"id"_s, {}, u"ID"_s);
-    QCommandLineOption durationOption(QStringList{u"d"_s, u"duration"_s}, {},
-                                      u"duration"_s);
-    parser.addOptions({idOption, durationOption});
-    parser.parse(QProcess::splitCommand(ctx.words.join(" ")));
-
-    std::optional<std::chrono::seconds> duration;
-    auto durationText = parser.value(durationOption);
-    bool isExplicitUntilEnd =
-        durationText == u"until-end" || durationText == u"none";
-    if (!durationText.isEmpty() && !isExplicitUntilEnd)
+    QStringList alternatives{QStringLiteral("/pin <message-id> [duration]")};
+    if (getSettings()->enablePinUserCommand)
     {
-        const auto dur = parseDurationToSeconds(durationText);
-        if (dur <= 0)
-        {
-            return makeUnexpected(u"Duration must be positive."_s);
-        }
-        duration.emplace(dur);
+        alternatives.push_back(
+            getSettings()->requireAtForPinUserCommand
+                ? QStringLiteral("/pin @<username> [duration]")
+                : QStringLiteral("/pin <username> [duration]"));
     }
 
-    std::optional<QString> id;
-    if (parser.isSet(idOption))
+    return QStringLiteral("/pin <message text> is disabled. Use %1.")
+        .arg(alternatives.join(QStringLiteral(" or ")));
+}
+
+bool isMessageId(const QString &text)
+{
+    return !QUuid(text).isNull();
+}
+
+bool isUsernameLike(const QString &text)
+{
+    static const QRegularExpression usernameRegex(
+        QStringLiteral(R"(^[A-Za-z0-9_]{1,25}$)"));
+
+    return usernameRegex.match(text).hasMatch();
+}
+
+bool isCurrentUserMessage(const MessagePtr &message, const QString &login,
+                          const QString &text)
+{
+    return message != nullptr && !message->id.isEmpty() &&
+           message->loginName.compare(login, Qt::CaseInsensitive) == 0 &&
+           message->messageText == text;
+}
+
+QString durationHelp()
+{
+    return QStringLiteral(
+        "Use seconds, 5m, 30m, 1h, or indefinite. Durations over 30m are pinned indefinitely.");
+}
+
+int normalizeParsedPinDuration(qint64 amount, qint64 secondsPerUnit)
+{
+    if (amount <= 0 || secondsPerUnit <= 0)
     {
-        id.emplace(parser.value(idOption));
+        return 0;
     }
 
-    auto positionals = parser.positionalArguments().join(' ');
-
-    if (id)
+    if (amount > MAX_TIMED_PIN_DURATION / secondsPerUnit)
     {
-        if (!positionals.isEmpty())
+        return 0;
+    }
+
+    return static_cast<int>(amount * secondsPerUnit);
+}
+
+struct PinUserArgs {
+    bool matched = false;
+    QString error;
+    QString login;
+    QString fallbackMessage;
+    bool explicitUser = false;
+    int durationSeconds = 0;
+    int fallbackDurationSeconds = 0;
+};
+
+PinUserArgs parsePinUserArgs(const QStringList &words)
+{
+    if (words.size() < 2)
+    {
+        return {};
+    }
+
+    auto target = words.at(1).trimmed();
+    const auto explicitUser = target.startsWith('@');
+    stripChannelName(target);
+
+    if (!getSettings()->enablePinUserCommand)
+    {
+        return {};
+    }
+
+    if (getSettings()->requireAtForPinUserCommand && !explicitUser)
+    {
+        return {};
+    }
+
+    if (target.isEmpty() || isMessageId(target))
+    {
+        return {};
+    }
+
+    const auto defaultDuration =
+        commands::normalizePinDuration(getSettings()->defaultPinDuration);
+    const auto fallbackMessage = words.mid(1).join(' ').trimmed();
+
+    if (words.size() == 2)
+    {
+        if (!isUsernameLike(target))
         {
-            return makeUnexpected(
-                u"No positional arguments can be specified when using --id."_s);
+            return {};
         }
 
-        return Action{
-            .messageID = *std::move(id),
-            .duration = duration,
+        return {
+            .matched = true,
+            .login = target,
+            .fallbackMessage = fallbackMessage,
+            .explicitUser = explicitUser,
+            .durationSeconds = defaultDuration,
+            .fallbackDurationSeconds = defaultDuration,
         };
     }
 
-    if (!duration && !isExplicitUntilEnd)
+    const auto parsed = commands::parsePinDuration(words.mid(2).join(' '));
+    if (parsed.matched)
     {
-        duration = SEND_CHAT_MESSAGE_PIN_DURATION;
+        if (!parsed.error.isEmpty())
+        {
+            return {
+                .matched = true,
+                .error = parsed.error,
+            };
+        }
+
+        if (!isUsernameLike(target))
+        {
+            if (explicitUser)
+            {
+                return {
+                    .matched = true,
+                    .error = QStringLiteral("Invalid username: %1").arg(target),
+                };
+            }
+
+            return {};
+        }
+
+        return {
+            .matched = true,
+            .login = target,
+            .fallbackMessage = fallbackMessage,
+            .explicitUser = explicitUser,
+            .durationSeconds = parsed.durationSeconds,
+            .fallbackDurationSeconds = defaultDuration,
+        };
     }
 
-    return Action{
-        .text = positionals,
-        .duration = duration,
-    };
+    if (explicitUser)
+    {
+        return {
+            .matched = true,
+            .error = durationHelp(),
+        };
+    }
+
+    return {};
 }
 
-void showCurrentlyPinnedMessage(const std::shared_ptr<TwitchChannel> &chan,
-                                const TwitchAccount &moderator)
+MessagePtr findLatestBufferedMessageFromUser(TwitchChannel *channel,
+                                             const QString &login)
 {
-    getHelix()->getPinnedChatMessage(
-        chan->roomId(), moderator.getUserId(),
-        [weak = std::weak_ptr(chan)](
-            const std::optional<HelixPinnedChatMessage> &result) {
-            auto chan = weak.lock();
-            if (!chan)
+    if (channel == nullptr)
+    {
+        return nullptr;
+    }
+
+    const auto snapshot = channel->getMessageSnapshot();
+    for (auto it = snapshot.rbegin(); it != snapshot.rend(); ++it)
+    {
+        const auto &message = *it;
+        if (message == nullptr || message->id.isEmpty())
+        {
+            continue;
+        }
+        if (message->flags.hasAny({MessageFlag::System, MessageFlag::Timeout,
+                                   MessageFlag::Disabled,
+                                   MessageFlag::Whisper}))
+        {
+            continue;
+        }
+        if (message->loginName.compare(login, Qt::CaseInsensitive) == 0)
+        {
+            return message;
+        }
+    }
+
+    return nullptr;
+}
+
+void sendAndPinMessage(TwitchChannel *channel, const QString &messageText,
+                       int durationSeconds);
+
+void pinLatestMessageFromUser(TwitchChannel *channel, const QString &login,
+                              int durationSeconds,
+                              const QString &fallbackMessage,
+                              int fallbackDurationSeconds, bool explicitUser)
+{
+    if (auto message = findLatestBufferedMessageFromUser(channel, login))
+    {
+        channel->pinMessage(message->id, durationSeconds);
+        return;
+    }
+
+    const auto weak = channel->weak_from_this();
+    TwitchGql::getUserByLogin(
+        login, QString{},
+        [weak, login, fallbackMessage, fallbackDurationSeconds, explicitUser,
+         durationSeconds](std::optional<GqlUser> user) {
+            auto shared =
+                std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+            if (!shared)
             {
                 return;
             }
 
-            if (!result)
+            if (!user.has_value())
             {
-                chan->addSystemMessage(u"There is no pinned message."_s);
+                if (!explicitUser && !fallbackMessage.isEmpty())
+                {
+                    if (!getSettings()->enablePinCommandMessages)
+                    {
+                        shared->addSystemMessage(
+                            QStringLiteral("Could not find a user named %1. %2")
+                                .arg(login, pinTextDisabledMessage()));
+                        return;
+                    }
+
+                    sendAndPinMessage(shared.get(), fallbackMessage,
+                                      fallbackDurationSeconds);
+                    return;
+                }
+
+                shared->addSystemMessage(
+                    QStringLiteral("Could not find a user named %1.")
+                        .arg(login));
                 return;
             }
 
-            chan->addMessage(
-                MessageBuilder::makeCurrentPinnedMessage(*chan, *result),
-                MessageContext::Original);
+            const auto displayName = user->displayName.isEmpty()
+                                         ? user->login
+                                         : user->displayName;
+
+            QString authError;
+            auto auth = MoltorinoAuth::resolveModerationToken(
+                shared->roomId(), shared->getName(), &authError);
+            if (!auth.hasToken())
+            {
+                shared->addSystemMessage(
+                    QStringLiteral("Could not search older messages for %1: %2")
+                        .arg(displayName, authError));
+                return;
+            }
+
+            TwitchGql::getLatestModLogMessageBySender(
+                shared->roomId(), user->id, auth.token,
+                [weak, displayName, durationSeconds,
+                 token = auth.token](std::optional<GqlModLogMessage> message) {
+                    auto shared = std::dynamic_pointer_cast<TwitchChannel>(
+                        weak.lock());
+                    if (!shared)
+                    {
+                        return;
+                    }
+
+                    if (!message.has_value())
+                    {
+                        shared->addSystemMessage(
+                            QStringLiteral(
+                                "Could not find a recent message from %1 to pin.")
+                                .arg(displayName));
+                        return;
+                    }
+
+                    TwitchGql::pinMessage(
+                        shared->roomId(), message->id, durationSeconds, token,
+                        [] {},
+                        [weak, displayName](const QString &error) {
+                            auto shared =
+                                std::dynamic_pointer_cast<TwitchChannel>(
+                                    weak.lock());
+                            if (!shared)
+                            {
+                                return;
+                            }
+
+                            shared->addSystemMessage(
+                                QStringLiteral(
+                                    "Failed to pin latest message from %1: %2")
+                                    .arg(displayName,
+                                         MoltorinoAuth::normalizeAuthError(
+                                             "pinning messages", error)));
+                        });
+                },
+                [weak, displayName](const QString &error) {
+                    auto shared = std::dynamic_pointer_cast<TwitchChannel>(
+                        weak.lock());
+                    if (!shared)
+                    {
+                        return;
+                    }
+
+                    shared->addSystemMessage(
+                        QStringLiteral(
+                            "Could not search older messages for %1: %2")
+                            .arg(displayName,
+                                 MoltorinoAuth::normalizeAuthError(
+                                     "searching older messages", error)));
+                });
         },
-        [weak = std::weak_ptr(chan)](const auto &result) {
-            auto chan = weak.lock();
-            if (!chan)
+        [weak, login](const QString &error) {
+            auto shared =
+                std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+            if (!shared)
             {
                 return;
             }
-            chan->addSystemMessage("Failed to get pinned message: " % result);
+
+            shared->addSystemMessage(
+                QStringLiteral("Could not look up user %1: %2")
+                    .arg(login,
+                         MoltorinoAuth::normalizeAuthError("looking up users",
+                                                           error)));
         });
 }
 
-}  // namespace
+void sendAndPinMessage(TwitchChannel *channel, const QString &messageText,
+                       int durationSeconds)
+{
+    auto currentUser = getApp()->getAccounts()->twitch.getCurrent();
+    if (currentUser->isAnon())
+    {
+        channel->addSystemMessage(
+            "You must be logged in to send and pin a message.");
+        return;
+    }
+
+    const auto login = currentUser->getUserName();
+    const auto key = channel->roomId() + '\n' + messageText;
+
+    static QSet<QString> pendingMessages;
+    if (pendingMessages.contains(key))
+    {
+        channel->addSystemMessage(
+            "Already waiting for that sent message to appear in chat.");
+        return;
+    }
+    pendingMessages.insert(key);
+
+    auto done = std::make_shared<bool>(false);
+    auto connection = std::make_shared<pajlada::Signals::ScopedConnection>();
+    auto weakChannel = channel->weak_from_this();
+
+    auto cleanup = [done, connection, key] {
+        if (*done)
+        {
+            return false;
+        }
+
+        *done = true;
+        *connection = pajlada::Signals::ScopedConnection();
+        pendingMessages.remove(key);
+        return true;
+    };
+
+    *connection = channel->messageAppended.connect(
+        [cleanup, weakChannel, login, messageText,
+         durationSeconds](MessagePtr &message, auto) mutable {
+            if (!isCurrentUserMessage(message, login, messageText))
+            {
+                return;
+            }
+
+            if (!cleanup())
+            {
+                return;
+            }
+
+            auto shared =
+                std::dynamic_pointer_cast<TwitchChannel>(weakChannel.lock());
+            if (!shared)
+            {
+                return;
+            }
+
+            shared->pinMessage(message->id, durationSeconds);
+        });
+
+    QTimer::singleShot(SENT_MESSAGE_PIN_TIMEOUT_MS,
+                       [cleanup, weakChannel, messageText] mutable {
+                           if (!cleanup())
+                           {
+                               return;
+                           }
+
+                           auto shared = std::dynamic_pointer_cast<TwitchChannel>(
+                               weakChannel.lock());
+                           if (!shared)
+                           {
+                               return;
+                           }
+
+                           shared->addSystemMessage(
+                               "Could not find the sent message to pin. Try again.");
+                       });
+
+    channel->sendMessage(messageText);
+}
+
+}
 
 namespace chatterino::commands {
 
-/// /pin
-QString pin(const CommandContext &ctx)
+PinDurationParseResult parsePinDuration(const QString &text)
 {
-    if (!ctx.channel)
+    const auto duration = text.trimmed().toLower();
+    if (duration.isEmpty())
     {
-        return {};
-    }
-    if (!ctx.twitchChannel)
-    {
-        ctx.channel->addSystemMessage(
-            u"The /pin command only works in Twitch channels"_s);
         return {};
     }
 
-    auto currentUser = getApp()->getAccounts()->twitch.getCurrent();
-    if (currentUser->isAnon())
+    if (duration == "0" || duration == "indefinite" ||
+        duration == "forever" || duration == "permanent")
     {
-        ctx.channel->addSystemMessage(
-            u"You must be logged in to pin messages!"_s);
+        return {true, {}, 0};
+    }
+
+    static const QRegularExpression durationRegex(
+        R"(^(\d+)\s*(s|sec|secs|second|seconds|m|min|mins|minute|minutes|h|hr|hrs|hour|hours)?$)",
+        QRegularExpression::CaseInsensitiveOption);
+
+    const auto match = durationRegex.match(duration);
+    if (!match.hasMatch())
+    {
         return {};
     }
 
-    if (ctx.words.empty())
+    bool ok = false;
+    qint64 amount = match.captured(1).toLongLong(&ok);
+    if (!ok)
     {
-        assert(false && "should have /pin");
-        return {};
+        return {true, {}, 0};
     }
 
-    if (ctx.words.size() == 2 &&
-        (ctx.words.at(1) == u"-h" || ctx.words.at(1) == u"--help"))
+    const auto unit = match.captured(2).toLower();
+    if (unit.isEmpty() || unit == "s" || unit == "sec" || unit == "secs" ||
+        unit == "second" || unit == "seconds")
     {
-        ctx.channel->addSystemMessage(
-            u"Pin a chat message or show the currently pinned one."
-            "Usage: /pin [--duration <seconds|until-end|none>] [message]... OR "
-            "/pin --id <message-id> [--duration <seconds|until-end|none>]"_s);
-        return {};
+        return {true, {}, normalizeParsedPinDuration(amount, 1)};
     }
 
-    auto chan = std::static_pointer_cast<TwitchChannel>(
-        ctx.twitchChannel->shared_from_this());
-    if (ctx.words.size() == 1)
+    if (unit == "m" || unit == "min" || unit == "mins" ||
+        unit == "minute" || unit == "minutes")
     {
-        showCurrentlyPinnedMessage(chan, *currentUser);
-        return {};
+        return {true, {}, normalizeParsedPinDuration(amount, 60)};
     }
 
-    auto action = parseAction(ctx);
-    if (!action)
+    if (unit == "h" || unit == "hr" || unit == "hrs" ||
+        unit == "hour" || unit == "hours")
     {
-        ctx.channel->addSystemMessage(action.error());
-        return {};
+        return {true, {}, normalizeParsedPinDuration(amount, 60 * 60)};
     }
 
-    if (!action->messageID.isEmpty())
-    {
-        chan->pinMessageAs(action->messageID, action->duration, *currentUser);
-        return {};
-    }
-
-    sendPinnedMessage(chan, currentUser, action->text, action->duration);
-    return {};
+    return {true, durationHelp(), 0};
 }
 
-/// /unpin
-QString unpin(const CommandContext &ctx)
+int normalizePinDuration(int durationSeconds)
 {
-    if (!ctx.channel)
+    if (durationSeconds <= 0 || durationSeconds > MAX_TIMED_PIN_DURATION)
     {
-        return {};
-    }
-    if (!ctx.twitchChannel)
-    {
-        ctx.channel->addSystemMessage(
-            u"The /unpin command only works in Twitch channels"_s);
-        return {};
+        return 0;
     }
 
-    auto currentUser = getApp()->getAccounts()->twitch.getCurrent();
-    if (currentUser->isAnon())
-    {
-        ctx.channel->addSystemMessage(
-            u"You must be logged in to unpin messages!"_s);
-        return {};
-    }
-
-    if (ctx.words.empty())
-    {
-        assert(false);
-        return {};
-    }
-
-    auto chan = std::static_pointer_cast<TwitchChannel>(
-        ctx.twitchChannel->shared_from_this());
-    if (ctx.words.size() == 1)
-    {
-        getHelix()->getPinnedChatMessage(
-            chan->roomId(), currentUser->getUserId(),
-            [weak = std::weak_ptr(chan), currentUser](const auto &result) {
-                auto chan = weak.lock();
-                if (!chan)
-                {
-                    return;
-                }
-                if (!result)
-                {
-                    chan->addSystemMessage(u"There is no pinned message"_s);
-                    return;
-                }
-                chan->unpinMessageAs(result->messageID, *currentUser);
-            },
-            [weak = std::weak_ptr(chan)](const auto &message) {
-                auto chan = weak.lock();
-                if (!chan)
-                {
-                    return;
-                }
-                chan->addSystemMessage(u"Failed to get pinned message: " %
-                                       message);
-            });
-        return {};
-    }
-
-    chan->unpinMessageAs(ctx.words.at(1), *currentUser);
-    return {};
+    return durationSeconds;
 }
 
-}  // namespace chatterino::commands
+QString pinMessage(const CommandContext &ctx)
+{
+    if (ctx.channel == nullptr)
+    {
+        return "";
+    }
+
+    if (ctx.twitchChannel == nullptr)
+    {
+        ctx.channel->addSystemMessage("/pin only works in Twitch channels.");
+        return "";
+    }
+
+    if (ctx.words.size() < 2)
+    {
+        ctx.channel->addSystemMessage(usage());
+        return "";
+    }
+
+    const auto firstArg = ctx.words.at(1).trimmed();
+    if (isMessageId(firstArg))
+    {
+        auto duration = normalizePinDuration(getSettings()->defaultPinDuration);
+        if (ctx.words.size() > 2)
+        {
+            const auto parsed = parsePinDuration(ctx.words.mid(2).join(' '));
+            if (!parsed.matched || !parsed.error.isEmpty())
+            {
+                ctx.channel->addSystemMessage(
+                    parsed.error.isEmpty() ? durationHelp() : parsed.error);
+                return "";
+            }
+            duration = parsed.durationSeconds;
+        }
+
+        ctx.twitchChannel->pinMessage(firstArg, duration);
+        return "";
+    }
+
+    const auto userArgs = parsePinUserArgs(ctx.words);
+    if (userArgs.matched)
+    {
+        if (!userArgs.error.isEmpty())
+        {
+            ctx.channel->addSystemMessage(userArgs.error);
+            return "";
+        }
+
+        pinLatestMessageFromUser(
+            ctx.twitchChannel, userArgs.login, userArgs.durationSeconds,
+            userArgs.fallbackMessage, userArgs.fallbackDurationSeconds,
+            userArgs.explicitUser);
+        return "";
+    }
+
+    const auto customMessage = ctx.words.mid(1).join(' ').trimmed();
+    if (customMessage.isEmpty())
+    {
+        ctx.channel->addSystemMessage(usage());
+        return "";
+    }
+
+    if (!getSettings()->enablePinCommandMessages)
+    {
+        ctx.channel->addSystemMessage(pinTextDisabledMessage());
+        return "";
+    }
+
+    sendAndPinMessage(ctx.twitchChannel, customMessage,
+                      normalizePinDuration(getSettings()->defaultPinDuration));
+
+    return "";
+}
+
+QString unpinMessage(const CommandContext &ctx)
+{
+    if (ctx.channel == nullptr)
+    {
+        return "";
+    }
+
+    if (ctx.twitchChannel == nullptr)
+    {
+        ctx.channel->addSystemMessage("/unpin only works in Twitch channels.");
+        return "";
+    }
+
+    if (ctx.words.size() > 1)
+    {
+        ctx.channel->addSystemMessage("Usage: /unpin");
+        return "";
+    }
+
+    ctx.twitchChannel->unpinMessage();
+    return "";
+}
+
+}

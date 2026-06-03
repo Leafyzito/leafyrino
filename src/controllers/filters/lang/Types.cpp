@@ -43,6 +43,8 @@ QString typeToString(Type type)
             return "StringList";
         case T::MatchingSpecifier:
             return "MatchingSpecifier";
+        case T::Map:
+            return "Map";
         default:
             return "Unknown";
     }
@@ -68,6 +70,21 @@ bool TypeClass::operator==(const IllTyped &t) const
     return false;
 }
 
+bool TypeClass::operator!=(Type t) const
+{
+    return !this->operator==(t);
+}
+
+bool TypeClass::operator!=(const TypeClass &t) const
+{
+    return !this->operator==(t);
+}
+
+bool TypeClass::operator!=(const IllTyped &t) const
+{
+    return true;
+}
+
 QString IllTyped::string() const
 {
     return "IllTyped";
@@ -85,4 +102,4 @@ QString possibleTypeToString(const PossibleType &possible)
     }
 }
 
-}  // namespace chatterino::filters
+}

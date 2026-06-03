@@ -25,7 +25,6 @@ using EmotePtr = std::shared_ptr<const Emote>;
 class EmoteMap;
 class Channel;
 
-/// Maps a Twitch User ID to a list of badge IDs
 using FfzChannelBadgeMap =
     boost::unordered::unordered_flat_map<QString, std::vector<int>>;
 
@@ -33,10 +32,9 @@ namespace ffz::detail {
 
 EmoteMap parseChannelEmotes(const QJsonObject &jsonRoot);
 
-/// Parse the `user_badge_ids` into a map of User IDs -> Badge IDs
 FfzChannelBadgeMap parseChannelBadges(const QJsonObject &badgeRoot);
 
-}  // namespace ffz::detail
+}
 
 class FfzEmotes final
 {
@@ -62,4 +60,4 @@ private:
         managedConnections;
 };
 
-}  // namespace chatterino
+}

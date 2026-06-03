@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2022 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #include "util/BadgeRegistry.hpp"
 
 #include "messages/Emote.hpp"
@@ -23,7 +19,7 @@ void clearIfEquals(auto &map, auto &&key, const auto &expectedID)
     }
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -135,4 +131,4 @@ QString BadgeRegistry::registerBadge(const QJsonObject &badgeJson)
     return badgeID;
 }
 
-}  // namespace chatterino
+}

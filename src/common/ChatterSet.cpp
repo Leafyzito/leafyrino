@@ -23,7 +23,6 @@ void ChatterSet::updateOnlineChatters(
 {
     BenchmarkGuard bench("update online chatters");
 
-    // Create a new lru cache without the users that are not present anymore.
     cache::lru_cache<QString, QString> tmp(ChatterSet::CHATTER_LIMIT);
 
     for (auto &&chatter : lowerCaseUsernames)
@@ -32,7 +31,6 @@ void ChatterSet::updateOnlineChatters(
         {
             tmp.put(chatter, this->items.get(chatter));
 
-            // Less chatters than the limit => try to preserve as many as possible.
         }
         else if (lowerCaseUsernames.size() < ChatterSet::CHATTER_LIMIT)
         {
@@ -69,4 +67,4 @@ std::vector<std::pair<QString, QString>> ChatterSet::all() const
     return {this->items.begin(), this->items.end()};
 }
 
-}  // namespace chatterino
+}

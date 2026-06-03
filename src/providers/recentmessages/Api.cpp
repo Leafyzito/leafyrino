@@ -13,10 +13,9 @@
 
 namespace {
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 const auto &LOG = chatterinoRecentMessages;
 
-}  // namespace
+}
 
 namespace chatterino::recentmessages {
 
@@ -59,7 +58,6 @@ void load(
                 auto root = result.parseJson();
                 auto parsedMessages = parseRecentMessages(root);
 
-                // build the Communi messages into chatterino messages
                 auto builtMessages =
                     buildRecentMessages(parsedMessages, shared.get());
 
@@ -68,8 +66,6 @@ void load(
                      messages = std::move(builtMessages), onLoaded]() mutable {
                         assert(!isAppAboutToQuit());
 
-                        // Notify user about a possible gap in logs if it returned some messages
-                        // but isn't currently joined to a channel
                         const auto errorCode =
                             root.value("error_code").toString();
                         if (!errorCode.isEmpty())
@@ -113,4 +109,4 @@ void load(
     });
 }
 
-}  // namespace chatterino::recentmessages
+}

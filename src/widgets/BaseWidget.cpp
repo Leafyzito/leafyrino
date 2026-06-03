@@ -138,7 +138,7 @@ void BaseWidget::childEvent(QChildEvent *event)
 {
     if (event->added())
     {
-        // add element if it's a basewidget
+
         if (auto *widget = dynamic_cast<BaseWidget *>(event->child()))
         {
             this->widgets_.push_back(widget);
@@ -146,13 +146,12 @@ void BaseWidget::childEvent(QChildEvent *event)
     }
     else if (event->removed())
     {
-        // find element to be removed
+
         auto it = std::find_if(this->widgets_.begin(), this->widgets_.end(),
                                [&](auto &&x) {
                                    return x == event->child();
                                });
 
-        // remove if found
         if (it != this->widgets_.end())
         {
             this->widgets_.erase(it);
@@ -172,7 +171,7 @@ void BaseWidget::scaleChangedEvent(float newDpi)
 
 void BaseWidget::themeChangedEvent()
 {
-    // Do any color scheme updates here
+
 }
 
-}  // namespace chatterino
+}

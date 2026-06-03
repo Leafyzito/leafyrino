@@ -71,7 +71,7 @@ QString formatStartCommercialError(HelixStartCommercialError error,
     return errorMessage;
 }
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -103,7 +103,6 @@ QString startCommercial(const CommandContext &ctx)
 
     auto user = getApp()->getAccounts()->twitch.getCurrent();
 
-    // Avoid Helix calls without Client ID and/or OAuth Token
     if (user->isAnon())
     {
         ctx.channel->addSystemMessage(
@@ -134,4 +133,4 @@ QString startCommercial(const CommandContext &ctx)
     return "";
 }
 
-}  // namespace chatterino::commands
+}

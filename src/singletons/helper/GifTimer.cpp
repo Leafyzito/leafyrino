@@ -42,4 +42,4 @@ void GIFTimer::initialize()
     });
 }
 
-}  // namespace chatterino
+}

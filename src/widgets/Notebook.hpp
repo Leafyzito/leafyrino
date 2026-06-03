@@ -40,66 +40,28 @@ public:
     NotebookTab *addPage(QWidget *page, QString title = QString(),
                          bool select = false);
 
-    /**
-     * @brief Adds a page to the Notebook at a given position.
-     *
-     * @param position if set to -1, adds the page to the end
-     **/
     NotebookTab *addPageAt(QWidget *page, int position,
                            QString title = QString(), bool select = false);
     void removePage(QWidget *page);
     void duplicatePage(QWidget *page);
     void removeCurrentPage();
 
-    /**
-     * @brief Returns index of page in Notebook, or -1 if not found.
-     **/
     int indexOf(QWidget *page) const;
 
-    /**
-     * @brief Returns the visible index of page in Notebook, or -1 if not found.
-     * Given page should be visible according to the set TabVisibilityFilter.
-     **/
     int visibleIndexOf(QWidget *page) const;
 
-    /**
-     * @brief Returns the number of visible tabs in Notebook. 
-     **/
     int getVisibleTabCount() const;
 
-    /**
-     * @brief Selects the Notebook tab containing the given page.
-     **/
     virtual void select(QWidget *page, bool focusPage = true);
 
-    /**
-     * @brief Selects the Notebook tab at the given index. Ignores whether tabs
-     * are visible or not. 
-     **/
     void selectIndex(int index, bool focusPage = true);
 
-    /**
-     * @brief Selects the index'th visible tab in the Notebook.
-     * 
-     * For example, selecting the 0th visible tab selects the first tab in this 
-     * Notebook that is visible according to the TabVisibilityFilter. If no filter
-     * is set, equivalent to Notebook::selectIndex.
-     **/
     void selectVisibleIndex(int index, bool focusPage = true);
 
-    /**
-     * @brief Selects the next visible tab. Wraps to the start if required. 
-     **/
     void selectNextTab(bool focusPage = true);
 
-    /**
-     * @brief Selects the previous visible tab. Wraps to the end if required. 
-     **/
     void selectPreviousTab(bool focusPage = true);
 
-    /**
-     * @brief Selects the last visible tab. 
-     **/
     void selectLastTab(bool focusPage = true);
 
     int getPageCount() const;
@@ -123,7 +85,6 @@ public:
 
     virtual void addNotebookActionsToMenu(QMenu *menu);
 
-    // Update layout and tab visibility
     void refresh();
 
 protected:
@@ -157,18 +118,8 @@ protected:
         return this->items_;
     }
 
-    /**
-     * @brief Apply the given tab visibility filter
-     *
-     * An empty function can be provided to denote that no filter will be applied
-     *
-     * Tabs will be redrawn after this function is called.
-     **/
     void setTabVisibilityFilter(TabVisibilityFilter filter);
 
-    /**
-     * @brief shouldShowTab has the final say whether a tab should be visible right now.
-     **/
     bool shouldShowTab(const NotebookTab *tab) const;
 
     void performLayout(bool animate = false);
@@ -196,14 +147,8 @@ private:
     void performHorizontalLayout(const LayoutContext &ctx, bool animated);
     void performVerticalLayout(const LayoutContext &ctx, bool animated);
 
-    /**
-     * @brief Show a popup informing the user of some big tab visibility changes
-     **/
     void showTabVisibilityInfoPopup();
 
-    /**
-     * @brief Updates the visibility state of all tabs
-     **/
     void updateTabVisibility();
     void resizeAddButton();
 
@@ -213,7 +158,6 @@ private:
     static bool containsChild(const QObject *obj, const QObject *child);
     NotebookTab *getTabFromPage(QWidget *page);
 
-    // Returns the number of buttons in `customButtons_` that are visible
     size_t visibleButtonCount() const;
 
     QList<Item> items_;
@@ -236,8 +180,6 @@ private:
     QAction *lockNotebookLayoutAction_;
     QAction *toggleTopMostAction_;
 
-    // This filter, if set, is used to figure out the visibility of
-    // the tabs in this notebook.
     TabVisibilityFilter tabVisibilityFilter_;
 };
 
@@ -248,7 +190,7 @@ public:
 
     SplitContainer *addPage(bool select = false);
     SplitContainer *getOrAddSelectedPage();
-    /// Returns `nullptr` when no page is selected.
+
     SplitContainer *getSelectedPage();
     void select(QWidget *page, bool focusPage = true) override;
     void themeChangedEvent() override;
@@ -257,9 +199,6 @@ public:
 
     void forEachSplit(const std::function<void(Split *)> &cb);
 
-    /**
-     * Toggles between the "Show all tabs" and "Hide all tabs" tab visibility states
-     */
     void toggleTabVisibility();
 
     QAction *showAllTabsAction;
@@ -276,11 +215,10 @@ private:
 
     pajlada::Signals::SignalHolder signalHolder_;
 
-    // Main window on Windows has basically a duplicate of this in Window
     PixmapButton *streamerModeIcon_{};
     void updateStreamerModeIcon();
 
     void setLockNotebookLayout(bool value) override;
 };
 
-}  // namespace chatterino
+}

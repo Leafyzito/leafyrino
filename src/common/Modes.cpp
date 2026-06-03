@@ -39,4 +39,4 @@ const Modes &Modes::instance()
     return instance;
 }
 
-}  // namespace chatterino
+}

@@ -7,6 +7,7 @@
 #include "Application.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "providers/kick/KickChatServer.hpp"
+#include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
@@ -186,11 +187,19 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
     ui.channelName->setVisible(false);
     layout->addWidget(ui.channelName);
 
+    ui.channelAnonymous = new QCheckBox("Join anonymously (read only)");
+    ui.channelAnonymous->setVisible(false);
+    ui.channelAnonymous->setToolTip(
+        "Connect with a Twitch anonymous chat session. You can read chat, but "
+        "you can't send messages from this split.");
+    layout->addWidget(ui.channelAnonymous);
+
     QObject::connect(ui.channel, &AutoCheckedRadioButton::toggled, this,
                      [this](bool enabled) {
                          auto &ui = this->ui_;
                          ui.channelName->setVisible(enabled);
                          ui.channelLabel->setVisible(enabled);
+                         ui.channelAnonymous->setVisible(enabled);
 
                          if (enabled)
                          {
@@ -412,6 +421,7 @@ void SelectChannelDialog::setSelectedChannel(
     if (!channel_.has_value())
     {
         this->ui_.channel->setChecked(true);
+        this->ui_.channelAnonymous->setChecked(false);
 
         this->hasSelectedChannel_ = false;
         return;
@@ -428,36 +438,53 @@ void SelectChannelDialog::setSelectedChannel(
     {
         case Channel::Type::Twitch: {
             this->ui_.channelName->setText(channel->getName());
+            if (auto *twitchChannel =
+                    dynamic_cast<TwitchChannel *>(channel.get()))
+            {
+                this->ui_.channelAnonymous->setChecked(
+                    twitchChannel->isAnonymous());
+            }
+            else
+            {
+                this->ui_.channelAnonymous->setChecked(false);
+            }
             this->ui_.channel->setChecked(true);
         }
         break;
         case Channel::Type::TwitchWatching: {
+            this->ui_.channelAnonymous->setChecked(false);
             this->ui_.watching->setFocus();
         }
         break;
         case Channel::Type::TwitchMentions: {
+            this->ui_.channelAnonymous->setChecked(false);
             this->ui_.mentions->setFocus();
         }
         break;
         case Channel::Type::TwitchWhispers: {
+            this->ui_.channelAnonymous->setChecked(false);
             this->ui_.whispers->setFocus();
         }
         break;
         case Channel::Type::TwitchLive: {
+            this->ui_.channelAnonymous->setChecked(false);
             this->ui_.live->setFocus();
         }
         break;
         case Channel::Type::TwitchAutomod: {
+            this->ui_.channelAnonymous->setChecked(false);
             this->ui_.automod->setFocus();
         }
         break;
         case Channel::Type::Kick: {
+            this->ui_.channelAnonymous->setChecked(false);
             this->ui_.kickName->setText(channel->getName());
             this->ui_.kickName->selectAll();
             this->ui_.notebook->select(this->ui_.kickPage);
         }
         break;
         case Channel::Type::Multi: {
+            this->ui_.channelAnonymous->setChecked(false);
             const auto *mc = dynamic_cast<const MultiChannel *>(channel.get());
             if (mc)
             {
@@ -477,6 +504,7 @@ void SelectChannelDialog::setSelectedChannel(
         }
         break;
         default: {
+            this->ui_.channelAnonymous->setChecked(false);
             this->ui_.channel->setChecked(true);
         }
     }
@@ -523,8 +551,14 @@ IndirectChannel SelectChannelDialog::getSelectedChannel() const
 
     if (this->ui_.channel->isChecked())
     {
-        return getApp()->getTwitch()->getOrAddChannel(
-            this->ui_.channelName->text().trimmed());
+        const auto channelName = this->ui_.channelName->text().trimmed();
+        if (this->ui_.channelAnonymous->isChecked())
+        {
+            return getApp()->getTwitch()->getOrAddAnonymousChannel(
+                channelName);
+        }
+
+        return getApp()->getTwitch()->getOrAddChannel(channelName);
     }
 
     if (this->ui_.watching->isChecked())
@@ -672,6 +706,7 @@ void SelectChannelDialog::scaleChangedEvent(float newScale)
         getApp()->getFonts()->getFont(FontStyle::UiMedium, this->scale());
 
     ui.channelName->setFont(uiFont);
+    ui.channelAnonymous->setFont(uiFont);
 }
 
 void SelectChannelDialog::addShortcuts()

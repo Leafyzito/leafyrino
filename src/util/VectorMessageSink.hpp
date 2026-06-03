@@ -40,4 +40,4 @@ private:
     MessageSinkTraits traits;
 };
 
-}  // namespace chatterino
+}

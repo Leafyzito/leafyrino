@@ -13,10 +13,9 @@
 
 namespace {
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 const auto &LOG = chatterinoTwitchLiveController;
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -99,7 +98,7 @@ void TwitchLiveController::request(std::optional<QStringList> optChannelIDs)
 
     for (const auto &batch : batches)
     {
-        // TODO: Explore making this concurrent
+
         getHelix()->fetchStreams(
             batch, {},
             [this, batch{batch}](const auto &streams) {
@@ -152,7 +151,6 @@ void TwitchLiveController::request(std::optional<QStringList> optChannelIDs)
             },
             [] {});
 
-        // TODO: Explore making this concurrent
         getHelix()->fetchChannels(
             batch,
             [this, batch{batch}](const auto &helixChannels) {
@@ -193,4 +191,4 @@ void TwitchLiveController::request(std::optional<QStringList> optChannelIDs)
     }
 }
 
-}  // namespace chatterino
+}

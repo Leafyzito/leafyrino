@@ -10,4 +10,4 @@ namespace chatterino {
 
 using AbstractSwitcherItem = GenericListItem;
 
-}  // namespace chatterino
+}

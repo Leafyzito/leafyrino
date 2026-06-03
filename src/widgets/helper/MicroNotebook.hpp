@@ -9,10 +9,6 @@
 
 namespace chatterino {
 
-/// An extremely simple implementation of the regular notebook.
-///
-/// It's essentially a QTabWidget without the downside that the fusion style
-/// provides poor contrast with it.
 class MicroNotebook : public QWidget
 {
 public:
@@ -38,4 +34,4 @@ private:
     QWidget *horizontalSeparator = nullptr;
 };
 
-}  // namespace chatterino
+}

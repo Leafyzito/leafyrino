@@ -17,7 +17,6 @@ class HighlightModel : public SignalVectorModel<HighlightPhrase>
 public:
     explicit HighlightModel(QObject *parent);
 
-    // Used here, in HighlightingPage and in UserHighlightModel
     enum Column {
         Pattern = 0,
         ShowInMentions = 1,
@@ -27,7 +26,7 @@ public:
         PlaySound = 5,
         SoundPath = 6,
         Color = 7,
-        COUNT  // keep this as last member of enum
+        COUNT
     };
 
     enum HighlightRowIndexes {
@@ -40,8 +39,6 @@ public:
         ThreadMessageRow = 6,
         AutomodRow = 7,
         WatchStreakRow = 8,
-        AnnouncementRow = 9,
-        ColoredAnnouncementRow = 10,
     };
 
     enum UserHighlightRowIndexes {
@@ -49,11 +46,10 @@ public:
     };
 
 protected:
-    // turn a vector item into a model row
+
     HighlightPhrase getItemFromRow(std::vector<QStandardItem *> &row,
                                    const HighlightPhrase &original) override;
 
-    // turns a row in the model into a vector item
     void getRowFromItem(const HighlightPhrase &item,
                         std::vector<QStandardItem *> &row) override;
 
@@ -64,4 +60,4 @@ protected:
                           int rowIndex) override;
 };
 
-}  // namespace chatterino
+}

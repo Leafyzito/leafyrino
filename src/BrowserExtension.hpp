@@ -8,4 +8,4 @@ namespace chatterino {
 
 void runBrowserExtensionHost();
 
-}  // namespace chatterino
+}

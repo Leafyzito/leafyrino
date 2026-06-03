@@ -14,11 +14,6 @@ namespace chatterino {
 class BoostJsonObject;
 class BoostJsonArray;
 
-/// This is a small wrapper around `const boost::json::value*` which handles
-/// missing or unexpected values gracefully.
-///
-/// It's similar to `QJsonValue` with the big difference that this class is a
-/// reference.
 class CHATTERINO_GSL_POINTER BoostJsonValue
 {
 public:
@@ -77,11 +72,6 @@ private:
     friend BoostJsonArray;
 };
 
-/// This is a small wrapper around `const boost::json::object*` which handles
-/// missing or unexpected values gracefully.
-///
-/// It's similar to `QJsonObject` with the big difference that this class is a
-/// reference.
 class CHATTERINO_GSL_POINTER BoostJsonObject
 {
 public:
@@ -90,8 +80,6 @@ public:
     {
     }
     constexpr BoostJsonObject() = default;
-
-    // FIXME: add iterators
 
     bool empty() const
     {
@@ -125,11 +113,6 @@ private:
     friend BoostJsonValue;
 };
 
-/// This is a small wrapper around `const boost::json::array*` which handles
-/// missing or unexpected values gracefully.
-///
-/// It's similar to `QJsonArray` with the big difference that this class is a
-/// reference.
 class CHATTERINO_GSL_POINTER BoostJsonArray
 {
 public:
@@ -139,7 +122,6 @@ public:
     }
     constexpr BoostJsonArray() = default;
 
-    // NOLINTNEXTLINE(readability-identifier-naming)
     struct const_iterator {
     public:
         using iterator_category = std::random_access_iterator_tag;
@@ -271,4 +253,4 @@ private:
     friend BoostJsonValue;
 };
 
-}  // namespace chatterino
+}

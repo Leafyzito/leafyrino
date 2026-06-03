@@ -48,4 +48,4 @@ private:
     OverlayWindow *window_;
 };
 
-}  // namespace chatterino
+}

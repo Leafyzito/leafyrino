@@ -12,16 +12,13 @@
 #    include <rapidjson/writer.h>
 #    include <sol/sol.hpp>
 
-// NOLINTBEGIN(cppcoreguidelines-pro-type-vararg) -- luaL_error is a vararg function
-
 namespace {
 
 using namespace chatterino::lua;
 
-constexpr size_t ENCODE_MAX_TABLE_LENGTH = 1 << 20;  // about 1 mil
+constexpr size_t ENCODE_MAX_TABLE_LENGTH = 1 << 20;
 constexpr uint16_t ENCODE_MAX_DEPTH = 256;
 
-/// Reserve at least `size` slots on the Lua stack.
 void reserveStack(lua_State *L, int size)
 {
     if (lua_checkstack(L, size) == 0)
@@ -30,41 +27,26 @@ void reserveStack(lua_State *L, int size)
     }
 }
 
-/// Get the size of an "array" (table at index -1)
-///
-/// Lua doesn't have a notion of arrays - everything is a table. We consider a
-/// table an array if it only has positive non-zero integer keys. One notable
-/// exception is an empty array. An empty table is considered an empty object.
-/// If the user wants to specify an empty array, they specify a table with
-/// `json.null` at item `0` (i.e. `{ [0] = json.null }`). `json.null` is a
-/// `nullptr` lightuserdata.
-///
-/// Arrays might have holes in them (e.g. `{1, [10]=2}` or `{1, nil, 2}`), so we
-/// keep track of the maximum index we saw.
-///
-/// @returns The size of the array if it is one - otherwise it's an object.
 std::optional<size_t> inferArraySize(lua_State *L)
 {
-    reserveStack(L, 3);  // key + value + potential error
+    reserveStack(L, 3);
 
     size_t max = 0;
     bool hasNull = false;
-    lua_pushnil(L);  // first key
+    lua_pushnil(L);
     while (lua_next(L, -2) != 0)
     {
-        // [-3] table
-        // [-2] key
-        // [-1] value
+
         if (lua_isinteger(L, -2) == 0)
         {
             lua_pop(L, 2);
-            return std::nullopt;  // not an array
+            return std::nullopt;
         }
 
         auto key = lua_tointeger(L, -2);
         if (key <= 0)
         {
-            // special empty table indicator if element at 0 is our nullptr lightuserdata
+
             if (key == 0 && lua_islightuserdata(L, -1) &&
                 lua_touserdata(L, -1) == nullptr)
             {
@@ -80,7 +62,7 @@ std::optional<size_t> inferArraySize(lua_State *L)
             max = std::max(max, static_cast<size_t>(key));
         }
 
-        lua_pop(L, 1);  // value
+        lua_pop(L, 1);
     }
 
     if (max > ENCODE_MAX_TABLE_LENGTH)
@@ -90,7 +72,7 @@ std::optional<size_t> inferArraySize(lua_State *L)
 
     if (max == 0 && !hasNull)
     {
-        return std::nullopt;  // empty tables are objects
+        return std::nullopt;
     }
 
     return max;
@@ -100,7 +82,7 @@ void stringifyValue(lua_State *L, auto &writer, uint16_t depth);
 
 void stringifyArray(lua_State *L, auto &writer, uint16_t depth, size_t length)
 {
-    reserveStack(L, 2);  // value + potential error
+    reserveStack(L, 2);
 
     if (!writer.StartArray())
     {
@@ -111,7 +93,7 @@ void stringifyArray(lua_State *L, auto &writer, uint16_t depth, size_t length)
     {
         lua_rawgeti(L, -1, static_cast<lua_Integer>(i) + 1);
         stringifyValue(L, writer, depth);
-        lua_pop(L, 1);  // pop value
+        lua_pop(L, 1);
     }
 
     if (!writer.EndArray())
@@ -122,7 +104,7 @@ void stringifyArray(lua_State *L, auto &writer, uint16_t depth, size_t length)
 
 void stringifyObject(lua_State *L, auto &writer, uint16_t depth)
 {
-    reserveStack(L, 3);  // key + value + potential error
+    reserveStack(L, 3);
 
     if (!writer.StartObject())
     {
@@ -138,10 +120,7 @@ void stringifyObject(lua_State *L, auto &writer, uint16_t depth)
         {
             fail(L, "Too many items in table");
         }
-        // Stack:
-        // [-3] table
-        // [-2] key
-        // [-1] value
+
         auto keyType = lua_type(L, -2);
         if (keyType != LUA_TSTRING)
         {
@@ -151,13 +130,13 @@ void stringifyObject(lua_State *L, auto &writer, uint16_t depth)
         size_t len = 0;
         const char *str = lua_tolstring(L, -2, &len);
 
-        if (!writer.Key(str, len, /*copy=*/true))
+        if (!writer.Key(str, len, true))
         {
             fail(L, "Failed to write object key");
         }
 
         stringifyValue(L, writer, depth);
-        lua_pop(L, 1);  // pop value
+        lua_pop(L, 1);
     }
 
     if (!writer.EndObject())
@@ -192,7 +171,7 @@ void stringifyValue(lua_State *L, auto &writer, uint16_t depth)
         case LUA_TSTRING: {
             size_t len = 0;
             const char *str = lua_tolstring(L, -1, &len);
-            ok = writer.String(str, len, /*copy=*/true);
+            ok = writer.String(str, len, true);
         }
         break;
         case LUA_TTABLE: {
@@ -237,7 +216,7 @@ void stringifyValue(lua_State *L, auto &writer, uint16_t depth)
     }
 }
 
-}  // namespace
+}
 
 namespace chatterino::lua::api {
 
@@ -259,7 +238,6 @@ int jsonStringify(lua_State *L)
             indentSize = tbl->get_or("indent_size", indentSize);
         }
 
-        // discard everything but the input
         lua_pop(L, nArgs - 1);
     }
 
@@ -281,8 +259,6 @@ int jsonStringify(lua_State *L)
     return 1;
 }
 
-}  // namespace chatterino::lua::api
+}
 
-// NOLINTEND(cppcoreguidelines-pro-type-vararg)
-
-#endif  // CHATTERINO_HAVE_PLUGINS
+#endif

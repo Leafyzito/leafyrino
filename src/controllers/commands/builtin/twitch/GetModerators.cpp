@@ -7,12 +7,33 @@
 #include "common/Channel.hpp"
 #include "controllers/commands/CommandContext.hpp"
 #include "messages/MessageBuilder.hpp"
+#include "providers/IvrApi.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 
 namespace {
 
 using namespace chatterino;
+
+QString targetChannelLogin(const CommandContext &ctx)
+{
+    if (ctx.words.size() > 1)
+    {
+        auto login = ctx.words.at(1).trimmed();
+        if (login.startsWith('#'))
+        {
+            login.remove(0, 1);
+        }
+        return login.toLower();
+    }
+
+    if (ctx.twitchChannel != nullptr)
+    {
+        return ctx.twitchChannel->getName().toLower();
+    }
+
+    return {};
+}
 
 QString formatModsError(HelixGetModeratorsError error, const QString &message)
 {
@@ -50,7 +71,7 @@ QString formatModsError(HelixGetModeratorsError error, const QString &message)
     return errorMessage;
 }
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -61,36 +82,62 @@ QString getModerators(const CommandContext &ctx)
         return "";
     }
 
-    if (ctx.twitchChannel == nullptr)
+    const auto channelLogin = targetChannelLogin(ctx);
+    if (channelLogin.isEmpty())
     {
         ctx.channel->addSystemMessage(
             "The /mods command only works in Twitch Channels.");
         return "";
     }
 
-    getHelix()->getModerators(
-        ctx.twitchChannel->roomId(), 500,
-        [channel{ctx.channel}, twitchChannel{ctx.twitchChannel}](auto result) {
-            if (result.empty())
+    if (ctx.words.size() <= 1 && ctx.twitchChannel != nullptr &&
+        ctx.twitchChannel->isBroadcaster())
+    {
+        getHelix()->getModerators(
+            ctx.twitchChannel->roomId(), 500,
+            [channel{ctx.channel}, twitchChannel{ctx.twitchChannel}](
+                auto result) {
+                if (result.empty())
+                {
+                    channel->addSystemMessage(
+                        "This channel does not have any moderators.");
+                    return;
+                }
+
+                channel->addMessage(MessageBuilder::makeListOfUsersMessage(
+                                        "The moderators of this channel are",
+                                        result, twitchChannel),
+                                    MessageContext::Original);
+            },
+            [channel{ctx.channel}](auto error, auto message) {
+                auto errorMessage = formatModsError(error, message);
+                channel->addSystemMessage(errorMessage);
+            });
+
+        return "";
+    }
+
+    getIvr()->getModVip(
+        channelLogin,
+        [channel{ctx.channel}](
+            const std::vector<HelixModerator> &mods,
+            const std::vector<HelixVip> &) {
+            if (mods.empty())
             {
-                channel->addSystemMessage(
-                    "This channel does not have any moderators.");
+                channel->addSystemMessage("This channel does not have any moderators.");
                 return;
             }
 
-            // TODO: sort results?
-
             channel->addMessage(MessageBuilder::makeListOfUsersMessage(
                                     "The moderators of this channel are",
-                                    result, twitchChannel),
+                                    mods, channel.get()),
                                 MessageContext::Original);
         },
-        [channel{ctx.channel}](auto error, auto message) {
-            auto errorMessage = formatModsError(error, message);
-            channel->addSystemMessage(errorMessage);
+        [channel{ctx.channel}] {
+            channel->addSystemMessage("Could not get moderator list!");
         });
 
     return "";
 }
 
-}  // namespace chatterino::commands
+}

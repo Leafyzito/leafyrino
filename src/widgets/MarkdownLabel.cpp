@@ -41,7 +41,7 @@ void MarkdownLabel::setText(const QString &text)
     }
 }
 
-void MarkdownLabel::paintEvent(QPaintEvent * /*event*/)
+void MarkdownLabel::paintEvent(QPaintEvent * )
 {
     assert(this->markdownDocument != nullptr);
 
@@ -52,7 +52,6 @@ void MarkdownLabel::paintEvent(QPaintEvent * /*event*/)
 
     painter.setFont(font);
 
-    // draw text
     QRectF textRect = this->textRect();
 
     if (!this->text_.isEmpty())
@@ -73,7 +72,6 @@ void MarkdownLabel::paintEvent(QPaintEvent * /*event*/)
         painter.save();
         painter.translate(textRect.topLeft());
 
-        // create a rendering context using our text color and document palette
         QAbstractTextDocumentLayout::PaintContext paintContext;
         paintContext.palette = docPalette;
         paintContext.clip = QRectF(0, 0, textRect.width(), textRect.height());
@@ -83,7 +81,7 @@ void MarkdownLabel::paintEvent(QPaintEvent * /*event*/)
     }
     else
     {
-        // Fall back to the base Label rendering if no markdown document
+
         Label::paintEvent(nullptr);
         return;
     }
@@ -104,19 +102,16 @@ void MarkdownLabel::mousePressEvent(QMouseEvent *event)
         {
             QUrl url(anchor);
 
-            // Validate the URL and add scheme if missing
             if (!url.isValid())
             {
                 return;
             }
 
-            // If the URL doesn't have a scheme, assume it's http
             if (url.scheme().isEmpty())
             {
                 url.setScheme("http");
             }
 
-            // Only open URLs with safe schemes
             QString scheme = url.scheme().toLower();
             if (scheme == "http" || scheme == "https" || scheme == "ftp" ||
                 scheme == "file" || scheme == "mailto")
@@ -163,7 +158,6 @@ void MarkdownLabel::updateSize()
 
         this->markdownDocument->setMarkdown(this->text_);
 
-        // Use word wrap width if enabled, otherwise use a reasonable default
         qreal testWidth = this->wordWrap_
                               ? 400.0 * this->scale()
                               : this->markdownDocument->idealWidth();
@@ -184,9 +178,9 @@ void MarkdownLabel::updateSize()
     }
     else
     {
-        // Fall back to base Label size calculation
+
         Label::updateSize();
     }
 }
 
-}  // namespace chatterino
+}

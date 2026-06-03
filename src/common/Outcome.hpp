@@ -43,8 +43,13 @@ public:
         return this->success_ == other.success_;
     }
 
+    bool operator!=(const Outcome &other) const
+    {
+        return !this->operator==(other);
+    }
+
 private:
     bool success_;
 };
 
-}  // namespace chatterino
+}

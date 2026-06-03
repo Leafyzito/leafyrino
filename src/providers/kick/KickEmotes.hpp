@@ -10,4 +10,4 @@ public:
     static EmotePtr emoteForID(QStringView id, QStringView name);
 };
 
-}  // namespace chatterino
+}

@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2018 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #include "providers/chatterino/ChatterinoBadges.hpp"
 
 #include "common/network/NetworkRequest.hpp"
@@ -49,8 +45,7 @@ void ChatterinoBadges::loadChatterinoBadges()
                  jsonRoot.value("badges").toArray())
             {
                 auto jsonBadge = jsonBadgeValue.toObject();
-                // The sizes for the images are only an estimation, there might
-                // be badges with different sizes.
+
                 constexpr QSize baseSize(18, 18);
                 auto tooltip = jsonBadge.value("tooltip").toString();
                 auto emote = Emote{
@@ -84,4 +79,4 @@ void ChatterinoBadges::loadChatterinoBadges()
         .execute();
 }
 
-}  // namespace chatterino
+}

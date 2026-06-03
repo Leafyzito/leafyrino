@@ -8,8 +8,6 @@
 
 namespace chatterino {
 
-// set of badge IDs that should be given specific flags.
-// vanity flag is left out on purpose as it is our default flag
 const QSet<QString> globalAuthority{"staff", "admin", "global_mod"};
 const QSet<QString> predictions{"predictions"};
 const QSet<QString> channelAuthority{"lead_moderator", "moderator", "vip",
@@ -43,4 +41,4 @@ bool TwitchBadge::operator==(const TwitchBadge &other) const
     return this->key_ == other.key_ && this->value_ == other.value_;
 }
 
-}  // namespace chatterino
+}

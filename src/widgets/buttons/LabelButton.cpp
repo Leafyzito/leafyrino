@@ -17,7 +17,13 @@ LabelButton::LabelButton(const QString &text, BaseWidget *parent, QSize padding)
     this->label_.setAttribute(Qt::WA_TransparentForMouseEvents);
     this->label_.setAlignment(Qt::AlignCenter);
 
+    this->syncLabelFont();
     this->updatePadding();
+}
+
+QString LabelButton::text() const
+{
+    return this->label_.text();
 }
 
 void LabelButton::setText(const QString &text)
@@ -46,8 +52,23 @@ void LabelButton::enableRichText()
     this->label_.setTextFormat(Qt::RichText);
 }
 
+void LabelButton::changeEvent(QEvent *event)
+{
+    Button::changeEvent(event);
+
+    if (event->type() == QEvent::FontChange)
+    {
+        this->syncLabelFont();
+    }
+}
+
 void LabelButton::paintContent(QPainter &painter)
 {
+}
+
+void LabelButton::syncLabelFont()
+{
+    this->label_.setFont(this->font());
 }
 
 void LabelButton::updatePadding()
@@ -57,4 +78,4 @@ void LabelButton::updatePadding()
     this->label_.setContentsMargins(x, y, x, y);
 }
 
-}  // namespace chatterino
+}

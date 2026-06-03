@@ -36,10 +36,10 @@ class TwitchBadges
     using BadgeIconCallback = std::function<void(QString, const QIconPtr)>;
 
 public:
-    // Get badge from name and version
+
     std::optional<EmotePtr> badge(const QString &set,
                                   const QString &version) const;
-    // Get first matching badge with name, regardless of version
+
     std::optional<EmotePtr> badge(const QString &set) const;
 
     void getBadgeIcon(const QString &name, BadgeIconCallback callback);
@@ -49,7 +49,6 @@ public:
 
     void loadTwitchBadges();
 
-    /// Loads the badges shipped with Chatterino (twitch-badges.json)
     void loadLocalBadges();
 
 private:
@@ -68,7 +67,7 @@ private:
 
     UniqueAccess<
         std::unordered_map<QString, std::unordered_map<QString, EmotePtr>>>
-        badgeSets_;  // "bits": { "100": ... "500": ...
+        badgeSets_;
 };
 
-}  // namespace chatterino
+}

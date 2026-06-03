@@ -20,11 +20,12 @@ WebSocketPoolImpl::WebSocketPoolImpl(const QString &shortName)
     , work(this->ioc.get_executor())
 {
     boost::system::error_code ec;
-    this->ssl.set_options(boost::asio::ssl::context::no_tlsv1 |
-                              boost::asio::ssl::context::no_tlsv1_1 |
-                              boost::asio::ssl::context::default_workarounds |
-                              boost::asio::ssl::context::single_dh_use,
-                          ec);
+    auto _ = this->ssl.set_options(
+        boost::asio::ssl::context::no_tlsv1 |
+            boost::asio::ssl::context::no_tlsv1_1 |
+            boost::asio::ssl::context::default_workarounds |
+            boost::asio::ssl::context::single_dh_use,
+        ec);
     if (ec)
     {
         qCWarning(chatterinoWebsocket) << "Failed to set SSL context options"
@@ -61,8 +62,7 @@ WebSocketPoolImpl::WebSocketPoolImpl(const QString &shortName)
 WebSocketPoolImpl::~WebSocketPoolImpl()
 {
     assert(this->closing);
-    // After 10s, we stop and, through std::thread::~thread, std::terminate will
-    // be called.
+
     this->tryShutdown(std::chrono::seconds{10});
 }
 
@@ -105,4 +105,4 @@ void WebSocketPoolImpl::removeConnection(WebSocketConnection *conn)
     });
 }
 
-}  // namespace chatterino::ws::detail
+}

@@ -10,8 +10,6 @@
 
 namespace chatterino {
 
-/// The CancellationToken is a thread-safe way for worker(s)
-/// to know if the task they want to continue doing should be cancelled.
 class CancellationToken
 {
 public:
@@ -25,10 +23,6 @@ public:
     CancellationToken(CancellationToken &&other) noexcept
         : isCancelled_(std::move(other.isCancelled_)) {};
 
-    /// @brief This destructor doesn't cancel the token
-    ///
-    /// @see ScopedCancellationToken
-    /// @see #cancel()
     ~CancellationToken() noexcept = default;
 
     CancellationToken &operator=(CancellationToken &&other) noexcept
@@ -56,7 +50,6 @@ private:
     std::shared_ptr<std::atomic<bool>> isCancelled_;
 };
 
-/// The ScopedCancellationToken is a way to automatically cancel a CancellationToken when it goes out of scope
 class ScopedCancellationToken
 {
 public:
@@ -95,4 +88,4 @@ private:
     CancellationToken backingToken_;
 };
 
-}  // namespace chatterino
+}

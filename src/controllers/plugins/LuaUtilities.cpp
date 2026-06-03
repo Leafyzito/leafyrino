@@ -122,5 +122,5 @@ QString toString(lua_State *L, StackIdx idx)
     const auto *ptr = luaL_tolstring(L, idx, &len);
     return QString::fromUtf8(ptr, int(len));
 }
-}  // namespace chatterino::lua
+}
 #endif

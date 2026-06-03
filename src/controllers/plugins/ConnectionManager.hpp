@@ -12,13 +12,6 @@ namespace chatterino::lua {
 
 class PluginWeakRef;
 
-/// A manager for pajlada::Signals connections.
-///
-/// In contrast to the existing connection managers, such as a regular
-/// std::vector, this tries to avoid storing expired connections, because there
-/// is only one per plugin. We also store a `std::shared_ptr<ScopedConnection>`
-/// to be able to give the plugin a `std::weak_ptr<ScopedConnection>` which it
-/// can use to disconnect.
 class ConnectionManager
 {
 public:
@@ -41,6 +34,6 @@ private:
         connections;
 };
 
-}  // namespace chatterino::lua
+}
 
 #endif

@@ -21,9 +21,9 @@ enum class SettingsTabId {
     None,
     General,
     Accounts,
-    Highlights,
     Moderation,
     About,
+    Moltorino,
 };
 
 class SettingsDialogTab : public BaseWidget
@@ -38,6 +38,7 @@ public:
 
     void setSelected(bool selected_);
     SettingsPage *page();
+    SettingsPage *createdPage() const;
     SettingsTabId id() const;
 
     const QString &name() const;

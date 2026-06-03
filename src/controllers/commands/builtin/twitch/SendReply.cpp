@@ -42,10 +42,10 @@ QString sendReply(const CommandContext &ctx)
     {
         if (msg->loginName.compare(username, Qt::CaseInsensitive) == 0)
         {
-            // found most recent message by user
+
             if (msg->replyThread == nullptr)
             {
-                // prepare thread if one does not exist
+
                 auto thread = std::make_shared<MessageThread>(msg);
                 ctx.twitchChannel->addReplyThread(thread);
             }
@@ -61,4 +61,4 @@ QString sendReply(const CommandContext &ctx)
     return "";
 }
 
-}  // namespace chatterino::commands
+}

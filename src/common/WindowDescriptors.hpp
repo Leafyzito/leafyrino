@@ -51,6 +51,9 @@ struct SplitDescriptor {
     // Twitch Channel name or IRC channel name
     QString channelName_;
 
+    // Twitch channel is joined through an anonymous read only IRC connection
+    bool anonymous_{false};
+
     // IRC server
     int server_{-1};
 
@@ -97,6 +100,7 @@ struct TabDescriptor {
     static TabDescriptor loadFromJSON(const QJsonObject &root);
 
     QString customTitle_;
+    QString customTabColor_;
     bool selected_{false};
     bool highlightsEnabled_{true};
 

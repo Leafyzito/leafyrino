@@ -1,10 +1,11 @@
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=Chatterino
+Name=Moltorino
+GenericName=Moltorino
 Comment=Chat client for Twitch
-Exec=chatterino
-Icon=com.chatterino.chatterino
+Exec=Moltorino7
+Icon=com.moltobenne.moltorino
 Terminal=false
 Categories=Network;InstantMessaging;
-StartupWMClass=chatterino
+StartupWMClass=Moltorino7

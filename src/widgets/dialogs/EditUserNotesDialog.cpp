@@ -54,7 +54,6 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, 4);
             cursor.removeSelectedText();
 
-            // restore selection
             cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor,
                                 static_cast<int>(selectedText.length()));
         }
@@ -62,7 +61,6 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
         {
             cursor.insertText("### " + selectedText);
 
-            // restore selection
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor,
                                 static_cast<int>(selectedText.length()));
         }
@@ -90,13 +88,12 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
         if (!selectedText.isEmpty() && EditUserNotesDialog::isBold(line, pos))
         {
             cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor,
-                                1);  // un-select
+                                1);
             cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, 2);
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor,
                                 static_cast<int>(selectedText.length() + 4));
             cursor.insertText(selectedText);
 
-            // restore selection
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor,
                                 static_cast<int>(selectedText.length()));
         }
@@ -117,7 +114,6 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
                 appended = 2;
             }
 
-            // restore selection
             cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor,
                                 appended);
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor,
@@ -148,13 +144,12 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
         if (!selectedText.isEmpty() && EditUserNotesDialog::isItalic(line, pos))
         {
             cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor,
-                                1);  // un-select
+                                1);
             cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, 1);
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor,
                                 static_cast<int>(selectedText.length() + 2));
             cursor.insertText(selectedText);
 
-            // restore selection
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor,
                                 static_cast<int>(selectedText.length()));
         }
@@ -175,7 +170,6 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
                 appended = 1;
             }
 
-            // restore selection
             cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor,
                                 appended);
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor,
@@ -239,7 +233,6 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
                 appended = 1;
             }
 
-            // select "url" for easy replacement
             cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor,
                                 appended);
             cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, 3);
@@ -285,7 +278,7 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
     });
     listButton->setToolTip("Insert a bullet list item");
 
-    headerLayout->addSpacing(175);  // group markdown toolbar buttons
+    headerLayout->addSpacing(175);
 
     headerLayout.emplace<QCheckBox>("Show Markdown Preview")
         .assign(&this->previewCheckBox_);
@@ -318,7 +311,6 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
             this->close();
         });
 
-    // Connect preview toggle
     QObject::connect(this->previewCheckBox_, &QCheckBox::toggled, this,
                      [this](bool checked) {
                          this->previewLabel_->setVisible(checked);
@@ -335,7 +327,6 @@ EditUserNotesDialog::EditUserNotesDialog(QWidget *parent)
                          }
                      });
 
-    // Connect text changes to preview update
     QObject::connect(this->textEdit_, &QTextEdit::textChanged, this, [this] {
         if (this->previewCheckBox_->isChecked())
         {
@@ -465,4 +456,4 @@ bool EditUserNotesDialog::isHeading(const QString &line, const int pos)
     return match.hasMatch() && pos == match.capturedEnd();
 }
 
-}  // namespace chatterino
+}

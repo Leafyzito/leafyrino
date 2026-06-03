@@ -9,6 +9,7 @@
 #include "common/QLogging.hpp"
 #include "common/WindowDescriptors.hpp"
 #include "debug/AssertInGuiThread.hpp"
+#include "providers/twitch/TwitchChannel.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
@@ -223,14 +224,15 @@ void SplitContainer::addSplit(Split *split)
 
     auto &&conns = this->connectionsPerSplit_[split];
 
-    conns.managedConnect(split->getChannelView().tabHighlightRequested,
-                         [this, split](HighlightState state) {
-                             if (this->tab_ != nullptr)
-                             {
-                                 this->tab_->updateHighlightState(
-                                     state, split->getChannelView());
-                             }
-                         });
+    conns.managedConnect(
+        split->getChannelView().tabHighlightRequested,
+        [this, split](const TabHighlight &highlight) {
+            if (this->tab_ != nullptr)
+            {
+                this->tab_->updateHighlightState(highlight,
+                                                 split->getChannelView());
+            }
+        });
 
     conns.managedConnect(split->channelChanged, [this, split] {
         if (this->tab_ != nullptr)
@@ -878,6 +880,11 @@ NodeDescriptor SplitContainer::buildDescriptorRecursively(
         SplitNodeDescriptor result;
         result.type_ = channelTypeToString(channelType);
         result.channelName_ = currentNode->split_->getChannel()->getName();
+        if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(
+                currentNode->split_->getChannel().get()))
+        {
+            result.anonymous_ = twitchChannel->isAnonymous();
+        }
         result.filters_ = currentNode->split_->getFilters();
         return result;
     }
@@ -993,6 +1000,14 @@ void SplitContainer::refreshTabTitle()
     for (const auto &chatWidget : this->splits_)
     {
         auto channelName = chatWidget->getChannel()->getLocalizedName();
+        if (auto *twitchChannel =
+                dynamic_cast<TwitchChannel *>(chatWidget->getChannel().get()))
+        {
+            if (twitchChannel->isAnonymous() && !channelName.isEmpty())
+            {
+                channelName += " (anonymous)";
+            }
+        }
         if (channelName.isEmpty())
         {
             continue;

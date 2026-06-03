@@ -33,6 +33,6 @@ private:
     QSocketNotifier *socketNotifier;
 };
 
-}  // namespace chatterino
+}
 
 #endif

@@ -8,10 +8,6 @@
 
 namespace chatterino {
 
-// Adapted from: https://stackoverflow.com/a/56766138.
-// NOTE: Relies on the "magic" prefixes and suffixes. There are implementations
-// that attempt to manually detect these (linked in the SO answer above) but
-// they seemed too complex for the scope we have here.
 template <typename T>
 constexpr auto type_name()
 {
@@ -44,4 +40,4 @@ constexpr auto type_name()
     return name;
 }
 
-}  // namespace chatterino
+}

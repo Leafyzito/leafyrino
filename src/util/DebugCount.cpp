@@ -5,13 +5,16 @@
 #include "util/DebugCount.hpp"
 
 #include "common/UniqueAccess.hpp"
+#include "messages/Image.hpp"
 #include "util/QMagicEnum.hpp"
 
 #include <magic_enum/magic_enum.hpp>
 #include <QLocale>
 #include <QStringBuilder>
 
+#include <algorithm>
 #include <array>
+#include <numeric>
 
 namespace {
 
@@ -21,7 +24,6 @@ struct Count {
     int64_t value = 0;
 };
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 UniqueAccess<std::array<Count, static_cast<size_t>(DebugObject::Count)>> COUNTS;
 
 constexpr bool isBytes(DebugObject target)
@@ -38,7 +40,7 @@ constexpr bool isBytes(DebugObject target)
     }
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -70,27 +72,72 @@ QString DebugCount::getDebugText()
 {
     static const QLocale locale(QLocale::English);
 
-    auto counts = COUNTS.access();
-
     QString text;
-    for (size_t key = 0; key < static_cast<size_t>(DebugObject::Count); key++)
     {
-        auto &count = counts->at(key);
+        auto counts = COUNTS.access();
 
-        QString formatted;
-        if (isBytes(static_cast<DebugObject>(key)))
+        for (size_t key = 0; key < static_cast<size_t>(DebugObject::Count);
+             key++)
         {
-            formatted = locale.formattedDataSize(count.value);
-        }
-        else
-        {
-            formatted = locale.toString(static_cast<qlonglong>(count.value));
-        }
+            auto &count = counts->at(key);
 
-        text += qmagicenum::enumName(static_cast<DebugObject>(key)) % ": " %
-                formatted % '\n';
+            QString formatted;
+            if (isBytes(static_cast<DebugObject>(key)))
+            {
+                formatted = locale.formattedDataSize(count.value);
+            }
+            else
+            {
+                formatted =
+                    locale.toString(static_cast<qlonglong>(count.value));
+            }
+
+            text += qmagicenum::enumName(static_cast<DebugObject>(key)) %
+                    ": " % formatted % '\n';
+        }
     }
+
+#ifndef DISABLE_IMAGE_EXPIRATION_POOL
+    const auto providerUsage =
+        ImageExpirationPool::instance().getProviderUsageSnapshot();
+    const auto providerBytes =
+        std::accumulate(providerUsage.begin(), providerUsage.end(), int64_t{0},
+                        [](int64_t total, const auto &usage) {
+                            return total + usage.bytes;
+                        });
+
+    if (providerBytes > 0)
+    {
+        text += "\ntracked image provider bytes:\n";
+
+        constexpr size_t MAX_PROVIDERS = 8;
+        for (size_t i = 0; i < providerUsage.size() && i < MAX_PROVIDERS; ++i)
+        {
+            const auto &usage = providerUsage[i];
+            const auto percent =
+                (static_cast<double>(usage.bytes) * 100.0) /
+                static_cast<double>(providerBytes);
+
+            text += QStringLiteral("  ") % usage.provider %
+                    QStringLiteral(": ") %
+                    locale.formattedDataSize(usage.bytes) %
+                    QStringLiteral(" (") %
+                    QString::number(percent, 'f', 1) % QStringLiteral("%, ") %
+                    locale.toString(static_cast<qlonglong>(usage.images)) %
+                    QStringLiteral(" img");
+            if (usage.animatedImages > 0)
+            {
+                text += QStringLiteral(", ") %
+                        locale.toString(
+                            static_cast<qlonglong>(usage.animatedImages)) %
+                        QStringLiteral(" anim");
+            }
+            text += QStringLiteral(")\n");
+        }
+    }
+#endif
+
     return text;
 }
 
-}  // namespace chatterino
+}

@@ -31,9 +31,6 @@ struct ma_decoder;
 
 namespace chatterino {
 
-/**
- * @brief Handles sound loading & playback
- **/
 class MiniaudioBackend : public ISoundController
 {
     enum class State : std::uint8_t {
@@ -49,28 +46,20 @@ public:
     explicit MiniaudioBackend(bool keepEngineAlive_);
     ~MiniaudioBackend() override;
 
-    // Play a sound from the given url
-    // If the url points to something that isn't a local file, it will play
-    // the default sound initialized in the initialize method
     void play(const QUrl &sound) final;
 
 private:
-    // Used for selecting & initializing an appropriate sound backend
+
     std::unique_ptr<ma_context> context;
-    // The engine is a high-level API for playing sounds from paths in a simple & efficient-enough manner
+
     std::unique_ptr<ma_engine> engine;
 
-    // Stores the data of our default ping sounds
     QByteArray defaultPingData;
-    // Stores N decoders for simultaneous default ping playback.
-    // We can't use the engine API for this as this requires direct access to a custom data_source
+
     std::vector<std::unique_ptr<ma_decoder>> defaultPingDecoders;
-    // Stores N sounds for simultaneous default ping playback
-    // We can't use the engine API for this as this requires direct access to a custom data_source
+
     std::vector<std::unique_ptr<ma_sound>> defaultPingSounds;
 
-    // Thread guard for the play method
-    // Ensures play is only ever called from the same thread
     ThreadGuard tgPlay;
 
     std::chrono::system_clock::time_point lastSoundPlay;
@@ -82,10 +71,9 @@ private:
     OnceFlag stoppedFlag;
     boost::asio::steady_timer sleepTimer;
 
-    /// This setting controls whether the miniaudio sound engine should be kept alive at all times
     bool keepEngineAlive;
 
     friend class Application;
 };
 
-}  // namespace chatterino
+}

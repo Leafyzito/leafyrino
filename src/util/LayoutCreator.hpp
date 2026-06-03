@@ -173,4 +173,4 @@ LayoutCreator<T> makeDialog(auto &&...args)
     return LayoutCreator<T>(t);
 }
 
-}  // namespace chatterino
+}

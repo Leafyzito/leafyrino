@@ -20,4 +20,4 @@ private:
     } ui;
 };
 
-}  // namespace chatterino
+}

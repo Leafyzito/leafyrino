@@ -9,10 +9,15 @@
 #include "widgets/BaseWidget.hpp"
 #include "widgets/splits/SplitCommon.hpp"
 
+#include <boost/signals2.hpp>
 #include <pajlada/signals/signalholder.hpp>
+#include <QDateTime>
 #include <QFont>
 #include <QPointer>
 #include <QShortcut>
+#include <QShowEvent>
+#include <QString>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -20,11 +25,15 @@ namespace chatterino {
 
 class ChannelView;
 class SplitHeader;
+class PinnedMessageBanner;
+class PollBanner;
+class PredictionBanner;
 class SplitInput;
 class SplitContainer;
 class SplitOverlay;
 class SelectChannelDialog;
 class OverlayWindow;
+class TwitchChannel;
 
 // Each ChatWidget consists of three sub-elements that handle their own part of
 // the chat widget: ChatWidgetHeader
@@ -76,6 +85,7 @@ public:
     void updateGifEmotes();
     void updateLastReadMessage();
     void setIsTopRightSplit(bool value);
+    void scheduleDeferredTwitchRefresh(bool interactive = false);
 
     void drag();
 
@@ -113,6 +123,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void showEvent(QShowEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
@@ -154,6 +165,11 @@ private:
      **/
     void refreshModerationMode();
 
+    void updateBannerVisibility();
+    void noteBannerStateChanged(TwitchChannel *channel, int bannerId);
+    void clearBannerAttention();
+    void runDeferredTwitchRefresh();
+
     IndirectChannel channel_;
 
     bool moderationMode_{};
@@ -162,8 +178,19 @@ private:
     bool isMouseOver_{};
     bool isDragging_{};
 
+    int bannerToggleOverride_{-1};
+    int bannerAttentionOverride_{-1};
+    QDateTime bannerAttentionUntil_;
+    QString lastPinBannerKey_;
+    QString lastPredictionBannerKey_;
+    QString lastPollBannerKey_;
+    bool primingBannerState_{false};
+
     QVBoxLayout *const vbox_;
     SplitHeader *const header_;
+    PinnedMessageBanner *const pinnedBanner_;
+    PredictionBanner *const predictionBanner_;
+    PollBanner *const pollBanner_;
     ChannelView *const view_;
     SplitInput *const input_;
     SplitOverlay *const overlay_;
@@ -182,6 +209,12 @@ private:
     pajlada::Signals::SignalHolder channelSignalHolder_;
 
     pajlada::Signals::SignalHolder signalHolder_;
+    std::vector<boost::signals2::scoped_connection> bSignals_;
+    QTimer *deferredTwitchRefreshTimer_{};
+    int deferredTwitchRefreshRetries_{};
+    bool deferredTwitchRefreshInteractive_{};
+    bool deferredTwitchForcePersonalRefresh_{};
+    bool deferredTwitchWarningStartupSeen_{};
 
 public Q_SLOTS:
     void addSibling();

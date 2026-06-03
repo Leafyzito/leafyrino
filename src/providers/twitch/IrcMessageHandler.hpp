@@ -33,10 +33,6 @@ class IrcMessageHandler
 public:
     static IrcMessageHandler &instance();
 
-    /**
-     * Parse an IRC message into 0 or more Chatterino messages
-     * Takes previously loaded messages into consideration to add reply contexts
-     **/
     static void parseMessageInto(Communi::IrcMessage *message,
                                  MessageSink &sink, TwitchChannel *channel);
 
@@ -74,4 +70,4 @@ private:
                                    const ChannelPtr &channel);
 };
 
-}  // namespace chatterino
+}

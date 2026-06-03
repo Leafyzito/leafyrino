@@ -26,8 +26,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
     }
 
     auto broadcasterUserID =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvbroadcasterUserID);
+        boost::json::try_value_to<String>(*jvbroadcasterUserID);
 
     if (broadcasterUserID.has_error())
     {
@@ -42,8 +41,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
     }
 
     auto broadcasterUserLogin =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvbroadcasterUserLogin);
+        boost::json::try_value_to<String>(*jvbroadcasterUserLogin);
 
     if (broadcasterUserLogin.has_error())
     {
@@ -58,8 +56,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
     }
 
     auto broadcasterUserName =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvbroadcasterUserName);
+        boost::json::try_value_to<String>(*jvbroadcasterUserName);
 
     if (broadcasterUserName.has_error())
     {
@@ -153,9 +150,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
         EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
     }
 
-    auto messageID =
-        boost::json::try_value_to<chatterino::eventsub::lib::String>(
-            *jvmessageID);
+    auto messageID = boost::json::try_value_to<String>(*jvmessageID);
 
     if (messageID.has_error())
     {
@@ -168,9 +163,7 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
         EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
     }
 
-    auto message =
-        boost::json::try_value_to<chatterino::eventsub::lib::chat::Message>(
-            *jvmessage);
+    auto message = boost::json::try_value_to<chat::Message>(*jvmessage);
 
     if (message.has_error())
     {
@@ -217,46 +210,39 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
     }
     std::string_view reasonTag = *reasonTagRes;
     decltype(std::declval<Event>().reason) reason;
-    if (reasonTag == chatterino::eventsub::lib::automod::AutomodReason::TAG)
+    if (reasonTag == automod::AutomodReason::TAG)
     {
-        const auto *reasonVal = root.if_contains(
-            detail::fieldFor<
-                chatterino::eventsub::lib::automod::AutomodReason>());
+        const auto *reasonVal =
+            root.if_contains(detail::fieldFor<automod::AutomodReason>());
         if (!reasonVal)
         {
             EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
         }
-        auto reasonchatterinoeventsublibautomodAutomodReason =
-            boost::json::try_value_to<
-                chatterino::eventsub::lib::automod::AutomodReason>(*reasonVal);
-        if (reasonchatterinoeventsublibautomodAutomodReason.has_error())
+        auto reasonautomodAutomodReason =
+            boost::json::try_value_to<automod::AutomodReason>(*reasonVal);
+        if (reasonautomodAutomodReason.has_error())
         {
-            return reasonchatterinoeventsublibautomodAutomodReason.error();
+            return reasonautomodAutomodReason.error();
         }
-        reason.emplace<chatterino::eventsub::lib::automod::AutomodReason>(
-            std::move(reasonchatterinoeventsublibautomodAutomodReason.value()));
+        reason.emplace<automod::AutomodReason>(
+            std::move(reasonautomodAutomodReason.value()));
     }
-    else if (reasonTag ==
-             chatterino::eventsub::lib::automod::BlockedTermReason::TAG)
+    else if (reasonTag == automod::BlockedTermReason::TAG)
     {
-        const auto *reasonVal = root.if_contains(
-            detail::fieldFor<
-                chatterino::eventsub::lib::automod::BlockedTermReason>());
+        const auto *reasonVal =
+            root.if_contains(detail::fieldFor<automod::BlockedTermReason>());
         if (!reasonVal)
         {
             EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
         }
-        auto reasonchatterinoeventsublibautomodBlockedTermReason =
-            boost::json::try_value_to<
-                chatterino::eventsub::lib::automod::BlockedTermReason>(
-                *reasonVal);
-        if (reasonchatterinoeventsublibautomodBlockedTermReason.has_error())
+        auto reasonautomodBlockedTermReason =
+            boost::json::try_value_to<automod::BlockedTermReason>(*reasonVal);
+        if (reasonautomodBlockedTermReason.has_error())
         {
-            return reasonchatterinoeventsublibautomodBlockedTermReason.error();
+            return reasonautomodBlockedTermReason.error();
         }
-        reason.emplace<chatterino::eventsub::lib::automod::BlockedTermReason>(
-            std::move(
-                reasonchatterinoeventsublibautomodBlockedTermReason.value()));
+        reason.emplace<automod::BlockedTermReason>(
+            std::move(reasonautomodBlockedTermReason.value()));
     }
     else
     {
@@ -297,9 +283,8 @@ boost::json::result_for<Payload, boost::json::value>::type tag_invoke(
         EVENTSUB_BAIL_HERE(error::Kind::FieldMissing);
     }
 
-    auto subscription = boost::json::try_value_to<
-        chatterino::eventsub::lib::payload::subscription::Subscription>(
-        *jvsubscription);
+    auto subscription =
+        boost::json::try_value_to<subscription::Subscription>(*jvsubscription);
 
     if (subscription.has_error())
     {

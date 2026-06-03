@@ -3,13 +3,10 @@
 // SPDX-License-Identifier: MIT
 
 #include "controllers/accounts/AccountController.hpp"
-#include "controllers/filters/lang/expressions/IdentifierExpression.hpp"
 #include "controllers/filters/lang/expressions/UnaryOperation.hpp"
 #include "controllers/filters/lang/Filter.hpp"
-#include "controllers/filters/lang/Tokenizer.hpp"
 #include "controllers/filters/lang/Types.hpp"
 #include "controllers/highlights/HighlightController.hpp"
-#include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "mocks/BaseApplication.hpp"
 #include "mocks/Channel.hpp"
@@ -24,6 +21,7 @@
 #include "providers/seventv/SeventvBadges.hpp"
 #include "providers/twitch/TwitchBadge.hpp"
 #include "providers/twitch/TwitchBadges.hpp"
+#include "providers/twitch/TwitchChannel.hpp"
 #include "Test.hpp"
 
 #include <QColor>
@@ -172,6 +170,7 @@ TEST(Filters, Validity)
         {R".("abc" + 123 == "abc123").", true},
         {R".(123 + "abc" == "hello").", false},
         {R".(flags.reply && flags.automod).", true},
+        {R".(flags.repeated_message || flags.repeated_messages).", true},
         {R".(unknown.identifier).", false},
         {R".(10 startswith 1).", false},
         {R".(10 startswith "").", false},
@@ -183,6 +182,10 @@ TEST(Filters, Validity)
         {R".(1 match r"1").", false},
         {
             R".(channel.name == "forsen" && author.badges contains "moderator").",
+            true,
+        },
+        {
+            R".(flags.webchat_detected && moltorino.client_detection == "Web").",
             true,
         },
         {R".({(1+""), 2}).", false},
@@ -228,6 +231,10 @@ TEST(Filters, TypeSynthesis)
         {R".(author.badges).", T::StringList},
         {R".(channel.name == "forsen" && author.badges contains "moderator").", T::Bool},
         {R".(message.content match {r"(\d\d)/(\d\d)/(\d\d\d\d)", 3}).", T::String},
+        {R".(flags.webchat_detected).", T::Bool},
+        {R".(flags.repeated_message).", T::Bool},
+        {R".(flags.repeated_messages).", T::Bool},
+        {R".(moltorino.client_detection).", T::String},
     };
     // clang-format on
 
@@ -242,25 +249,21 @@ TEST(Filters, TypeSynthesis)
         T type = filter.returnType();
         EXPECT_EQ(type, expected)
             << "Filter{ " << input << " } has type " << type << " instead of "
-            << expected << ".\nDebug: " << filter.debugString();
+            << expected
+            << ".\nDebug: " << filter.debugString(MESSAGE_TYPING_CONTEXT);
     }
 }
 
 TEST(Filters, Evaluation)
 {
-    Message message;
-    message.displayName = "icelys";
-    message.usernameColor = QColor(0xff0000);
-    message.messageText = "hey there :) 2038-01-19 123 456";
-    message.channelName = "forsen";
-    message.twitchBadges = {
-        TwitchBadge("moderator", ""),
-        TwitchBadge("staff", ""),
-    };
-    message.externalBadges = {"frankerfacez:bot"};
-    RunContext ctx{
-        .message = message,
-        .channel = nullptr,
+    ContextMap contextMap = {
+        {"author.name", QVariant("icelys")},
+        {"author.color", QVariant(QColor("#ff0000"))},
+        {"author.subbed", QVariant(false)},
+        {"message.content", QVariant("hey there :) 2038-01-19 123 456")},
+        {"channel.name", QVariant("forsen")},
+        {"author.badges", QVariant(QStringList({"moderator", "staff"}))},
+        {"author.external_badges", QStringList{"frankerfacez:bot"}},
     };
 
     std::vector<std::pair<QString, QVariant>> tests{
@@ -328,23 +331,135 @@ TEST(Filters, Evaluation)
             << "Filter::fromString( " << input << " ) is invalid";
 
         auto filter = std::move(std::get<Filter>(filterResult));
-        auto result = filter.execute(ctx);
+        auto result = filter.execute(contextMap);
 
         EXPECT_EQ(result, expected)
             << "Filter{ " << input << " } evaluated to " << result.toString()
             << " instead of " << expected.toString()
-            << ".\nDebug: " << filter.debugString();
+            << ".\nDebug: " << filter.debugString(MESSAGE_TYPING_CONTEXT);
     }
 }
 
-TEST(Filters, Identifier)
+TEST_F(FiltersF, TypingContextChecks)
 {
-    for (const auto [identifier, _] : VALID_IDENTIFIERS_MAP.asKeyValueRange())
+    TwitchChannel channel("pajlada");
+
+    QByteArray message =
+        R"(@badge-info=subscriber/80;badges=broadcaster/1,subscriber/3072,partner/1;color=#CC44FF;display-name=pajlada;emote-only=1;emotes=25:0-4;first-msg=0;flags=;id=90ef1e46-8baa-4bf2-9c54-272f39d6fa11;mod=0;returning-chatter=0;room-id=11148817;subscriber=1;tmi-sent-ts=1662206235860;turbo=0;user-id=11148817;user-type= :pajlada!pajlada@pajlada.tmi.twitch.tv PRIVMSG #pajlada :ACTION Kappa)";
+
+    struct TestCase {
+        QByteArray input;
+    };
+
+    auto *privmsg = dynamic_cast<Communi::IrcPrivateMessage *>(
+        Communi::IrcPrivateMessage::fromData(message, nullptr));
+    EXPECT_NE(privmsg, nullptr);
+
+    QString originalMessage = privmsg->content();
+
+    auto [msg, alert] = MessageBuilder::makeIrcMessage(&channel, privmsg,
+                                                       MessageParseArgs{
+                                                           .isAction = true,
+                                                       },
+                                                       originalMessage, 0);
+
+    EXPECT_NE(msg.get(), nullptr);
+
+    auto contextMap = buildContextMap(msg, &channel);
+
+    ContextMap expected{
+        {"author.badges", QStringList{"broadcaster", "subscriber", "partner"}},
+        {"author.color", QColor(0xCC44FF)},
+        {"author.external_badges", QStringList{}},
+        {"author.name", u"pajlada"_s},
+        {"author.no_color", false},
+        {"author.sub_length", 80},
+        {"author.subbed", true},
+        {"author.user_id", u"11148817"_s},
+
+        {"channel.live", false},
+        {"channel.name", u"pajlada"_s},
+        {"channel.watching", false},
+
+        {"flags.action", true},
+        {"flags.automod", false},
+        {"flags.cheer_message", false},
+        {"flags.elevated_message", false},
+        {"flags.first_message", false},
+        {"flags.highlighted", false},
+        {"flags.hype_chat", false},
+        {"flags.monitored", false},
+        {"flags.points_redeemed", false},
+        {"flags.reply", false},
+        {"flags.restricted", false},
+        {"flags.reward_message", false},
+        {"flags.repeated_message", false},
+        {"flags.repeated_messages", false},
+        {"flags.shared", false},
+        {"flags.similar", false},
+        {"flags.sub_message", false},
+        {"flags.system_message", false},
+        {"flags.whisper", false},
+        {"flags.watch_streak", false},
+        {"flags.webchat_detected", false},
+
+        {"message.content", "Kappa"},
+        {"message.length", 5},
+        {"moltorino.client_detection", "Unknown"},
+
+        {"reward.cost", -1},
+        {"reward.id", QString{}},
+        {"reward.title", QString{}},
+    };
+    EXPECT_EQ(contextMap, expected);
+
+    msg->flags.set(MessageFlag::RepeatedMessage);
+    auto repeatedContextMap = buildContextMap(msg, &channel);
+    EXPECT_TRUE(repeatedContextMap["flags.repeated_message"].toBool());
+    EXPECT_TRUE(repeatedContextMap["flags.repeated_messages"].toBool());
+
+    delete privmsg;
+}
+
+TEST_F(FiltersF, ClientDetectionContextChecks)
+{
+    MockChannel channel("pajlada");
+
+    struct TestCase {
+        QByteArray nonce;
+        QString expectedDetection;
+        bool expectedWebFlag;
+    };
+
+    std::vector<TestCase> tests{
+        {"0123456789abcdef0123456789abcdef", "Web", true},
+        {"550e8400-e29b-41d4-a716-446655440000", "Android", false},
+        {"550E8400-E29B-41D4-A716-446655440000", "iOS", false},
+        {"550e8400-E29B-41d4-a716-446655440000", "Abnormal", false},
+        {"", "Abnormal", false},
+    };
+
+    for (const auto &test : tests)
     {
-        auto expr = createIdentifierExpression(identifier);
-        ASSERT_TRUE(isWellTyped(expr->synthesizeType()))
-            << "the identifier '" << identifier
-            << "' must create a well typed expression";
+        QByteArray message =
+            "@client-nonce=" + test.nonce +
+            R"(;badge-info=;badges=;color=#CC44FF;display-name=pajlada;emote-only=1;emotes=25:0-4;first-msg=0;flags=;id=90ef1e46-8baa-4bf2-9c54-272f39d6fa11;mod=0;returning-chatter=0;room-id=11148817;subscriber=0;tmi-sent-ts=1662206235860;turbo=0;user-id=11148817;user-type= :pajlada!pajlada@pajlada.tmi.twitch.tv PRIVMSG #pajlada :Kappa)";
+
+        auto *privmsg = dynamic_cast<Communi::IrcPrivateMessage *>(
+            Communi::IrcPrivateMessage::fromData(message, nullptr));
+        ASSERT_NE(privmsg, nullptr);
+
+        auto [msg, alert] = MessageBuilder::makeIrcMessage(
+            &channel, privmsg, MessageParseArgs{}, privmsg->content(), 0);
+        ASSERT_NE(msg.get(), nullptr);
+
+        auto contextMap = buildContextMap(msg, &channel);
+        EXPECT_EQ(contextMap["moltorino.client_detection"].toString(),
+                  test.expectedDetection);
+        EXPECT_EQ(contextMap["flags.webchat_detected"].toBool(),
+                  test.expectedWebFlag);
+
+        delete privmsg;
     }
 }
 
@@ -365,7 +480,7 @@ TEST_F(FiltersF, ExpressionDebug)
         },
         {
             .input = R".(author.color == "#ff0000").",
-            .debugString = "BinaryOp[Eq](Accessor(author.color) : Color, Val(#ff0000) : String)",
+            .debugString = "BinaryOp[Eq](Val(author.color) : Color, Val(#ff0000) : String)",
             .filterString = R".((author.color == "#ff0000")).",
         },
         {
@@ -385,12 +500,12 @@ TEST_F(FiltersF, ExpressionDebug)
         },
         {
             .input = R".(author.subbed).",
-            .debugString = R".(Accessor(author.subbed)).",
+            .debugString = R".(Val(author.subbed)).",
             .filterString = R".(author.subbed).",
         },
         {
             .input = R".(!author.subbed).",
-            .debugString = R".(UnaryOp[Not](Accessor(author.subbed) : Bool)).",
+            .debugString = R".(UnaryOp[Not](Val(author.subbed) : Bool)).",
             .filterString = R".((!author.subbed)).",
         },
         {
@@ -405,7 +520,7 @@ TEST_F(FiltersF, ExpressionDebug)
         },
         {
             .input = R".(message.content match r"(\d\d)/(\d\d)/(\d\d\d\d)").",
-            .debugString = R".(BinaryOp[Match](Accessor(message.content) : String, RegEx((\d\d)/(\d\d)/(\d\d\d\d)) : RegularExpression)).",
+            .debugString = R".(BinaryOp[Match](Val(message.content) : String, RegEx((\d\d)/(\d\d)/(\d\d\d\d)) : RegularExpression)).",
             .filterString = R".((message.content match r"(\d\d)/(\d\d)/(\d\d\d\d)")).",
         },
     };
@@ -418,7 +533,8 @@ TEST_F(FiltersF, ExpressionDebug)
         EXPECT_NE(filter, nullptr) << "Filter::fromString(" << input
                                    << ") did not build a proper filter";
 
-        const auto actualDebugString = filter->debugString();
+        const auto actualDebugString =
+            filter->debugString(MESSAGE_TYPING_CONTEXT);
         EXPECT_EQ(actualDebugString, debugString)
             << "filter->debugString() on '" << input << "' should be '"
             << debugString << "', but got '" << actualDebugString << "'";

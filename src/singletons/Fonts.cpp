@@ -18,8 +18,8 @@ using namespace chatterino;
 
 int getUsernameBoldness()
 {
-    // From qfont.cpp
-    // https://github.com/qt/qtbase/blob/589c6d066f84833a7c3dda1638037f4b2e91b7aa/src/gui/text/qfont.cpp#L143-L169
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+
     static constexpr std::array<std::array<int, 2>, 9> legacyToOpenTypeMap{{
         {0, QFont::Thin},
         {12, QFont::ExtraLight},
@@ -37,7 +37,6 @@ int getUsernameBoldness()
     int result = QFont::Medium;
     int closestDist = INT_MAX;
 
-    // Go through and find the closest mapped value
     for (const auto [weightOld, weightNew] : legacyToOpenTypeMap)
     {
         const int dist = qAbs(weightOld - target);
@@ -48,12 +47,15 @@ int getUsernameBoldness()
         }
         else
         {
-            // Break early since following values will be further away
+
             break;
         }
     }
 
     return result;
+#else
+    return getSettings()->boldScale.getValue();
+#endif
 }
 
 float fontSize(FontStyle style)
@@ -174,7 +176,7 @@ QString fontFamily(FontStyle style)
     return QStringLiteral(DEFAULT_FONT_FAMILY);
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -215,16 +217,13 @@ Fonts::FontData &Fonts::getOrCreateFontData(FontStyle type, float scale)
 
     auto &map = this->fontsByType_[size_t(type)];
 
-    // find element
     auto it = map.find(scale);
     if (it != map.end())
     {
-        // return if found
 
         return it->second;
     }
 
-    // emplace new element
     auto result = map.emplace(scale, Fonts::createFontData(type, scale));
     assert(result.second);
 
@@ -244,8 +243,7 @@ Fonts::FontData Fonts::createFontData(FontStyle type, float scale)
     {
         case FontStyle::TimestampMedium: {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
-            // Apply the OpenType feature `tnum` to timestamp fonts
-            // https://sparanoid.com/lab/opentype-features/#tnum
+
             auto tag = QFont::Tag("tnum");
             font.setFeature(tag, 1);
 #endif
@@ -256,21 +254,7 @@ Fonts::FontData Fonts::createFontData(FontStyle type, float scale)
             break;
     }
 
-    // If the requested font is not available, trigger
-    // automatic substitution by the closest font
-    // that is actually available.
-    //
-    // It is absolutely necessary to do this because
-    // QFontMetrics does not care that it computed metrics
-    // for a font that will not be used for the actual rendering.
-    // By fixing up the font early we can prevent some rendering
-    // issues caused by the mismatch between what QFontMetrics
-    // computed and what got painted on the screen.
-
-    QWidget w;
-    w.setFont(font);
-
-    return w.font();
+    return font;
 }
 
-}  // namespace chatterino
+}

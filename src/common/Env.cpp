@@ -70,7 +70,7 @@ bool readBoolEnv(const char *envName, bool defaultValue)
     return defaultValue;
 }
 
-}  // namespace
+}
 
 Env::Env()
     : recentMessagesApiUrl(
@@ -85,7 +85,6 @@ Env::Env()
     , twitchServerPort(readPortEnv("CHATTERINO2_TWITCH_SERVER_PORT", 443))
     , twitchServerSecure(readBoolEnv("CHATTERINO2_TWITCH_SERVER_SECURE", true))
     , proxyUrl(readOptionalStringEnv("CHATTERINO2_PROXY_URL"))
-    , logToFile(qEnvironmentVariable(env::LOG_TO_FILE, ""))
 {
 }
 
@@ -95,4 +94,4 @@ const Env &Env::get()
     return instance;
 }
 
-}  // namespace chatterino
+}

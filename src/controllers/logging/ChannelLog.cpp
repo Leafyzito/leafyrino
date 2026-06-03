@@ -31,4 +31,4 @@ ChannelLog ChannelLog::createEmpty()
     return {""};
 }
 
-}  // namespace chatterino
+}

@@ -19,30 +19,15 @@ class Channel;
 class NetworkResult;
 using ChannelPtr = std::shared_ptr<Channel>;
 
-}  // namespace chatterino
+}
 
 namespace chatterino::imageuploader::detail {
 
-/// Traverses the JSON value with a pattern where each key is separated by dots.
-///
-/// If the pattern doesn't match, an empty string is returned.
-///
-/// **Example**:
-///
-/// - JSON: `{"foo": {"bar": [1, "baz"]}}`
-/// - pattern: `foo.bar.1`
-/// - return value: `"baz"`
 QString getJSONValue(QJsonValue responseJson, QStringView jsonPattern);
 
-/// Interpolates `pattern` with the JSON response.
-/// **Example**:
-///
-/// - response: `{"foo": {"bar": [1, "baz", "qox"]}}`
-/// - pattern: `https://example.com/{foo.bar.1}.{foo.bar.2}`
-/// - return value: `"https://example.com/baz.qox"`
 QString getLinkFromResponse(const NetworkResult &response, QString pattern);
 
-}  // namespace chatterino::imageuploader::detail
+}
 
 namespace chatterino {
 
@@ -55,11 +40,7 @@ struct RawImageData {
 class ImageUploader final
 {
 public:
-    /**
-     * Tries to get the image(s) from the given QMimeData
-     *
-     * If no images were found, the second value in the pair will contain an error message
-     */
+
     std::pair<std::queue<RawImageData>, QString> getImages(
         const QMimeData *source) const;
 
@@ -70,7 +51,6 @@ private:
     void sendImageUploadRequest(RawImageData imageData, ChannelPtr channel,
                                 QPointer<ResizingTextEdit> textEdit);
 
-    // This is called from the onSuccess handler of the NetworkRequest in sendImageUploadRequest
     void handleSuccessfulUpload(const NetworkResult &result,
                                 QString originalFilePath, ChannelPtr channel,
                                 QPointer<ResizingTextEdit> textEdit);
@@ -79,8 +59,7 @@ private:
     void logToFile(const QString &originalFilePath, const QString &imageLink,
                    const QString &deletionLink, ChannelPtr channel);
 
-    // These variables are only used from the main thread.
     QMutex uploadMutex_;
     std::queue<RawImageData> uploadQueue_;
 };
-}  // namespace chatterino
+}

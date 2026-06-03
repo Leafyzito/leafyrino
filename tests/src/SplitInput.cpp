@@ -17,6 +17,8 @@
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
 #include "Test.hpp"
+#include "widgets/buttons/SvgButton.hpp"
+#include "widgets/helper/ResizingTextEdit.hpp"
 #include "widgets/Notebook.hpp"
 #include "widgets/splits/Split.hpp"
 
@@ -28,11 +30,19 @@ using ::testing::Exactly;
 
 namespace {
 
+class TestableSplitInput : public SplitInput
+{
+public:
+    using SplitInput::SplitInput;
+    using SplitInput::updateActionRowCompactness;
+    using SplitInput::ui_;
+};
+
 class MockApplication : public mock::BaseApplication
 {
 public:
     MockApplication()
-        : windowManager(this->args_, this->paths_, this->settings, this->theme,
+        : windowManager(this->args, this->paths_, this->settings, this->theme,
                         this->fonts)
         , commands(this->paths_)
     {
@@ -162,3 +172,54 @@ INSTANTIATE_TEST_SUITE_P(
             "",
             // Expected text after replying to forsen
             "@forsen ")));
+
+TEST(ResizingTextEditTest, HeightForWidthUsesRequestedWidth)
+{
+    MockApplication mockApplication;
+
+    ResizingTextEdit input;
+    input.setPlainText(
+        "this is a long enough message to wrap across multiple lines");
+
+    auto wideHeight = static_cast<const QWidget &>(input).heightForWidth(320);
+    auto narrowHeight = static_cast<const QWidget &>(input).heightForWidth(120);
+
+    EXPECT_GT(narrowHeight, wideHeight);
+}
+
+TEST(SplitInputTest, ChannelPointsChromeStaysCompact)
+{
+    MockApplication mockApplication;
+
+    auto split = std::make_unique<Split>(nullptr);
+    TestableSplitInput input(split.get());
+
+    EXPECT_EQ(input.ui_.channelPointsLabel->font().pointSizeF(),
+              input.ui_.textEditLength->font().pointSizeF());
+    EXPECT_EQ(input.ui_.channelPointsLabel->toolTip(),
+              QString("Channel Points (click to refresh)"));
+    EXPECT_FALSE(input.ui_.channelPointsLabel->isVisible());
+}
+
+TEST(SplitInputTest, StatusLabelsReserveTextWidth)
+{
+    MockApplication mockApplication;
+
+    auto split = std::make_unique<Split>(nullptr);
+    TestableSplitInput input(split.get());
+
+    input.ui_.textEditLength->setText("123");
+    input.setSendWaitStatus("1:23");
+    input.updateActionRowCompactness();
+
+    EXPECT_EQ(input.ui_.buttonsRow->indexOf(input.ui_.textEditLength), -1);
+    EXPECT_GT(input.ui_.textEditLength->minimumWidth(), 0);
+    EXPECT_GT(input.ui_.sendWaitStatus->minimumWidth(), 0);
+
+    input.ui_.textEditLength->clear();
+    input.setSendWaitStatus({});
+    input.updateActionRowCompactness();
+
+    EXPECT_EQ(input.ui_.textEditLength->minimumWidth(), 0);
+    EXPECT_EQ(input.ui_.sendWaitStatus->minimumWidth(), 0);
+}

@@ -25,10 +25,9 @@
 
 namespace {
 
-// From Twitch docs - expected size for a badge (1x)
 constexpr QSize BADGE_BASE_SIZE(18, 18);
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -76,7 +75,6 @@ void TwitchBadges::loadTwitchBadges()
                 }
                 break;
 
-                // This would most likely happen if the service is down, or if the JSON payload returned has changed format
                 case HelixGetGlobalBadgesError::Unknown: {
                     errorMessage += "An unknown error has occurred.";
                 }
@@ -92,8 +90,7 @@ void TwitchBadges::loadLocalBadges()
     QFile file(":/twitch-badges.json");
     if (!file.open(QFile::ReadOnly))
     {
-        // Despite erroring out, we still want to reach the same point
-        // Loaded should still be set to true to not build up an endless queue, and the quuee should still be flushed.
+
         qCWarning(chatterinoTwitch)
             << "Error loading Twitch Badges from the local backup file";
         this->loaded();
@@ -146,10 +143,8 @@ void TwitchBadges::loaded()
 
     this->loaded_ = true;
 
-    // Flush callback queue
     std::unique_lock queueLock(this->queueMutex_);
 
-    // Once we have gained unique access of the queue, we can release our unique access of the loaded mutex allowing future calls to read locked_
     loadedLock.unlock();
 
     while (!this->callbackQueue_.empty())
@@ -198,7 +193,7 @@ void TwitchBadges::getBadgeIcon(const QString &name, BadgeIconCallback callback)
 
         if (!this->loaded_)
         {
-            // Badges have not been loaded yet, store callback in a queue
+
             std::unique_lock queueLock(this->queueMutex_);
             this->callbackQueue_.emplace(name, std::move(callback));
             return;
@@ -214,8 +209,6 @@ void TwitchBadges::getBadgeIcon(const QString &name, BadgeIconCallback callback)
         }
     }
 
-    // Split string in format "name1/version1,name2/version2" to "name1", "version1"
-    // If not in list+version form, name will remain the same
     auto targetBadge = name.split(",").at(0).split("/");
 
     const auto badge = targetBadge.size() == 2
@@ -260,4 +253,4 @@ void TwitchBadges::loadEmoteImage(const QString &name, const ImagePtr &image,
                       });
 }
 
-}  // namespace chatterino
+}

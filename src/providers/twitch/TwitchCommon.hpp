@@ -26,4 +26,4 @@ extern const QStringList TWITCH_DEFAULT_COMMANDS;
 
 extern const QStringList TWITCH_WHISPER_COMMANDS;
 
-}  // namespace chatterino
+}

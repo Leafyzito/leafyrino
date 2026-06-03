@@ -55,18 +55,13 @@ public:
     }
 #endif
 
-    /// Returns the length of the command trigger in `text`, including leading
-    /// spaces. If `text` does not start with a command trigger, 0 is returned.
-    /// Examples:
-    ///  - " /ban forsen" returns 5
-    ///  - "/non-existing-command" returns 0
     qsizetype commandTriggerLen(QStringView text);
 
 private:
     void load(Paths &paths);
 
     using CommandFunction =
-        std::function<QString(QStringList /*words*/, ChannelPtr /*channel*/)>;
+        std::function<QString(QStringList , ChannelPtr )>;
 
     using CommandFunctionWithContext = std::function<QString(CommandContext)>;
 
@@ -76,18 +71,13 @@ private:
     void registerCommand(const QString &commandName,
                          CommandFunctionVariants commandFunction);
 
-    // Chatterino commands
     std::unordered_map<QString, CommandFunctionVariants> commands_;
 
-    // User-created commands
     QMap<QString, Command> userCommands_;
     qsizetype maxSpaces_ = 0;
 
     std::shared_ptr<pajlada::Settings::SettingManager> sm_;
-    // Because the setting manager is not initialized until the initialize
-    // function is called (and not in the constructor), we have to
-    // late-initialize the setting, which is why we're storing it as a
-    // unique_ptr
+
     std::unique_ptr<pajlada::Settings::Setting<std::vector<Command>>>
         commandsSetting_;
 
@@ -97,4 +87,4 @@ private:
 #endif
 };
 
-}  // namespace chatterino
+}

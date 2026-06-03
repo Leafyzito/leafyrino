@@ -8,9 +8,6 @@
 
 namespace chatterino {
 
-/**
- * IconDelegate draws the decoration role pixmap scaled down to a square icon
- */
 class IconDelegate : public QStyledItemDelegate
 {
 public:
@@ -20,4 +17,4 @@ public:
                const QModelIndex &index) const override;
 };
 
-}  // namespace chatterino
+}

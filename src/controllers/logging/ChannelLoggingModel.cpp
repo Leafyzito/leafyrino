@@ -14,7 +14,7 @@ ChannelLoggingModel ::ChannelLoggingModel(QObject *parent)
 }
 
 ChannelLog ChannelLoggingModel::getItemFromRow(
-    std::vector<QStandardItem *> &row, const ChannelLog & /*original*/)
+    std::vector<QStandardItem *> &row, const ChannelLog & )
 {
     auto channelName = row[Column::Channel]->data(Qt::DisplayRole).toString();
     return {channelName};
@@ -26,4 +26,4 @@ void ChannelLoggingModel::getRowFromItem(const ChannelLog &item,
     setStringItem(row[Column::Channel], item.channelName());
 }
 
-}  // namespace chatterino
+}

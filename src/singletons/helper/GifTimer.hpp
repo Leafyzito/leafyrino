@@ -39,4 +39,4 @@ private:
     size_t openOverlayWindows_ = 0;
 };
 
-}  // namespace chatterino
+}

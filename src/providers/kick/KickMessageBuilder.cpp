@@ -31,12 +31,12 @@
 namespace {
 
 using namespace chatterino;
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 EmotePtr lookupEmote(const KickChannel &channel, uint64_t senderID,
                      QStringView word)
 {
-    EmoteName wordStr(word.toString());  // FIXME: don't do this...
+    EmoteName wordStr{word.toString()};
     const auto *globalFfzEmotes = getApp()->getFfzEmotes();
     const auto *globalBttvEmotes = getApp()->getBttvEmotes();
     const auto *globalSeventvEmotes = getApp()->getSeventvEmotes();
@@ -119,11 +119,6 @@ void appendNonKickEmoteText(KickMessageBuilder &builder, QStringView text)
     }
 }
 
-/// Try to find the next emote in `text`
-///
-/// Kick emotes are present as `[emote:{id}:{name}]` where `{id}` is numeric.
-/// They can be right next to each other or to text. For example, we could find
-/// the following message: `foo [emote:1234:name]foo[emote:1234:name]`.
 bool tryAppendKickEmoteText(KickMessageBuilder &builder, QString &messageText,
                             QStringView &text)
 {
@@ -246,7 +241,6 @@ void checkThreadSubscription(const QString &senderLogin,
     }
 }
 
-// FIXME: this is 🍝
 void appendReply(KickMessageBuilder &builder, BoostJsonObject metadata)
 {
     auto originalMessage = metadata["original_message"].toObject();
@@ -387,7 +381,7 @@ HighlightAlert processHighlights(KickMessageBuilder &builder,
 {
     if (getSettings()->isBlacklistedUser(builder->loginName))
     {
-        // Do nothing. We ignore highlights from this user.
+
         return {};
     }
 
@@ -399,8 +393,6 @@ HighlightAlert processHighlights(KickMessageBuilder &builder,
     {
         return {};
     }
-
-    // This message triggered one or more highlights, act upon the highlight result
 
     builder->flags.set(MessageFlag::Highlighted);
     builder->highlightColor = highlightResult.color;
@@ -427,11 +419,11 @@ QStringView plural(QStringView pluralText, uint64_t n)
     return pluralText;
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
-KickMessageBuilder::KickMessageBuilder(SystemMessageTag /* tag */,
+KickMessageBuilder::KickMessageBuilder(SystemMessageTag ,
                                        KickChannel *channel,
                                        const QDateTime &time)
     : channel_(channel)
@@ -585,7 +577,7 @@ MessagePtrMut KickMessageBuilder::makeTimeoutMessage(KickChannel *channel,
     }
 
     builder->elements.back()->setTrailingSpace(false);
-    text.removeLast();  // trailing space
+    text.removeLast();
 
     builder.emplaceSystemTextAndUpdate(".", text);
     builder->messageText = text;
@@ -640,7 +632,7 @@ MessagePtrMut KickMessageBuilder::makeUntimeoutMessage(KickChannel *channel,
     }
 
     builder->elements.back()->setTrailingSpace(false);
-    text.removeLast();  // trailing space
+    text.removeLast();
 
     builder.emplaceSystemTextAndUpdate(".", text);
     builder->messageText = text;
@@ -828,12 +820,12 @@ MessagePtrMut KickMessageBuilder::makeRewardRedeemedMessage(
     {
         builder.appendMentionedUser(username, text);
         builder.appendOrEmplaceText(u"redeemed"_s, MessageColor::Text);
-        text += u" redeemed ";
+        text += QStringLiteral(" redeemed ");
     }
     else
     {
         builder.appendOrEmplaceText(u"Redeemed"_s, MessageColor::Text);
-        text += u"Redeemed ";
+        text += QStringLiteral("Redeemed ");
     }
     builder.emplace<TextElement>(reward, MessageElementFlag::Text,
                                  MessageColor::Text, FontStyle::ChatMediumBold);
@@ -875,12 +867,12 @@ MessagePtrMut KickMessageBuilder::makeKicksGiftedMessage(KickChannel *channel,
     {
         builder.appendMentionedUser(username, text);
         builder.appendOrEmplaceText(u"gifted"_s, MessageColor::Text);
-        text += u" gifted ";
+        text += QStringLiteral(" gifted ");
     }
     else
     {
         builder.appendOrEmplaceText(u"Gifted"_s, MessageColor::Text);
-        text += u"Gifted ";
+        text += QStringLiteral("Gifted ");
     }
     builder.emplace<TextElement>(giftName, MessageElementFlag::Text,
                                  MessageColor::Text, FontStyle::ChatMediumBold);
@@ -1001,4 +993,4 @@ void KickMessageBuilder::appendMentionedUser(const QString &username,
     }
 }
 
-}  // namespace chatterino
+}

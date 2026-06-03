@@ -25,20 +25,17 @@
 #include <chrono>
 #include <filesystem>
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 namespace {
 
 void closeApp()
 {
-    // Using a force exit over QApplication::exit, because we're currently in
-    // the initialization. QApplication::exit only tells the eventloops to exit,
-    // but it returns to the caller. If we return, we'd continue with the
-    // initialization, which could cause settings to be loaded/overwritten.
+
     _Exit(1);
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -47,14 +44,14 @@ RestoreBackupsDialog::RestoreBackupsDialog(backup::FileData fileData,
                                            QWidget *parent)
     : QDialog(parent,
               QFlags{
-                  // same as QMessageBox
+
                   Qt::Dialog,
                   Qt::MSWindowsFixedSizeDialogHint,
-                  // Disable default style
+
                   Qt::CustomizeWindowHint,
-                  // Show window title
+
                   Qt::WindowTitleHint,
-                  // Show minimize button
+
                   Qt::WindowMinimizeButtonHint,
               })
     , fileData(std::move(fileData))
@@ -92,7 +89,7 @@ RestoreBackupsDialog::RestoreBackupsDialog(backup::FileData fileData,
     auto *restoreButton = buttons->addButton(QDialogButtonBox::Yes);
     restoreButton->setText(u"Restore Backup"_s);
     auto *ignoreBtn = buttons->addButton(QDialogButtonBox::No);
-    // Qt has StandardButton::Ignore, but that button has the AcceptRole
+
     ignoreBtn->setText(u"Ignore"_s);
     auto *abortBtn = buttons->addButton(QDialogButtonBox::Abort);
 
@@ -157,14 +154,13 @@ RestoreBackupsDialog::RestoreBackupsDialog(backup::FileData fileData,
     this->refreshBackups();
 
 #ifdef Q_OS_LINUX
-    // Needed for Sway to make the dialog floating. See
-    // https://github.com/swaywm/sway/issues/3095
+
     this->layout()->activate();
     this->setFixedSize(this->layout()->totalMinimumSize());
 #endif
 }
 
-void RestoreBackupsDialog::closeEvent(QCloseEvent * /*event*/)
+void RestoreBackupsDialog::closeEvent(QCloseEvent * )
 {
     if (!this->hasChosenAnything)
     {
@@ -175,8 +171,7 @@ void RestoreBackupsDialog::closeEvent(QCloseEvent * /*event*/)
 void RestoreBackupsDialog::keyPressEvent(QKeyEvent *event)
 {
     event->ignore();
-    // Don't call QDialog here, as it would handle QKeySequence::Cancel, Enter,
-    // and Return.
+
 }
 
 void RestoreBackupsDialog::refreshBackups()
@@ -198,15 +193,15 @@ void RestoreBackupsDialog::refreshBackups()
         }
 
         QString itemStr = stdPathToQString(backup.path.filename());
-        itemStr += u" (";
+        itemStr += QStringLiteral(" (");
         itemStr += backup.lastModified.toString(dtf);
         auto timeDiff = std::chrono::duration_cast<std::chrono::seconds>(
             now - backup.lastModified);
         if (timeDiff.count() > 0)
         {
-            itemStr += u" - ";
+            itemStr += QStringLiteral(" - ");
             itemStr += formatTime(timeDiff);
-            itemStr += u" ago";
+            itemStr += QStringLiteral(" ago");
         }
         itemStr += ')';
 
@@ -224,4 +219,4 @@ void RestoreBackupsDialog::refreshBackups()
     this->showButton.setEnabled(anyBackups);
 }
 
-}  // namespace chatterino
+}

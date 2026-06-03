@@ -53,4 +53,4 @@ struct Deserialize<QSize> {
     }
 };
 
-}  // namespace pajlada
+}

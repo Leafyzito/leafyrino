@@ -12,4 +12,4 @@ WelcomeDialog::WelcomeDialog()
     this->setWindowTitle("Chatterino quick setup");
 }
 
-}  // namespace chatterino
+}

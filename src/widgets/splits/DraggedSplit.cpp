@@ -29,4 +29,4 @@ void stopDraggingSplit()
     currentlyDraggingSplit = false;
 }
 
-}  // namespace chatterino
+}

@@ -32,4 +32,4 @@ private:
     std::unique_ptr<GIFTimer> gifTimer_;
 };
 
-}  // namespace chatterino
+}

@@ -13,24 +13,12 @@
 
 namespace chatterino {
 
-/**
- * This class manages a single connection
- * that has at most #maxSubscriptions subscriptions.
- *
- * You can safely overload the #onConnectionEstablished method
- * and e.g. add additional heartbeat logic.
- *
- * You can use shared_from_this to get a shared_ptr of this client.
- *
- * @tparam Subscription see BasicPubSubManager
- */
 template <typename SubscriptionT, typename Derived>
 class BasicPubSubClient
 {
 public:
     using Subscription = SubscriptionT;
 
-    // The maximum amount of subscriptions this connections can handle
     const size_t maxSubscriptions;
 
     BasicPubSubClient(size_t maxSubscriptions = 100)
@@ -44,19 +32,13 @@ public:
     BasicPubSubClient &operator=(const BasicPubSubClient &) = delete;
     BasicPubSubClient &operator=(const BasicPubSubClient &&) = delete;
 
-    /// The websocket handshake completed.
-    ///
-    /// Called from the manager in the GUI thread.
     void onOpen()
     {
         assertInGuiThread();
         this->open_ = true;
     }
 
-    /// A message has been received.
-    ///
-    /// Called from the websocket thread.
-    void onMessage(const QByteArray & /*msg*/)
+    void onMessage(const QByteArray & )
     {
     }
 
@@ -86,14 +68,6 @@ protected:
         return this->subscriptions_.contains(subscription);
     }
 
-    /**
-     * @return true if this client subscribed to this subscription
-     *         and the current subscriptions don't exceed the maximum
-     *         amount.
-     *         It won't subscribe twice to the same subscription.
-     *         Don't use this in place of subscription management
-     *         in the BasicPubSubManager.
-     */
     bool subscribe(const Subscription &subscription)
     {
         if (this->subscriptions_.size() >= this->maxSubscriptions)
@@ -106,7 +80,7 @@ protected:
             qCWarning(chatterinoLiveupdates)
                 << "Tried subscribing to" << subscription
                 << "but we're already subscribed!";
-            return true;  // true because the subscription already exists
+            return true;
         }
 
         qCDebug(chatterinoLiveupdates) << "Subscribing to" << subscription;
@@ -119,10 +93,6 @@ protected:
         return true;
     }
 
-    /**
-     * @return true if this client previously subscribed
-     *         and now unsubscribed from this subscription.
-     */
     bool unsubscribe(const Subscription &subscription)
     {
         if (this->subscriptions_.erase(subscription) <= 0)
@@ -155,4 +125,4 @@ private:
     friend class BasicPubSubManager;
 };
 
-}  // namespace chatterino
+}

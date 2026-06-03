@@ -89,6 +89,8 @@ inline const std::map<HotkeyCategory, ActionDefinitionMap> actionNames{
           ActionDefinition{
               "Usercard: execute moderation action",
               "<ban, unban or number of the timeout button to use>", 1}},
+         {"openProfilePictureMenu",
+          ActionDefinition{"Usercard: Open profile picture menu"}},
          {"pin", ActionDefinition{"Usercard, reply thread: pin window"}},
      }},
     {HotkeyCategory::Split,
@@ -183,7 +185,7 @@ inline const std::map<HotkeyCategory, ActionDefinitionMap> actionNames{
                   "Should the moderation mode be enabled, disabled or toggled",
           }},
          {"showSearch", ActionDefinition{"Search current channel"}},
-         {"showGlobalSearch", ActionDefinition{"Search all channels"}},
+         {"showGlobalSearch", ActionDefinition{"Search all open tabs"}},
          {"debug", ActionDefinition{"Show debug popup"}},
          {"popupOverlay", ActionDefinition{"New overlay popup"}},
          {"toggleOverlayInertia",

@@ -94,7 +94,7 @@ void Label::setFontStyle(FontStyle style)
     this->updateSize();
 }
 
-void Label::scaleChangedEvent(float /*scale*/)
+void Label::scaleChangedEvent(float )
 {
     this->updateSize();
 }
@@ -109,7 +109,7 @@ QSize Label::minimumSizeHint() const
     return this->minimumSizeHint_;
 }
 
-void Label::paintEvent(QPaintEvent * /*event*/)
+void Label::paintEvent(QPaintEvent * )
 {
     QPainter painter(this);
 
@@ -118,7 +118,6 @@ void Label::paintEvent(QPaintEvent * /*event*/)
     painter.setFont(
         getApp()->getFonts()->getFont(this->getFontStyle(), this->scale()));
 
-    // draw text
     QRectF textRect = this->textRect();
 
     auto text = [this] {
@@ -222,4 +221,4 @@ QRectF Label::textRect() const
     return QRectF(this->rect()).marginsRemoved(this->currentPadding_);
 }
 
-}  // namespace chatterino
+}

@@ -54,4 +54,4 @@ void WebSocketConnection::detach()
     qCDebug(chatterinoWebsocket) << *this << "Detached";
 }
 
-}  // namespace chatterino::ws::detail
+}

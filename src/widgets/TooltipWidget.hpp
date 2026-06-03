@@ -80,4 +80,4 @@ private:
     pajlada::Signals::SignalHolder connections_;
 };
 
-}  // namespace chatterino
+}

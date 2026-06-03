@@ -28,8 +28,7 @@ struct SignalCallback {
 
         if (!this->pluginRef.isAlive())
         {
-            // Reset the function reference before we assign a new function to
-            // it to avoid destroying it.
+
             this->pfn.abandon();
         }
         this->pluginRef = other.pluginRef;
@@ -49,7 +48,7 @@ struct SignalCallback {
         assertInGuiThread();
         if (!this->pluginRef.isAlive())
         {
-            this->pfn.abandon();  // don't destruct the function in this case
+            this->pfn.abandon();
         }
     }
 
@@ -71,6 +70,6 @@ private:
     sol::main_protected_function pfn;
 };
 
-}  // namespace chatterino::lua
+}
 
 #endif

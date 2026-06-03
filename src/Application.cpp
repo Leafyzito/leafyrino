@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #include "Application.hpp"
 
 #include "common/Args.hpp"
@@ -22,6 +18,7 @@
 #include "providers/ffz/FfzEmotes.hpp"
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/links/LinkResolver.hpp"
+#include "providers/IvrApi.hpp"
 #include "providers/pronouns/Pronouns.hpp"
 #include "providers/seventv/SeventvAPI.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
@@ -44,6 +41,8 @@
 #include "providers/chatterino/ChatterinoBadges.hpp"
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/seventv/SeventvBadges.hpp"
+#include "providers/homies/HomiesBadges.hpp"
+#include "providers/repetitions/RepeatedMessageDetector.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/seventv/SeventvPaints.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
@@ -56,6 +55,9 @@
 #include "singletons/CrashHandler.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/helper/LoggingChannel.hpp"
+#include "providers/moltorino/MoltorinoAuth.hpp"
+#include "providers/moltorino/MoltorinoPresence.hpp"
+#include "providers/moltorino/MoltorinoSupporterBadges.hpp"
 #include "singletons/Logging.hpp"
 #include "singletons/Paths.hpp"
 #include "singletons/Settings.hpp"
@@ -70,9 +72,15 @@
 #include "widgets/splits/Split.hpp"
 #include "widgets/Window.hpp"
 
+#include "common/network/NetworkRequest.hpp"
+#include "common/network/NetworkResult.hpp"
+
 #include <miniaudio.h>
 #include <QApplication>
-#include <QDesktopServices>
+#include <QDateTime>
+#include <QTimer>
+#include <QUrl>
+#include <QUrlQuery>
 
 namespace {
 
@@ -134,12 +142,23 @@ SeventvEventAPI *makeSeventvEventAPI(Settings &settings)
     return nullptr;
 }
 
+eventsub::IController *makeEventSubController(Settings &settings)
+{
+    bool enabled = settings.enableExperimentalEventSub;
+
+    if (enabled)
+    {
+        return new eventsub::Controller();
+    }
+
+    return new eventsub::DummyController();
+}
+
 const QString TWITCH_PUBSUB_URL = "wss://pubsub-edge.twitch.tv";
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 IApplication *INSTANCE = nullptr;
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -153,10 +172,6 @@ IApplication::~IApplication()
     INSTANCE = nullptr;
 }
 
-// this class is responsible for handling the workflow of Chatterino
-// It will create the instances of the major classes, and connect their signals
-// to each other
-
 Application::Application(Settings &_settings, const Paths &paths,
                          const Args &_args, Updates &_updates)
     : paths_(paths)
@@ -166,7 +181,7 @@ Application::Application(Settings &_settings, const Paths &paths,
     , logging(new Logging(_settings))
     , emotes(new EmoteController)
     , accounts(new AccountController)
-    , eventSub(new eventsub::Controller())
+    , eventSub(makeEventSubController(_settings))
     , hotkeys(new HotkeyController)
     , windows(new WindowManager(_args, paths, _settings, *this->themes,
                                 *this->fonts))
@@ -182,6 +197,9 @@ Application::Application(Settings &_settings, const Paths &paths,
     , ffzBadges(new FfzBadges)
     , bttvBadges(new BttvBadges)
     , seventvBadges(new SeventvBadges)
+    , homiesBadges(new HomiesBadges)
+    , moltorinoSupporterBadges(new MoltorinoSupporterBadges)
+    , repeatedMessageDetector(new RepeatedMessageDetector)
     , seventvPaints(new SeventvPaints)
     , seventvPersonalEmotes(new SeventvPersonalEmotes)
     , userData(new UserDataController(paths))
@@ -211,7 +229,7 @@ Application::Application(Settings &_settings, const Paths &paths,
 
 Application::~Application()
 {
-    // we do this early to ensure getApp isn't used in any dtors
+
     INSTANCE = nullptr;
 }
 
@@ -219,35 +237,20 @@ void Application::initialize(Settings &settings, const Paths &paths)
 {
     assert(!this->initialized);
 
-    // Show changelog
-    if (!this->args_.isFramelessEmbed &&
-        getSettings()->currentVersion.getValue() != "" &&
-        getSettings()->currentVersion.getValue() != CHATTERINO_VERSION)
-    {
-        auto *box = new QMessageBox(QMessageBox::Information, "Chatterino 7",
-                                    "Show changelog?",
-                                    QMessageBox::Yes | QMessageBox::No);
-        box->setAttribute(Qt::WA_DeleteOnClose);
-        if (box->exec() == QMessageBox::Yes)
-        {
-            QDesktopServices::openUrl(
-                QUrl("https://www.chatterino.com/changelog"));
-        }
-    }
-
     if (!this->args_.isFramelessEmbed)
     {
         getSettings()->currentVersion.setValue(CHATTERINO_VERSION);
     }
     this->emotes->initialize();
+    IvrApi::initialize();
 
     this->accounts->load();
 
     this->windows->initialize();
 
     this->ffzBadges->load();
+    this->moltorinoSupporterBadges->initialize();
 
-    // Load global emotes
     this->bttvEmotes->loadEmotes();
     this->ffzEmotes->loadEmotes();
     this->seventvEmotes->loadGlobalEmotes();
@@ -255,19 +258,14 @@ void Application::initialize(Settings &settings, const Paths &paths)
     this->twitch->initialize();
     this->kickChatServer->initialize();
 
-    // Load live status
     this->notifications->initialize();
 
-    // XXX: Loading Twitch badges after Helix has been initialized, which only happens after
-    // the AccountController initialize has been called
     this->twitchBadges->loadTwitchBadges();
 
 #ifdef CHATTERINO_HAVE_PLUGINS
     this->plugins->initialize(settings);
 #endif
 
-    // Show crash message.
-    // On Windows, the crash message was already shown.
 #ifndef Q_OS_WIN
     if (!this->args_.isFramelessEmbed && this->args_.crashRecovery)
     {
@@ -301,6 +299,73 @@ void Application::initialize(Settings &settings, const Paths &paths)
 
     this->streamerMode->start();
 
+    getMoltorinoPresence()->init();
+
+    {
+        auto &s = *getSettings();
+        const auto clientId = s.botBadgeClientID.getValue().trimmed();
+        const auto clientSecret = s.botBadgeClientSecret.getValue().trimmed();
+        const auto expiryStr = s.botBadgeAppTokenExpiry.getValue().trimmed();
+
+        if (!clientId.isEmpty() && !clientSecret.isEmpty())
+        {
+            bool needsRefresh = false;
+
+            if (expiryStr.isEmpty())
+            {
+                needsRefresh = true;
+            }
+            else
+            {
+                auto expiry =
+                    QDateTime::fromString(expiryStr, Qt::ISODate);
+
+                needsRefresh =
+                    !expiry.isValid() ||
+                    QDateTime::currentDateTimeUtc().secsTo(expiry) < 86400;
+            }
+
+            if (needsRefresh)
+            {
+                QUrl tokenUrl("https://id.twitch.tv/oauth2/token");
+                QUrlQuery tokenQuery;
+                tokenQuery.addQueryItem("client_id", clientId);
+                tokenQuery.addQueryItem("client_secret", clientSecret);
+                tokenQuery.addQueryItem("grant_type", "client_credentials");
+                tokenUrl.setQuery(tokenQuery);
+
+                NetworkRequest(tokenUrl, NetworkRequestType::Post)
+                    .timeout(15000)
+                    .onSuccess([](const NetworkResult &res) {
+                        auto json = res.parseJson();
+                        auto token =
+                            json.value("access_token").toString().trimmed();
+                        auto expiresIn = json.value("expires_in").toInt();
+
+                        if (!token.isEmpty())
+                        {
+                            auto &settings = *getSettings();
+                            settings.botBadgeAppAccessToken = token;
+                            settings.botBadgeAppTokenExpiry =
+                                QDateTime::currentDateTimeUtc()
+                                    .addSecs(expiresIn)
+                                    .toString(Qt::ISODate);
+                            settings.requestSave();
+
+                            qCDebug(chatterinoApp)
+                                << "Bot badge app token refreshed.";
+                        }
+                    })
+                    .onError([](const NetworkResult &res) {
+                        qCWarning(chatterinoApp)
+                            << "Failed to refresh bot badge app token:"
+                            << res.formatError();
+                    })
+                    .execute();
+            }
+        }
+    }
+
     this->initialized = true;
 }
 
@@ -330,6 +395,12 @@ int Application::run()
             this->twitch->reloadAllSevenTVChannelEmotes();
         },
         false);
+
+    QTimer::singleShot(2500, qApp, [] {
+        getMoltorinoPresence()->startHeartbeat();
+    });
+
+    MoltorinoAuth::scheduleStartupRefresh();
 
     return QApplication::exec();
 }
@@ -432,7 +503,7 @@ FfzBadges *Application::getFfzBadges()
 
 BttvBadges *Application::getBttvBadges()
 {
-    // BttvBadges handles its own locks, so we don't need to assert that this is called in the GUI thread
+
     assert(this->bttvBadges);
 
     return this->bttvBadges.get();
@@ -440,10 +511,33 @@ BttvBadges *Application::getBttvBadges()
 
 SeventvBadges *Application::getSeventvBadges()
 {
-    // SeventvBadges handles its own locks, so we don't need to assert that this is called in the GUI thread
+
     assert(this->seventvBadges);
 
     return this->seventvBadges.get();
+}
+
+HomiesBadges *Application::getHomiesBadges()
+{
+
+    assert(this->homiesBadges);
+
+    return this->homiesBadges.get();
+}
+
+MoltorinoSupporterBadges *Application::getMoltorinoSupporterBadges()
+{
+    assert(this->moltorinoSupporterBadges);
+
+    return this->moltorinoSupporterBadges.get();
+}
+
+RepeatedMessageDetector *Application::getRepeatedMessageDetector()
+{
+    assertInGuiThread();
+    assert(this->repeatedMessageDetector);
+
+    return this->repeatedMessageDetector.get();
 }
 
 IUserDataController *Application::getUserData()
@@ -568,7 +662,6 @@ BttvEmotes *Application::getBttvEmotes()
 BttvLiveUpdates *Application::getBttvLiveUpdates()
 {
     assertInGuiThread();
-    // bttvLiveUpdates may be nullptr if it's not enabled
 
     return this->bttvLiveUpdates.get();
 }
@@ -606,14 +699,13 @@ SeventvPaints *Application::getSeventvPaints()
 SeventvEventAPI *Application::getSeventvEventAPI()
 {
     assertInGuiThread();
-    // seventvEventAPI may be nullptr if it's not enabled
 
     return this->seventvEventAPI.get();
 }
 
 pronouns::Pronouns *Application::getPronouns()
 {
-    // pronouns::Pronouns handles its own locks, so we don't need to assert that this is called in the GUI thread
+
     assert(this->pronouns);
 
     return this->pronouns.get();
@@ -678,6 +770,7 @@ void Application::stop()
     this->userData.reset();
     this->seventvBadges.reset();
     this->ffzBadges.reset();
+    this->homiesBadges.reset();
     this->twitch.reset();
     this->highlights.reset();
     this->notifications.reset();
@@ -727,4 +820,4 @@ bool isAppAboutToQuit()
     return ABOUT_TO_QUIT.load();
 }
 
-}  // namespace chatterino
+}

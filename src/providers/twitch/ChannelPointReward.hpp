@@ -14,6 +14,7 @@ struct ChannelPointReward {
     ChannelPointReward(const QJsonObject &redemption);
     ChannelPointReward() = delete;
     QString id;
+    QString redemptionKey;
     QString channelId;
     QString title;
     int cost;

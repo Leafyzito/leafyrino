@@ -38,24 +38,11 @@ public:
     bool hasSound() const;
     bool isMatch(const TwitchBadge &badge) const;
 
-    /**
-     * @brief Check if this highlight phrase has a custom sound set.
-     *
-     * Note that this method only checks whether the path to the custom sound
-     * is not empty. It does not check whether the file still exists, is a
-     * sound file, or anything else.
-     *
-     * @return true, if the custom sound file path is not empty, false otherwise
-     */
     bool hasCustomSound() const;
 
     const QUrl &getSoundUrl() const;
     const std::shared_ptr<QColor> getColor() const;
 
-    /*
-     * XXX: Use the constexpr constructor here once we are building with
-     * Qt>=5.13.
-     */
     static QColor FALLBACK_HIGHLIGHT_COLOR;
 
 private:
@@ -73,7 +60,7 @@ private:
     bool hasVersions_;
     QStringList badges_;
 };
-};  // namespace chatterino
+};
 
 namespace pajlada {
 
@@ -137,4 +124,4 @@ struct Deserialize<chatterino::HighlightBadge> {
     }
 };
 
-}  // namespace pajlada
+}

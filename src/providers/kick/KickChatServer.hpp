@@ -5,7 +5,7 @@
 #include "providers/kick/KickLiveController.hpp"
 #include "providers/kick/KickLiveUpdates.hpp"
 #include "util/FunctionRef.hpp"
-#include "util/QStringHash.hpp"  // IWYU pragma: keep
+#include "util/QStringHash.hpp"
 
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <pajlada/signals/signalholder.hpp>
@@ -107,4 +107,4 @@ private:
     friend KickChannel;
 };
 
-}  // namespace chatterino
+}

@@ -20,12 +20,11 @@ public:
     AccountModel(QObject *parent);
 
 protected:
-    // turn a vector item into a model row
+
     std::shared_ptr<Account> getItemFromRow(
         std::vector<QStandardItem *> &row,
         const std::shared_ptr<Account> &original) override;
 
-    // turns a row in the model into a vector item
     void getRowFromItem(const std::shared_ptr<Account> &item,
                         std::vector<QStandardItem *> &row) override;
 
@@ -42,4 +41,4 @@ private:
     std::unordered_map<QString, int> categoryCount_;
 };
 
-}  // namespace chatterino
+}

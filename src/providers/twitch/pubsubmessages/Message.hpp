@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2022 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include "common/QLogging.hpp"
@@ -61,4 +57,4 @@ std::optional<InnerClass> PubSubMessageMessage::toInner() const
     return InnerClass{this->messageObject};
 }
 
-}  // namespace chatterino
+}

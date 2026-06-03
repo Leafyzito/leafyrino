@@ -56,7 +56,7 @@ QString generateDateString(const QDateTime &now)
     return now.toString("yyyy-MM-dd");
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -86,7 +86,6 @@ LoggingChannel::LoggingChannel(QString _channelName, QString _platform)
             QStringLiteral("Channels") + QDir::separator() + this->channelName;
     }
 
-    // enforce capitalized platform names
     this->subDirectory = this->platform[0].toUpper() +
                          this->platform.mid(1).toLower() + QDir::separator() +
                          this->subDirectory;
@@ -128,7 +127,6 @@ void LoggingChannel::openLogFile()
         return;
     }
 
-    // Open file handle to log file of current date
     QString fileName = directory + QDir::separator() + baseFileName;
     qCDebug(chatterinoHelper) << "Logging to" << fileName;
     this->fileHandle.setFileName(fileName);
@@ -218,8 +216,7 @@ void LoggingChannel::addMessage(const MessagePtr &message,
     QString messageText;
     if (message->loginName.isEmpty())
     {
-        // This accounts for any messages not explicitly sent by a user, like
-        // system messages, parts of announcements, subs etc.
+
         messageText = message->messageText;
     }
     else
@@ -249,8 +246,7 @@ void LoggingChannel::addMessage(const MessagePtr &message,
             }
             else
             {
-                // we actually want to use 'reply-parent-user-login' tag here,
-                // but it's not worth storing just for this edge case
+
                 rootMessageChatter = message->replyThread->root()->loginName;
             }
             messageText.insert(colonIndex + 1, " @" + rootMessageChatter);
@@ -272,4 +268,4 @@ void LoggingChannel::addMessage(const MessagePtr &message,
     }
 }
 
-}  // namespace chatterino
+}

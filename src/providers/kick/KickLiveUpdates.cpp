@@ -13,7 +13,7 @@
 #include <charconv>
 #include <utility>
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 
 namespace {
 
@@ -70,7 +70,7 @@ IDs parseIDs(std::string_view channel)
     return IDs{.roomID = v};
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -87,7 +87,7 @@ public:
     {
     }
 
-    void onOpen() /* override */
+    void onOpen()
     {
         BasicPubSubClient::onOpen();
         this->lastHeartbeat_ = std::chrono::steady_clock::now();
@@ -159,7 +159,7 @@ void KickLiveUpdatesClient::onMessageUi(const QByteArray &msg)
     else if (event == "pusher_internal:subscription_succeeded")
     {
         auto channel = rootObj["channel"].toStdString();
-        // that's the main chat subscription
+
         if (channel.starts_with("chatrooms.") && channel.ends_with(".v2"))
         {
             auto ids = parseIDs(channel);
@@ -221,7 +221,6 @@ void KickLiveUpdatesClient::checkHeartbeat()
     this->sendText(R"({"event":"pusher:ping","data":0})"_ba);
 }
 
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
 QByteArray KickLiveUpdatesClient::encodeSubscription(const Subscription &sub)
 {
     return QByteArray::fromStdString(boost::json::serialize(boost::json::object{
@@ -244,7 +243,6 @@ QByteArray KickLiveUpdatesClient::encodeUnsubscription(const Subscription &sub)
          }},
     }));
 }
-// NOLINTEND(readability-convert-member-functions-to-static)
 
 class KickLiveUpdatesPrivate
     : public BasicPubSubManager<KickLiveUpdatesPrivate, KickLiveUpdatesClient>
@@ -280,7 +278,6 @@ KickLiveUpdatesPrivate::~KickLiveUpdatesPrivate()
     this->stop();
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 std::shared_ptr<KickLiveUpdatesClient> KickLiveUpdatesPrivate::makeClient()
 {
     return std::make_shared<KickLiveUpdatesClient>(
@@ -331,4 +328,4 @@ void KickLiveUpdates::leaveRoom(uint64_t roomID, uint64_t channelID)
                                 QString::number(channelID));
 }
 
-}  // namespace chatterino
+}

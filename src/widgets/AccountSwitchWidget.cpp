@@ -74,7 +74,6 @@ void AccountSwitchWidget::refreshSelection()
 {
     this->blockSignals(true);
 
-    // Select the currently logged in user
     if (this->count() > 0)
     {
         auto *app = getApp();
@@ -104,4 +103,4 @@ void AccountSwitchWidget::refreshSelection()
     this->blockSignals(false);
 }
 
-}  // namespace chatterino
+}

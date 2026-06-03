@@ -4,8 +4,7 @@
 
 #pragma once
 
-#include <type_traits>  // IWYU: pragma keep - included before QFlags to fix a bug on macOS Qt 6.7
-// Keep this type_traits include above the QFlags include
+#include <type_traits>
 
 #include <QFlags>
 #include <QLabel>
@@ -36,4 +35,4 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
 };
 
-}  // namespace chatterino
+}

@@ -26,4 +26,4 @@ bool RegexPredicate::appliesToImpl(const Message &message)
     return match.hasMatch();
 }
 
-}  // namespace chatterino
+}

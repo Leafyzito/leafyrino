@@ -32,7 +32,7 @@ public:
 
     bool valid() const;
 
-    bool filter(filters::RunContext context) const;
+    bool filter(const filters::ContextMap &context) const;
 
     bool operator==(const FilterRecord &other) const;
 
@@ -46,7 +46,7 @@ private:
 
 using FilterRecordPtr = std::shared_ptr<FilterRecord>;
 
-}  // namespace chatterino
+}
 
 namespace pajlada {
 
@@ -89,4 +89,4 @@ struct Deserialize<chatterino::FilterRecordPtr> {
     }
 };
 
-}  // namespace pajlada
+}

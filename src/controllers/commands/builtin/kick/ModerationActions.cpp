@@ -9,7 +9,7 @@
 
 namespace {
 
-using namespace Qt::Literals;
+using namespace Qt::Literals::StringLiterals;
 using namespace chatterino;
 
 template <typename Fn>
@@ -36,7 +36,6 @@ void withUser(KickChannel *channel, const QString &userSpec,
         return;
     }
 
-    // otherwise resolve the user
     getKickApi()->getChannelByName(
         userSpec,
         [weakChan = channel->weakFromThis(), onAction = std::move(onAction),
@@ -59,7 +58,7 @@ void withUser(KickChannel *channel, const QString &userSpec,
         });
 }
 
-}  // namespace
+}
 
 namespace chatterino::commands {
 
@@ -169,4 +168,4 @@ QString doKickDelete(const CommandContext &ctx)
     return {};
 }
 
-}  // namespace chatterino::commands
+}

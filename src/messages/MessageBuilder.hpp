@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2017 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #pragma once
 
 #include "common/Aliases.hpp"
@@ -33,18 +29,17 @@ using EmotePtr = std::shared_ptr<const Emote>;
 
 class Channel;
 class TwitchChannel;
-class ChannelChatters;
 class MessageThread;
 class IgnorePhrase;
 struct HelixVip;
 using HelixModerator = HelixVip;
 struct ChannelPointReward;
 struct TwitchEmoteOccurrence;
-struct HelixPinnedChatMessage;
+class ChannelChatters;
 
 namespace linkparser {
 struct Parsed;
-}  // namespace linkparser
+}
 
 struct SystemMessageTag {
 };
@@ -61,7 +56,6 @@ struct LiveUpdatesUpdateEmoteSetMessageTag {
 struct ImageUploaderResultTag {
 };
 
-// NOLINTBEGIN(readability-identifier-naming)
 const SystemMessageTag systemMessage{};
 const TimeoutMessageTag timeoutMessage{};
 const LiveUpdatesUpdateEmoteMessageTag liveUpdatesUpdateEmoteMessage{};
@@ -69,10 +63,7 @@ const LiveUpdatesRemoveEmoteMessageTag liveUpdatesRemoveEmoteMessage{};
 const LiveUpdatesAddEmoteMessageTag liveUpdatesAddEmoteMessage{};
 const LiveUpdatesUpdateEmoteSetMessageTag liveUpdatesUpdateEmoteSetMessage{};
 
-// This signifies that you want to construct a message containing the result of
-// a successful image upload.
 const ImageUploaderResultTag imageUploaderResultMessage{};
-// NOLINTEND(readability-identifier-naming)
 
 MessagePtr makeSystemMessage(const QString &text);
 MessagePtr makeSystemMessage(const QString &text, const QTime &time);
@@ -97,7 +88,7 @@ struct HighlightAlert {
 class MessageBuilder
 {
 public:
-    /// Build a message without a base IRC message.
+
     MessageBuilder();
 
     MessageBuilder(SystemMessageTag, const QString &text,
@@ -122,12 +113,6 @@ public:
     MessageBuilder(LiveUpdatesUpdateEmoteSetMessageTag, const QString &platform,
                    const QString &actor, const QString &emoteSetName);
 
-    /**
-      * "Your image has been uploaded to %1[ (Deletion link: %2)]."
-      * or "Your image has been uploaded to %1 %2. %3 left. "
-      * "Please wait until all of them are uploaded. "
-      * "About %4 seconds left."
-      */
     MessageBuilder(ImageUploaderResultTag, const QString &imageLink,
                    const QString &deletionLink, size_t imagesStillQueued = 0,
                    size_t secondsLeft = 0);
@@ -163,9 +148,6 @@ public:
     void appendOrEmplaceSystemTextAndUpdate(const QString &text,
                                             QString &toUpdate);
 
-    // Helper method that emplaces some text stylized as system text
-    // and then appends that text to the QString parameter "toUpdate".
-    // Returns the TextElement that was emplaced.
     TextElement *emplaceSystemTextAndUpdate(const QString &text,
                                             QString &toUpdate);
 
@@ -178,6 +160,9 @@ public:
 
     static void triggerHighlights(const Channel *channel,
                                   const HighlightAlert &alert);
+    static void triggerHighlights(const Channel *channel,
+                                  const MessagePtr &message,
+                                  const HighlightAlert &alert);
 
     void appendChannelPointRewardMessage(const ChannelPointReward &reward,
                                          bool isMod, bool isBroadcaster);
@@ -185,13 +170,11 @@ public:
     static MessagePtr makeChannelPointRewardMessage(
         const ChannelPointReward &reward, bool isMod, bool isBroadcaster);
 
-    /// Make a "CHANNEL_NAME has gone live!" message
     static MessagePtr makeLiveMessage(const QString &channelName,
                                       const QString &channelID,
                                       const QString &title,
                                       MessageFlags extraFlags = {});
 
-    // Messages in normal chat for channel stuff
     static MessagePtr makeOfflineSystemMessage(const QString &channelName,
                                                const QString &channelID);
     static MessagePtr makeHostingSystemMessage(const QString &channelName,
@@ -207,39 +190,6 @@ public:
 
     static MessagePtr buildHypeChatMessage(Communi::IrcPrivateMessage *message);
 
-    /// @brief Builds a message out of an `ircMessage`.
-    ///
-    /// Building a message won't cause highlights to be triggered. They will
-    /// only be parsed. To trigger highlights (play sound etc.), use
-    /// triggerHighlights().
-    ///
-    /// @param channel The channel this message was sent to. Must not be
-    ///                `nullptr`.
-    /// @param ircMessage The original message. This can be any message
-    ///                   (PRIVMSG, USERNOTICE, etc.). Its content is not
-    ///                   accessed through this parameter but through `content`,
-    ///                   as the content might be inside a tag (e.g. gifts in a
-    ///                   USERNOTICE).
-    /// @param args Arguments from parsing a chat message.
-    /// @param content The message text. This isn't always the entire text. In
-    ///                replies, the leading mention can be cut off.
-    ///                See `messageOffset`.
-    /// @param messageOffset Starting offset to be used on index-based
-    ///                      operations on `content` such as parsing emotes.
-    ///                      For example:
-    ///                         ircMessage = "@hi there"
-    ///                         content = "there"
-    ///                         messageOffset_ = 4
-    ///                      The index 6 would resolve to 6 - 4 = 2 => 'e'
-    /// @param thread The reply thread this message is part of. If there's no
-    ///               thread, this is an empty `shared_ptr`.
-    /// @param parent The direct parent this message is replying to. This does
-    ///               not need to be the `thread`s root. If this message isn't
-    ///               replying to anything, this is an empty `shared_ptr`.
-    ///
-    /// @returns The built message and a highlight result. If the message is
-    ///          ignored (e.g. from a blocked user), then the returned pointer
-    ///          will be en empty `shared_ptr`.
     static std::pair<MessagePtrMut, HighlightAlert> makeIrcMessage(
         Channel *channel, const Communi::IrcMessage *ircMessage,
         const MessageParseArgs &args, QString content,
@@ -259,22 +209,14 @@ public:
 
     static MessagePtrMut makeMissingScopesMessage(const QString &missingScopes);
 
-    /// "Chat has been cleared by a moderator." or "{actor} cleared the chat."
-    /// @param actor The user who cleared the chat (empty if unknown)
-    /// @param count How many times this message has been received already
     static MessagePtrMut makeClearChatMessage(const QDateTime &now,
                                               const QString &actor,
                                               uint32_t count = 1);
 
-    static MessagePtrMut makePinSuccessMessage(QString text, const QString &id);
-
-    static MessagePtrMut makeCurrentPinnedMessage(
-        const TwitchChannel &channel, const HelixPinnedChatMessage &pin);
-
 private:
     struct TextState {
         TwitchChannel *twitchChannel = nullptr;
-        QString userID;  // 7TV: used for personal emotes
+        QString userID;
         bool hasBits = false;
         bool bitsStacked = false;
         int bitsLeft = 0;
@@ -297,29 +239,17 @@ private:
                        bool trimSubscriberUsername);
     void parseMessageID(const QVariantMap &tags);
 
-    /// Parses the room-ID this message was received in
-    ///
-    /// @returns The room-ID
     static QString parseRoomID(const QVariantMap &tags,
                                TwitchChannel *twitchChannel);
 
-    /// Parses the shared-chat information from this message.
-    ///
-    /// @param tags The tags of the received message
-    /// @param twitchChannel The channel this message was received in
-    /// @returns The source channel - the channel this message originated from.
-    ///          If there's no channel currently open, @a twitchChannel is
-    ///          returned.
     TwitchChannel *parseSharedChatInfo(const QVariantMap &tags,
                                        TwitchChannel *twitchChannel);
 
-    // Parse & build thread information into the message
-    // Will read information from thread_ or from IRC tags
     void parseThread(const QString &messageContent, const QVariantMap &tags,
                      const Channel *channel,
                      const std::shared_ptr<MessageThread> &thread,
                      const MessagePtr &parent);
-    // parseHighlights only updates the visual state of the message, but leaves the playing of alerts and sounds to the triggerHighlights function
+
     HighlightAlert parseHighlights(const QVariantMap &tags,
                                    const QString &originalMessage,
                                    const MessageParseArgs &args);
@@ -337,6 +267,8 @@ private:
     void appendFfzBadges(TwitchChannel *twitchChannel, const QString &userID);
     void appendBttvBadges(const QString &userID);
     void appendSeventvBadges(const QString &userID);
+    void appendHomiesBadges(const QString &userID);
+    void appendMoltorinoBadges(const QString &userID);
 
     [[nodiscard]] static bool isIgnored(const QString &originalMessage,
                                         const QString &userID,
@@ -348,4 +280,4 @@ private:
     QColor usernameColor_ = {153, 153, 153};
 };
 
-}  // namespace chatterino
+}

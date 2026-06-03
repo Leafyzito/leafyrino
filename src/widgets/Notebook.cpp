@@ -15,7 +15,7 @@
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
 #include "widgets/buttons/DrawnButton.hpp"
-#include "widgets/buttons/InitUpdateButton.hpp"
+#include "widgets/buttons/InitMoltorinoUpdateButton.hpp"
 #include "widgets/buttons/PixmapButton.hpp"
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
@@ -25,6 +25,7 @@
 #include "widgets/splits/SplitContainer.hpp"
 #include "widgets/Window.hpp"
 
+#include <boost/foreach.hpp>
 #include <QActionGroup>
 #include <QDebug>
 #include <QFile>
@@ -243,6 +244,10 @@ void Notebook::duplicatePage(QWidget *page)
 
     auto *tab =
         this->addPageAt(newContainer, newTabPosition, newTabTitle, false);
+    if (item->tab->hasCustomTabColor())
+    {
+        tab->setCustomTabColor(item->tab->getCustomTabColor());
+    }
     tab->copyHighlightStateAndSourcesFrom(item->tab);
 
     newContainer->setTab(tab);
@@ -1454,6 +1459,7 @@ void SplitNotebook::showEvent(QShowEvent * /*event*/)
 
         if (split)
         {
+            split->scheduleDeferredTwitchRefresh();
             split->setFocus(Qt::OtherFocusReason);
         }
     }
@@ -1525,7 +1531,7 @@ void SplitNotebook::addCustomButtons()
     // updates
     auto *updateBtn = this->addCustomButton<PixmapButton>();
 
-    initUpdateButton(
+    initMoltorinoUpdateButton(
         *updateBtn,
         [this] {
             this->performLayout(false);
@@ -1623,6 +1629,20 @@ void SplitNotebook::select(QWidget *page, bool focusPage)
     }
 
     this->Notebook::select(page, focusPage);
+
+    if (auto *selectedPage = this->getSelectedPage())
+    {
+        auto *split = selectedPage->getSelectedSplit();
+        if (!split)
+        {
+            split = selectedPage->findChild<Split *>();
+        }
+
+        if (split)
+        {
+            split->scheduleDeferredTwitchRefresh();
+        }
+    }
 }
 
 void SplitNotebook::forEachSplit(const std::function<void(Split *)> &cb)

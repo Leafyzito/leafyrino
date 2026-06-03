@@ -10,10 +10,6 @@ class QTextDocument;
 
 namespace chatterino {
 
-/// @brief A Label that supports rendering markdown text
-///
-/// MarkdownLabel inherits from Label and adds markdown rendering capabilities.
-/// It automatically handles markdown document creation and rendering.
 class MarkdownLabel : public Label
 {
 public:
@@ -23,7 +19,7 @@ public:
     void setText(const QString &text);
 
 protected:
-    void paintEvent(QPaintEvent * /*event*/) override;
+    void paintEvent(QPaintEvent * ) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
 
@@ -33,4 +29,4 @@ private:
     QTextDocument *markdownDocument;
 };
 
-}  // namespace chatterino
+}

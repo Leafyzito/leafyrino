@@ -91,7 +91,7 @@ std::optional<Args::Channel> parseActivateOption(QString input)
     };
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -101,22 +101,20 @@ Args::Args(const QApplication &app, const Paths &paths)
     parser.setApplicationDescription("Chatterino 2 Client for Twitch Chat");
     parser.addHelpOption();
 
-    // Used internally by app to restart after unexpected crashes
     auto crashRecoveryOption = hiddenOption("crash-recovery");
+    auto remoteRestartOption = hiddenOption("remote-restart");
     auto exceptionCodeOption = hiddenOption("cr-exception-code", "", "code");
     auto exceptionMessageOption =
         hiddenOption("cr-exception-message", "", "message");
 
-    // Added to ignore the parent-window option passed during native messaging
     auto parentWindowOption = hiddenOption("parent-window");
     auto parentWindowIdOption =
         hiddenOption("x-attach-split-to-window", "", "window-id");
 
-    // Verbose
     auto verboseOption = QCommandLineOption(
         QStringList{"v", "verbose"}, "Attaches to the Console on windows, "
                                      "allowing you to see debug output.");
-    // Safe mode
+
     QCommandLineOption safeModeOption(
         "safe-mode", "Starts Chatterino without loading Plugins and always "
                      "show the settings button.");
@@ -128,7 +126,6 @@ Args::Args(const QApplication &app, const Paths &paths)
         "Chatterino starts logged in as anonymous.",
         "username");
 
-    // Channel layout
     auto channelLayout = QCommandLineOption(
         {"c", "channels"},
         "Joins only supplied channels on startup. Use letters with colons to "
@@ -144,13 +141,6 @@ Args::Args(const QApplication &app, const Paths &paths)
         "specified, Twitch is assumed.",
         "t:channel");
 
-    QCommandLineOption useOldScalingOption(
-        "use-old-scaling",
-        "Starts Chatterino with the old scaling option applied. This is not a "
-        "setting that will stick around. If you have issues where you feel "
-        "like you have to use this, please reach out to our issue tracker at "
-        "https://github.com/Chatterino/chatterino2/issues");
-
 #ifndef NDEBUG
     QCommandLineOption useLocalEventsubOption(
         "use-local-eventsub",
@@ -160,6 +150,7 @@ Args::Args(const QApplication &app, const Paths &paths)
     parser.addOptions({
         {{"V", "version"}, "Displays version information."},
         crashRecoveryOption,
+        remoteRestartOption,
         exceptionCodeOption,
         exceptionMessageOption,
         parentWindowOption,
@@ -169,7 +160,6 @@ Args::Args(const QApplication &app, const Paths &paths)
         loginOption,
         channelLayout,
         activateOption,
-        useOldScalingOption,
 #ifndef NDEBUG
         useLocalEventsubOption,
 #endif
@@ -203,6 +193,7 @@ Args::Args(const QApplication &app, const Paths &paths)
     this->printVersion = parser.isSet("V");
 
     this->crashRecovery = parser.isSet(crashRecoveryOption);
+    this->remoteRestart = parser.isSet(remoteRestartOption);
     if (parser.isSet(exceptionCodeOption))
     {
         this->exceptionCode =
@@ -237,11 +228,6 @@ Args::Args(const QApplication &app, const Paths &paths)
             parseActivateOption(parser.value(activateOption));
     }
 
-    if (parser.isSet(useOldScalingOption))
-    {
-        this->useOldScaling = true;
-    }
-
 #ifndef NDEBUG
     if (parser.isSet(useLocalEventsubOption))
     {
@@ -268,13 +254,8 @@ void Args::applyCustomChannelLayout(const QString &argValue, const Paths &paths)
     WindowLayout layout;
     WindowDescriptor window;
 
-    /*
-     * There is only one window that is loaded from the --channels
-     * argument so that is what we use as the main window.
-     */
     window.type_ = WindowType::Main;
 
-    // Load main window layout from config file so we can use the same geometry
     const QRect configMainLayout = [paths] {
         const QString windowLayoutFile = combinePath(
             paths.settingsDirectory, WindowManager::WINDOW_LAYOUT_FILENAME);
@@ -305,7 +286,6 @@ void Args::applyCustomChannelLayout(const QString &argValue, const Paths &paths)
             continue;
         }
 
-        // Twitch is default platform
         QString platform = "t";
         QString channelName = channelArg;
 
@@ -316,12 +296,10 @@ void Args::applyCustomChannelLayout(const QString &argValue, const Paths &paths)
             channelName = match.captured(2);
         }
 
-        // Twitch (default)
         if (platform == "t")
         {
             TabDescriptor tab;
 
-            // Set first tab as selected
             tab.selected_ = window.tabs_.empty();
             tab.rootNode_ = SplitNodeDescriptor{{
                 .type_ = "twitch",
@@ -332,7 +310,6 @@ void Args::applyCustomChannelLayout(const QString &argValue, const Paths &paths)
         }
     }
 
-    // Only respect --channels if we could actually parse any channels
     if (!window.tabs_.empty())
     {
         this->dontSaveSettings = true;
@@ -342,4 +319,4 @@ void Args::applyCustomChannelLayout(const QString &argValue, const Paths &paths)
     }
 }
 
-}  // namespace chatterino
+}

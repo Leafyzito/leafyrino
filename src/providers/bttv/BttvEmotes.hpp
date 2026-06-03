@@ -31,7 +31,7 @@ namespace bttv::detail {
 EmoteMap parseChannelEmotes(const QJsonObject &jsonRoot,
                             const QString &channelDisplayName);
 
-}  // namespace bttv::detail
+}
 
 class BttvEmotes final
 {
@@ -53,37 +53,16 @@ public:
                             std::function<void(EmoteMap &&)> callback,
                             bool manualRefresh, bool cacheHit);
 
-    /**
-     * Adds an emote to the `channelEmoteMap`.
-     * This will _copy_ the emote map and
-     * update the `Atomic`.
-     *
-     * @return The added emote.
-     */
     static EmotePtr addEmote(
         const QString &channelDisplayName,
         Atomic<std::shared_ptr<const EmoteMap>> &channelEmoteMap,
         const BttvLiveUpdateEmoteUpdateAddMessage &message);
 
-    /**
-     * Updates an emote in this `channelEmoteMap`.
-     * This will _copy_ the emote map and
-     * update the `Atomic`.
-     *
-     * @return pair<old emote, new emote> if any emote was updated.
-     */
     static std::optional<std::pair<EmotePtr, EmotePtr>> updateEmote(
         const QString &channelDisplayName,
         Atomic<std::shared_ptr<const EmoteMap>> &channelEmoteMap,
         const BttvLiveUpdateEmoteUpdateAddMessage &message);
 
-    /**
-     * Removes an emote from this `channelEmoteMap`.
-     * This will _copy_ the emote map and
-     * update the `Atomic`.
-     *
-     * @return The removed emote if any emote was removed.
-     */
     static std::optional<EmotePtr> removeEmote(
         Atomic<std::shared_ptr<const EmoteMap>> &channelEmoteMap,
         const BttvLiveUpdateEmoteRemoveMessage &message);
@@ -95,4 +74,4 @@ private:
         managedConnections;
 };
 
-}  // namespace chatterino
+}

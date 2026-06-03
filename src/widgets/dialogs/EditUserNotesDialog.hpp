@@ -45,4 +45,4 @@ private:
     MarkdownLabel *previewLabel_{};
 };
 
-}  // namespace chatterino
+}

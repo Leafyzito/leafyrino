@@ -44,8 +44,6 @@ public:
 
 protected:
     void showEvent(QShowEvent *) override;
-    //    virtual void nativeEvent(const QByteArray &eventType, void *message,
-    //    long *result) override;
 
 private:
     struct {
@@ -78,4 +76,4 @@ private:
     QTimer slowTimer_;
 };
 
-}  // namespace chatterino
+}

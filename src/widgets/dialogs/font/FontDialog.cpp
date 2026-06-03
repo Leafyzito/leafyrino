@@ -87,4 +87,4 @@ void FontDialog::updatePreview()
     this->preview->setFont(this->getSelected());
 }
 
-}  // namespace chatterino
+}

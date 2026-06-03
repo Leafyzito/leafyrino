@@ -176,6 +176,22 @@ public:
         return nullptr;
     }
 
+    HomiesBadges *getHomiesBadges() override
+    {
+        assert(!"getHomiesBadges was called without being initialized");
+        return nullptr;
+    }
+
+    MoltorinoSupporterBadges *getMoltorinoSupporterBadges() override
+    {
+        return nullptr;
+    }
+
+    RepeatedMessageDetector *getRepeatedMessageDetector() override
+    {
+        return nullptr;
+    }
+
     IUserDataController *getUserData() override
     {
         assert(false && "EmptyApplication::getUserData was called without "

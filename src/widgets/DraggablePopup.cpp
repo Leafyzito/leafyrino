@@ -16,23 +16,18 @@ namespace chatterino {
 namespace {
 
 constexpr FlagsEnum<BaseWindow::Flags> POPUP_FLAGS{
-// On macOS, the Dialog flag maps the popup to a Qt::Dialog window so the
-// NSWindow gets NSWindowCollectionBehaviorFullScreenAuxiliary.
-#if defined(Q_OS_LINUX) || defined(Q_OS_MACOS)
+#ifdef Q_OS_LINUX
     BaseWindow::Dialog,
 #endif
     BaseWindow::EnableCustomFrame,
 };
 constexpr FlagsEnum<BaseWindow::Flags> POPUP_FLAGS_CLOSE_AUTOMATICALLY{
-#ifdef Q_OS_MACOS
-    BaseWindow::Dialog,
-#endif
     BaseWindow::EnableCustomFrame,
     BaseWindow::Frameless,
     BaseWindow::FramelessDraggable,
 };
 
-}  // namespace
+}
 
 DraggablePopup::DraggablePopup(bool closeAutomatically, QWidget *parent)
     : BaseWindow(
@@ -54,12 +49,11 @@ DraggablePopup::DraggablePopup(bool closeAutomatically, QWidget *parent)
         this->setAttribute(Qt::WA_DeleteOnClose);
     }
 
-    // Update the window position according to this->requestedDragPos_ on every trigger
     this->dragTimer_.callOnTimeout(
         [this, hack = std::weak_ptr<bool>(this->lifetimeHack_)] {
             if (!hack.lock())
             {
-                // Ensure this timer is never called after the object has been destroyed
+
                 return;
             }
 
@@ -91,9 +85,6 @@ void DraggablePopup::mouseReleaseEvent(QMouseEvent *event)
 
 void DraggablePopup::mouseMoveEvent(QMouseEvent *event)
 {
-    // Drag the window by the amount changed from inital position
-    // Note that we provide a few *units* of deadzone so people don't
-    // start dragging the window if they are slow at clicking.
 
     auto movePos = event->pos() - this->startPosDrag_;
     if (this->isMoving_ || movePos.manhattanLength() > 10.0)
@@ -139,4 +130,4 @@ bool DraggablePopup::ensurePinned()
     return false;
 }
 
-}  // namespace chatterino
+}

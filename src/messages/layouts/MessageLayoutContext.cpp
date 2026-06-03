@@ -86,14 +86,27 @@ void MessagePreferences::connectSettings(Settings *settings,
         },
         holder);
 
-    settings->enableAnnouncementHighlight.connect(
+    settings->showClientDetectionHighlights.connect(
         [this](const auto &newValue) {
-            this->enableAnnouncementHighlight = newValue;
+            this->enableClientDetectionHighlight = newValue;
         },
         holder);
-    settings->enableColoredAnnouncementHighlight.connect(
+
+    settings->clientDetectionWebColor.connect(
         [this](const auto &newValue) {
-            this->enableColoredAnnouncementHighlight = newValue;
+            this->clientDetectionWebColor = QColor(newValue);
+        },
+        holder);
+
+    settings->clientDetectionAndroidColor.connect(
+        [this](const auto &newValue) {
+            this->clientDetectionAndroidColor = QColor(newValue);
+        },
+        holder);
+
+    settings->clientDetectionIosColor.connect(
+        [this](const auto &newValue) {
+            this->clientDetectionIosColor = QColor(newValue);
         },
         holder);
 
@@ -135,4 +148,4 @@ void MessagePreferences::connectSettings(Settings *settings,
         holder);
 }
 
-}  // namespace chatterino
+}

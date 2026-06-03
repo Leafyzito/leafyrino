@@ -11,7 +11,6 @@
 #include "singletons/Resources.hpp"
 #include "singletons/WindowManager.hpp"
 
-#include <QApplication>
 #include <QColor>
 #include <QDir>
 #include <QElapsedTimer>
@@ -19,7 +18,10 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QSet>
-#include <QStyleHints>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+#    include <QStyleHints>
+#endif
+#include <QApplication>
 
 #include <cmath>
 #include <numbers>
@@ -72,11 +74,9 @@ void parseInto(const QJsonObject &obj, const QJsonObject &fallbackObj,
                                   "current theme, and no fallback value found.";
 }
 
-// NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #define _c2StringLit(s, ty) s##ty
 #define parseColor(to, from, key) \
     parseInto(from, from##Fallback, _c2StringLit(#key, _L1), (to).from.key)
-// NOLINTEND(cppcoreguidelines-macro-usage)
 
 void parseWindow(const QJsonObject &window, const QJsonObject &windowFallback,
                  chatterino::Theme &theme)
@@ -256,24 +256,15 @@ std::optional<QJsonObject> loadThemeFromPath(const QString &path)
         return std::nullopt;
     }
 
-    // TODO: Validate JSON schema?
-
     return json.object();
 }
 
-/**
- * Load the given theme descriptor from its path
- *
- * Returns a JSON object containing theme data if the theme is valid, otherwise nullopt
- *
- * NOTE: No theme validation is done by this function
- **/
 std::optional<QJsonObject> loadTheme(const ThemeDescriptor &theme)
 {
     return loadThemeFromPath(theme.path);
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -300,7 +291,6 @@ const std::vector<ThemeDescriptor> Theme::builtInThemes{
     },
 };
 
-// Dark is our default & fallback theme
 const ThemeDescriptor Theme::fallbackTheme = Theme::builtInThemes.at(2);
 
 bool Theme::isLightTheme() const
@@ -332,6 +322,7 @@ Theme::Theme(const Paths &paths)
 
     this->loadAvailableThemes(paths);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     QObject::connect(QApplication::styleHints(),
                      &QStyleHints::colorSchemeChanged, &this->lifetime_,
                      [this] {
@@ -341,6 +332,7 @@ Theme::Theme(const Paths &paths)
                              getApp()->getWindows()->forceLayoutChannelViews();
                          }
                      });
+#endif
 
     this->update();
 }
@@ -348,6 +340,7 @@ Theme::Theme(const Paths &paths)
 void Theme::update()
 {
     auto currentTheme = [&]() -> QString {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         if (this->isSystemTheme())
         {
             switch (QApplication::styleHints()->colorScheme())
@@ -359,6 +352,7 @@ void Theme::update()
                     return this->darkSystemThemeName;
             }
         }
+#endif
         return this->themeName;
     };
 
@@ -393,7 +387,6 @@ void Theme::update()
                 << "Theme" << this->themeName
                 << "not valid, falling back to the fallback theme";
 
-            // Parsing the theme failed, fall back
             themeJSON = loadTheme(fallbackTheme);
             themePath = fallbackTheme.path;
         }
@@ -515,7 +508,7 @@ void Theme::parseFrom(const QJsonObject &root, bool isCustomTheme)
     std::optional<QJsonObject> fallbackTheme;
     if (isCustomTheme)
     {
-        // Only attempt to load a fallback theme if the theme we're loading is a custom theme
+
         auto fallbackThemeName =
             root["metadata"_L1]["fallbackTheme"_L1].toString(
                 this->isLightTheme() ? "Light" : "Dark");
@@ -544,7 +537,6 @@ void Theme::parseFrom(const QJsonObject &root, bool isCustomTheme)
             ? u"#68B1FF"_s
             : this->tabs.selected.backgrounds.regular.name(QColor::HexArgb));
 
-    // Usercard buttons
     if (this->isLightTheme())
     {
         this->buttons.copy = getResources().buttons.copyDark;
@@ -554,7 +546,6 @@ void Theme::parseFrom(const QJsonObject &root, bool isCustomTheme)
         this->buttons.copy = getResources().buttons.copyLight;
     }
 
-    // This assumes that we never update the application palette
     auto palette = QApplication::palette();
 
     if (this->isLightTheme())
@@ -650,4 +641,4 @@ Theme *getTheme()
     return getApp()->getThemes();
 }
 
-}  // namespace chatterino
+}

@@ -64,6 +64,12 @@ bool BttvLiveUpdateSubscriptionChannel::operator==(
     return this->twitchID == rhs.twitchID;
 }
 
+bool BttvLiveUpdateSubscriptionChannel::operator!=(
+    const BttvLiveUpdateSubscriptionChannel &rhs) const
+{
+    return !(*this == rhs);
+}
+
 QDebug &operator<<(QDebug &dbg, const BttvLiveUpdateSubscriptionChannel &data)
 {
     dbg << "BttvLiveUpdateSubscriptionChannel{ twitchID:" << data.twitchID
@@ -71,7 +77,7 @@ QDebug &operator<<(QDebug &dbg, const BttvLiveUpdateSubscriptionChannel &data)
     return dbg;
 }
 
-QJsonObject BttvLiveUpdateBroadcastMe::encode(bool /*isSubscribe*/) const
+QJsonObject BttvLiveUpdateBroadcastMe::encode(bool ) const
 {
     QJsonObject root;
     root["name"] = "broadcast_me";
@@ -91,6 +97,12 @@ bool BttvLiveUpdateBroadcastMe::operator==(
     return this->twitchID == rhs.twitchID && this->userID == rhs.userID;
 }
 
+bool BttvLiveUpdateBroadcastMe::operator!=(
+    const BttvLiveUpdateBroadcastMe &rhs) const
+{
+    return !(*this == rhs);
+}
+
 QDebug &operator<<(QDebug &dbg, const BttvLiveUpdateBroadcastMe &data)
 {
     dbg << "BttvLiveUpdateBroadcastMe{ twitchID:" << data.twitchID
@@ -98,4 +110,4 @@ QDebug &operator<<(QDebug &dbg, const BttvLiveUpdateBroadcastMe &data)
     return dbg;
 }
 
-}  // namespace chatterino
+}

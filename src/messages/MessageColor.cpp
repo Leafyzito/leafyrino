@@ -89,8 +89,8 @@ MessageColor MessageColor::fromLua(const QString &spec, Type fallback)
     {
         return MessageColor::System;
     }
-    // custom
+
     return QColor(spec);
 }
 
-}  // namespace chatterino
+}

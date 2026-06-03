@@ -22,7 +22,7 @@ void LinkResolver::resolve(LinkInfo *info)
 
     if (info->state() != State::Created)
     {
-        // The link is already resolved or is currently loading
+
         return;
     }
 
@@ -73,4 +73,4 @@ void LinkResolver::resolve(LinkInfo *info)
         .execute();
 }
 
-}  // namespace chatterino
+}

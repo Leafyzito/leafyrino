@@ -11,9 +11,6 @@
 
 namespace chatterino {
 
-/**
- * @brief Contains the description of a channel that will be logged
- **/
 class ChannelLog
 {
     QString channelName_;
@@ -30,7 +27,7 @@ public:
     [[nodiscard]] static ChannelLog createEmpty();
 };
 
-}  // namespace chatterino
+}
 
 namespace pajlada {
 
@@ -70,4 +67,4 @@ struct Deserialize<chatterino::ChannelLog> {
     }
 };
 
-}  // namespace pajlada
+}

@@ -6,7 +6,6 @@
 
 namespace chatterino {
 
-// command
 Command::Command(const QString &_text)
 {
     int index = _text.indexOf(' ');
@@ -35,4 +34,4 @@ QString Command::toString() const
     return this->name + " " + this->func;
 }
 
-}  // namespace chatterino
+}

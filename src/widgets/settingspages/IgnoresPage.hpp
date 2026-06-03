@@ -23,4 +23,4 @@ private:
     QStringListModel userListModel_;
 };
 
-}  // namespace chatterino
+}

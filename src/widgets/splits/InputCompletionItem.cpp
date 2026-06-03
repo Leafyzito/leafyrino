@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2021 Contributors to Chatterino <https://chatterino.com>
-//
-// SPDX-License-Identifier: MIT
-
 #include "widgets/splits/InputCompletionItem.hpp"
 
 #include "messages/Emote.hpp"
@@ -84,4 +80,4 @@ QSize InputCompletionItem::sizeHint(const QRect &rect) const
     return QSize(rect.width(), ICON_SIZE.height());
 }
 
-}  // namespace chatterino
+}

@@ -16,6 +16,40 @@ QString twitchChannelPointRewardUrl(const QString &file)
     return u"https://static-cdn.jtvnw.net/custom-reward-images/default-" % file;
 }
 
+QString makeRedemptionKey(const QJsonObject &redemption,
+                          const QJsonObject &reward)
+{
+    if (const auto id = redemption.value("id").toString(); !id.isEmpty())
+    {
+        return u"id:" % id;
+    }
+
+    if (const auto cursor = redemption.value("cursor").toString();
+        !cursor.isEmpty())
+    {
+        return u"cursor:" % cursor;
+    }
+
+    const auto redeemedAt = redemption.value("redeemed_at").toString();
+    if (redeemedAt.isEmpty())
+    {
+        return {};
+    }
+
+    const auto channelID = redemption.value("channel_id").toString();
+    const auto rewardID = reward.value("id").toString();
+    const auto user = redemption.value("user").toObject();
+    const auto userID = user.value("id").toString();
+
+    if (channelID.isEmpty() || rewardID.isEmpty() || userID.isEmpty())
+    {
+        return {};
+    }
+
+    return u"time:" % channelID % u':' % rewardID % u':' % userID % u':' %
+           redeemedAt;
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -26,6 +60,7 @@ ChannelPointReward::ChannelPointReward(const QJsonObject &redemption)
 {
     auto reward = redemption.value("reward").toObject();
 
+    this->redemptionKey = makeRedemptionKey(redemption, reward);
     this->id = reward.value("id").toString();
     this->channelId = reward.value("channel_id").toString();
     this->title = reward.value("title").toString();

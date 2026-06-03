@@ -61,13 +61,6 @@ declare namespace c2 {
         get_display_name(): string;
 
         on_display_name_changed(cb: () => void): ConnectionHandle;
-        on_messages_cleared(cb: () => void): ConnectionHandle;
-        on_message_replaced(
-            cb: (idx: number, old: Message, replacement: Message) => void
-        ): ConnectionHandle;
-        on_message_appended(
-            cb: (msg: Message, override_flags: MessageFlag | null) => void
-        ): ConnectionHandle;
 
         send_message(message: string, execute_commands: boolean): void;
         send_message(message: string): void;
@@ -206,7 +199,7 @@ declare namespace c2 {
         highlight_color: string | null;
         frozen: boolean;
         elements(): MessageElement[];
-        append_element(init: MessageElementInit | MessageElement): void;
+        append_element(init: MessageElementInit): void;
     }
 
     interface MessageConstructor {
@@ -228,7 +221,7 @@ declare namespace c2 {
         username_color?: string;
         server_received_time?: number;
         highlight_color?: string | null;
-        elements?: (MessageElementInit | MessageElement)[];
+        elements?: MessageElementInit[];
     }
 
     interface MessageElementBase {
@@ -273,10 +266,7 @@ declare namespace c2 {
         | TimestampElementInit
         | TwitchModerationElementInit
         | LinebreakElementInit
-        | ReplyCurveElementInit
-        | ImageElementInit
-        | CircularImageElementInit
-        | ScalingImageElementInit;
+        | ReplyCurveElementInit;
 
     interface TextElement extends MessageElementBase {
         type: "text";
@@ -375,39 +365,14 @@ declare namespace c2 {
 
     interface ImageElement extends MessageElementBase {
         type: "image";
-        image: Image;
-    }
-
-    interface ImageElementInit extends MessageElementInitBase {
-        type: "image";
-        image: Image;
-        flags: MessageElementFlag;
     }
 
     interface CircularImageElement extends MessageElementBase {
         type: "circular-image";
-        image: Image;
-        padding: number;
-        background: string;
-    }
-
-    interface CircularImageElementInit extends MessageElementInitBase {
-        type: "circular-image";
-        image: Image;
-        padding: number;
-        background: string;
-        flags: MessageElementFlag;
     }
 
     interface ScalingImageElement extends MessageElementBase {
         type: "scaling-image";
-        images: ImageSet;
-    }
-
-    interface ScalingImageElementInit extends MessageElementInitBase {
-        type: "scaling-image";
-        images: ImageSet;
-        flags: MessageElementFlag;
     }
 
     interface BadgeElement extends MessageElementBase {
@@ -486,8 +451,6 @@ declare namespace c2 {
         EventSub = 0,
         ModerationAction = 0,
         InvalidReplyTarget = 0,
-        WatchStreak = 0,
-        Announcement = 0,
     }
 
     enum MessageElementFlag {
@@ -571,99 +534,6 @@ declare namespace c2 {
     }
 
     function current_account(): TwitchAccount;
-
-    type QSize = [number, number];
-    type QSizeF = [number, number];
-
-    class Image {
-        readonly url: string;
-        readonly is_loaded: boolean;
-        readonly is_empty: boolean;
-        readonly width: number;
-        readonly height: number;
-        readonly scale: number;
-        readonly size: QSizeF;
-        readonly animated: boolean;
-
-        static from_url(
-            url: string,
-            scale?: number,
-            expected_size?: QSize
-        ): Image;
-        static empty(): Image;
-    }
-
-    interface ImageSet {
-        image1: Image;
-        image2: Image;
-        image3: Image;
-    }
-
-    interface ImageSetConstructor {
-        new: (
-            this: void,
-            image1?: Image | string,
-            image2?: Image | string,
-            image3?: Image | string
-        ) => ImageSet;
-    }
-    var ImageSet: ImageSetConstructor;
-
-    class Split implements IWeakResource {
-        is_valid(): boolean;
-        channel: Channel;
-    }
-
-    enum SplitContainerNodeType {
-        EmptyRoot,
-        Split,
-        VerticalContainer,
-        HorizontalContainer,
-    }
-
-    class SplitContainerNode {
-        type: SplitContainerNodeType;
-        split?: Split;
-        parent?: SplitContainerNode;
-        horizontal_flex: number;
-        vertical_flex: number;
-
-        children(): SplitContainerNode[];
-    }
-
-    class SplitContainer {
-        selected_split: Split;
-        base_node: SplitContainerNode;
-
-        splits(): Split[];
-    }
-
-    class SplitNotebook {
-        selected_page?: SplitContainer;
-        page_count: number;
-
-        page_at(i: number): SplitContainer | null;
-    }
-
-    enum WindowType {
-        Main,
-        Popup,
-        Attached,
-    }
-
-    class Window {
-        notebook: SplitNotebook;
-        type: WindowType;
-    }
-
-    class WindowManager {
-        main_window: Window;
-        last_selected_window: Window;
-
-        all(): Window[];
-    }
-
-    var windows: WindowManager;
 }
 
 declare module "chatterino.json" {

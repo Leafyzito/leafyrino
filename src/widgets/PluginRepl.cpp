@@ -27,7 +27,7 @@
 
 namespace {
 
-using namespace Qt::StringLiterals;
+using namespace Qt::Literals::StringLiterals;
 using namespace chatterino;
 
 class HistoricTextEdit : public QTextEdit
@@ -52,13 +52,13 @@ public:
     }
 
 Q_SIGNALS:
-    void onSend(const QString & /* text */);
+    void onSend(const QString & );
 
 protected:
     bool event(QEvent *e) override;
 
 private:
-    /// If the item wouldn't change, std::nullopt is returned
+
     std::optional<QString> nextHistoryItem(qsizetype diff);
 
     QStringList history;
@@ -155,7 +155,7 @@ std::optional<QString> HistoricTextEdit::nextHistoryItem(qsizetype diff)
         std::clamp<qsizetype>(this->historyIdx + diff, 0, this->history.size());
     if (nextIdx == this->historyIdx)
     {
-        return {};  // nothing changed
+        return {};
     }
     this->historyIdx = nextIdx;
 
@@ -180,12 +180,6 @@ sol::optional<QString> tryAsStringAndPop(lua_State *L)
     return qs;
 }
 
-/// This stringifies a value without recursing.
-///
-/// It's similar to luaL_tolstring with a two minor differences:
-/// - `__tostring` is not executed - this can potentially error because it might
-///   be called without a `self` argument (e.g. in `c2.Channel`).
-/// - The address for tables, threads, etc. isn't shown.
 QString stringifyValue(lua_State *L, int idx)
 {
     switch (lua_type(L, idx))
@@ -195,7 +189,7 @@ QString stringifyValue(lua_State *L, int idx)
         case LUA_TNIL:
             return u"nil"_s;
         case LUA_TSTRING: {
-            // Safety: We know this is a string
+
             auto sv = sol::stack::unqualified_get<std::string_view>(L, idx);
             return QString::fromUtf8(sv.data(),
                                      static_cast<qsizetype>(sv.size()));
@@ -245,7 +239,7 @@ QString stringifyValue(sol::stack_proxy it)
 QString stringifyValue(const sol::object &obj)
 {
     static_assert(!sol::is_stack_based<std::remove_cvref_t<decltype(obj)>>());
-    // XXX: in many cases the value is already on the stack
+
     obj.push();
     auto s = stringifyValue(obj.lua_state(), -1);
     obj.pop();
@@ -295,7 +289,7 @@ void stringify(sol::stack_proxy it, QString &s, size_t maxItems = 10,
             }
             s.append('}');
 
-            lua_pop(it.lua_state(), 1);  // metatable
+            lua_pop(it.lua_state(), 1);
             return;
         }
         case sol::type::table: {
@@ -315,7 +309,7 @@ void stringify(sol::stack_proxy it, QString &s, size_t maxItems = 10,
                 stringify({it.lua_state(), -1}, s, maxItems / 2,
                           flags | ExpandFlag::TryUsertypeStorage);
                 n++;
-                lua_pop(it.lua_state(), 1);  // metatable
+                lua_pop(it.lua_state(), 1);
             }
 
             if (flags.has(ExpandFlag::TryUsertypeStorage))
@@ -334,7 +328,12 @@ void stringify(sol::stack_proxy it, QString &s, size_t maxItems = 10,
                         {
                             s.append(u", ["_s);
                         }
+#    if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
+                        s.append(QString::fromUtf8(
+                            key.data(), static_cast<qsizetype>(key.size())));
+#    else
                         s.append(QUtf8StringView(key));
+#    endif
                         s.append("] = <dyn>");
                         n++;
                     }
@@ -380,7 +379,7 @@ void stringify(sol::stack_proxy it, QString &s, size_t maxItems = 10,
     }
 }
 
-}  // namespace
+}
 
 namespace chatterino {
 
@@ -402,7 +401,6 @@ PluginRepl::PluginRepl(QString id, QWidget *parent)
 
     auto *root = new QVBoxLayout(this->getLayoutContainer());
 
-    // top row
     {
         auto *top = new QHBoxLayout;
         this->ui.clear = new SvgButton(
@@ -559,7 +557,7 @@ void PluginRepl::tryRun(QString code)
 
         if (!result.valid() && addedReturn)
         {
-            u8code = u8code.substr(7);  // "return "
+            u8code = u8code.substr(7);
             result = this->plugin->state().load(u8code, chunkName,
                                                 sol::load_mode::text);
         }
@@ -579,8 +577,8 @@ void PluginRepl::tryRun(QString code)
             return;
         }
 
-        sol::protected_function_result res = (*fn)();
-        this->logResult(res, {
+        sol::protected_function_result evalRes = (*fn)();
+        this->logResult(evalRes, {
                                  .maxItems = maxItems,
                              });
     }
@@ -683,8 +681,8 @@ void PluginRepl::setPlugin(Plugin *plugin)
 
     if (!plugin)
     {
-        this->pluginDestroyConn = pajlada::Signals::ScopedConnection{};
-        this->pluginLogConn = pajlada::Signals::ScopedConnection{};
+        this->pluginDestroyConn.release();
+        this->pluginLogConn.release();
         return;
     }
 
@@ -722,12 +720,6 @@ void PluginRepl::updateFont()
     this->ui.input->setFont(this->font);
     this->ui.output->setFont(this->font);
 
-    // Set the tab width to be at least 4 spaces.
-    //
-    // setTabStopDistance:
-    // > Do not set a value less than the horizontalAdvance() of the
-    // > QChar::VisualTabCharacter character, otherwise the tab-character will
-    // > be drawn incompletely.
     QFontMetricsF metrics(this->font);
     auto tabCharWidth = metrics.horizontalAdvance(QChar::VisualTabCharacter);
     auto spaceWidth = metrics.horizontalAdvance(QChar::Space);
@@ -750,7 +742,7 @@ void PluginRepl::updatePinned()
     }
 }
 
-}  // namespace chatterino
+}
 
 #    include "PluginRepl.moc"
 

@@ -65,7 +65,7 @@ private:
     mutable std::unordered_map<EmoteName, EmotePtr> emotes_;
     mutable bool emotesChecked_{false};
 };
-}  // namespace chatterino
+}
 
 namespace pajlada {
 
@@ -114,4 +114,4 @@ struct Deserialize<chatterino::IgnorePhrase> {
     }
 };
 
-}  // namespace pajlada
+}

@@ -49,25 +49,15 @@ public:
     const QString &getOAuthClient() const;
     const QString &getUserId() const;
 
-    /**
-     * The Seventv user-id of the current user. 
-     * Empty if there's no associated Seventv user with this twitch user.
-     */
     const QString &getSeventvUserID() const;
 
     QColor color();
     void setColor(QColor color);
 
-    // Attempts to update the users OAuth Client ID
-    // Returns true if the value has changed, otherwise false
     bool setOAuthClient(const QString &newClientID);
 
-    // Attempts to update the users OAuth Token
-    // Returns true if the value has changed, otherwise false
     bool setOAuthToken(const QString &newOAuthToken);
 
-    // Attempts to update the users username
-    // Returns true if the value has changed, otherwise false
     bool setUserName(const QString &newUserName);
 
     bool isAnon() const;
@@ -86,35 +76,22 @@ public:
     [[nodiscard]] const std::unordered_set<QString> &blockedUserIds() const;
     [[nodiscard]] const std::unordered_set<QString> &blockedUserLogins() const;
 
-    // Automod actions
     void autoModAllow(const QString &msgID, ChannelPtr channel) const;
     void autoModDeny(const QString &msgID, ChannelPtr channel) const;
 
     void loadSeventvUserID();
 
-    /// Returns true if the account has access to the given emote set
     bool hasEmoteSet(const EmoteSetId &id) const;
 
-    /// Returns a map of emote sets the account has access to
-    ///
-    /// Key being the emote set ID, and contents being information about the emote set
-    /// and the emotes contained in the emote set
     SharedAccessGuard<std::shared_ptr<const TwitchEmoteSetMap>>
         accessEmoteSets() const;
 
-    /// Returns a map of emotes the account has access to
     SharedAccessGuard<std::shared_ptr<const EmoteMap>> accessEmotes() const;
 
-    /// Sets the emotes this account has access to
-    ///
-    /// This should only be used in tests.
     void setEmotes(std::shared_ptr<const EmoteMap> emotes);
 
-    /// Return the emote by emote name if the account has access to the emote
     std::optional<EmotePtr> twitchEmote(const EmoteName &name) const;
 
-    /// Once emotes are reloaded, TwitchAccountManager::emotesReloaded is
-    /// invoked with @a caller and an optional error.
     void reloadEmotes(void *caller = nullptr);
 
 private:
@@ -142,4 +119,4 @@ private:
     void tryLoadBlocks();
 };
 
-}  // namespace chatterino
+}

@@ -57,4 +57,4 @@ private:
     pajlada::Signals::SignalHolder holder;
 };
 
-}  // namespace chatterino
+}
