@@ -132,9 +132,13 @@ cd "$here/usr"
 exec "$here/usr/bin/'"$app_executable"'" "$@"' > appdir/AppRun
 chmod a+x appdir/AppRun
 
+linuxdeployqt_basename=$(basename "$linuxdeployqt_path")
+appimagetool_basename=$(basename "$appimagetool_path")
+
+# find -name matches basenames only, not paths like ./foo.AppImage
 find . -maxdepth 1 -type f -name '*.AppImage' \
-    ! -name "$linuxdeployqt_path" \
-    ! -name "$appimagetool_path" \
+    ! -name "$linuxdeployqt_basename" \
+    ! -name "$appimagetool_basename" \
     -delete
 export ARCH=x86_64
 "$appimagetool_path" \
@@ -142,8 +146,8 @@ export ARCH=x86_64
     appdir
 
 created_appimage=$(find . -maxdepth 1 -type f -name '*.AppImage' \
-    ! -name "$linuxdeployqt_path" \
-    ! -name "$appimagetool_path" \
+    ! -name "$linuxdeployqt_basename" \
+    ! -name "$appimagetool_basename" \
     ! -name "${app_executable}-x86_64.AppImage" \
     | head -n 1)
 if [ -n "$created_appimage" ]; then
