@@ -33,7 +33,7 @@ QString makeDefaultInternalVersion(const QString &commitHash, bool isModified,
         shortHash = "local";
     }
 
-    auto internal = "molto-" + normalizedDate + "-" + shortHash;
+    auto internal = "leaf-" + normalizedDate + "-" + shortHash;
     if (isModified)
     {
         internal += "-dirty";
@@ -50,7 +50,7 @@ Version::Version()
     , dateOfBuild_(QStringLiteral(CHATTERINO_CMAKE_GEN_DATE))
     , isNightly_(CHATTERINO_NIGHTLY_BUILD == 1)
 {
-    this->fullVersion_ = "Moltorino ";
+    this->fullVersion_ = "Leafyrino ";
     if (this->isNightly())
     {
         this->fullVersion_ += "Nightly ";
@@ -59,7 +59,7 @@ Version::Version()
     this->fullVersion_ += this->version_;
 
     const auto configuredInternalVersion =
-        QStringLiteral(STRINGIFY2(MOLTORINO_INTERNAL_VERSION))
+        QStringLiteral(STRINGIFY2(LEAFYRINO_INTERNAL_VERSION))
             .trimmed()
             .remove(u'"');
     if (!configuredInternalVersion.isEmpty() &&
@@ -89,7 +89,7 @@ Version::Version()
 
 #ifdef Q_OS_WIN
 
-    this->appUserModelID_ = L"MoltoBenne.Moltorino7";
+    this->appUserModelID_ = L"leafyzito.Leafyrino7";
 #endif
 }
 
@@ -191,7 +191,7 @@ void Version::generateBuildString()
 
     s +=
         QString(
-            R"( (commit <a href="https://github.com/MoltoBenne/Moltorino/commit/%1">%1</a>)")
+            R"( (commit <a href="https://github.com/leafyzito/leafyrino/commit/%1">%1</a>)")
             .arg(this->commitHash());
     if (this->isModified())
     {

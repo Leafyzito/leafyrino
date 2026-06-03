@@ -38,7 +38,6 @@
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 #include "providers/twitch/api/Helix.hpp"
-#include "providers/twitch/api/TwitchGql.hpp"
 #include "providers/twitch/ChannelPointReward.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchBadge.hpp"
@@ -3173,113 +3172,6 @@ Outcome MessageBuilder::tryAppendCheermote(TextState &state,
     }
 
     return Success;
-}
-
-MessagePtr MessageBuilder::makePinnedChatPreviewMessage(
-    TwitchChannel *channel, const TwitchGql::PinnedChatMessage &pinned)
-{
-    assert(channel != nullptr);
-
-    MessageBuilder builder;
-    builder->flags.set(MessageFlag::Collapsed);
-    builder->channelName = channel->getName();
-    builder->id = pinned.id;
-
-    QString displayFromApi = pinned.senderDisplayName.trimmed();
-    QString login = pinned.senderLogin.trimmed();
-    if (login.isEmpty())
-    {
-        login = displayFromApi.toLower();
-    }
-
-    builder->loginName = login;
-    if (QString::compare(displayFromApi, login, Qt::CaseInsensitive) == 0)
-    {
-        builder->displayName = displayFromApi;
-    }
-    else if (!displayFromApi.isEmpty())
-    {
-        builder->localizedName = displayFromApi;
-        builder->displayName = login;
-    }
-    else
-    {
-        builder->displayName = login;
-    }
-
-    builder->userID = pinned.senderId;
-
-    QVariantMap colorTags;
-    colorTags.insert(QStringLiteral("user-id"), pinned.senderId);
-    if (!pinned.senderChatColor.isEmpty())
-    {
-        colorTags.insert(QStringLiteral("color"), pinned.senderChatColor);
-    }
-    builder.parseUsernameColor(colorTags, pinned.senderId);
-    channel->setUserColor(login, builder.message().usernameColor);
-
-    builder.appendChannelName(channel);
-
-    QDateTime received =
-        QDateTime::fromString(pinned.sentAt.trimmed(), Qt::ISODate);
-    if (!received.isValid())
-    {
-        received = QDateTime::currentDateTimeUtc();
-    }
-    builder->serverReceivedTime = received;
-    builder.emplace<TimestampElement>(received.time());
-
-    MessageParseArgs userArgs;
-    QVariantMap userTags;
-    userTags.insert(QStringLiteral("display-name"), displayFromApi);
-    builder.appendUsername(userTags, userArgs);
-
-    QString content = pinned.text;
-    std::vector<TwitchEmoteOccurrence> twitchEmotes = pinned.twitchEmotes;
-    TextState textState{.twitchChannel = channel, .userID = pinned.senderId};
-
-    bool traditionalParsing = true;
-    if (getSettings()->markdownParsing && !content.isEmpty())
-    {
-        auto tokens = ast::lex(content);
-        QVector<ast::ASTNode> astNodes;
-        try
-        {
-            ast::MatchResponse response = ast::matchMarkdown(0, &tokens);
-            if (response.accepted)
-            {
-                traditionalParsing = false;
-                astNodes = ast::normalizeTextNodes(response.nodes);
-            }
-        }
-        catch (const std::exception &e)
-        {
-            traditionalParsing = true;
-            qWarning() << "Exception parsing message:" << e.what();
-        }
-
-        if (!traditionalParsing)
-        {
-            builder.addWordsFromAstNodes(astNodes, twitchEmotes, textState);
-        }
-    }
-
-    if (traditionalParsing)
-    {
-        if (!content.isEmpty())
-        {
-            builder.addWords(content.split(' '), twitchEmotes, textState);
-        }
-    }
-
-    const QString stylizedUsername =
-        stylizeUsername(builder->loginName, builder.message());
-    builder->messageText = content;
-    builder->searchText = stylizedUsername + ' ' + builder->localizedName +
-                          ' ' + builder->loginName + ": " + content + ' ' +
-                          builder->searchText;
-
-    return builder.release();
 }
 
 MessageColor MessageBuilder::textColor() const

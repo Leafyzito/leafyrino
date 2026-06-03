@@ -101,7 +101,7 @@ bool badgeSocketConfigured()
 
 QString savedClientId()
 {
-    QSettings settings(QStringLiteral("Moltorino"), QStringLiteral("Moltorino7"));
+    QSettings settings(QStringLiteral("Leafyrino"), QStringLiteral("Leafyrino7"));
     auto id = settings.value(QStringLiteral("presence/clientInstanceId"))
                   .toString()
                   .trimmed();
@@ -527,7 +527,7 @@ void MoltorinoPresence::connectBadgeSocket(bool force)
     if (!this->badgeSocketPool_)
     {
         this->badgeSocketPool_ =
-            std::make_unique<WebSocketPool>(QStringLiteral("Moltorino badges"));
+            std::make_unique<WebSocketPool>(QStringLiteral("Leafyrino badges"));
     }
 
     this->badgeSocketReconnectTimer_.stop();
@@ -747,7 +747,7 @@ bool MoltorinoPresence::showDownloadPrompt(bool force)
     }
 
     const auto update = *this->availableUpdate_;
-    QString text = QStringLiteral("<p><b>Moltorino %1 is available.</b></p>")
+    QString text = QStringLiteral("<p><b>Leafyrino %1 is available.</b></p>")
                        .arg(update.version.toHtmlEscaped());
 
     if (update.sizeBytes > 0)
@@ -768,17 +768,17 @@ bool MoltorinoPresence::showDownloadPrompt(bool force)
 #elif defined(Q_OS_MACOS)
     const auto actionText = QStringLiteral("Open download");
     text += QStringLiteral(
-        "<p>Download the DMG, quit Moltorino, then replace the app.</p>");
+        "<p>Download the DMG, quit Leafyrino, then replace the app.</p>");
 #elif defined(Q_OS_LINUX)
     const auto actionText = QStringLiteral("Open download");
     text += QStringLiteral(
-        "<p>Download the AppImage, quit Moltorino, then run the new file.</p>");
+        "<p>Download the AppImage, quit Leafyrino, then run the new file.</p>");
 #else
     const auto actionText = QStringLiteral("Open download");
 #endif
 
     auto *box = new QMessageBox(QMessageBox::Information,
-                                QStringLiteral("Moltorino update"),
+                                QStringLiteral("Leafyrino update"),
                                 text,
                                 QMessageBox::NoButton,
                                 this->dialogParent());
@@ -859,12 +859,12 @@ bool MoltorinoPresence::showInstallPrompt(bool force)
     const auto update = *this->availableUpdate_;
     auto text =
         QStringLiteral(
-            "<p><b>Moltorino %1 is downloaded and ready.</b></p>"
-            "<p>Restart Moltorino when you are ready to install it.</p>")
+            "<p><b>Leafyrino %1 is downloaded and ready.</b></p>"
+            "<p>Restart Leafyrino when you are ready to install it.</p>")
             .arg(update.version.toHtmlEscaped());
 
     auto *box = new QMessageBox(QMessageBox::Information,
-                                QStringLiteral("Moltorino update ready"),
+                                QStringLiteral("Leafyrino update ready"),
                                 text,
                                 QMessageBox::NoButton,
                                 this->dialogParent());
@@ -979,7 +979,7 @@ void MoltorinoPresence::beginInstallerDownload(bool showProgress)
     if (showProgress)
     {
         progress = new QProgressDialog(
-            QStringLiteral("Downloading Moltorino update..."),
+            QStringLiteral("Downloading Leafyrino update..."),
             QStringLiteral("Cancel"),
             0,
             100,
@@ -1166,7 +1166,7 @@ void MoltorinoPresence::finishInstallerDownload(bool success,
         this->updateStateChanged.invoke();
 
         auto *box = new QMessageBox(QMessageBox::Warning,
-                                    QStringLiteral("Moltorino update"),
+                                    QStringLiteral("Leafyrino update"),
                                     error.isEmpty()
                                         ? QStringLiteral("Update failed.")
                                         : error,
@@ -1221,7 +1221,7 @@ void MoltorinoPresence::launchDownloadedInstaller()
     this->updateStateChanged.invoke();
 
     const auto installerDir = QFileInfo(this->installerPath_).absoluteDir();
-    const auto logPath = installerDir.filePath("Moltorino7-update-install.log");
+    const auto logPath = installerDir.filePath("Leafyrino7-update-install.log");
     if (!launchAfterThisProcessExits(this->installerPath_,
                                      this->installerArgs(logPath),
                                      installerDir.absolutePath()))
@@ -1238,7 +1238,7 @@ void MoltorinoPresence::launchDownloadedInstaller()
 
 QString MoltorinoPresence::installerFileName() const
 {
-    return QStringLiteral("Moltorino Updater.exe");
+    return QStringLiteral("Leafyrino Updater.exe");
 }
 
 QStringList MoltorinoPresence::installerArgs(const QString &logPath) const
@@ -1341,7 +1341,7 @@ QStringList MoltorinoPresence::downloadFolders() const
     const auto temp = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     if (!temp.isEmpty())
     {
-        folders << QDir(temp).filePath("Moltorino/Updates");
+        folders << QDir(temp).filePath("Leafyrino/Updates");
     }
 
     return folders;

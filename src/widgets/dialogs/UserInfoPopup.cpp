@@ -2906,8 +2906,8 @@ void UserInfoPopup::updateUserData()
         // get roles
         getIvr()->getUserRoles(
             this->userName_,
-            [this, hack](const IvrResolve &userInfo) {
-                if (!hack.lock())
+            [this, isCurrentRequest](const IvrResolve &userInfo) {
+                if (!isCurrentRequest())
                 {
                     return;
                 }
@@ -3528,80 +3528,6 @@ void UserInfoPopup::updateKickUserData()
     bool isMyself = false;  // FIXME: kick account
     this->ui_.block->setVisible(!isMyself);
     this->ui_.ignoreHighlights->setVisible(!isMyself);
-}
-
-QString UserInfoPopup::showProfilePictureContextMenu()
-{
-    if (this->avatarUrl_.isEmpty())
-    {
-        return "No profile picture available";
-    }
-
-    if (this->isKick_)
-    {
-        this->onKickProfilePictureClick(Qt::RightButton);
-        return "";
-    }
-
-    // Twitch: build and show the profile picture context menu
-    auto *menu = new QMenu(this);
-    menu->setAttribute(Qt::WA_DeleteOnClose);
-
-    auto avatarUrl = this->avatarUrl_;
-    auto username = this->userName_;
-
-    menu->addAction("Open &avatar in browser", [avatarUrl] {
-        QDesktopServices::openUrl(QUrl(avatarUrl));
-    });
-
-    menu->addAction("Copy a&vatar link", [avatarUrl] {
-        crossPlatformCopy(avatarUrl);
-    });
-
-    menu->addAction("Open &Chat Vault profile in browser", [username] {
-        QDesktopServices::openUrl(
-            QUrl("https://chatvau.lt/channel/twitch/" + username));
-    });
-
-    if (!this->seventvUserID_.isEmpty())
-    {
-        auto seventvUserID = this->seventvUserID_;
-        menu->addAction("Open &7TV user page in browser", [seventvUserID] {
-            QDesktopServices::openUrl(
-                QUrl("https://7tv.app/users/" + seventvUserID));
-        });
-    }
-
-    menu->addAction("Open channel &logs in browser", [username] {
-        QDesktopServices::openUrl(
-            QUrl("https://tv.supa.sh/logs?c=" + username));
-    });
-
-    auto loginName = this->userName_.toLower();
-    menu->addAction("Open channel in &browser", this, [loginName] {
-        QDesktopServices::openUrl(QUrl("https://www.twitch.tv/" + loginName));
-    });
-
-    menu->addAction("Open channel in a new &popup window", this, [loginName] {
-        auto *app = getApp();
-        auto &window = app->getWindows()->createWindow(WindowType::Popup, true);
-        auto *split =
-            window.getNotebook().getOrAddSelectedPage()->appendNewSplit(false);
-        split->setChannel(
-            app->getTwitch()->getOrAddChannel(loginName.toLower()));
-    });
-
-    menu->addAction("Open channel in a new &tab", this, [loginName] {
-        ChannelPtr channel = getApp()->getTwitch()->getOrAddChannel(loginName);
-        auto &nb = getApp()->getWindows()->getMainWindow().getNotebook();
-        SplitContainer *container = nb.addPage(true);
-        Split *split = new Split(container);
-        split->setChannel(channel);
-        container->insertSplit(split);
-    });
-    menu->popup(QCursor::pos());
-    menu->raise();
-    return "";
 }
 
 void UserInfoPopup::onKickProfilePictureClick(Qt::MouseButton button)

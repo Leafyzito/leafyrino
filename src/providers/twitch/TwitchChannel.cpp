@@ -1090,14 +1090,6 @@ void TwitchChannel::refreshSevenTVChannelEmotes(bool manualRefresh)
         manualRefresh, cacheHit);
 }
 
-void TwitchChannel::refreshBadgesProviders()
-{
-    getApp()->getHomiesBadges()->loadHomiesBadges();
-    this->addSystemMessage("Homies badges reloaded.");
-    getApp()->getFolhinhaBadges()->loadFolhinhaBadges();
-    this->addSystemMessage("FolhinhaBot badges reloaded.");
-}
-
 void TwitchChannel::setBttvEmotes(std::shared_ptr<const EmoteMap> &&map)
 {
     this->bttvEmotes_.set(std::move(map));

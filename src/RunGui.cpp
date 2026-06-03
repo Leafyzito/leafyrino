@@ -56,7 +56,7 @@ QString guiActivationServerName(const Paths &paths)
 {
     const auto hash = QCryptographicHash::hash(
         paths.rootAppDataDirectory.toUtf8(), QCryptographicHash::Sha256);
-    return QStringLiteral("moltorino-gui-activate-%1")
+    return QStringLiteral("leafyrino-gui-activate-%1")
         .arg(QString::fromLatin1(hash.toHex().left(24)));
 }
 
@@ -91,7 +91,7 @@ std::unique_ptr<QLocalServer> createGuiActivationServer(const Paths &paths)
             if (!server->listen(serverName))
             {
                 qCWarning(chatterinoApp)
-                    << "Failed to listen for Moltorino activation requests:"
+                    << "Failed to listen for Leafyrino activation requests:"
                     << server->errorString();
                 return nullptr;
             }
@@ -99,7 +99,7 @@ std::unique_ptr<QLocalServer> createGuiActivationServer(const Paths &paths)
         else
         {
             qCDebug(chatterinoApp)
-                << "Moltorino activation server already exists.";
+                << "Leafyrino activation server already exists.";
             return nullptr;
         }
     }

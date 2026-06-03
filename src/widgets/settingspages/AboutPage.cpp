@@ -59,7 +59,7 @@ AboutPage::AboutPage()
 
             QString buildString = "Chatterino " % version.version();
             buildString +=
-                " (<a href=\"https://www.twitch.tv/moltobenne_\">MoltoBenne's "
+                " (<a href=\"https://www.twitch.tv/leafyzito\">leafyzito's "
                 "version</a>)";
             buildString += " built with " % version.buildTags().join(", ");
 

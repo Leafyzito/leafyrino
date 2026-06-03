@@ -682,7 +682,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->addTo(layout);
     SettingWidget::checkbox("Send activity to BetterTTV", s.sendBTTVActivity)
         ->setTooltip(
-            "When enabled, Moltorino will signal an activity to BetterTTV "
+            "When enabled, Leafyrino will signal an activity to BetterTTV "
             "when you send a chat message. This is used for badges, "
             " and personal emotes. When disabled, no activity "
             "is sent and others won't see your cosmetics.")
@@ -719,7 +719,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                      "(badges/paints/personal emotes) will get updated.")
         ->addTo(layout);
     SettingWidget::checkbox("Send activity to 7TV", s.sendSevenTVActivity)
-        ->setTooltip("When enabled, Moltorino will signal an activity to 7TV "
+        ->setTooltip("When enabled, Leafyrino will signal an activity to 7TV "
                      "when you send a chat message. This is used for badges, "
                      "paints, and personal emotes. When disabled, no activity "
                      "is sent and others won't see your cosmetics.")
@@ -728,7 +728,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
 
     layout.addTitle("Streamer Mode");
     layout.addDescription(
-        "Moltorino can automatically change behavior if it detects that any "
+        "Leafyrino can automatically change behavior if it detects that any "
         "streaming software is running.\nSelect which things you want to "
         "change while streaming");
 

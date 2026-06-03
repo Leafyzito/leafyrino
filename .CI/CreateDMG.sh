@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-_app_bundle="${APP_BUNDLE_PATH:-Moltorino7.app}"
+_app_bundle="${APP_BUNDLE_PATH:-Leafyrino7.app}"
 
 if [ ! -d "${_app_bundle}" ]; then
     echo "ERROR: No '${_app_bundle}' dir found in the build directory. Make sure you've run ./CI/MacDeploy.sh"
@@ -30,7 +30,7 @@ if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
 fi
 
 echo "Running dmgbuild.."
-dmgbuild --settings ./../.CI/dmg-settings.py -D app="./${_app_bundle}" Moltorino "$OUTPUT_DMG_PATH"
+dmgbuild --settings ./../.CI/dmg-settings.py -D app="./${_app_bundle}" Leafyrino "$OUTPUT_DMG_PATH"
 echo "Done!"
 
 if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then

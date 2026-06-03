@@ -9,7 +9,7 @@
 #include "controllers/accounts/AccountModel.hpp"
 #include "providers/twitch/TwitchCommon.hpp"
 #include "util/LayoutCreator.hpp"
-#include "widgets/dialogs/LoginDialog.hpp"
+#include "widgets/dialogs/MoltorinoAuthDialog.hpp"
 #include "widgets/helper/EditableModelView.hpp"
 
 #include <QDialogButtonBox>
@@ -38,8 +38,7 @@ AccountsPage::AccountsPage()
     view->getTableView()->horizontalHeader()->setStretchLastSection(true);
 
     std::ignore = view->addButtonPressed.connect([this] {
-        LoginDialog d(this);
-        d.exec();
+        showMoltorinoAuthDialog(this, QStringLiteral("Add new account"), true);
     });
 
     view->getTableView()->setStyleSheet("background: #333");

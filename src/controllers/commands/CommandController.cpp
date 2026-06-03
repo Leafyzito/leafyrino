@@ -386,8 +386,6 @@ CommandController::CommandController(const Paths &paths)
 
     this->registerCommand("/requests", &commands::requests);
 
-    this->registerCommand("/logs", &commands::openLogs);
-
     this->registerCommand("/lowtrust", &commands::lowtrust);
 
     this->registerCommand("/chatters", &commands::chatters);
@@ -477,59 +475,6 @@ CommandController::CommandController(const Paths &paths)
     this->registerCommand("/r9kbeta", &commands::uniqueChat);
     this->registerCommand("/uniquechatoff", &commands::uniqueChatOff);
     this->registerCommand("/r9kbetaoff", &commands::uniqueChatOff);
-
-    this->registerCommand(
-        "/founders", [](const QStringList &words, auto channel) -> QString {
-            auto twitchChannel = dynamic_cast<TwitchChannel *>(channel.get());
-            QString target(words.value(1).toLower());
-
-            if (twitchChannel == nullptr)
-            {
-                channel->addSystemMessage(
-                    "The /founders command only works in Twitch Channels");
-                return "";
-            }
-
-            if (words.value(1).isEmpty())
-            {
-                target = channel->getName();
-            }
-
-            getIvr()->getFounders(
-                target,
-                [channel, twitchChannel, target](auto result) {
-                    std::vector<HelixModerator> founders;
-
-                    for (int i = 0; i < result.size(); i++)
-                    {
-                        QJsonObject founderJson;
-
-                        founderJson.insert("user_id",
-                                           result.at(i).toObject().value("id"));
-                        founderJson.insert(
-                            "user_name",
-                            result.at(i).toObject().value("displayName"));
-                        founderJson.insert(
-                            "user_login",
-                            result.at(i).toObject().value("login"));
-
-                        HelixModerator founder(founderJson);
-                        founders.push_back(founder);
-                    }
-
-                    channel->addMessage(
-                        MessageBuilder::makeListOfUsersMessage(
-                            QString("The founders (%1) of %2 are")
-                                .arg(founders.size())
-                                .arg(target),
-                            founders, twitchChannel),
-                        MessageContext::Original);
-                },
-                [channel]() {
-                    channel->addSystemMessage("Could not get founders list!");
-                });
-            return "";
-        });
 
     this->registerCommand("/timeout", &commands::sendTimeout);
 
@@ -780,7 +725,15 @@ bool CommandController::unregisterPluginCommand(const QString &commandName)
 void CommandController::registerCommand(const QString &commandName,
                                         CommandFunctionVariants commandFunction)
 {
-    assert(this->commands_.count(commandName) == 0);
+    if (this->userCommands_.contains(commandName))
+    {
+        return;
+    }
+
+    if (this->commands_.contains(commandName))
+    {
+        return;
+    }
 
     this->commands_[commandName] = std::move(commandFunction);
 

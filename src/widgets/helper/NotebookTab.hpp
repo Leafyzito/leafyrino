@@ -47,11 +47,6 @@ public:
     const QString &getDefaultTitle() const;
     const QString &getTitle() const;
 
-    void setCustomTabColor(const QColor &color);
-    void resetCustomTabColor();
-    bool hasCustomTabColor() const;
-    const QColor &getCustomTabColor() const;
-
     bool isSelected() const;
     void setSelected(bool value);
 
@@ -172,8 +167,6 @@ private:
     QColor customTabColor_;
     QString defaultTitle_;
 
-    QColor customTabColor_;
-
     bool selected_{};
     bool mouseOver_{};
     bool mouseDown_{};
@@ -184,8 +177,6 @@ private:
     NotebookTabLocation tabLocation_ = NotebookTabLocation::Top;
 
     HighlightState highlightState_ = HighlightState::None;
-    std::shared_ptr<QColor> highlightColor_;
-    size_t lastHighlightSequence_ = 0;
     bool highlightEnabled_ = true;
     QAction *highlightNewMessagesAction_;
 

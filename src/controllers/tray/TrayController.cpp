@@ -111,7 +111,7 @@ void TrayController::hideToTray()
             QSystemTrayIcon::supportsMessages())
         {
             this->trayIcon_->showMessage(
-                QStringLiteral("Moltorino is still running"),
+                QStringLiteral("Leafyrino is still running"),
                 QStringLiteral(
                     "You can disable this feature from the settings."),
                 QSystemTrayIcon::Information, 7000);
@@ -190,10 +190,10 @@ void TrayController::ensureTrayIcon()
 
     this->trayIcon_ = new QSystemTrayIcon(QIcon(QStringLiteral(":/icon.ico")),
                                           this);
-    this->trayIcon_->setToolTip(QStringLiteral("Moltorino"));
+    this->trayIcon_->setToolTip(QStringLiteral("Leafyrino"));
 
     this->menu_ = new QMenu;
-    this->openAction_ = this->menu_->addAction(QStringLiteral("Open Moltorino"));
+    this->openAction_ = this->menu_->addAction(QStringLiteral("Open Leafyrino"));
     QObject::connect(this->openAction_, &QAction::triggered, this,
                      [this] {
                          this->restoreFromTray();
@@ -238,7 +238,7 @@ void TrayController::ensureTrayIcon()
                      });
 
     this->menu_->addSeparator();
-    this->quitAction_ = this->menu_->addAction(QStringLiteral("Quit Moltorino"));
+    this->quitAction_ = this->menu_->addAction(QStringLiteral("Quit Leafyrino"));
     QObject::connect(this->quitAction_, &QAction::triggered, qApp, [] {
         QApplication::exit(0);
     });

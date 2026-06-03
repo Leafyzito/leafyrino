@@ -436,7 +436,7 @@ void fetchTwitchNameHistoryByUserId(
         .timeout(NAME_HISTORY_TIMEOUT_MS)
         .followRedirects(true)
         .header("Accept", "application/json")
-        .header("User-Agent", "Moltorino")
+        .header("User-Agent", "Leafyrino")
         .onSuccess([trimmedUserId, requestedLogin,
                     successCallback = std::move(successCallback),
                     failureCallback](const NetworkResult &result) mutable {

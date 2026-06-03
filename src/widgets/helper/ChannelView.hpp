@@ -70,11 +70,6 @@ enum class FromTwitchLinkOpenChannelIn {
     CustomPlayer,
 };
 
-struct TabHighlight {
-    HighlightState state = HighlightState::None;
-    std::shared_ptr<QColor> color;
-};
-
 using SteadyClock = std::chrono::steady_clock;
 
 class ChannelView final : public BaseWidget

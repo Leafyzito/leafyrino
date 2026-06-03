@@ -30,8 +30,8 @@ env:
   CHATTERINO_REQUIRE_CLEAN_GIT: On
   CHATTERINO_BUILD_TYPE: ${{ case(inputs.buildType != '', inputs.buildType, 'auto') }}
   CONAN_VERSION: 2.28.1
-  C2_APP_EXECUTABLE: Moltorino7
-  C2_APP_BUNDLE: Moltorino7.app
+  C2_APP_EXECUTABLE: Leafyrino7
+  C2_APP_BUNDLE: Leafyrino7.app
 
 jobs:
   build-ubuntu-docker:
@@ -137,8 +137,8 @@ jobs:
         if: matrix.build-appimage
         uses: actions/upload-artifact@v7
         with:
-          name: Moltorino7-x86_64-Qt-${{ matrix.qt-version }}.AppImage
-          path: build/Moltorino7-x86_64.AppImage
+          name: Leafyrino7-x86_64-Qt-${{ matrix.qt-version }}.AppImage
+          path: build/Leafyrino7-x86_64.AppImage
 
       - name: Package - .deb (Ubuntu)
         if: matrix.build-deb
@@ -320,7 +320,7 @@ jobs:
           ninja chatterino-crash-handler
           mkdir Chatterino2/crashpad
           cp bin/crashpad/crashpad-handler.exe Chatterino2/crashpad/crashpad-handler.exe
-          7z a bin/moltorino7-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb.7z bin/${{ env.C2_APP_EXECUTABLE }}.pdb
+          7z a bin/leafyrino7-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb.7z bin/${{ env.C2_APP_EXECUTABLE }}.pdb
 
       - name: Prepare build dir (windows)
         if: startsWith(matrix.os, 'windows')
@@ -347,8 +347,8 @@ jobs:
         if: startsWith(matrix.os, 'windows') && !matrix.skip-artifact
         uses: actions/upload-artifact@v7
         with:
-          name: moltorino7-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}-symbols.pdb.7z
-          path: build/bin/moltorino7-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb.7z
+          name: leafyrino7-windows-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}-symbols.pdb.7z
+          path: build/bin/leafyrino7-${{ env.C2_ARCH }}-Qt-${{ matrix.qt-version }}.pdb.7z
 
       # MACOS
       - name: Install dependencies (MacOS)

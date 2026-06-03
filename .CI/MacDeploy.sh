@@ -4,7 +4,7 @@
 
 set -eo pipefail
 
-_app_bundle="${APP_BUNDLE_PATH:-Moltorino7.app}"
+_app_bundle="${APP_BUNDLE_PATH:-Leafyrino7.app}"
 
 if [ -d "bin/${_app_bundle}" ] && [ ! -d "${_app_bundle}" ]; then
     >&2 echo "Moving bin/${_app_bundle} down one directory"
@@ -12,9 +12,9 @@ if [ -d "bin/${_app_bundle}" ] && [ ! -d "${_app_bundle}" ]; then
 elif [ -d bin/chatterino.app ] && [ ! -d "${_app_bundle}" ]; then
     >&2 echo "Moving legacy bin/chatterino.app to ${_app_bundle}"
     mv bin/chatterino.app "${_app_bundle}"
-elif [ -d bin/Moltorino.app ] && [ ! -d "${_app_bundle}" ]; then
-    >&2 echo "Moving bin/Moltorino.app to ${_app_bundle}"
-    mv bin/Moltorino.app "${_app_bundle}"
+elif [ -d bin/Leafyrino.app ] && [ ! -d "${_app_bundle}" ]; then
+    >&2 echo "Moving bin/Leafyrino.app to ${_app_bundle}"
+    mv bin/Leafyrino.app "${_app_bundle}"
 fi
 
 if [ ! -d "${_app_bundle}" ]; then

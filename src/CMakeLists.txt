@@ -817,6 +817,8 @@ set(SOURCE_FILES
         widgets/dialogs/LastRunCrashDialog.hpp
         widgets/dialogs/LoginDialog.cpp
         widgets/dialogs/LoginDialog.hpp
+        widgets/dialogs/MoltorinoAuthDialog.cpp
+        widgets/dialogs/MoltorinoAuthDialog.hpp
         widgets/dialogs/TwitchDeviceLoginPage.cpp
         widgets/dialogs/TwitchDeviceLoginPage.hpp
         widgets/dialogs/QualityPopup.cpp
@@ -995,14 +997,6 @@ set(SOURCE_FILES
         widgets/splits/SplitHeader.hpp
         widgets/splits/SplitInput.cpp
         widgets/splits/SplitInput.hpp
-        widgets/splits/PredictionPoolBar.cpp
-        widgets/splits/PredictionPoolBar.hpp
-        widgets/splits/SplitPinnedMessagePanel.cpp
-        widgets/splits/SplitPinnedMessagePanel.hpp
-        widgets/splits/SplitPredictionPanel.cpp
-        widgets/splits/SplitPredictionPanel.hpp
-        widgets/splits/SplitPollPanel.cpp
-        widgets/splits/SplitPollPanel.hpp
         widgets/splits/SplitOverlay.cpp
         widgets/splits/SplitOverlay.hpp
         )
@@ -1085,6 +1079,7 @@ target_link_libraries(${LIBRARY_PROJECT}
         Qt${MAJOR_QT_VERSION}::Network
         Qt${MAJOR_QT_VERSION}::NetworkPrivate # for DELETE with a body (Kick)
         Qt${MAJOR_QT_VERSION}::Svg
+        Qt${MAJOR_QT_VERSION}::SvgWidgets
         Qt${MAJOR_QT_VERSION}::Concurrent
 
         LibCommuni::LibCommuni

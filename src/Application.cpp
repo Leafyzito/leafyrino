@@ -18,7 +18,6 @@
 #include "providers/ffz/FfzEmotes.hpp"
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/links/LinkResolver.hpp"
-#include "providers/IvrApi.hpp"
 #include "providers/pronouns/Pronouns.hpp"
 #include "providers/seventv/SeventvAPI.hpp"
 #include "providers/seventv/SeventvEmotes.hpp"
@@ -246,7 +245,6 @@ void Application::initialize(Settings &settings, const Paths &paths)
         getSettings()->currentVersion.setValue(CHATTERINO_VERSION);
     }
     this->emotes->initialize();
-    IvrApi::initialize();
 
     this->accounts->load();
 
