@@ -20,11 +20,11 @@
 #include <QTimer>
 
 #ifdef Q_OS_WIN
-
+// clang-format off
 #    include <Windows.h>
 #    include <VersionHelpers.h>
 #    include <WtsApi32.h>
-
+// clang-format on
 #endif
 
 #include <atomic>

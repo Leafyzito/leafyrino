@@ -23,7 +23,6 @@
 #    include "Windows.h"
 #    include "Psapi.h"
 // clang-format on
-
 #    pragma comment(lib, "Dwmapi.lib")
 #endif
 
