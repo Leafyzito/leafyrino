@@ -21,8 +21,8 @@
 
 #ifdef Q_OS_WIN
 
-#    include <VersionHelpers.h>
 #    include <Windows.h>
+#    include <VersionHelpers.h>
 #    include <WtsApi32.h>
 
 #endif
