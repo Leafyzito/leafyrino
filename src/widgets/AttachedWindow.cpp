@@ -17,7 +17,12 @@
 
 #ifdef USEWINSDK
 #    include "util/WindowsHelper.hpp"
-#    include <Psapi.h>
+
+// clang-format off
+// don't even think about reordering these
+#    include "Windows.h"
+#    include "Psapi.h"
+// clang-format on
 
 #    pragma comment(lib, "Dwmapi.lib")
 #endif
