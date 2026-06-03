@@ -491,6 +491,10 @@ void HotkeyController::addDefaults(std::set<QString> &addedHotkeys)
         this->tryAddDefault(addedHotkeys, HotkeyCategory::SplitInput,
                             QKeySequence("Down"), "nextMessage",
                             std::vector<QString>(), "next message");
+
+        this->tryAddDefault(addedHotkeys, HotkeyCategory::SplitInput,
+                            QKeySequence("Ctrl+L"), "toggleTranslateOnSend",
+                            std::vector<QString>(), "toggle translate on send");
     }
 
     // window

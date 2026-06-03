@@ -15,6 +15,8 @@
 #    include "singletons/Toasts.hpp"
 #endif
 #include "controllers/accounts/AccountController.hpp"
+#include "controllers/hotkeys/HotkeyCategory.hpp"
+#include "controllers/hotkeys/HotkeyController.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "Application.hpp"
 
@@ -32,6 +34,7 @@
 #include <QMessageBox>
 #include <QPointer>
 #include <QPushButton>
+#include <QKeySequence>
 #include <QSet>
 #include <QSizePolicy>
 #include <QStackedWidget>
@@ -722,14 +725,34 @@ MoltorinoPage::MoltorinoPage()
         ->setTooltip("Show the chat input translation button.")
         ->addTo(*view);
 
-    SettingWidget::dropdown("Outgoing translation default",
-                            s.outgoingTranslationMode,
-                            outgoingTranslationModeItems())
-        ->setTooltip("Default outgoing translation mode for channels that "
-                     "do not have their own saved input setting. Preview only "
-                     "shows a draft translation without changing what Enter "
-                     "sends. Translate on send sends the translated text.")
-        ->addTo(*view);
+    {
+        auto toggleTranslateOnSendSeq = getApp()->getHotkeys()->getDisplaySequence(
+            HotkeyCategory::SplitInput, "toggleTranslateOnSend");
+        auto toggleTranslateOnSendHint =
+            QStringLiteral("Assign a hotkey under Split input box -> "
+                           "Toggle translate on send.");
+        if (!toggleTranslateOnSendSeq.isEmpty())
+        {
+            toggleTranslateOnSendHint =
+                QStringLiteral("Toggle translate on send with %1.")
+                    .arg(toggleTranslateOnSendSeq.toString(
+                        QKeySequence::SequenceFormat::NativeText));
+        }
+
+        SettingWidget::dropdown("Outgoing translation default",
+                                s.outgoingTranslationMode,
+                                outgoingTranslationModeItems())
+            ->setTooltip(
+                QStringLiteral("Default outgoing translation mode for "
+                               "channels that do not have their own saved "
+                               "input setting. Preview only shows a draft "
+                               "translation without changing what Enter "
+                               "sends. Translate on send sends the translated "
+                               "text. Per-channel mode can also be toggled "
+                               "from the input translation button. %1")
+                    .arg(toggleTranslateOnSendHint))
+            ->addTo(*view);
+    }
 
     SettingWidget::dropdown("Default translated message language",
                             s.outgoingTranslationTargetLanguage,

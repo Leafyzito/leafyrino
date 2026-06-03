@@ -299,6 +299,8 @@ inline const std::map<HotkeyCategory, ActionDefinitionMap> actionNames{
               },
               .argumentsPrompt = "Behavior:",
           }},
+         {"toggleTranslateOnSend",
+          ActionDefinition{"Toggle translate on send"}},
          {"undo", ActionDefinition{"Undo"}},
 
      }},

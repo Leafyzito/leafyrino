@@ -1850,6 +1850,34 @@ void SplitInput::addShortcuts()
              this->ui_.textEdit->setTextCursor(cursor);
              return "";
          }},
+        {"toggleTranslateOnSend",
+         [this](const std::vector<QString> &arguments) -> QString {
+             (void)arguments;
+
+             const auto newMode =
+                 normalizedOutgoingTranslationMode(
+                     this->outgoingTranslationMode()) ==
+                         QLatin1String(OUTGOING_TRANSLATION_SEND)
+                     ? QStringLiteral("off")
+                     : QStringLiteral("send");
+
+             getSettings()->setOutgoingTranslationModeForChannel(
+                 this->outgoingTranslationChannelName(), newMode);
+             this->updateOutgoingTranslationButton();
+             this->updateOutgoingTranslationPreview();
+
+             if (this->split_ != nullptr)
+             {
+                 if (auto channel = this->split_->getSelectedChannel())
+                 {
+                     channel->addSystemMessage(
+                         QStringLiteral("Outgoing translation: %1")
+                             .arg(outgoingTranslationModeLabel(newMode)));
+                 }
+             }
+
+             return "";
+         }},
     };
 
     this->shortcuts_ = getApp()->getHotkeys()->shortcutsForCategory(
