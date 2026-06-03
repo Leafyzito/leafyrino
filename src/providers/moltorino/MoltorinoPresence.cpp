@@ -793,10 +793,9 @@ bool MoltorinoPresence::showDownloadPrompt(bool force)
     box->setDefaultButton(downloadButton);
 
     QObject::connect(box, &QMessageBox::finished, this,
-                     [this, box] {
-                         if (box->clickedButton() == nullptr ||
-                             box->buttonRole(box->clickedButton()) ==
-                                 QMessageBox::RejectRole)
+                     [this, box, laterButton] {
+                         if (box->clickedButton() == laterButton ||
+                             box->clickedButton() == nullptr)
                          {
                              this->updatePromptDismissedThisRun_ = true;
                          }
@@ -805,8 +804,8 @@ bool MoltorinoPresence::showDownloadPrompt(bool force)
                      });
 
     QObject::connect(box, &QMessageBox::buttonClicked, this,
-                     [this, box, update](QAbstractButton *button) {
-                         if (box->buttonRole(button) != QMessageBox::AcceptRole)
+                     [this, box, downloadButton, update](QAbstractButton *button) {
+                         if (button != downloadButton)
                          {
                              return;
                          }
@@ -882,10 +881,9 @@ bool MoltorinoPresence::showInstallPrompt(bool force)
     box->setDefaultButton(installButton);
 
     QObject::connect(box, &QMessageBox::finished, this,
-                     [this, box] {
-                         if (box->clickedButton() == nullptr ||
-                             box->buttonRole(box->clickedButton()) ==
-                                 QMessageBox::RejectRole)
+                     [this, box, laterButton] {
+                         if (box->clickedButton() == laterButton ||
+                             box->clickedButton() == nullptr)
                          {
                              this->updatePromptDismissedThisRun_ = true;
                          }
@@ -894,8 +892,8 @@ bool MoltorinoPresence::showInstallPrompt(bool force)
                      });
 
     QObject::connect(box, &QMessageBox::buttonClicked, this,
-                     [this, box](QAbstractButton *button) {
-                         if (box->buttonRole(button) == QMessageBox::AcceptRole)
+                     [this, box, installButton](QAbstractButton *button) {
+                         if (button == installButton)
                          {
                              box->hide();
                              this->launchDownloadedInstaller();
