@@ -250,6 +250,8 @@ public:
     BoolSetting alternateMessages = {
         "/appearance/messages/alternateMessageBackground", false};
     BoolSetting channelLinks = {"/appearance/messages/channelLinks", false};
+    BoolSetting wrapLinksAtBreaks = {"/appearance/messages/wrapLinksAtBreaks",
+                                     false};
     FloatSetting boldScale = {"/appearance/boldScale", 63};
     BoolSetting showTabCloseButton = {"/appearance/showTabCloseButton", true};
     BoolSetting showTabLive = {"/appearance/showTabLiveButton", true};

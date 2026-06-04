@@ -1376,6 +1376,13 @@ void LinkElement::addToContainer(MessageLayoutContainer &container,
     const auto &source =
         getSettings()->lowercaseDomains ? this->lowercase_ : this->original_;
 
+    if (!getSettings()->wrapLinksAtBreaks)
+    {
+        this->words_ = source;
+        TextElement::addToContainer(container, ctx);
+        return;
+    }
+
     // Split the URL into segments at natural break points so long URLs
     // can wrap mid-link instead of being treated as a single unbreakable word.
     // Break points: before '/', '?', '&', '#', '='  (keep delimiter at start

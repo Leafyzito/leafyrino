@@ -66,6 +66,13 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->conditionallyEnabledBy(s.showSplitMps)
         ->addTo(layout);
 
+    layout.addTitle("Miscellaneous");
+    SettingWidget::checkbox("Wrap links at breaks", s.wrapLinksAtBreaks)
+        ->setTooltip("Let URLs wrap at /, ?, &, #, and = instead of staying "
+                     "on one line.")
+        ->addKeywords({"url", "link", "wrap", "break"})
+        ->addTo(layout);
+
     layout.addStretch();
 
     // Invisible element for width
