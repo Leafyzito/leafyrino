@@ -19,6 +19,8 @@
 #include "util/WindowsHelper.hpp"
 
 #include <pajlada/signals/scoped-connection.hpp>
+#include <rapidjson/pointer.h>
+
 #include <QStringList>
 
 #include <optional>
@@ -502,23 +504,30 @@ Settings::Settings(const Args &args, const QString &settingsDirectory,
         "/appearance/badges/homies";
     if (auto *oldHomiesBadgesSetting =
             settingsInstance->get(OLD_HOMIES_BADGES_SETTING);
-        oldHomiesBadgesSetting != nullptr)
+        oldHomiesBadgesSetting != nullptr && oldHomiesBadgesSetting->IsBool())
     {
-        const auto enabled = oldHomiesBadgesSetting->IsBool()
-                                 ? oldHomiesBadgesSetting->GetBool()
-                                 : true;
-        if (settingsInstance->get(this->showBadgesHomiesSupporter.getPath()) ==
-            nullptr)
-        {
+        const auto enabled = oldHomiesBadgesSetting->GetBool();
+
+        // removeSetting would also unregister the new split badge settings
+        const auto removedOldSetting =
+            rapidjson::Pointer(OLD_HOMIES_BADGES_SETTING)
+                .Erase(settingsInstance->document);
+        const auto wroteSupporter =
             this->showBadgesHomiesSupporter.setValue(enabled);
-        }
-        if (settingsInstance->get(this->showBadgesHomiesCustom.getPath()) ==
-            nullptr)
+        const auto wroteCustom = this->showBadgesHomiesCustom.setValue(enabled);
+        if (removedOldSetting || wroteSupporter || wroteCustom)
         {
-            this->showBadgesHomiesCustom.setValue(enabled);
+            this->requestSave();
         }
-        settingsInstance->removeSetting(OLD_HOMIES_BADGES_SETTING);
     }
+
+    auto saveHomiesBadgeSetting = [this](bool, auto) {
+        this->requestSave();
+    };
+    this->showBadgesHomiesSupporter.connect(saveHomiesBadgeSetting,
+                                            this->signalHolder, false);
+    this->showBadgesHomiesCustom.connect(saveHomiesBadgeSetting,
+                                         this->signalHolder, false);
 
     // migration for `/moltorino/pinnedMessages/showPinButtonOnModerators`
     // -> `/moltorino/pinnedMessages/showPinButtonOnModeratorsMode`

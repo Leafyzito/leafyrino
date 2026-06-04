@@ -721,17 +721,25 @@ QMenu *addEmoteContextMenuItems(QMenu *menu, const Emote &emote,
 
     // Scale of the smallest image
     std::optional<qreal> baseScale;
+    const auto isMoltorinoBadge =
+        kind == u"badge" &&
+        emote.name.string.startsWith(QStringLiteral("moltorino:"));
     // Add copy and open links for images
-    auto addImageLink = [&](const ImagePtr &image) {
+    auto addImageLink = [&](const ImagePtr &image, const QString &label = {}) {
         if (!image->isEmpty())
         {
-            if (!baseScale)
+            auto factor = label;
+            if (factor.isEmpty())
             {
-                baseScale = image->scale();
+                if (!baseScale)
+                {
+                    baseScale = image->scale();
+                }
+
+                factor = QString::number(
+                    static_cast<int>(*baseScale / image->scale()));
             }
 
-            auto factor =
-                QString::number(static_cast<int>(*baseScale / image->scale()));
             copyMenu->addAction("&" + factor + "x link", [url = image->url()] {
                 crossPlatformCopy(url.string);
             });
@@ -741,9 +749,12 @@ QMenu *addEmoteContextMenuItems(QMenu *menu, const Emote &emote,
         }
     };
 
-    addImageLink(emote.images.getImage1());
-    addImageLink(emote.images.getImage2());
-    addImageLink(emote.images.getImage3());
+    addImageLink(emote.images.getImage1(),
+                 isMoltorinoBadge ? QStringLiteral("1") : QString{});
+    addImageLink(emote.images.getImage2(),
+                 isMoltorinoBadge ? QStringLiteral("2") : QString{});
+    addImageLink(emote.images.getImage3(),
+                 isMoltorinoBadge ? QStringLiteral("3") : QString{});
 
     bool openPageSection = false;
     auto ensureOpenPageSection = [&] {

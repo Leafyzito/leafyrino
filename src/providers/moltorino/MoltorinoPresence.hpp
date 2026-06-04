@@ -52,6 +52,7 @@ public:
     pajlada::Signals::NoArgSignal updateStateChanged;
 
 private:
+    void applyHeartbeatSettings(bool sendNow = false);
     void sendHeartbeat(bool force = false);
     void handleServerReply(const QJsonObject &root);
     bool setAvailableUpdate(std::optional<MoltorinoUpdateInfo> update);
@@ -94,6 +95,9 @@ private:
     QTimer heartbeatTimer_;
     QTimer badgeSocketReconnectTimer_;
     boost::signals2::scoped_connection accountChangedConnection_;
+    boost::signals2::scoped_connection transmitPresenceConnection_;
+    boost::signals2::scoped_connection activityHeartbeatConnection_;
+    boost::signals2::scoped_connection heartbeatAccountConnection_;
 
     std::unique_ptr<WebSocketPool> badgeSocketPool_;
     WebSocketHandle badgeSocket_;

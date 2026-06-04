@@ -16,6 +16,7 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QSaveFile>
+#include <QSize>
 #include <QTimer>
 #include <QVariant>
 
@@ -34,8 +35,7 @@ constexpr int PASSIVE_REFRESH_THROTTLE_MS = 60000;
 constexpr qsizetype MAX_PAYLOAD_BYTES = 8 * 1024 * 1024;
 constexpr int MAX_CATEGORIES = 64;
 constexpr int MAX_ASSIGNMENTS = 250000;
-constexpr int BADGE_SOURCE_SIZE = 18;
-constexpr qreal BADGE_RENDER_SIZE = 18.5;
+constexpr QSize BADGE_BASE_SIZE(18, 18);
 
 struct ParsedPayload {
     int version = -1;
@@ -76,7 +76,7 @@ QString versionedImageUrl(const QString &url, int version)
 }
 
 ImagePtr badgeImage(const QString &url, int version, qreal scale,
-                    int sourceSize)
+                    QSize expectedSize)
 {
     if (url.isEmpty())
     {
@@ -84,35 +84,21 @@ ImagePtr badgeImage(const QString &url, int version, qreal scale,
     }
 
     return Image::fromUrl(Url{versionedImageUrl(url, version)}, scale,
-                          QSize{sourceSize, sourceSize});
-}
-
-qreal badgeRenderScale(int sourceSize)
-{
-    return BADGE_RENDER_SIZE / static_cast<qreal>(sourceSize);
+                          expectedSize);
 }
 
 ImageSet badgeImageSet(const QString &image1, const QString &image2,
                        const QString &image3, int version)
 {
-    constexpr int SIZE_1X = BADGE_SOURCE_SIZE;
-    constexpr int SIZE_2X = BADGE_SOURCE_SIZE * 2;
-    constexpr int SIZE_3X = BADGE_SOURCE_SIZE * 4;
-
-    const auto badge1x =
-        badgeImage(image1, version, badgeRenderScale(SIZE_1X), SIZE_1X);
+    const auto badge1x = badgeImage(image1, version, 1.0, BADGE_BASE_SIZE);
     const auto badge2x =
-        badgeImage(image2, version, badgeRenderScale(SIZE_2X), SIZE_2X);
+        badgeImage(image2, version, 0.5, BADGE_BASE_SIZE * 2);
     const auto badge3x =
-        badgeImage(image3, version, badgeRenderScale(SIZE_3X), SIZE_3X);
-
-    const auto badgeDefault = !badge2x->isEmpty()
-                                  ? badge2x
-                                  : (!badge3x->isEmpty() ? badge3x : badge1x);
+        badgeImage(image3, version, 0.25, BADGE_BASE_SIZE * 4);
 
     return ImageSet{
-        badgeDefault,
-        !badge2x->isEmpty() ? badge2x : badge3x,
+        badge1x,
+        badge2x,
         badge3x,
     };
 }
@@ -158,7 +144,7 @@ EmotePtr makeBadgeEmote(const QJsonObject &category, int version)
         .name = EmoteName{u"moltorino:"_s + id},
         .images = std::move(imageSet),
         .tooltip = Tooltip{tooltip},
-        .homePage = Url{u"https://moltorino.com"_s},
+        .homePage = Url{},
         .id = EmoteId{id},
     };
 

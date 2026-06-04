@@ -984,6 +984,42 @@ MoltorinoPage::MoltorinoPage()
         ->setTooltip("Show muted (translated) text after translated messages.")
         ->addTo(*view);
 
+    SettingWidget::checkbox("Send activity heartbeats",
+                            s.sendActivityHeartbeats)
+        ->setTooltip("Send a small periodic heartbeat with app version, "
+                     "platform, status, and update-check info.")
+        ->addTo(*view);
+
+    auto heartbeatConfirming = std::make_shared<bool>(false);
+    s.sendActivityHeartbeats.connect(
+        [this, &s, heartbeatConfirming](const bool enabled) {
+            if (enabled || *heartbeatConfirming)
+            {
+                return;
+            }
+
+            *heartbeatConfirming = true;
+            const auto answer = QMessageBox::warning(
+                this, "Disable heartbeats?",
+                "If you turn this off, Leafyrino will stop sending "
+                "activity heartbeats and automatic update checks may stop "
+                "working.\n\nDo you still want to turn it off?",
+                QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+            if (answer != QMessageBox::Yes)
+            {
+                s.sendActivityHeartbeats = true;
+            }
+            *heartbeatConfirming = false;
+        },
+        this->managedConnections_, false);
+
+    SettingWidget::checkbox("Hide my account in heartbeats",
+                            s.hideAccountInHeartbeats)
+        ->setTooltip("Keep update/status heartbeats enabled, but leave out "
+                     "your Twitch account details.")
+        ->conditionallyEnabledBy(s.sendActivityHeartbeats)
+        ->addTo(*view);
+
     view->addTitle("Usercards");
     view->addDescription("Choose which extra details appear on usercards.");
 
@@ -1096,7 +1132,7 @@ MoltorinoPage::MoltorinoPage()
 #endif
 
     view->addTitle("Fun");
-    view->addDescription("fun");
+    view->addDescription("Spam, pyramid, and playful chat command options.");
 
     SettingWidget::intInput("Delay between /spam and /pyramid messages",
                             s.spamCommandIntervalMs,
@@ -1123,9 +1159,10 @@ MoltorinoPage::MoltorinoPage()
         ->addTo(*view);
 
     SettingWidget::checkbox("Send message as warnings", s.sendMessageAsWarnings)
-        ->setTooltip("#freebrody")
+        ->setTooltip("Send eligible messages through the warning style "
+                     "message flow instead of the normal chat path.")
         ->addTo(*view);
-    view->addDescription("#freebrody");
+    view->addDescription("Spam, pyramid, and playful chat command options.");
 
     view->addTitle("Miscellaneous");
     auto *miscDesc = new SignalLabel(this);

@@ -139,8 +139,11 @@ ModerationActionLogScanSnapshot ModerationActionLogScanner::snapshot() const
                   {
                       return aTotal > bTotal;
                   }
-                  return a.displayName.compare(b.displayName,
-                                               Qt::CaseInsensitive) < 0;
+                  const auto aName =
+                      a.login.isEmpty() ? a.displayName : a.login;
+                  const auto bName =
+                      b.login.isEmpty() ? b.displayName : b.login;
+                  return aName.compare(bName, Qt::CaseInsensitive) < 0;
               });
     return snapshot;
 }
@@ -251,15 +254,22 @@ void ModerationActionLogScanner::processAction(
 
     const auto key = this->moderatorKey(action);
     auto &entry = this->moderators_[key];
-    if (entry.summary.displayName.isEmpty())
+    if (entry.summary.id.isEmpty())
     {
         entry.summary.id = action.moderatorId;
-        entry.summary.login = action.moderatorLogin;
+    }
+
+    const auto login = action.moderatorLogin.trimmed();
+    if (!login.isEmpty() && entry.summary.login.isEmpty())
+    {
+        entry.summary.login = login;
+        entry.summary.displayName = login;
+    }
+    else if (entry.summary.displayName.isEmpty())
+    {
         entry.summary.displayName =
-            action.moderatorDisplayName.isEmpty()
-                ? (action.moderatorLogin.isEmpty() ? QStringLiteral("Unknown")
-                                                   : action.moderatorLogin)
-                : action.moderatorDisplayName;
+            entry.summary.login.isEmpty() ? QStringLiteral("Unknown")
+                                          : entry.summary.login;
     }
     addKind(entry.summary.counts, action.kind);
 }

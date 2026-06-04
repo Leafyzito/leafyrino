@@ -3033,11 +3033,8 @@ void MessageBuilder::appendHomiesBadges(const QString &userID)
         }
 
         const auto isSupporterBadge = i != 0;
-        if (isSupporterBadge && !showSupporter)
-        {
-            continue;
-        }
-        if (!isSupporterBadge && !showCustom)
+        if ((isSupporterBadge && !showSupporter) ||
+            (!isSupporterBadge && !showCustom))
         {
             continue;
         }

@@ -1935,7 +1935,8 @@ void TwitchGql::getUsercardMessagesBySender(
                         const auto version = badge.value("version").toString();
                         if (!setId.isEmpty() && !version.isEmpty())
                         {
-                            badges.push_back(setId + u"/" + version);
+                            badges.push_back(
+                                QStringLiteral("%1/%2").arg(setId, version));
                         }
                     }
                     message.senderBadges = badges.join(u',');

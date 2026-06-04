@@ -17,6 +17,7 @@
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "messages/MessageElement.hpp"
+#include "providers/IvrApi.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/translation/Translator.hpp"
@@ -46,11 +47,13 @@
 #include <QCursor>
 #include <QDateTime>
 #include <QDesktopServices>
+#include <QHash>
 #include <QJsonObject>
 #include <QLocale>
 #include <QPainter>
 #include <QPoint>
 #include <QRegularExpression>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QTextOption>
@@ -62,6 +65,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 namespace chatterino::commands {
 
@@ -387,10 +391,114 @@ QString modLogRawNumber(int value)
     return QString::number(value);
 }
 
+QString modLogKey(QString value)
+{
+    return value.trimmed().toLower();
+}
+
+QString modLogDisplayName(const ModerationActionLogModeratorSummary &mod)
+{
+    const auto login = mod.login.trimmed();
+    if (!login.isEmpty())
+    {
+        return login;
+    }
+
+    const auto displayName = mod.displayName.trimmed();
+    return displayName.isEmpty() ? QStringLiteral("Unknown") : displayName;
+}
+
+void addModLogCounts(ModerationActionLogCounts &target,
+                     const ModerationActionLogCounts &source)
+{
+    target.bans += source.bans;
+    target.timeouts += source.timeouts;
+}
+
 QString modLogPaddedCell(QString value, int width, bool rightAligned)
 {
     return rightAligned ? value.rightJustified(width, QLatin1Char(' '))
                         : value.leftJustified(width, QLatin1Char(' '));
+}
+
+ModerationActionLogScanSnapshot filterModLogsToCurrentModerators(
+    ModerationActionLogScanSnapshot snapshot,
+    const std::vector<HelixModerator> &moderators, const QString &channelLogin)
+{
+    QSet<QString> moderatorIds;
+    QHash<QString, QString> moderatorLogins;
+    QHash<QString, QString> moderatorLoginsById;
+
+    auto addAllowedModerator = [&](QString id, QString login) {
+        id = id.trimmed();
+        login = login.trimmed();
+
+        if (!id.isEmpty())
+        {
+            moderatorIds.insert(id);
+        }
+
+        if (!login.isEmpty())
+        {
+            moderatorLogins.insert(modLogKey(login), login);
+            if (!id.isEmpty())
+            {
+                moderatorLoginsById.insert(id, login);
+            }
+        }
+    };
+
+    addAllowedModerator({}, channelLogin);
+    for (const auto &moderator : moderators)
+    {
+        addAllowedModerator(moderator.userId, moderator.userLogin);
+    }
+
+    auto filtered = snapshot;
+    filtered.moderators.clear();
+    filtered.totals = {};
+
+    for (auto mod : snapshot.moderators)
+    {
+        const auto idKey = mod.id.trimmed();
+        const auto loginKey = modLogKey(mod.login);
+        const auto displayKey = modLogKey(mod.displayName);
+
+        QString canonicalLogin;
+        if (!idKey.isEmpty() && moderatorLoginsById.contains(idKey))
+        {
+            canonicalLogin = moderatorLoginsById.value(idKey);
+        }
+        else if (!loginKey.isEmpty() && moderatorLogins.contains(loginKey))
+        {
+            canonicalLogin = moderatorLogins.value(loginKey);
+        }
+        else if (!displayKey.isEmpty() && moderatorLogins.contains(displayKey))
+        {
+            canonicalLogin = moderatorLogins.value(displayKey);
+        }
+
+        if ((idKey.isEmpty() || !moderatorIds.contains(idKey)) &&
+            canonicalLogin.isEmpty())
+        {
+            continue;
+        }
+
+        if (!canonicalLogin.isEmpty())
+        {
+            mod.login = canonicalLogin;
+            mod.displayName = canonicalLogin;
+        }
+        else
+        {
+            mod.displayName = modLogDisplayName(mod);
+        }
+
+        filtered.moderators.push_back(mod);
+        addModLogCounts(filtered.totals, mod.counts);
+    }
+
+    return filtered;
 }
 
 QString buildModLogsFullListText(
@@ -424,7 +532,7 @@ QString buildModLogsFullListText(
     updateWidths(QStringLiteral("All mods"), snapshot.totals);
     for (const auto &mod : snapshot.moderators)
     {
-        updateWidths(mod.displayName, mod.counts);
+        updateWidths(modLogDisplayName(mod), mod.counts);
     }
 
     auto row = [&](const QString &rank, const QString &moderator,
@@ -467,7 +575,7 @@ QString buildModLogsFullListText(
     int rank = 1;
     for (const auto &mod : snapshot.moderators)
     {
-        lines.append(row(modLogRawNumber(rank++), mod.displayName,
+        lines.append(row(modLogRawNumber(rank++), modLogDisplayName(mod),
                          modLogRawNumber(mod.counts.bans),
                          modLogRawNumber(mod.counts.timeouts),
                          modLogRawNumber(mod.counts.countedTotal())));
@@ -617,9 +725,10 @@ void addModLogsResultMessage(const ChannelPtr &channel,
                  ++i)
             {
                 const auto &mod = snapshot.moderators.at(i);
-                addModLogSummaryRow(builder, searchText,
-                                    mod.displayName + QStringLiteral(":"),
-                                    modLogCompactCountText(mod.counts));
+                addModLogSummaryRow(
+                    builder, searchText,
+                    modLogDisplayName(mod) + QStringLiteral(":"),
+                    modLogCompactCountText(mod.counts));
             }
             if (snapshot.moderators.size() > MAX_MOD_LOG_CHAT_ROWS)
             {
@@ -720,6 +829,34 @@ void addNameHistorySystemMessage(const ChannelPtr &channel,
     builder->searchText = searchText;
 
     channel->addMessage(builder.release(), MessageContext::Original);
+}
+
+void publishModLogsSnapshot(const ChannelPtr &channel,
+                            const QString &channelLogin,
+                            const ModLogRange &range,
+                            const QString &moderatorLabel,
+                            const ModerationActionLogScanSnapshot &snapshot,
+                            ModerationActionLogScanner *scanner)
+{
+    const auto shouldUploadFullList = moderatorLabel.isEmpty() &&
+                                      snapshot.moderators.size() >
+                                          MAX_MOD_LOG_CHAT_ROWS;
+    if (!shouldUploadFullList)
+    {
+        addModLogsResultMessage(channel, channelLogin, range.text,
+                                moderatorLabel, snapshot);
+        scanner->deleteLater();
+        return;
+    }
+
+    uploadModLogsFullList(
+        buildModLogsFullListText(channelLogin, range.text, snapshot),
+        [channel, channelLogin, range, moderatorLabel, snapshot,
+         scanner](const QString &fullListRawUrl) {
+            addModLogsResultMessage(channel, channelLogin, range.text,
+                                    moderatorLabel, snapshot, fullListRawUrl);
+            scanner->deleteLater();
+        });
 }
 
 QString commandWordsAfter(const CommandContext &ctx, int wordCount)
@@ -1215,46 +1352,68 @@ QString modLogs(const CommandContext &ctx)
             return;
         }
 
-        const auto beginScanner = [channel, channelLogin, range](
-                                      ModerationActionLogScanRequest request,
-                                      QString moderatorLabel) {
-            channel->addSystemMessage("Fetching moderation action logs...");
-            auto *scanner = new ModerationActionLogScanner(std::move(request));
-            scanner->onDone =
-                [channel, channelLogin, range, moderatorLabel,
-                 scanner](const ModerationActionLogScanSnapshot &snapshot) {
-                    const auto shouldUploadFullList =
-                        moderatorLabel.isEmpty() &&
-                        snapshot.moderators.size() > MAX_MOD_LOG_CHAT_ROWS;
-                    if (!shouldUploadFullList)
-                    {
-                        addModLogsResultMessage(channel, channelLogin,
-                                                range.text, moderatorLabel,
-                                                snapshot);
-                        scanner->deleteLater();
-                        return;
-                    }
+        const auto beginScanner =
+            [channel, channelLogin, range](
+                ModerationActionLogScanRequest request, QString moderatorLabel) {
+                channel->addSystemMessage("Fetching moderation action logs...");
+                auto *scanner =
+                    new ModerationActionLogScanner(std::move(request));
+                scanner->onDone =
+                    [channel, channelLogin, range, moderatorLabel,
+                     scanner](const ModerationActionLogScanSnapshot &snapshot) {
+                        if (!moderatorLabel.isEmpty())
+                        {
+                            publishModLogsSnapshot(channel, channelLogin, range,
+                                                   moderatorLabel, snapshot,
+                                                   scanner);
+                            return;
+                        }
 
-                    uploadModLogsFullList(
-                        buildModLogsFullListText(channelLogin, range.text,
-                                                 snapshot),
-                        [channel, channelLogin, range, moderatorLabel, snapshot,
-                         scanner](const QString &fullListRawUrl) {
-                            addModLogsResultMessage(channel, channelLogin,
-                                                    range.text, moderatorLabel,
-                                                    snapshot, fullListRawUrl);
-                            scanner->deleteLater();
-                        });
+                        auto *ivr = getIvr();
+                        if (ivr == nullptr)
+                        {
+                            channel->addSystemMessage(
+                                "Could not verify current channel moderators; "
+                                "showing unfiltered moderation action logs.");
+                            publishModLogsSnapshot(channel, channelLogin, range,
+                                                   moderatorLabel, snapshot,
+                                                   scanner);
+                            return;
+                        }
+
+                        ivr->getModVip(
+                            channelLogin,
+                            [channel, channelLogin, range, moderatorLabel,
+                             scanner, snapshot](
+                                std::vector<HelixModerator> moderators,
+                                std::vector<HelixVip>) mutable {
+                                auto filtered =
+                                    filterModLogsToCurrentModerators(
+                                        snapshot, moderators, channelLogin);
+                                publishModLogsSnapshot(
+                                    channel, channelLogin, range,
+                                    moderatorLabel, filtered, scanner);
+                            },
+                            [channel, channelLogin, range, moderatorLabel,
+                             scanner, snapshot] {
+                                channel->addSystemMessage(
+                                    "Could not verify current channel "
+                                    "moderators; showing unfiltered "
+                                    "moderation action logs.");
+                                publishModLogsSnapshot(
+                                    channel, channelLogin, range,
+                                    moderatorLabel, snapshot, scanner);
+                            });
+                    };
+                scanner->onError = [channel, scanner](const QString &error) {
+                    channel->addSystemMessage(QStringLiteral(
+                                                  "Failed to fetch moderation "
+                                                  "action logs: %1")
+                                                  .arg(error));
+                    scanner->deleteLater();
                 };
-            scanner->onError = [channel, scanner](const QString &error) {
-                channel->addSystemMessage(
-                    QStringLiteral("Failed to fetch moderation "
-                                   "action logs: %1")
-                        .arg(error));
-                scanner->deleteLater();
+                scanner->start();
             };
-            scanner->start();
-        };
 
         ModerationActionLogScanRequest request;
         request.channelId = resolvedChannelId;
@@ -1282,10 +1441,7 @@ QString modLogs(const CommandContext &ctx)
                 }
                 request.moderatorId = user->id;
                 request.moderatorLogin = user->login;
-                const auto label = user->displayName.isEmpty()
-                                       ? user->login
-                                       : user->displayName;
-                beginScanner(std::move(request), label);
+                beginScanner(std::move(request), user->login);
             },
             [channel, moderatorLogin](const QString &error) {
                 channel->addSystemMessage(

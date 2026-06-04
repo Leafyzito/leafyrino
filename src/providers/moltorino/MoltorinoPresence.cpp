@@ -9,6 +9,7 @@
 #include "providers/moltorino/MoltorinoSupporterBadges.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "singletons/Paths.hpp"
+#include "singletons/Settings.hpp"
 #include "singletons/WindowManager.hpp"
 #include "util/PostToThread.hpp"
 #include "widgets/Window.hpp"
@@ -113,6 +114,33 @@ QString savedClientId()
     }
 
     return id;
+}
+
+bool activityHeartbeatsEnabled()
+{
+    const auto *settings = getSettings();
+    return settings->transmitPresence && settings->sendActivityHeartbeats;
+}
+
+bool heartbeatAccountHidden()
+{
+    const auto *settings = getSettings();
+    return !settings->sendActivityHeartbeats ||
+           settings->hideAccountInHeartbeats;
+}
+
+QString heartbeatMode()
+{
+    const auto *settings = getSettings();
+    if (!settings->sendActivityHeartbeats)
+    {
+        return QStringLiteral("disabled");
+    }
+    if (settings->hideAccountInHeartbeats)
+    {
+        return QStringLiteral("anonymous");
+    }
+    return QStringLiteral("normal");
 }
 
 QString formatBytes(qint64 bytes)
@@ -358,29 +386,56 @@ MoltorinoPresence &MoltorinoPresence::instance()
 
 void MoltorinoPresence::init()
 {
-    // if (this->initialized_)
-    // {
-    //     return;
-    // }
+    if (this->initialized_)
+    {
+        return;
+    }
 
-    // this->initialized_ = true;
-    // this->accountChangedConnection_ =
-    //     getApp()->getAccounts()->twitch.currentUserChanged.connect([this] {
-    //         this->sendHeartbeat(true);
-    //     });
+    this->initialized_ = true;
+    this->accountChangedConnection_ =
+        getApp()->getAccounts()->twitch.currentUserChanged.connect([this] {
+            this->sendHeartbeat(true);
+        });
+    this->transmitPresenceConnection_ =
+        getSettings()->transmitPresence.connect([this](bool) {
+            this->applyHeartbeatSettings(true);
+        }, false);
+    this->activityHeartbeatConnection_ =
+        getSettings()->sendActivityHeartbeats.connect([this](bool) {
+            this->applyHeartbeatSettings(true);
+        }, false);
+    this->heartbeatAccountConnection_ =
+        getSettings()->hideAccountInHeartbeats.connect([this](bool) {
+            this->applyHeartbeatSettings(true);
+        }, false);
 
-    // this->connectBadgeSocket();
+    this->connectBadgeSocket();
 }
 
 void MoltorinoPresence::startHeartbeat()
 {
-    // if (!this->heartbeatTimer_.isActive())
-    // {
-    //     this->heartbeatTimer_.start();
-    // }
+    this->connectBadgeSocket();
+    this->applyHeartbeatSettings(true);
+}
 
-    // this->sendHeartbeat(true);
-    // this->connectBadgeSocket();
+void MoltorinoPresence::applyHeartbeatSettings(bool sendNow)
+{
+    if (!activityHeartbeatsEnabled())
+    {
+        this->heartbeatTimer_.stop();
+        this->heartbeatQueued_ = false;
+        return;
+    }
+
+    if (!this->heartbeatTimer_.isActive())
+    {
+        this->heartbeatTimer_.start();
+    }
+
+    if (sendNow)
+    {
+        this->sendHeartbeat(true);
+    }
 }
 
 bool MoltorinoPresence::shouldShowUpdateButton() const
@@ -427,40 +482,48 @@ void MoltorinoPresence::installAvailableUpdate()
 
 void MoltorinoPresence::sendHeartbeat(bool force)
 {
-    Q_UNUSED(force);
+    if (!activityHeartbeatsEnabled())
+    {
+        this->heartbeatTimer_.stop();
+        this->heartbeatQueued_ = false;
+        return;
+    }
 
-    // if (this->heartbeatInFlight_)
-    // {
-    //     this->heartbeatQueued_ = this->heartbeatQueued_ || force;
-    //     return;
-    // }
+    if (this->heartbeatInFlight_)
+    {
+        this->heartbeatQueued_ = this->heartbeatQueued_ || force;
+        return;
+    }
 
-    // this->heartbeatInFlight_ = true;
-    // this->heartbeatQueued_ = false;
+    this->heartbeatInFlight_ = true;
+    this->heartbeatQueued_ = false;
 
-    // NetworkRequest(apiUrl(HEARTBEAT_PATH), NetworkRequestType::Post)
-    //     .timeout(15000)
-    //     .json(this->makePayload())
-    //     .onSuccess([this](const NetworkResult &result) {
-    //         this->heartbeatInFlight_ = false;
-    //         this->handleServerReply(result.parseJson());
+    NetworkRequest(apiUrl(HEARTBEAT_PATH), NetworkRequestType::Post)
+        .timeout(15000)
+        .json(this->makePayload())
+        .onSuccess([this](const NetworkResult &result) {
+            this->heartbeatInFlight_ = false;
+            if (activityHeartbeatsEnabled())
+            {
+                this->handleServerReply(result.parseJson());
+            }
 
-    //         if (this->heartbeatQueued_)
-    //         {
-    //             this->sendHeartbeat(true);
-    //         }
-    //     })
-    //     .onError([this](const NetworkResult &result) {
-    //         this->heartbeatInFlight_ = false;
-    //         qCWarning(chatterinoMoltorinoPresence)
-    //             << "presence heartbeat failed:" << result.formatError();
+            if (this->heartbeatQueued_)
+            {
+                this->sendHeartbeat(true);
+            }
+        })
+        .onError([this](const NetworkResult &result) {
+            this->heartbeatInFlight_ = false;
+            qCWarning(chatterinoMoltorinoPresence)
+                << "presence heartbeat failed:" << result.formatError();
 
-    //         if (this->heartbeatQueued_)
-    //         {
-    //             this->sendHeartbeat(true);
-    //         }
-    //     })
-    //     .execute();
+            if (this->heartbeatQueued_)
+            {
+                this->sendHeartbeat(true);
+            }
+        })
+        .execute();
 }
 
 void MoltorinoPresence::handleServerReply(const QJsonObject &root)
@@ -649,11 +712,17 @@ QJsonObject MoltorinoPresence::makePayload() const
     payload.insert(QStringLiteral("platform"), platformKey());
     payload.insert(QStringLiteral("appVersion"), Version::instance().version());
     payload.insert(QStringLiteral("sentAt"), now.toString(Qt::ISODate));
+    payload.insert(QStringLiteral("heartbeatMode"), heartbeatMode());
     payload.insert(QStringLiteral("status"),
                    QGuiApplication::applicationState() == Qt::ApplicationActive
                        ? QStringLiteral("active")
                        : QStringLiteral("background"));
-    payload.insert(QStringLiteral("activeAccount"), this->activeAccount());
+
+    if (!heartbeatAccountHidden())
+    {
+        payload.insert(QStringLiteral("activeAccount"), this->activeAccount());
+    }
+
     return payload;
 }
 
