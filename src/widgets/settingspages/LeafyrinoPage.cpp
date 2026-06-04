@@ -61,8 +61,15 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
     layout.addTitle("Messages per second");
     SettingWidget::checkbox("Show messages-per-second (mps) overlay in splits",
                             s.showSplitMps)
-        ->setTooltip("Shows a faint overlay label (e.g. \"12 mps\") of how "
-                     "many messages are being sent per second.")
+        ->setTooltip("Shows a faint overlay label (e.g. \"12 mps\") with the "
+                     "average number of messages per second over the "
+                     "selected window.")
+        ->addTo(layout);
+
+    SettingWidget::dropdown("MPS averaging window", s.splitMpsWindow)
+        ->conditionallyEnabledBy(s.showSplitMps)
+        ->setTooltip("Longer windows smooth out Twitch burst delivery so the "
+                     "counter does not spike and drop to zero between bursts.")
         ->addTo(layout);
 
     SettingWidget::dropdown("MPS overlay position", s.splitMpsCorner)

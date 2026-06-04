@@ -260,6 +260,8 @@ template SettingWidget *SettingWidget::dropdown<EmojiStyle>(
     const QString &label, EnumStringSetting<EmojiStyle> &setting);
 template SettingWidget *SettingWidget::dropdown<SplitMpsCorner>(
     const QString &label, EnumStringSetting<SplitMpsCorner> &setting);
+template SettingWidget *SettingWidget::dropdown<SplitMpsWindow>(
+    const QString &label, EnumStringSetting<SplitMpsWindow> &setting);
 
 template <typename T>
 SettingWidget *SettingWidget::dropdown(const QString &label,

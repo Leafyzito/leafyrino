@@ -63,6 +63,12 @@ SplitMpsOverlay::SplitMpsOverlay(QWidget *parent)
         },
         this->signalHolder_);
 
+    getSettings()->splitMpsWindow.connect(
+        [this](const auto &) {
+            this->updateOverlay();
+        },
+        this->signalHolder_);
+
     // Initial state
     this->updateOverlay();
     if (getSettings()->showSplitMps)
@@ -100,15 +106,18 @@ void SplitMpsOverlay::updateOverlay()
         return;
     }
 
-    // Trim to 1-second window
+    const int windowSec = splitMpsWindowSeconds(
+        getSettings()->splitMpsWindow.getEnum());
+
     const auto now = std::chrono::steady_clock::now();
-    const auto cutoff = now - std::chrono::seconds(1);
+    const auto cutoff = now - std::chrono::seconds(windowSec);
     while (!this->timestamps_.empty() && this->timestamps_.front() < cutoff)
     {
         this->timestamps_.pop_front();
     }
 
-    const int mps = static_cast<int>(this->timestamps_.size());
+    const int count = static_cast<int>(this->timestamps_.size());
+    const int mps = (count + windowSec / 2) / windowSec;
     const bool showWhenZero = getSettings()->showSplitMpsWhenZero;
     if (mps == 0 && !showWhenZero)
     {

@@ -109,6 +109,13 @@ enum class SplitMpsCorner : std::uint8_t {
     BottomRight,
 };
 
+enum class SplitMpsWindow : std::uint8_t {
+    Seconds1,
+    Seconds3,
+    Seconds5,
+    Seconds10,
+};
+
 constexpr std::optional<std::string_view> qmagicenumDisplayName(
     EmoteTooltipScale value) noexcept
 {
@@ -140,6 +147,40 @@ constexpr std::optional<std::string_view> qmagicenumDisplayName(
     }
     return {};
 }
+
+constexpr std::optional<std::string_view> qmagicenumDisplayName(
+    SplitMpsWindow value) noexcept
+{
+    switch (value)
+    {
+        case SplitMpsWindow::Seconds1:
+            return "1 second (instant)";
+        case SplitMpsWindow::Seconds3:
+            return "3 seconds";
+        case SplitMpsWindow::Seconds5:
+            return "5 seconds";
+        case SplitMpsWindow::Seconds10:
+            return "10 seconds";
+    }
+    return {};
+}
+
+constexpr int splitMpsWindowSeconds(SplitMpsWindow window) noexcept
+{
+    switch (window)
+    {
+        case SplitMpsWindow::Seconds1:
+            return 1;
+        case SplitMpsWindow::Seconds3:
+            return 3;
+        case SplitMpsWindow::Seconds5:
+            return 5;
+        case SplitMpsWindow::Seconds10:
+            return 10;
+    }
+    return 5;
+}
+
 struct SettingsArgs {
     bool isTest = false;
 };
@@ -291,6 +332,10 @@ public:
     EnumStringSetting<SplitMpsCorner> splitMpsCorner = {
         "/appearance/splits/mpsCorner",
         SplitMpsCorner::TopRight,
+    };
+    EnumStringSetting<SplitMpsWindow> splitMpsWindow = {
+        "/appearance/splits/mpsWindow",
+        SplitMpsWindow::Seconds5,
     };
     BoolSetting showSplitMpsWhenZero = {"/appearance/splits/showMpsWhenZero",
                                         false};
