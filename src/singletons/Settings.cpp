@@ -19,9 +19,8 @@
 #include "util/WindowsHelper.hpp"
 
 #include <pajlada/signals/scoped-connection.hpp>
-#include <rapidjson/pointer.h>
-
 #include <QStringList>
+#include <rapidjson/pointer.h>
 
 #include <optional>
 

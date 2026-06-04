@@ -91,10 +91,8 @@ ImageSet badgeImageSet(const QString &image1, const QString &image2,
                        const QString &image3, int version)
 {
     const auto badge1x = badgeImage(image1, version, 1.0, BADGE_BASE_SIZE);
-    const auto badge2x =
-        badgeImage(image2, version, 0.5, BADGE_BASE_SIZE * 2);
-    const auto badge3x =
-        badgeImage(image3, version, 0.25, BADGE_BASE_SIZE * 4);
+    const auto badge2x = badgeImage(image2, version, 0.5, BADGE_BASE_SIZE * 2);
+    const auto badge3x = badgeImage(image3, version, 0.25, BADGE_BASE_SIZE * 4);
 
     return ImageSet{
         badge1x,

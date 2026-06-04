@@ -131,20 +131,19 @@ ModerationActionLogScanSnapshot ModerationActionLogScanner::snapshot() const
     {
         snapshot.moderators.push_back(entry.summary);
     }
-    std::sort(snapshot.moderators.begin(), snapshot.moderators.end(),
-              [](const auto &a, const auto &b) {
-                  const auto aTotal = a.counts.countedTotal();
-                  const auto bTotal = b.counts.countedTotal();
-                  if (aTotal != bTotal)
-                  {
-                      return aTotal > bTotal;
-                  }
-                  const auto aName =
-                      a.login.isEmpty() ? a.displayName : a.login;
-                  const auto bName =
-                      b.login.isEmpty() ? b.displayName : b.login;
-                  return aName.compare(bName, Qt::CaseInsensitive) < 0;
-              });
+    std::sort(
+        snapshot.moderators.begin(), snapshot.moderators.end(),
+        [](const auto &a, const auto &b) {
+            const auto aTotal = a.counts.countedTotal();
+            const auto bTotal = b.counts.countedTotal();
+            if (aTotal != bTotal)
+            {
+                return aTotal > bTotal;
+            }
+            const auto aName = a.login.isEmpty() ? a.displayName : a.login;
+            const auto bName = b.login.isEmpty() ? b.displayName : b.login;
+            return aName.compare(bName, Qt::CaseInsensitive) < 0;
+        });
     return snapshot;
 }
 
@@ -267,9 +266,9 @@ void ModerationActionLogScanner::processAction(
     }
     else if (entry.summary.displayName.isEmpty())
     {
-        entry.summary.displayName =
-            entry.summary.login.isEmpty() ? QStringLiteral("Unknown")
-                                          : entry.summary.login;
+        entry.summary.displayName = entry.summary.login.isEmpty()
+                                        ? QStringLiteral("Unknown")
+                                        : entry.summary.login;
     }
     addKind(entry.summary.counts, action.kind);
 }

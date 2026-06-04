@@ -838,9 +838,9 @@ void publishModLogsSnapshot(const ChannelPtr &channel,
                             const ModerationActionLogScanSnapshot &snapshot,
                             ModerationActionLogScanner *scanner)
 {
-    const auto shouldUploadFullList = moderatorLabel.isEmpty() &&
-                                      snapshot.moderators.size() >
-                                          MAX_MOD_LOG_CHAT_ROWS;
+    const auto shouldUploadFullList =
+        moderatorLabel.isEmpty() &&
+        snapshot.moderators.size() > MAX_MOD_LOG_CHAT_ROWS;
     if (!shouldUploadFullList)
     {
         addModLogsResultMessage(channel, channelLogin, range.text,
@@ -1352,68 +1352,65 @@ QString modLogs(const CommandContext &ctx)
             return;
         }
 
-        const auto beginScanner =
-            [channel, channelLogin, range](
-                ModerationActionLogScanRequest request, QString moderatorLabel) {
-                channel->addSystemMessage("Fetching moderation action logs...");
-                auto *scanner =
-                    new ModerationActionLogScanner(std::move(request));
-                scanner->onDone =
-                    [channel, channelLogin, range, moderatorLabel,
-                     scanner](const ModerationActionLogScanSnapshot &snapshot) {
-                        if (!moderatorLabel.isEmpty())
-                        {
-                            publishModLogsSnapshot(channel, channelLogin, range,
-                                                   moderatorLabel, snapshot,
-                                                   scanner);
-                            return;
-                        }
+        const auto beginScanner = [channel, channelLogin, range](
+                                      ModerationActionLogScanRequest request,
+                                      QString moderatorLabel) {
+            channel->addSystemMessage("Fetching moderation action logs...");
+            auto *scanner = new ModerationActionLogScanner(std::move(request));
+            scanner->onDone =
+                [channel, channelLogin, range, moderatorLabel,
+                 scanner](const ModerationActionLogScanSnapshot &snapshot) {
+                    if (!moderatorLabel.isEmpty())
+                    {
+                        publishModLogsSnapshot(channel, channelLogin, range,
+                                               moderatorLabel, snapshot,
+                                               scanner);
+                        return;
+                    }
 
-                        auto *ivr = getIvr();
-                        if (ivr == nullptr)
-                        {
+                    auto *ivr = getIvr();
+                    if (ivr == nullptr)
+                    {
+                        channel->addSystemMessage(
+                            "Could not verify current channel moderators; "
+                            "showing unfiltered moderation action logs.");
+                        publishModLogsSnapshot(channel, channelLogin, range,
+                                               moderatorLabel, snapshot,
+                                               scanner);
+                        return;
+                    }
+
+                    ivr->getModVip(
+                        channelLogin,
+                        [channel, channelLogin, range, moderatorLabel, scanner,
+                         snapshot](std::vector<HelixModerator> moderators,
+                                   std::vector<HelixVip>) mutable {
+                            auto filtered = filterModLogsToCurrentModerators(
+                                snapshot, moderators, channelLogin);
+                            publishModLogsSnapshot(channel, channelLogin, range,
+                                                   moderatorLabel, filtered,
+                                                   scanner);
+                        },
+                        [channel, channelLogin, range, moderatorLabel, scanner,
+                         snapshot] {
                             channel->addSystemMessage(
-                                "Could not verify current channel moderators; "
-                                "showing unfiltered moderation action logs.");
+                                "Could not verify current channel "
+                                "moderators; showing unfiltered "
+                                "moderation action logs.");
                             publishModLogsSnapshot(channel, channelLogin, range,
                                                    moderatorLabel, snapshot,
                                                    scanner);
-                            return;
-                        }
-
-                        ivr->getModVip(
-                            channelLogin,
-                            [channel, channelLogin, range, moderatorLabel,
-                             scanner, snapshot](
-                                std::vector<HelixModerator> moderators,
-                                std::vector<HelixVip>) mutable {
-                                auto filtered =
-                                    filterModLogsToCurrentModerators(
-                                        snapshot, moderators, channelLogin);
-                                publishModLogsSnapshot(
-                                    channel, channelLogin, range,
-                                    moderatorLabel, filtered, scanner);
-                            },
-                            [channel, channelLogin, range, moderatorLabel,
-                             scanner, snapshot] {
-                                channel->addSystemMessage(
-                                    "Could not verify current channel "
-                                    "moderators; showing unfiltered "
-                                    "moderation action logs.");
-                                publishModLogsSnapshot(
-                                    channel, channelLogin, range,
-                                    moderatorLabel, snapshot, scanner);
-                            });
-                    };
-                scanner->onError = [channel, scanner](const QString &error) {
-                    channel->addSystemMessage(QStringLiteral(
-                                                  "Failed to fetch moderation "
-                                                  "action logs: %1")
-                                                  .arg(error));
-                    scanner->deleteLater();
+                        });
                 };
-                scanner->start();
+            scanner->onError = [channel, scanner](const QString &error) {
+                channel->addSystemMessage(
+                    QStringLiteral("Failed to fetch moderation "
+                                   "action logs: %1")
+                        .arg(error));
+                scanner->deleteLater();
             };
+            scanner->start();
+        };
 
         ModerationActionLogScanRequest request;
         request.channelId = resolvedChannelId;

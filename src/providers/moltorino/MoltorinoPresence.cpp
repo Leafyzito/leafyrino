@@ -398,18 +398,23 @@ void MoltorinoPresence::init()
         getApp()->getAccounts()->twitch.currentUserChanged.connect([this] {
             this->sendHeartbeat(true);
         });
-    this->transmitPresenceConnection_ =
-        getSettings()->transmitPresence.connect([this](bool) {
+    this->transmitPresenceConnection_ = getSettings()->transmitPresence.connect(
+        [this](bool) {
             this->applyHeartbeatSettings(true);
-        }, false);
+        },
+        false);
     this->activityHeartbeatConnection_ =
-        getSettings()->sendActivityHeartbeats.connect([this](bool) {
-            this->applyHeartbeatSettings(true);
-        }, false);
+        getSettings()->sendActivityHeartbeats.connect(
+            [this](bool) {
+                this->applyHeartbeatSettings(true);
+            },
+            false);
     this->heartbeatAccountConnection_ =
-        getSettings()->hideAccountInHeartbeats.connect([this](bool) {
-            this->applyHeartbeatSettings(true);
-        }, false);
+        getSettings()->hideAccountInHeartbeats.connect(
+            [this](bool) {
+                this->applyHeartbeatSettings(true);
+            },
+            false);
 
     this->connectBadgeSocket();
 }
