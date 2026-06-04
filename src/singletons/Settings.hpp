@@ -834,6 +834,8 @@ public:
     BoolSetting showUsercardSubage = {"/usercard/showSubage", true};
     BoolSetting showUsercardSubageRelativeTime = {
         "/usercard/showSubageRelativeTime", true};
+    BoolSetting showUsercardSubGiftGifter = {"/usercard/showSubGiftGifter",
+                                             true};
     BoolSetting showUsercardChatterCount = {"/usercard/showChatterCount", true};
     BoolSetting showUsercardLastLive = {"/usercard/showLastLive", true};
     BoolSetting showUsercardColor = {"/usercard/showColor", true};

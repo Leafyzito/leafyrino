@@ -1323,6 +1323,9 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
             createUsercardStatusRow(vbox, &this->ui_.subageRow,
                                     &this->ui_.subageIcon,
                                     &this->ui_.subageLabel);
+            createUsercardStatusRow(vbox, &this->ui_.subGiftRow,
+                                    &this->ui_.subGiftIcon,
+                                    &this->ui_.subGiftLabel);
 
             auto applyPopupVisibility = [this] {
                 auto *settings = getSettings();
@@ -2534,6 +2537,7 @@ void UserInfoPopup::updateUserData()
         {
             this->ui_.subageLabel->setText({});
         }
+        this->hideUsercardSubGiftRow();
         if (getSettings()->showUsercardChatterCount)
         {
             this->ui_.chatterCountLabel->setText("Chatters: " %
@@ -2713,7 +2717,8 @@ void UserInfoPopup::updateUserData()
         {
             // get followage and subage
             if (getSettings()->showUsercardFollowage ||
-                getSettings()->showUsercardSubage)
+                getSettings()->showUsercardSubage ||
+                getSettings()->showUsercardSubGiftGifter)
             {
                 getIvr()->getSubage(
                     this->userName_, this->underlyingChannel_->getName(),
@@ -2772,6 +2777,10 @@ void UserInfoPopup::updateUserData()
 
                         if (!getSettings()->showUsercardSubage)
                         {
+                            this->ui_.subageLabel->setText({});
+                            this->ui_.subageRow->setVisible(false);
+                            this->ui_.subageIcon->setVisible(false);
+                            this->updateUsercardSubGiftRow(subageInfo);
                             return;
                         }
 
@@ -2820,6 +2829,8 @@ void UserInfoPopup::updateUserData()
                             this->ui_.subageRow->setVisible(true);
                             this->ui_.subageIcon->setVisible(false);
                         }
+
+                        this->updateUsercardSubGiftRow(subageInfo);
                     },
                     [this, isCurrentRequest] {
                         if (!isCurrentRequest())
@@ -2838,6 +2849,10 @@ void UserInfoPopup::updateUserData()
                             this->ui_.subageLabel->setText({});
                             this->ui_.subageRow->setVisible(true);
                             this->ui_.subageIcon->setVisible(false);
+                        }
+                        if (getSettings()->showUsercardSubGiftGifter)
+                        {
+                            this->hideUsercardSubGiftRow();
                         }
                     });
             }
@@ -3499,6 +3514,8 @@ void UserInfoPopup::updateKickUserData()
                 self->ui_.subageRow->setVisible(true);
                 self->ui_.subageIcon->setVisible(false);
             }
+
+            self->hideUsercardSubGiftRow();
         });
 
     this->ui_.block->setEnabled(false);
@@ -3795,7 +3812,37 @@ void UserInfoPopup::updateUsercardStatusIcons()
                isLight ? ":/buttons/usercardSub-lightMode.svg"
                        : ":/buttons/usercardSub-darkMode.svg",
                iconSize);
+    updateIcon(this->ui_.subGiftIcon,
+               isLight ? ":/buttons/usercardGift-lightMode.svg"
+                       : ":/buttons/usercardGift-darkMode.svg",
+               iconSize);
     updateColorSwatch();
+}
+
+void UserInfoPopup::updateUsercardSubGiftRow(const IvrSubage &subageInfo)
+{
+    if (!getSettings()->showUsercardSubGiftGifter || !subageInfo.isSubbed ||
+        !subageInfo.isGiftSub())
+    {
+        this->hideUsercardSubGiftRow();
+        return;
+    }
+
+    const auto gifterName = subageInfo.giftGifterName();
+    this->ui_.subGiftLabel->setText(
+        gifterName.isEmpty() ? QString("Gifted by an anonymous user")
+                             : QString("Gifted by %1").arg(gifterName));
+    this->updateUsercardStatusIcons();
+    this->ui_.subGiftRow->setVisible(true);
+    this->ui_.subGiftIcon->setVisible(true);
+}
+
+void UserInfoPopup::hideUsercardSubGiftRow()
+{
+    this->ui_.subGiftLabel->setText({});
+    this->ui_.subGiftLabel->setToolTip({});
+    this->ui_.subGiftRow->setVisible(false);
+    this->ui_.subGiftIcon->setVisible(false);
 }
 
 void UserInfoPopup::resetUsercardInfoRows()
@@ -3819,6 +3866,8 @@ void UserInfoPopup::resetUsercardInfoRows()
     this->ui_.subageLabel->setText({});
     this->ui_.subageRow->setVisible(settings->showUsercardSubage);
     this->ui_.subageIcon->setVisible(false);
+
+    this->hideUsercardSubGiftRow();
 
     this->ui_.chatterCountLabel->setText("Chatters: ...");
     this->ui_.chatterCountLabel->setVisible(

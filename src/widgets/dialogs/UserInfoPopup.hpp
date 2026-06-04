@@ -43,6 +43,7 @@ class EditUserNotesDialog;
 class ChannelView;
 class Split;
 struct HelixUser;
+struct IvrSubage;
 struct IvrUserProfile;
 class LabelButton;
 class PixmapButton;
@@ -94,6 +95,8 @@ private:
     void openNameHistoryMenu(const QString &statusText = {});
     void requestNameHistory();
     void updateUsercardStatusIcons();
+    void updateUsercardSubGiftRow(const IvrSubage &subageInfo);
+    void hideUsercardSubGiftRow();
     void resetUsercardInfoRows();
     void applyIvrUserProfile(const IvrUserProfile &profile);
 
@@ -217,6 +220,9 @@ private:
         QWidget *subageRow = nullptr;
         QLabel *subageIcon = nullptr;
         Label *subageLabel = nullptr;
+        QWidget *subGiftRow = nullptr;
+        QLabel *subGiftIcon = nullptr;
+        Label *subGiftLabel = nullptr;
         Label *chatterCountLabel = nullptr;
         QWidget *userColorRow = nullptr;
         QWidget *userColorSwatch = nullptr;

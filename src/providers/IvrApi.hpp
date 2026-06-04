@@ -27,6 +27,9 @@ struct IvrSubage {
     const int totalSubMonths;
     const QString followingSince;
     const QString endsAt;
+    const QString subType;
+    const QString giftGifterDisplayName;
+    const QString giftGifterLogin;
 
     IvrSubage(const QJsonObject &root)
         : isSubHidden(root.value("statusHidden").toBool())
@@ -36,7 +39,40 @@ struct IvrSubage {
               root.value("cumulative").toObject().value("months").toInt())
         , followingSince(root.value("followedAt").toString())
         , endsAt(root.value("meta").toObject().value("endsAt").toString())
+        , subType(root.value("meta").toObject().value("type").toString())
+        , giftGifterDisplayName(
+              root.value("meta")
+                  .toObject()
+                  .value("giftMeta")
+                  .toObject()
+                  .value("gifter")
+                  .toObject()
+                  .value("displayName")
+                  .toString())
+        , giftGifterLogin(root.value("meta")
+                              .toObject()
+                              .value("giftMeta")
+                              .toObject()
+                              .value("gifter")
+                              .toObject()
+                              .value("login")
+                              .toString())
     {
+    }
+
+    bool isGiftSub() const
+    {
+        return this->subType == QStringLiteral("gift");
+    }
+
+    QString giftGifterName() const
+    {
+        if (!this->giftGifterDisplayName.isEmpty())
+        {
+            return this->giftGifterDisplayName;
+        }
+
+        return this->giftGifterLogin;
     }
 };
 

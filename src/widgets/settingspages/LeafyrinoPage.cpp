@@ -51,6 +51,13 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->setTooltip("FolhinhaBot Plus, Founder, and Supporter badges")
         ->addTo(layout);
 
+    layout.addTitle("Usercard");
+    SettingWidget::checkbox("Show gift sub gifter", s.showUsercardSubGiftGifter)
+        ->setTooltip("When the user has an active gifted subscription in a "
+                     "channel, show who gifted it on the usercard.")
+        ->addKeywords({"usercard", "gift", "gifter", "subscription", "sub"})
+        ->addTo(layout);
+
     layout.addTitle("Messages per second");
     SettingWidget::checkbox("Show messages-per-second (mps) overlay in splits",
                             s.showSplitMps)
