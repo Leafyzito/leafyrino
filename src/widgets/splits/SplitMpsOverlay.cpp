@@ -106,8 +106,8 @@ void SplitMpsOverlay::updateOverlay()
         return;
     }
 
-    const int windowSec = splitMpsWindowSeconds(
-        getSettings()->splitMpsWindow.getEnum());
+    const int windowSec =
+        splitMpsWindowSeconds(getSettings()->splitMpsWindow.getEnum());
 
     const auto now = std::chrono::steady_clock::now();
     const auto cutoff = now - std::chrono::seconds(windowSec);
