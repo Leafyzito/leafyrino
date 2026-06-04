@@ -133,7 +133,7 @@ jobs:
         with:
           workflow: build.yml
           name_is_regexp: true
-          name: '((^[Cc]hatterino)-[^wW].+$)|(^.+\.7z$)'
+          name: '((^[Cc]hatterino)-[^wW].+$)|(^Leafyrino7.+$)|(^.+\.7z$)'
           path: build/
 
       - name: Fix Directories
@@ -150,12 +150,24 @@ jobs:
         working-directory: build
         run: |
           ls -l
-          mv Chatterino-ubuntu-22.04-Qt-6.7.2.deb Chatterino-Ubuntu-22.04-Qt6.deb
-          mv Chatterino-ubuntu-24.04-Qt-6.7.2.deb Chatterino-Ubuntu-24.04-Qt6.deb
-
-          mv Chatterino-x86_64-Qt-6.7.2.AppImage Chatterino-x86_64-Qt6.AppImage
-
-          mv chatterino-macos-Qt-6.9.3-universal.dmg Chatterino.dmg
+          rename_if_exists() {
+            if [ -e "$1" ]; then
+              mv "$1" "$2"
+            fi
+          }
+          rename_if_exists Chatterino-ubuntu-22.04-Qt-6.7.2.deb Chatterino-Ubuntu-22.04-Qt6.deb
+          rename_if_exists Chatterino-ubuntu-24.04-Qt-6.7.2.deb Chatterino-Ubuntu-24.04-Qt6.deb
+          for appimage in Leafyrino7-x86_64-Qt-*.AppImage; do
+            [ -f "$appimage" ] || continue
+            mv "$appimage" Leafyrino7-x86_64-Qt6.AppImage
+            break
+          done
+          for dmg in chatterino-macos-Qt-*-universal.dmg; do
+            [ -f "$dmg" ] || continue
+            mv "$dmg" Chatterino.dmg
+            break
+          done
+        shell: bash
 
       - name: Hash files
         working-directory: build
