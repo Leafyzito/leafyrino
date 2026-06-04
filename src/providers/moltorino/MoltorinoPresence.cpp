@@ -1,3 +1,5 @@
+// ew no telemetry
+
 #include "providers/moltorino/MoltorinoPresence.hpp"
 
 #include "Application.hpp"
