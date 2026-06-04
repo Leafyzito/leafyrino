@@ -1098,7 +1098,7 @@ public:
     QStringSetting outgoingTranslationMode{
         "/moltorino/client/outgoingTranslationMode", "off"};
     QStringSetting outgoingTranslationTargetLanguage{
-        "/moltorino/client/outgoingTranslationTargetLanguage", "it"};
+        "/moltorino/client/outgoingTranslationTargetLanguage", "en"};
 
     /// Fun
     IntSetting spamCommandIntervalMs{"/moltorino/fun/spam/intervalMs", 30};
