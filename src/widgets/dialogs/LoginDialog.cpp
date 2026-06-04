@@ -13,6 +13,7 @@
 #include "singletons/Settings.hpp"
 #include "util/Clipboard.hpp"
 #include "util/Helpers.hpp"
+#include "widgets/dialogs/MoltorinoAuthPage.hpp"
 
 #ifdef USEWINSDK
 #    include <Windows.h>
@@ -96,9 +97,8 @@ BasicLoginWidget::BasicLoginWidget()
     this->ui_.unableToOpenBrowserHelper.setOpenExternalLinks(true);
 
     this->ui_.channelPointsHint.setText(
-        "The Twitch (Device) tab is a newer sign in option that enables "
-        "channel points features and pinned messages. The usual login "
-        "below is enough for chat.");
+        "The Moltorino tab enables channel points, pinned messages, and "
+        "other mod features. The usual login below is enough for chat.");
     this->ui_.channelPointsHint.setWordWrap(true);
     this->ui_.channelPointsHint.setAlignment(Qt::AlignLeft | Qt::AlignTop);
     this->ui_.layout.addWidget(&this->ui_.channelPointsHint);
@@ -261,11 +261,10 @@ LoginDialog::LoginDialog(QWidget *parent)
     this->setLayout(&this->ui_.mainLayout);
     this->ui_.mainLayout.addWidget(&this->ui_.tabWidget);
 
-    this->ui_.tabWidget.addTab(&this->ui_.twitchDevice, "Twitch (Device)");
     this->ui_.tabWidget.addTab(&this->ui_.basic, "Basic");
+    this->ui_.tabWidget.addTab(createMoltorinoAuthLoginPage(this), "Moltorino");
     this->ui_.tabWidget.addTab(&this->ui_.advanced, "Advanced");
     this->ui_.tabWidget.addTab(&this->ui_.kick, "Kick");
-    this->ui_.tabWidget.setCurrentIndex(0);
 
     this->ui_.buttonBox.setStandardButtons(QDialogButtonBox::Close);
 

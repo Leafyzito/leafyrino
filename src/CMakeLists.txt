@@ -819,8 +819,8 @@ set(SOURCE_FILES
         widgets/dialogs/LoginDialog.hpp
         widgets/dialogs/MoltorinoAuthDialog.cpp
         widgets/dialogs/MoltorinoAuthDialog.hpp
-        widgets/dialogs/TwitchDeviceLoginPage.cpp
-        widgets/dialogs/TwitchDeviceLoginPage.hpp
+        widgets/dialogs/MoltorinoAuthPage.cpp
+        widgets/dialogs/MoltorinoAuthPage.hpp
         widgets/dialogs/QualityPopup.cpp
         widgets/dialogs/QualityPopup.hpp
         widgets/dialogs/PredictionDialog.cpp

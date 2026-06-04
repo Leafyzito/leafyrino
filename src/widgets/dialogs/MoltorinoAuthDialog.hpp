@@ -4,15 +4,13 @@
 
 #pragma once
 
-#include "providers/moltorino/MoltorinoAuth.hpp"
+#include "widgets/dialogs/MoltorinoAuthPage.hpp"
 
 #include <QString>
 
 class QWidget;
 
 namespace chatterino {
-
-QString formatMoltorinoAuthSummary(const MoltorinoAuthSummary &summary);
 
 void showMoltorinoAuthDialog(QWidget *parent,
                              const QString &windowTitle = QString(),

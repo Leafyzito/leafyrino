@@ -6,7 +6,6 @@
 
 #include "widgets/BaseWidget.hpp"
 #include "widgets/dialogs/KickLoginPage.hpp"
-#include "widgets/dialogs/TwitchDeviceLoginPage.hpp"
 
 #include <QAction>
 #include <QApplication>
@@ -85,8 +84,6 @@ private:
         BasicLoginWidget basic;
 
         AdvancedLoginWidget advanced;
-
-        TwitchDeviceLoginPage twitchDevice;
 
         KickLoginPage kick;
     } ui_;

@@ -9,7 +9,7 @@
 #include "controllers/accounts/AccountModel.hpp"
 #include "providers/twitch/TwitchCommon.hpp"
 #include "util/LayoutCreator.hpp"
-#include "widgets/dialogs/MoltorinoAuthDialog.hpp"
+#include "widgets/dialogs/LoginDialog.hpp"
 #include "widgets/helper/EditableModelView.hpp"
 
 #include <QDialogButtonBox>
@@ -37,8 +37,10 @@ AccountsPage::AccountsPage()
     view->getTableView()->horizontalHeader()->setVisible(false);
     view->getTableView()->horizontalHeader()->setStretchLastSection(true);
 
+    // We can safely ignore this signal connection since we own the view
     std::ignore = view->addButtonPressed.connect([this] {
-        showMoltorinoAuthDialog(this, QStringLiteral("Add new account"), true);
+        LoginDialog d(this);
+        d.exec();
     });
 
     view->getTableView()->setStyleSheet("background: #333");
