@@ -455,19 +455,17 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
         switch (this->message_->clientDetection)
         {
             case Message::ClientDetectionStatus::Web:
-                backgroundColor =
-                    blendColors(backgroundColor,
-                                ctx.preferences.clientDetectionWebColor);
+                backgroundColor = blendColors(
+                    backgroundColor, ctx.preferences.clientDetectionWebColor);
                 break;
             case Message::ClientDetectionStatus::Android:
-                backgroundColor = blendColors(
-                    backgroundColor,
-                    ctx.preferences.clientDetectionAndroidColor);
-                break;
-            case Message::ClientDetectionStatus::IOS:
                 backgroundColor =
                     blendColors(backgroundColor,
-                                ctx.preferences.clientDetectionIosColor);
+                                ctx.preferences.clientDetectionAndroidColor);
+                break;
+            case Message::ClientDetectionStatus::IOS:
+                backgroundColor = blendColors(
+                    backgroundColor, ctx.preferences.clientDetectionIosColor);
                 break;
             case Message::ClientDetectionStatus::Unknown:
             case Message::ClientDetectionStatus::Abnormal:

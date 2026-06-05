@@ -557,7 +557,8 @@ Settings::Settings(const Args &args, const QString &settingsDirectory,
         }
     }
 
-    auto migrateBoolSetting = [&](const char *oldPath, BoolSetting &newSetting) {
+    auto migrateBoolSetting = [&](const char *oldPath,
+                                  BoolSetting &newSetting) {
         if (settingsInstance->get(newSetting.getPath()) != nullptr)
         {
             return;
