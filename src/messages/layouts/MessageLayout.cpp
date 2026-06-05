@@ -450,31 +450,24 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
     {
         backgroundColor = QColor("#4A273D");
     }
-    else if (ctx.preferences.enableClientDetectionHighlight ||
-             getSettings()->normalNonceDetection)
+    else if (ctx.preferences.enableClientDetectionHighlight)
     {
         switch (this->message_->clientDetection)
         {
             case Message::ClientDetectionStatus::Web:
                 backgroundColor =
                     blendColors(backgroundColor,
-                                ctx.preferences.enableClientDetectionHighlight
-                                    ? ctx.preferences.clientDetectionWebColor
-                                    : QColor(getSettings()->webchatColor));
+                                ctx.preferences.clientDetectionWebColor);
                 break;
             case Message::ClientDetectionStatus::Android:
                 backgroundColor = blendColors(
                     backgroundColor,
-                    ctx.preferences.enableClientDetectionHighlight
-                        ? ctx.preferences.clientDetectionAndroidColor
-                        : QColor(getSettings()->androidColor));
+                    ctx.preferences.clientDetectionAndroidColor);
                 break;
             case Message::ClientDetectionStatus::IOS:
                 backgroundColor =
                     blendColors(backgroundColor,
-                                ctx.preferences.enableClientDetectionHighlight
-                                    ? ctx.preferences.clientDetectionIosColor
-                                    : QColor(getSettings()->iosColor));
+                                ctx.preferences.clientDetectionIosColor);
                 break;
             case Message::ClientDetectionStatus::Unknown:
             case Message::ClientDetectionStatus::Abnormal:

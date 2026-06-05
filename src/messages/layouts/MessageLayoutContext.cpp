@@ -86,25 +86,25 @@ void MessagePreferences::connectSettings(Settings *settings,
         },
         holder);
 
-    settings->showClientDetectionHighlights.connect(
+    settings->normalNonceDetection.connect(
         [this](const auto &newValue) {
             this->enableClientDetectionHighlight = newValue;
         },
         holder);
 
-    settings->clientDetectionWebColor.connect(
+    settings->webchatColor.connect(
         [this](const auto &newValue) {
             this->clientDetectionWebColor = QColor(newValue);
         },
         holder);
 
-    settings->clientDetectionAndroidColor.connect(
+    settings->androidColor.connect(
         [this](const auto &newValue) {
             this->clientDetectionAndroidColor = QColor(newValue);
         },
         holder);
 
-    settings->clientDetectionIosColor.connect(
+    settings->iosColor.connect(
         [this](const auto &newValue) {
             this->clientDetectionIosColor = QColor(newValue);
         },

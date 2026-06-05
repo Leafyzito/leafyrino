@@ -235,13 +235,10 @@ WindowManager::WindowManager(const Args &appArgs_, const Paths &paths,
     this->invalidateChannelViewBuffersListener.add(settings.separateMessages);
     this->invalidateChannelViewBuffersListener.add(settings.fadeMessageHistory);
     this->invalidateChannelViewBuffersListener.add(
-        settings.showClientDetectionHighlights);
-    this->invalidateChannelViewBuffersListener.add(
-        settings.clientDetectionWebColor);
-    this->invalidateChannelViewBuffersListener.add(
-        settings.clientDetectionAndroidColor);
-    this->invalidateChannelViewBuffersListener.add(
-        settings.clientDetectionIosColor);
+        settings.normalNonceDetection);
+    this->invalidateChannelViewBuffersListener.add(settings.webchatColor);
+    this->invalidateChannelViewBuffersListener.add(settings.androidColor);
+    this->invalidateChannelViewBuffersListener.add(settings.iosColor);
 
     this->repaintVisibleChatWidgetsListener.add(
         this->themes.repaintVisibleChatWidgets_);

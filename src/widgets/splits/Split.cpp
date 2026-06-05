@@ -174,7 +174,7 @@ Split::Split(QWidget *parent)
             this->updateInputPlaceholder();
         });
     this->updateInputPlaceholder();
-    getSettings()->showInputPlaceholder.connect(
+    getSettings()->showTextInputPlaceholder.connect(
         [this](const bool &, auto) {
             this->updateInputPlaceholder();
         },
@@ -1087,7 +1087,7 @@ MessageView *Split::pinnedExpandedMessageView() const
 void Split::updateInputPlaceholder()
 {
     // If the user disabled placeholder text, clear it and bail out
-    if (!getSettings()->showInputPlaceholder)
+    if (!getSettings()->showTextInputPlaceholder)
     {
         this->input_->ui_.textEdit->setPlaceholderText({});
         return;

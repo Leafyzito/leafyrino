@@ -52,6 +52,36 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->addTo(layout);
 
     layout.addTitle("Usercard");
+    layout.addDescription("Choose which extra details appear on usercards.");
+
+    SettingWidget::checkbox("Show follower count", s.showUsercardFollowerCount)
+        ->addKeywords({"usercard", "follower", "count"})
+        ->addTo(layout);
+    SettingWidget::checkbox("Show account creation date",
+                            s.showUsercardCreatedDate)
+        ->addKeywords({"usercard", "created", "account", "date"})
+        ->addTo(layout);
+    SettingWidget::checkbox("Show last live", s.showUsercardLastLive)
+        ->setTooltip("Show when the user was last live. Hover the row to see "
+                     "the stream title.")
+        ->addKeywords({"usercard", "last", "live", "stream"})
+        ->addTo(layout);
+    SettingWidget::checkbox("Show user color", s.showUsercardColor)
+        ->setTooltip("Show the user's Twitch chat color.")
+        ->addKeywords({"usercard", "color", "chat"})
+        ->addTo(layout);
+    SettingWidget::checkbox("Show Twitch status", s.showUsercardStatus)
+        ->setTooltip(
+            "Show whether the user is Staff, Partner, Affiliate, or Regular.")
+        ->addKeywords({"usercard", "status", "staff", "partner", "affiliate"})
+        ->addTo(layout);
+    SettingWidget::checkbox("Show chatter count", s.showUsercardChatterCount)
+        ->setTooltip("Show the current chatter count when available.")
+        ->addKeywords({"usercard", "chatter", "count"})
+        ->addTo(layout);
+    SettingWidget::checkbox("Show followage", s.showUsercardFollowage)
+        ->addKeywords({"usercard", "followage", "follow"})
+        ->addTo(layout);
     SettingWidget::checkbox("Show gift sub gifter", s.showUsercardSubGiftGifter)
         ->setTooltip("When the user has an active gifted subscription in a "
                      "channel, show who gifted it on the usercard.")
@@ -81,6 +111,12 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->addTo(layout);
 
     layout.addTitle("Miscellaneous");
+    SettingWidget::checkbox("Use message colors for tab alerts",
+                            s.colorTabHighlightsByMessage)
+        ->setTooltip("When a message highlights a tab, use that highlight "
+                     "color for the tab alert line.")
+        ->addKeywords({"tab", "alert", "highlight", "color"})
+        ->addTo(layout);
     SettingWidget::checkbox("Wrap links at breaks", s.wrapLinksAtBreaks)
         ->setTooltip("Let URLs wrap at /, ?, &, #, and = instead of staying "
                      "on one line.")

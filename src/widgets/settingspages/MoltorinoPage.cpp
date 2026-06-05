@@ -682,11 +682,6 @@ MoltorinoPage::MoltorinoPage()
     view->addDescription(
         "Chat input buttons, typing helpers, and quick controls.");
 
-    SettingWidget::checkbox("Show message input placeholder",
-                            s.showInputPlaceholder)
-        ->setTooltip("Show helper text when the message input is empty.")
-        ->addTo(*view);
-
     SettingWidget::checkbox("Show command suggestions while typing",
                             s.showCommandSuggestions)
         ->setTooltip("Show a compact command suggestion strip above the "
@@ -944,29 +939,6 @@ MoltorinoPage::MoltorinoPage()
     view->addDescription(
         "Twitch chat behavior, compatibility, and client experience options.");
 
-    SettingWidget::checkbox("Send messages like Twitch Web",
-                            s.spoofIrcMessagesAsWeb)
-        ->setTooltip("Make normal chat messages behave more like messages "
-                     "sent from Twitch's website.")
-        ->addTo(*view);
-
-    SettingWidget::checkbox("Color messages by chat app",
-                            s.showClientDetectionHighlights)
-        ->setTooltip("Color messages from Twitch Web, Android, or iOS.")
-        ->addTo(*view);
-
-    SettingWidget::colorButton("Twitch Web color", s.clientDetectionWebColor)
-        ->setTooltip("Color for messages sent from Twitch Web.")
-        ->addTo(*view);
-
-    SettingWidget::colorButton("Android color", s.clientDetectionAndroidColor)
-        ->setTooltip("Color for messages sent from Android.")
-        ->addTo(*view);
-
-    SettingWidget::colorButton("iOS color", s.clientDetectionIosColor)
-        ->setTooltip("Color for messages sent from iOS.")
-        ->addTo(*view);
-
     SettingWidget::checkbox("Show Translate message in right-click menu",
                             s.showTranslateMessageContextAction)
         ->setTooltip("Add a right-click action for translating chat messages.")
@@ -984,30 +956,7 @@ MoltorinoPage::MoltorinoPage()
         ->addTo(*view);
 
     view->addTitle("Usercards");
-    view->addDescription("Choose which extra details appear on usercards.");
 
-    SettingWidget::checkbox("Show follower count", s.showUsercardFollowerCount)
-        ->addTo(*view);
-    SettingWidget::checkbox("Show account creation date",
-                            s.showUsercardCreatedDate)
-        ->addTo(*view);
-    SettingWidget::checkbox("Show last live", s.showUsercardLastLive)
-        ->setTooltip("Show when the user was last live. Hover the row to see "
-                     "the stream title.")
-        ->addTo(*view);
-    SettingWidget::checkbox("Show user color", s.showUsercardColor)
-        ->setTooltip("Show the user's Twitch chat color.")
-        ->addTo(*view);
-    SettingWidget::checkbox("Show Twitch status", s.showUsercardStatus)
-        ->setTooltip(
-            "Show whether the user is Staff, Partner, Affiliate, or Regular.")
-        ->addTo(*view);
-
-    SettingWidget::checkbox("Show chatter count", s.showUsercardChatterCount)
-        ->setTooltip("Show the current chatter count when available.")
-        ->addTo(*view);
-    SettingWidget::checkbox("Show followage", s.showUsercardFollowage)
-        ->addTo(*view);
     SettingWidget::checkbox("Show relative followage",
                             s.showUsercardFollowageRelativeTime)
         ->setTooltip("Show a duration next to the follow date, like (1y 3m), "
@@ -1141,12 +1090,6 @@ MoltorinoPage::MoltorinoPage()
             this->revealBotBadgeSettings(true);
         }
     });
-
-    SettingWidget::checkbox("Use message colors for tab alerts",
-                            s.colorTabHighlightsByMessage)
-        ->setTooltip("When a message highlights a tab, use that highlight "
-                     "color for the tab alert line.")
-        ->addTo(*view);
 
     SettingWidget::checkbox("Show follow button in chat header",
                             s.showFollowButtonInSplitHeader)

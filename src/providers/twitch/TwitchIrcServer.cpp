@@ -97,7 +97,7 @@ private:
 
 QStringList makeIrcTags(QStringList tags = {})
 {
-    if (getSettings()->spoofIrcMessagesAsWeb)
+    if (getSettings()->fakeWebChat)
     {
         tags.prepend(QStringLiteral("client-nonce=") + makeWebClientNonce());
     }

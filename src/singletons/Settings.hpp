@@ -1124,16 +1124,6 @@ public:
         "/moltorino/moderation/raid/showStatusAboveInput", true};
 
     /// Client
-    BoolSetting spoofIrcMessagesAsWeb{"/moltorino/client/spoofIrcMessagesAsWeb",
-                                      true};
-    BoolSetting showClientDetectionHighlights{
-        "/moltorino/client/showDetectionHighlights", false};
-    QStringSetting clientDetectionWebColor{
-        "/moltorino/client/webHighlightColor", "#33ff9f1a"};
-    QStringSetting clientDetectionAndroidColor{
-        "/moltorino/client/androidHighlightColor", "#3325d366"};
-    QStringSetting clientDetectionIosColor{
-        "/moltorino/client/iosHighlightColor", "#33ff69b4"};
     BoolSetting showTranslateMessageContextAction{
         "/moltorino/client/showTranslateMessageContextAction", true};
     QStringSetting messageTranslationTargetLanguage{
@@ -1156,7 +1146,6 @@ public:
                                       false};
 
     /// Others
-    BoolSetting showInputPlaceholder{"/moltorino/showInputPlaceholder", true};
     BoolSetting showCommandSuggestions{"/moltorino/showCommandSuggestions",
                                        true};
     BoolSetting hideUnavailableModCommands{

@@ -556,6 +556,49 @@ Settings::Settings(const Args &args, const QString &settingsDirectory,
                 !colorByMessage->GetBool());
         }
     }
+
+    auto migrateBoolSetting = [&](const char *oldPath, BoolSetting &newSetting) {
+        if (settingsInstance->get(newSetting.getPath()) != nullptr)
+        {
+            return;
+        }
+
+        if (auto *oldSetting = settingsInstance->get(oldPath);
+            oldSetting != nullptr && oldSetting->IsBool())
+        {
+            newSetting.setValue(oldSetting->GetBool());
+            settingsInstance->removeSetting(oldPath);
+            this->requestSave();
+        }
+    };
+
+    auto migrateStringSetting = [&](const char *oldPath,
+                                    QStringSetting &newSetting) {
+        if (settingsInstance->get(newSetting.getPath()) != nullptr)
+        {
+            return;
+        }
+
+        if (auto *oldSetting = settingsInstance->get(oldPath);
+            oldSetting != nullptr && oldSetting->IsString())
+        {
+            newSetting.setValue(QString::fromUtf8(oldSetting->GetString()));
+            settingsInstance->removeSetting(oldPath);
+            this->requestSave();
+        }
+    };
+
+    migrateBoolSetting("/moltorino/showInputPlaceholder",
+                       this->showTextInputPlaceholder);
+    migrateBoolSetting("/moltorino/client/spoofIrcMessagesAsWeb",
+                       this->fakeWebChat);
+    migrateBoolSetting("/moltorino/client/showDetectionHighlights",
+                       this->normalNonceDetection);
+    migrateStringSetting("/moltorino/client/webHighlightColor",
+                         this->webchatColor);
+    migrateStringSetting("/moltorino/client/androidHighlightColor",
+                         this->androidColor);
+    migrateStringSetting("/moltorino/client/iosHighlightColor", this->iosColor);
 }
 
 Settings::~Settings()
