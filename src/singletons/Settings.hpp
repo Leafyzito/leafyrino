@@ -1002,7 +1002,7 @@ public:
                                   -1};
     /// 0 = Dismiss (hide banner), 1 = Unpin message
     IntSetting pinCloseButtonAction{
-        "/moltorino/pinnedMessages/closeButtonAction", 1};
+        "/moltorino/pinnedMessages/closeButtonAction", 0};
     BoolSetting enablePinCommandMessages{
         "/moltorino/pinnedMessages/enablePinCommandMessages", true};
     BoolSetting enablePinUserCommand{
