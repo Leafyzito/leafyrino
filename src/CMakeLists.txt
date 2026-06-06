@@ -792,6 +792,8 @@ set(SOURCE_FILES
 
         widgets/dialogs/BadgePickerDialog.cpp
         widgets/dialogs/BadgePickerDialog.hpp
+        widgets/dialogs/TwitchBadgePickerDialog.cpp
+        widgets/dialogs/TwitchBadgePickerDialog.hpp
         widgets/dialogs/ChannelFilterEditorDialog.cpp
         widgets/dialogs/ChannelFilterEditorDialog.hpp
         widgets/dialogs/ChannelPointsDialog.cpp
