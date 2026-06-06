@@ -249,6 +249,12 @@ public:
         this->setToolTip("No Badge");
     }
 
+    void setSelected(bool selected)
+    {
+        this->selected_ = selected;
+        this->update();
+    }
+
 protected:
     void paintEvent(QPaintEvent *) override
     {
@@ -256,8 +262,21 @@ protected:
         painter.setRenderHint(QPainter::Antialiasing, true);
 
         const auto rect = this->rect().adjusted(0, 0, -1, -1);
-        paintBadgeTileBackground(painter, rect, this->underMouse(),
-                                 this->isDown());
+
+        if (this->selected_)
+        {
+            painter.setPen(QPen(QColor("#f5a623"), 2));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRoundedRect(rect, 3, 3);
+            const auto innerRect = rect.adjusted(2, 2, -2, -2);
+            paintBadgeTileBackground(painter, innerRect, this->underMouse(),
+                                     this->isDown());
+        }
+        else
+        {
+            paintBadgeTileBackground(painter, rect, this->underMouse(),
+                                     this->isDown());
+        }
 
         const int pad = BADGE_TILE_PADDING;
         const QRect iconRect(pad, pad, rect.width() - pad * 2,
@@ -281,6 +300,9 @@ protected:
             paintBadgeTileFocusRing(painter, rect);
         }
     }
+
+private:
+    bool selected_ = false;
 };
 
 class BadgeTileButton final : public QPushButton
@@ -305,6 +327,12 @@ public:
         return this->badge_;
     }
 
+    void setSelected(bool selected)
+    {
+        this->selected_ = selected;
+        this->update();
+    }
+
 protected:
     void paintEvent(QPaintEvent *) override
     {
@@ -313,8 +341,21 @@ protected:
         painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
         const auto rect = this->rect().adjusted(0, 0, -1, -1);
-        paintBadgeTileBackground(painter, rect, this->underMouse(),
-                                 this->isDown());
+
+        if (this->selected_)
+        {
+            painter.setPen(QPen(QColor("#f5a623"), 2));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRoundedRect(rect, 3, 3);
+            const auto innerRect = rect.adjusted(2, 2, -2, -2);
+            paintBadgeTileBackground(painter, innerRect, this->underMouse(),
+                                     this->isDown());
+        }
+        else
+        {
+            paintBadgeTileBackground(painter, rect, this->underMouse(),
+                                     this->isDown());
+        }
 
         const int pad = BADGE_TILE_PADDING;
         const QRect imgRect(pad, pad, rect.width() - pad * 2,
@@ -343,6 +384,7 @@ protected:
 private:
     GqlBadge badge_;
     ImageSet images_;
+    bool selected_ = false;
 };
 
 }  // namespace
@@ -670,10 +712,7 @@ void TwitchBadgePickerDialog::rebuildGlobalBadges()
         auto *noBadgeTile = new NoBadgeTileButton(gridWidget);
         noBadgeTile->setEnabled(!this->actionInFlight_);
         if (selected.setID.isEmpty())
-        {
-            noBadgeTile->setStyleSheet(
-                "border: 2px solid #9146ff; border-radius: 3px;");
-        }
+            noBadgeTile->setSelected(true);
         QObject::connect(noBadgeTile, &QPushButton::clicked, this, [this] {
             this->selectGlobal({});
         });
@@ -694,8 +733,7 @@ void TwitchBadgePickerDialog::rebuildGlobalBadges()
 
         if (!selected.setID.isEmpty() && badge.setID == selected.setID &&
             badge.version == selected.version)
-            tile->setStyleSheet(
-                "border: 2px solid #9146ff; border-radius: 3px;");
+            tile->setSelected(true);
 
         QObject::connect(tile, &QPushButton::clicked, this, [this, badge] {
             this->selectGlobal(badge);
@@ -816,8 +854,7 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
         if (!selected.setID.isEmpty() && badge.setID == selected.setID &&
             badge.version == selected.version &&
             this->badges_.useCustomChannelBadge)
-            tile->setStyleSheet(
-                "border: 2px solid #9146ff; border-radius: 3px;");
+            tile->setSelected(true);
 
         QObject::connect(tile, &QPushButton::clicked, this, [this, badge] {
             this->selectChannel(badge);
