@@ -8,11 +8,12 @@
 #include "providers/twitch/api/TwitchGql.hpp"
 #include "widgets/DraggablePopup.hpp"
 
+#include <QDateTime>
 #include <QPointer>
 #include <QString>
 #include <QTimer>
 #include <QVector>
-#include <QDateTime>
+
 #include <optional>
 
 class QLabel;

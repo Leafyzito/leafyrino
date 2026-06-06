@@ -5,6 +5,8 @@
 #include "widgets/dialogs/TwitchBadgePickerDialog.hpp"
 
 #include "Application.hpp"
+#include "common/network/NetworkRequest.hpp"
+#include "common/network/NetworkResult.hpp"
 #include "messages/Image.hpp"
 #include "messages/ImageSet.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
@@ -15,8 +17,6 @@
 #include "widgets/buttons/Button.hpp"
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/helper/Line.hpp"
-#include "common/network/NetworkRequest.hpp"
-#include "common/network/NetworkResult.hpp"
 
 #include <QCursor>
 #include <QDateTime>
@@ -509,7 +509,7 @@ TwitchBadgePickerDialog::TwitchBadgePickerDialog(TwitchChannel *channel,
     this->channelTabButton_->setChecked(false);
     this->channelTabButton_->setCursor(Qt::PointingHandCursor);
     this->channelTabButton_->setSizePolicy(QSizePolicy::Expanding,
-                                          QSizePolicy::Fixed);
+                                           QSizePolicy::Fixed);
     QObject::connect(this->channelTabButton_, &QPushButton::clicked, this,
                      [this] {
                          this->view_ = View::ChannelBadges;
@@ -525,7 +525,7 @@ TwitchBadgePickerDialog::TwitchBadgePickerDialog(TwitchChannel *channel,
     this->eventTabButton_->setChecked(false);
     this->eventTabButton_->setCursor(Qt::PointingHandCursor);
     this->eventTabButton_->setSizePolicy(QSizePolicy::Expanding,
-                                          QSizePolicy::Fixed);
+                                         QSizePolicy::Fixed);
     QObject::connect(this->eventTabButton_, &QPushButton::clicked, this,
                      [this] {
                          this->view_ = View::EventBadges;
@@ -959,8 +959,8 @@ void TwitchBadgePickerDialog::loadEventBadges(bool force)
 
     // cache de 10 minutos
     if (!force && this->eventBadgesLoaded_ &&
-        this->eventBadgesCacheTime_.secsTo(
-            QDateTime::currentDateTimeUtc()) < 600)
+        this->eventBadgesCacheTime_.secsTo(QDateTime::currentDateTimeUtc()) <
+            600)
         return;
 
     this->eventBadgesLoading_ = true;
@@ -983,15 +983,14 @@ void TwitchBadgePickerDialog::loadEventBadges(bool force)
             {
                 const auto obj = val.toObject();
                 EventBadge b;
-                b.id       = obj.value("id").toString();
-                b.name     = obj.value("name").toString();
+                b.id = obj.value("id").toString();
+                b.name = obj.value("name").toString();
                 b.imageUrl = obj.value("imageUrl").toString();
-                b.streamDatabaseUrl =
-                    obj.value("streamdatabaseUrl").toString();
+                b.streamDatabaseUrl = obj.value("streamdatabaseUrl").toString();
                 b.startAt = QDateTime::fromString(
                     obj.value("startAt").toString(), Qt::ISODate);
-                b.endAt = QDateTime::fromString(
-                    obj.value("endAt").toString(), Qt::ISODate);
+                b.endAt = QDateTime::fromString(obj.value("endAt").toString(),
+                                                Qt::ISODate);
                 if (!obj.value("free").isNull())
                     b.free = obj.value("free").toBool();
                 self->eventBadgesCache_.push_back(b);
@@ -1048,19 +1047,21 @@ void TwitchBadgePickerDialog::rebuildEventBadges()
     auto makeTile = [&](const EventBadge &badge,
                         QWidget *parent) -> BadgeTileButton * {
         GqlBadge gql;
-        gql.setID   = badge.id;
-        gql.title   = badge.name;
+        gql.setID = badge.id;
+        gql.title = badge.name;
         gql.image2x = badge.imageUrl;
-        auto *tile  = new BadgeTileButton(gql, parent);
+        auto *tile = new BadgeTileButton(gql, parent);
 
         // tooltip com info da badge
         QString tip = badge.name;
         if (badge.endAt.isValid())
-            tip += QStringLiteral("\nEnds: %1").arg(
-                badge.endAt.toLocalTime().toString("MMM d, yyyy hh:mm"));
+            tip += QStringLiteral("\nEnds: %1")
+                       .arg(badge.endAt.toLocalTime().toString(
+                           "MMM d, yyyy hh:mm"));
         if (badge.startAt.isValid() && badge.startAt > now)
-            tip += QStringLiteral("\nStarts: %1").arg(
-                badge.startAt.toLocalTime().toString("MMM d, yyyy hh:mm"));
+            tip += QStringLiteral("\nStarts: %1")
+                       .arg(badge.startAt.toLocalTime().toString(
+                           "MMM d, yyyy hh:mm"));
         if (badge.free.has_value())
             tip += badge.free.value() ? "\nFree" : "\nPaid";
         tile->setToolTip(tip);
@@ -1068,17 +1069,16 @@ void TwitchBadgePickerDialog::rebuildEventBadges()
         if (!badge.streamDatabaseUrl.isEmpty())
         {
             const auto url = badge.streamDatabaseUrl;
-            QObject::connect(tile, &QPushButton::clicked, this,
-                             [url] {
-                                 QDesktopServices::openUrl(QUrl(url));
-                             });
+            QObject::connect(tile, &QPushButton::clicked, this, [url] {
+                QDesktopServices::openUrl(QUrl(url));
+            });
         }
         return tile;
     };
 
     auto makeGrid = [&](const QVector<EventBadge> &badges) {
         auto *gridWidget = new QWidget(this->contentWidget_);
-        auto *grid       = new QGridLayout(gridWidget);
+        auto *grid = new QGridLayout(gridWidget);
         grid->setContentsMargins(0, 0, 0, 0);
         grid->setSpacing(4);
         int row = 0;

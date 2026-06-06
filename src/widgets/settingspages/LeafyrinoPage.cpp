@@ -63,6 +63,12 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->setTooltip("Chatsen supporter and developer badges")
         ->addTo(layout);
 
+    layout.addTitle("Client");
+    SettingWidget::checkbox("Show select badge button", s.showSelectBadgeButton)
+        ->addKeywords({"badge", "select", "button", "client", "picker"})
+        ->setTooltip("Show the badge picker button in the chat input bar.")
+        ->addTo(layout);
+
     layout.addTitle("Usercard");
     layout.addDescription("Choose which extra details appear on usercards.");
 
