@@ -12,6 +12,8 @@
 #include <QString>
 #include <QTimer>
 #include <QVector>
+#include <QDateTime>
+#include <optional>
 
 class QLabel;
 class QLineEdit;
@@ -96,7 +98,6 @@ private:
     bool initialFetchDone_ = false;
     QString statusText_;
     bool statusIsError_ = false;
-    bool isBadgeModifierHidden_ = false;
     QString searchQuery_;
 
     QPushButton *eventTabButton_{};
