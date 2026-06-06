@@ -721,6 +721,7 @@ QMenu *addEmoteContextMenuItems(QMenu *menu, const Emote &emote,
 
     // Scale of the smallest image
     std::optional<qreal> baseScale;
+    QSet<QString> linkedImageUrls;
     const auto isMoltorinoBadge =
         kind == u"badge" &&
         emote.name.string.startsWith(QStringLiteral("moltorino:"));
@@ -728,6 +729,13 @@ QMenu *addEmoteContextMenuItems(QMenu *menu, const Emote &emote,
     auto addImageLink = [&](const ImagePtr &image, const QString &label = {}) {
         if (!image->isEmpty())
         {
+            const auto urlString = image->url().string;
+            if (linkedImageUrls.contains(urlString))
+            {
+                return;
+            }
+            linkedImageUrls.insert(urlString);
+
             auto factor = label;
             if (factor.isEmpty())
             {

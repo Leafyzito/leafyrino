@@ -310,16 +310,51 @@ Image::~Image()
 
 ImagePtr Image::fromUrl(const Url &url, qreal scale, QSize expectedSize)
 {
-    static std::unordered_map<Url, std::weak_ptr<Image>> cache;
+    struct CacheKey {
+        Url url;
+        qreal scale;
+        QSize expectedSize;
+        bool useExpectedSizeForRead;
+
+        bool operator==(const CacheKey &other) const
+        {
+            return this->url == other.url && this->scale == other.scale &&
+                   this->expectedSize == other.expectedSize &&
+                   this->useExpectedSizeForRead == other.useExpectedSizeForRead;
+        }
+    };
+
+    struct CacheKeyHash {
+        size_t operator()(const CacheKey &key) const
+        {
+            size_t seed = qHash(key.url.string);
+            boost::hash_combine(seed, key.scale);
+            boost::hash_combine(seed, key.expectedSize.width());
+            boost::hash_combine(seed, key.expectedSize.height());
+            boost::hash_combine(seed, key.useExpectedSizeForRead);
+            return seed;
+        }
+    };
+
+    static std::unordered_map<CacheKey, std::weak_ptr<Image>, CacheKeyHash>
+        cache;
     static std::mutex mutex;
+
+    const CacheKey key{
+        .url = url,
+        .scale = scale,
+        .expectedSize =
+            expectedSize.isValid() ? expectedSize : (QSize(16, 16) * scale),
+        .useExpectedSizeForRead = expectedSize.isValid(),
+    };
 
     std::lock_guard<std::mutex> lock(mutex);
 
-    auto shared = cache[url].lock();
+    auto shared = cache[key].lock();
 
     if (!shared)
     {
-        cache[url] = shared = ImagePtr(new Image(url, scale, expectedSize));
+        cache[key] = shared = ImagePtr(new Image(url, scale, expectedSize));
     }
 
     return shared;
