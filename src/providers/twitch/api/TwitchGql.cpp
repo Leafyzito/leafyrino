@@ -5342,14 +5342,14 @@ void TwitchGql::getChatSettingsBadges(
             badges.useCustomChannelBadge = !userSelf.value("selectedBadge").isNull()
                 && !userSelf.value("selectedBadge").toObject().value("setID").toString().isEmpty();
 
-            badges.isBadgeModifierHidden = data.value("currentUser").toObject()
-                .value("subscriptionSettings").toObject()
-                .value("isBadgeModifierHidden").toBool(false);
+           const auto subscriptionSettings = data.value("currentUser").toObject()
+                .value("subscriptionSettings").toObject();
 
-            const auto tierStr = data.value("user").toObject()
-                .value("subscriptionBenefit").toObject()
-                .value("tier").toString();
-            badges.subscriptionTier = tierStr.toInt();
+            badges.isBadgeModifierHidden =
+                subscriptionSettings.value("isBadgeModifierHidden").toBool(false);
+
+            badges.subscriptionTier =
+                subscriptionSettings.contains("isBadgeModifierHidden") ? 2000 : 0;
 
             successCallback(std::move(badges));
         })

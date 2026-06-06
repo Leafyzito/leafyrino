@@ -432,12 +432,10 @@ void selectChannelBadge(
     const QString &channelID, const QString &oauthToken,
     std::function<void()> successCallback,
     std::function<void(const QString &)> failureCallback);
-
 void deselectChannelBadge(
     const QString &channelID, const QString &oauthToken,
     std::function<void()> successCallback,
     std::function<void(const QString &)> failureCallback);
-
 void setBadgeModifierHidden(
     bool hidden, const QString &oauthToken,
     std::function<void(bool)> successCallback,
