@@ -40,6 +40,9 @@
 #include "providers/chatterino/ChatterinoBadges.hpp"
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/folhinha/FolhinhaBadges.hpp"
+#include "providers/ffzap/FfzApBadges.hpp"
+#include "providers/dankchat/DankChatBadges.hpp"
+#include "providers/chatsen/ChatsenBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/repetitions/RepeatedMessageDetector.hpp"
@@ -200,6 +203,9 @@ Application::Application(Settings &_settings, const Paths &paths,
     , seventvBadges(new SeventvBadges)
     , homiesBadges(new HomiesBadges)
     , folhinhaBadges(new FolhinhaBadges)
+    , ffzApBadges(new FfzApBadges)
+    , dankChatBadges(new DankChatBadges)
+    , chatsenBadges(new ChatsenBadges)
     , moltorinoSupporterBadges(new MoltorinoSupporterBadges)
     , repeatedMessageDetector(new RepeatedMessageDetector)
     , seventvPaints(new SeventvPaints)
@@ -534,6 +540,24 @@ FolhinhaBadges *Application::getFolhinhaBadges()
     return this->folhinhaBadges.get();
 }
 
+FfzApBadges *Application::getFfzApBadges()
+{
+    assert(this->ffzApBadges);
+    return this->ffzApBadges.get();
+}
+
+DankChatBadges *Application::getDankChatBadges()
+{
+    assert(this->dankChatBadges);
+    return this->dankChatBadges.get();
+}
+
+ChatsenBadges *Application::getChatsenBadges()
+{
+    assert(this->chatsenBadges);
+    return this->chatsenBadges.get();
+}
+
 MoltorinoSupporterBadges *Application::getMoltorinoSupporterBadges()
 {
     assert(this->moltorinoSupporterBadges);
@@ -779,6 +803,9 @@ void Application::stop()
     this->seventvBadges.reset();
     this->ffzBadges.reset();
     this->homiesBadges.reset();
+    this->ffzApBadges.reset();
+    this->dankChatBadges.reset();
+    this->chatsenBadges.reset();
     this->twitch.reset();
     this->highlights.reset();
     this->notifications.reset();

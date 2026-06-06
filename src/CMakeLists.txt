@@ -417,6 +417,15 @@ set(SOURCE_FILES
         providers/folhinha/FolhinhaBadges.cpp
         providers/folhinha/FolhinhaBadges.hpp
 
+        providers/ffzap/FfzApBadges.cpp
+        providers/ffzap/FfzApBadges.hpp
+
+        providers/dankchat/DankChatBadges.cpp
+        providers/dankchat/DankChatBadges.hpp
+
+        providers/chatsen/ChatsenBadges.cpp
+        providers/chatsen/ChatsenBadges.hpp
+
         providers/colors/ColorProvider.cpp
         providers/colors/ColorProvider.hpp
 

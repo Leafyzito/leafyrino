@@ -278,6 +278,9 @@ private:
     void appendSeventvBadges(const QString &userID);
     void appendHomiesBadges(const QString &userID);
     void appendFolhinhaBadges(const QString &userID);
+    void appendFfzApBadges(const QString &userID);
+    void appendDankChatBadges(const QString &userID);
+    void appendChatsenBadges(const QString &userID);
     void appendMoltorinoBadges(const QString &userID);
 
     [[nodiscard]] static bool isIgnored(const QString &originalMessage,
