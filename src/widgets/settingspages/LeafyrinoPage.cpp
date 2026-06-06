@@ -50,6 +50,18 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->addKeywords({"folhinha", "folhinhabot"})
         ->setTooltip("FolhinhaBot Plus, Founder, and Supporter badges")
         ->addTo(layout);
+    SettingWidget::checkbox("FFZ:AP", s.showBadgesFfzAp)
+        ->addKeywords({"ffz", "ffzap", "frankerfacez"})
+        ->setTooltip("FFZ:AP supporter and helper badges")
+        ->addTo(layout);
+    SettingWidget::checkbox("DankChat", s.showBadgesDankChat)
+        ->addKeywords({"dankchat", "dank"})
+        ->setTooltip("DankChat supporter badges")
+        ->addTo(layout);
+    SettingWidget::checkbox("Chatsen", s.showBadgesChatsen)
+        ->addKeywords({"chatsen"})
+        ->setTooltip("Chatsen supporter and developer badges")
+        ->addTo(layout);
 
     layout.addTitle("Usercard");
     layout.addDescription("Choose which extra details appear on usercards.");

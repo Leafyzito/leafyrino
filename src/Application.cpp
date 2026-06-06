@@ -37,12 +37,12 @@
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "providers/bttv/BttvLiveUpdates.hpp"
-#include "providers/chatterino/ChatterinoBadges.hpp"
-#include "providers/ffz/FfzBadges.hpp"
-#include "providers/folhinha/FolhinhaBadges.hpp"
-#include "providers/ffzap/FfzApBadges.hpp"
-#include "providers/dankchat/DankChatBadges.hpp"
 #include "providers/chatsen/ChatsenBadges.hpp"
+#include "providers/chatterino/ChatterinoBadges.hpp"
+#include "providers/dankchat/DankChatBadges.hpp"
+#include "providers/ffz/FfzBadges.hpp"
+#include "providers/ffzap/FfzApBadges.hpp"
+#include "providers/folhinha/FolhinhaBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/repetitions/RepeatedMessageDetector.hpp"
@@ -255,6 +255,7 @@ void Application::initialize(Settings &settings, const Paths &paths)
     this->windows->initialize();
 
     this->ffzBadges->load();
+    this->bttvBadges->load();
     this->moltorinoSupporterBadges->initialize();
 
     this->bttvEmotes->loadEmotes();

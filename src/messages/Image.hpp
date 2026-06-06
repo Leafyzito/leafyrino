@@ -127,6 +127,7 @@ private:
     qreal scale_{1};
 
     const QSize expectedSize_{16, 16};
+    bool useExpectedSizeForRead_{false};
     std::atomic_bool empty_{false};
 
     bool shouldLoad_{false};

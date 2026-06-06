@@ -26,6 +26,17 @@ using namespace chatterino::literals;
 
 namespace {
 
+constexpr QSize BADGE_BASE_SIZE(18, 18);
+
+ImageSet createBadgeImages(const QString &url)
+{
+    return ImageSet{
+        Image::fromUrl(Url{url}, 1.0, BADGE_BASE_SIZE),
+        Image::fromUrl(Url{url}, 0.5, BADGE_BASE_SIZE * 2),
+        Image::fromUrl(Url{url}, 0.25, BADGE_BASE_SIZE * 4),
+    };
+}
+
 // Badge com este tipo é filtrado — o cliente oficial do DankChat também remove ele
 const QString DANKCHAT_FILTERED_TYPE = u"DankChat Top Supporter"_s;
 
@@ -82,8 +93,7 @@ void DankChatBadges::load()
                 {
                     auto emote = Emote{
                         .name = EmoteName{u"dankchat:" % type},
-                        .images = ImageSet(
-                            Image::fromUrl(Url{url}, 18.0 / 72.0)),
+                        .images = createBadgeImages(url),
                         .tooltip = Tooltip{type},
                         .homePage = Url{},
                         .id = EmoteId{url},
@@ -130,8 +140,7 @@ void DankChatBadges::load()
         })
         .onError([](const NetworkResult &result) {
             qCWarning(chatterinoApp)
-                << "[DankChat] Failed to load badges:"
-                << result.formatError();
+                << "[DankChat] Failed to load badges:" << result.formatError();
         })
         .execute();
 }

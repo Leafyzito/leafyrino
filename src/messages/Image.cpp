@@ -384,6 +384,7 @@ Image::Image(const Url &url, qreal scale, QSize expectedSize)
     , scale_(scale)
     , expectedSize_(expectedSize.isValid() ? expectedSize
                                            : (QSize(16, 16) * scale))
+    , useExpectedSizeForRead_(expectedSize.isValid())
     , shouldLoad_(true)
     , frames_(std::make_unique<detail::Frames>())
 {
@@ -547,6 +548,11 @@ void Image::actuallyLoad()
                 << ": " << reader.errorString();
             shared->empty_ = true;
             return;
+        }
+
+        if (shared->useExpectedSizeForRead_)
+        {
+            reader.setScaledSize(shared->expectedSize_);
         }
 
         if (double(size.width()) * double(size.height()) *

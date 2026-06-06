@@ -25,6 +25,17 @@ using namespace chatterino::literals;
 
 namespace {
 
+constexpr QSize BADGE_BASE_SIZE(18, 18);
+
+ImageSet createBadgeImages(const QString &url)
+{
+    return ImageSet{
+        Image::fromUrl(Url{url}, 1.0, BADGE_BASE_SIZE),
+        Image::fromUrl(Url{url}, 0.5, BADGE_BASE_SIZE * 2),
+        Image::fromUrl(Url{url}, 0.25, BADGE_BASE_SIZE * 4),
+    };
+}
+
 const std::unordered_map<QString, int> CHATSEN_BADGE_PRIORITY = {
     {u"developer"_s, 0},
     {u"early_supporter"_s, 1},
@@ -93,19 +104,16 @@ void ChatsenBadges::load()
                     continue;
                 }
 
-                const QString tooltip =
-                    title.isEmpty() ? name : title;
+                const QString tooltip = title.isEmpty() ? name : title;
 
                 auto emote = Emote{
                     .name = EmoteName{u"chatsen:" % name},
-                    .images = ImageSet(
-                        Image::fromUrl(Url{image}, 18.0 / 72.0)),
+                    .images = createBadgeImages(image),
                     .tooltip = Tooltip{tooltip},
                     .homePage = Url{},
                     .id = EmoteId{name},
                 };
-                catalog[name] =
-                    std::make_shared<const Emote>(std::move(emote));
+                catalog[name] = std::make_shared<const Emote>(std::move(emote));
             }
 
             // Passo 2: para cada usuário, selecionar o badge de maior prioridade
@@ -130,8 +138,7 @@ void ChatsenBadges::load()
                 for (const auto &badgeVal : userBadges)
                 {
                     const auto badgeObj = badgeVal.toObject();
-                    const auto badgeName =
-                        badgeObj[u"badgeName"_s].toString();
+                    const auto badgeName = badgeObj[u"badgeName"_s].toString();
 
                     const int priority = priorityForBadge(badgeName);
                     if (priority >= bestPriority)
@@ -167,8 +174,7 @@ void ChatsenBadges::load()
         })
         .onError([](const NetworkResult &result) {
             qCWarning(chatterinoApp)
-                << "[Chatsen] Failed to load badges:"
-                << result.formatError();
+                << "[Chatsen] Failed to load badges:" << result.formatError();
         })
         .execute();
 }

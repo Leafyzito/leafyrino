@@ -5,6 +5,7 @@
 #pragma once
 
 #include <QColor>
+#include <QHashFunctions>
 #include <QString>
 
 #include <memory>

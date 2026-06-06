@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <QHashFunctions>
 #include <QString>
 
 #include <memory>
