@@ -15,8 +15,12 @@
 #include "widgets/buttons/Button.hpp"
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/helper/Line.hpp"
+#include "util/NetworkRequest.hpp"
+#include "util/NetworkResult.hpp"
 
 #include <QCursor>
+#include <QDateTime>
+#include <QDesktopServices>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -26,8 +30,10 @@
 #include <QResizeEvent>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QSet>
 #include <QShowEvent>
 #include <QTimer>
+#include <QUrl>
 #include <QVBoxLayout>
 
 #include <cmath>
@@ -409,6 +415,7 @@ TwitchBadgePickerDialog::TwitchBadgePickerDialog(TwitchChannel *channel,
                          this->view_ = View::GlobalBadges;
                          this->globalTabButton_->setChecked(true);
                          this->channelTabButton_->setChecked(false);
+                         this->eventTabButton_->setChecked(false);
                          this->rebuildContent();
                      });
 
@@ -422,11 +429,28 @@ TwitchBadgePickerDialog::TwitchBadgePickerDialog(TwitchChannel *channel,
                          this->view_ = View::ChannelBadges;
                          this->globalTabButton_->setChecked(false);
                          this->channelTabButton_->setChecked(true);
+                         this->eventTabButton_->setChecked(false);
+                         this->rebuildContent();
+                     });
+
+    this->eventTabButton_ = new QPushButton("Missing / Soon", container);
+    this->eventTabButton_->setObjectName("TwitchBadgePickerTab");
+    this->eventTabButton_->setCheckable(true);
+    this->eventTabButton_->setChecked(false);
+    this->eventTabButton_->setCursor(Qt::PointingHandCursor);
+    QObject::connect(this->eventTabButton_, &QPushButton::clicked, this,
+                     [this] {
+                         this->view_ = View::EventBadges;
+                         this->globalTabButton_->setChecked(false);
+                         this->channelTabButton_->setChecked(false);
+                         this->eventTabButton_->setChecked(true);
+                         this->loadEventBadges(false);
                          this->rebuildContent();
                      });
 
     tabRow->addWidget(this->globalTabButton_);
     tabRow->addWidget(this->channelTabButton_);
+    tabRow->addWidget(this->eventTabButton_);
     tabRow->addStretch(1);
     this->mainLayout_->addLayout(tabRow);
 
@@ -607,8 +631,10 @@ void TwitchBadgePickerDialog::rebuildContent()
 
     if (this->view_ == View::GlobalBadges)
         this->rebuildGlobalBadges();
-    else
+    else if (this->view_ == View::ChannelBadges)
         this->rebuildChannelBadges();
+    else
+        this->rebuildEventBadges();
 
     this->contentLayout_->addStretch(1);
     this->applySizeConstraints();
@@ -831,6 +857,175 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
     this->contentLayout_->addWidget(gridWidget);
 }
 
+void TwitchBadgePickerDialog::loadEventBadges(bool force)
+{
+    if (this->eventBadgesLoading_)
+        return;
+
+    // cache de 10 minutos
+    if (!force && this->eventBadgesLoaded_ &&
+        this->eventBadgesCacheTime_.secsTo(
+            QDateTime::currentDateTimeUtc()) < 600)
+        return;
+
+    this->eventBadgesLoading_ = true;
+    this->rebuildContent();
+
+    QPointer<TwitchBadgePickerDialog> self = this;
+
+    NetworkRequest("https://api.catquery.com/eventBadges")
+        .onSuccess([self](const NetworkResult &result) {
+            if (!self)
+                return;
+            self->eventBadgesLoading_ = false;
+            self->eventBadgesLoaded_ = true;
+            self->eventBadgesCacheTime_ = QDateTime::currentDateTimeUtc();
+            self->eventBadgesCache_.clear();
+
+            const auto arr =
+                result.parseJsonValue().toObject().value("badges").toArray();
+            for (const auto &val : arr)
+            {
+                const auto obj = val.toObject();
+                EventBadge b;
+                b.id       = obj.value("id").toString();
+                b.name     = obj.value("name").toString();
+                b.imageUrl = obj.value("imageUrl").toString();
+                b.streamDatabaseUrl =
+                    obj.value("streamdatabaseUrl").toString();
+                b.startAt = QDateTime::fromString(
+                    obj.value("startAt").toString(), Qt::ISODate);
+                b.endAt = QDateTime::fromString(
+                    obj.value("endAt").toString(), Qt::ISODate);
+                if (!obj.value("free").isNull())
+                    b.free = obj.value("free").toBool();
+                self->eventBadgesCache_.push_back(b);
+            }
+            self->rebuildContent();
+        })
+        .onError([self](const NetworkResult &) {
+            if (!self)
+                return;
+            self->eventBadgesLoading_ = false;
+            self->setStatus("Failed to load event badges.", true);
+            self->rebuildContent();
+        })
+        .execute();
+}
+
+void TwitchBadgePickerDialog::rebuildEventBadges()
+{
+    if (this->eventBadgesLoading_)
+    {
+        this->setStatus("Loading event badges...");
+        return;
+    }
+
+    if (!this->eventBadgesLoaded_)
+    {
+        this->setStatus("No data loaded.");
+        return;
+    }
+
+    const auto now = QDateTime::currentDateTimeUtc();
+    const auto needle = this->searchQuery_.trimmed();
+
+    // set de IDs que o usuário já tem
+    QSet<QString> ownedIds;
+    for (const auto &b : this->badges_.availableGlobal)
+        ownedIds.insert(b.setID);
+
+    QVector<EventBadge> missing, comingSoon;
+    for (const auto &b : this->eventBadgesCache_)
+    {
+        if (!needle.isEmpty() &&
+            !b.name.contains(needle, Qt::CaseInsensitive) &&
+            !b.id.contains(needle, Qt::CaseInsensitive))
+            continue;
+
+        if (b.startAt > now)
+            comingSoon.push_back(b);
+        else if (b.endAt > now && !ownedIds.contains(b.id))
+            missing.push_back(b);
+    }
+
+    auto makeTile = [&](const EventBadge &badge,
+                        QWidget *parent) -> BadgeTileButton * {
+        GqlBadge gql;
+        gql.setID   = badge.id;
+        gql.title   = badge.name;
+        gql.image2x = badge.imageUrl;
+        auto *tile  = new BadgeTileButton(gql, parent);
+
+        // tooltip com info da badge
+        QString tip = badge.name;
+        if (badge.endAt.isValid())
+            tip += QStringLiteral("\nEnds: %1").arg(
+                badge.endAt.toLocalTime().toString("MMM d, yyyy hh:mm"));
+        if (badge.startAt.isValid() && badge.startAt > now)
+            tip += QStringLiteral("\nStarts: %1").arg(
+                badge.startAt.toLocalTime().toString("MMM d, yyyy hh:mm"));
+        if (badge.free.has_value())
+            tip += badge.free.value() ? "\nFree" : "\nPaid";
+        tile->setToolTip(tip);
+
+        if (!badge.streamDatabaseUrl.isEmpty())
+        {
+            const auto url = badge.streamDatabaseUrl;
+            QObject::connect(tile, &QPushButton::clicked, this,
+                             [url] {
+                                 QDesktopServices::openUrl(QUrl(url));
+                             });
+        }
+        return tile;
+    };
+
+    auto makeGrid = [&](const QVector<EventBadge> &badges) {
+        auto *gridWidget = new QWidget(this->contentWidget_);
+        auto *grid       = new QGridLayout(gridWidget);
+        grid->setContentsMargins(0, 0, 0, 0);
+        grid->setSpacing(4);
+        int row = 0;
+        int col = 0;
+        for (const auto &badge : badges)
+        {
+            auto *tile = makeTile(badge, gridWidget);
+            grid->addWidget(tile, row, col);
+            if (++col >= BADGE_GRID_COLUMNS)
+            {
+                col = 0;
+                ++row;
+            }
+        }
+        this->contentLayout_->addWidget(gridWidget);
+    };
+
+    if (!missing.isEmpty())
+    {
+        auto *label =
+            new QLabel("Missing (Available Now)", this->contentWidget_);
+        label->setObjectName("TwitchBadgePickerSectionLabel");
+        this->contentLayout_->addWidget(label);
+        makeGrid(missing);
+    }
+
+    if (!comingSoon.isEmpty())
+    {
+        auto *label = new QLabel("Coming Soon", this->contentWidget_);
+        label->setObjectName("TwitchBadgePickerSectionLabel");
+        this->contentLayout_->addWidget(label);
+        makeGrid(comingSoon);
+    }
+
+    if (missing.isEmpty() && comingSoon.isEmpty())
+    {
+        if (needle.isEmpty())
+            this->setStatus("You already have all available event badges!");
+        else
+            this->setStatus("No event badges match your search.");
+    }
+}
+
 void TwitchBadgePickerDialog::clearContent()
 {
     this->statusLabel_ = nullptr;
@@ -1018,6 +1213,8 @@ void TwitchBadgePickerDialog::refreshStyle()
         fonts->getFont(FontStyle::UiMedium, effectiveScale));
     this->channelTabButton_->setFont(
         fonts->getFont(FontStyle::UiMedium, effectiveScale));
+    this->eventTabButton_->setFont(
+        fonts->getFont(FontStyle::UiMedium, effectiveScale));
     if (this->searchInput_ != nullptr)
     {
         this->searchInput_->setFont(
@@ -1058,10 +1255,10 @@ void TwitchBadgePickerDialog::refreshStyle()
         scaledMetric(effectiveScale, 8, 4), scaledMetric(effectiveScale, 7, 4),
         scaledMetric(effectiveScale, 8, 4), scaledMetric(effectiveScale, 8, 4));
     this->contentLayout_->setSpacing(scaledMetric(effectiveScale, 7, 4));
-    if (auto *separator = this->findChild<QWidget *>(
+    if (auto *sep = this->findChild<QWidget *>(
             QStringLiteral("TwitchBadgePickerDialogSeparator")))
     {
-        separator->setFixedHeight(scaledSeparatorHeight(rawScale));
+        sep->setFixedHeight(scaledSeparatorHeight(rawScale));
     }
 
     const auto *theme = this->theme;

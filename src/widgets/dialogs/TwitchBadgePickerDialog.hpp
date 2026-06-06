@@ -27,6 +27,16 @@ class SvgButton;
 class Button;
 class TwitchChannel;
 
+struct EventBadge {
+    QString id;
+    QString name;
+    QString imageUrl;
+    QString streamDatabaseUrl;
+    QDateTime startAt;
+    QDateTime endAt;
+    std::optional<bool> free;
+};
+
 class TwitchBadgePickerDialog : public DraggablePopup
 {
 public:
@@ -44,12 +54,15 @@ private:
     enum class View {
         GlobalBadges,
         ChannelBadges,
+        EventBadges,
     };
 
     void loadBadges(bool force = false);
+    void loadEventBadges(bool force = false);
     void rebuildContent();
     void rebuildGlobalBadges();
     void rebuildChannelBadges();
+    void rebuildEventBadges();
     void clearContent();
     void deselectChannel();
     void setFlairHidden(bool hidden);
@@ -85,6 +98,12 @@ private:
     bool statusIsError_ = false;
     bool isBadgeModifierHidden_ = false;
     QString searchQuery_;
+
+    QPushButton *eventTabButton_{};
+    QVector<EventBadge> eventBadgesCache_;
+    bool eventBadgesLoading_ = false;
+    bool eventBadgesLoaded_ = false;
+    QDateTime eventBadgesCacheTime_;
 
     static std::vector<QPointer<TwitchBadgePickerDialog>> activeDialogs_;
 };
