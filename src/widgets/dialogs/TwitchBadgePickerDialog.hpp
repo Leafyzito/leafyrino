@@ -53,6 +53,8 @@ private:
     void rebuildGlobalBadges();
     void rebuildChannelBadges();
     void clearContent();
+    void deselectChannel();
+    void setFlairHidden(bool hidden);
     void refreshStyle();
     void setStatus(const QString &text, bool error = false);
     void selectGlobal(const GqlBadge &badge);
@@ -82,6 +84,8 @@ private:
     bool initialFetchDone_ = false;
     QString statusText_;
     bool statusIsError_ = false;
+    bool useCustomChannelBadge_ = false;
+    bool isBadgeModifierHidden_ = false;
 
     static std::vector<QPointer<TwitchBadgePickerDialog>> activeDialogs_;
 };

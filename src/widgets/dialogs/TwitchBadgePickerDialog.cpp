@@ -410,7 +410,72 @@ void TwitchBadgePickerDialog::rebuildGlobalBadges()
 void TwitchBadgePickerDialog::rebuildChannelBadges()
 {
     const auto &available = this->badges_.availableChannel;
-    const auto &selected = this->badges_.selectedChannelBadge;
+    const auto &selected  = this->badges_.selectedChannelBadge;
+
+    auto *toggleWidget = new QWidget(this->contentWidget_);
+    auto *toggleLayout = new QHBoxLayout(toggleWidget);
+    toggleLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto *toggleLabel = new QLabel("Use Custom Badge for This Channel",
+                                   toggleWidget);
+    toggleLabel->setObjectName("TwitchBadgePickerToggleLabel");
+
+    auto *toggleButton = new QPushButton(toggleWidget);
+    toggleButton->setObjectName("TwitchBadgePickerToggle");
+    toggleButton->setCheckable(true);
+    toggleButton->setChecked(this->badges_.useCustomChannelBadge);
+    toggleButton->setFixedSize(44, 24);
+    toggleButton->setCursor(Qt::PointingHandCursor);
+    toggleButton->setEnabled(!this->actionInFlight_);
+
+    QObject::connect(toggleButton, &QPushButton::clicked, this,
+                     [this](bool checked) {
+                         if (checked)
+                         {
+                             if (!this->badges_.selectedChannelBadge.setID
+                                      .isEmpty())
+                             {
+                                 this->selectChannel(
+                                     this->badges_.selectedChannelBadge);
+                             }
+                         }
+                         else
+                         {
+                             this->deselectChannel();
+                         }
+                     });
+
+    toggleLayout->addWidget(toggleLabel, 1);
+    toggleLayout->addWidget(toggleButton);
+    this->contentLayout_->addWidget(toggleWidget);
+
+    if (this->badges_.subscriptionTier >= 2000)
+    {
+        auto *flairWidget = new QWidget(this->contentWidget_);
+        auto *flairLayout = new QHBoxLayout(flairWidget);
+        flairLayout->setContentsMargins(0, 0, 0, 0);
+
+        auto *flairLabel = new QLabel(
+            "Badge Flair for Tier 2 and 3 Subscriptions", flairWidget);
+        flairLabel->setObjectName("TwitchBadgePickerToggleLabel");
+
+        auto *flairButton = new QPushButton(flairWidget);
+        flairButton->setObjectName("TwitchBadgePickerToggle");
+        flairButton->setCheckable(true);
+        flairButton->setChecked(!this->badges_.isBadgeModifierHidden);
+        flairButton->setFixedSize(44, 24);
+        flairButton->setCursor(Qt::PointingHandCursor);
+        flairButton->setEnabled(!this->actionInFlight_);
+
+        QObject::connect(flairButton, &QPushButton::clicked, this,
+                         [this](bool checked) {
+                             this->setFlairHidden(!checked);
+                         });
+
+        flairLayout->addWidget(flairLabel, 1);
+        flairLayout->addWidget(flairButton);
+        this->contentLayout_->addWidget(flairWidget);
+    }
 
     if (available.isEmpty())
     {
@@ -426,7 +491,7 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
     this->contentLayout_->addWidget(label);
 
     auto *gridWidget = new QWidget(this->contentWidget_);
-    auto *grid = new QGridLayout(gridWidget);
+    auto *grid       = new QGridLayout(gridWidget);
     grid->setContentsMargins(0, 0, 0, 0);
     grid->setSpacing(4);
 
@@ -435,11 +500,14 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
     for (const auto &badge : available)
     {
         auto *tile = new BadgeTileButton(badge, gridWidget);
-        tile->setEnabled(!this->actionInFlight_);
+        tile->setEnabled(!this->actionInFlight_
+                         && this->badges_.useCustomChannelBadge);
 
         if (!selected.setID.isEmpty() && badge.setID == selected.setID &&
-            badge.version == selected.version)
-            tile->setStyleSheet("border: 2px solid #9146ff; border-radius: 3px;");
+            badge.version == selected.version
+            && this->badges_.useCustomChannelBadge)
+            tile->setStyleSheet(
+                "border: 2px solid #9146ff; border-radius: 3px;");
 
         QObject::connect(tile, &QPushButton::clicked, this,
                          [this, badge] { this->selectChannel(badge); });
@@ -450,7 +518,6 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
             ++row;
         }
     }
-
     this->contentLayout_->addWidget(gridWidget);
 }
 
@@ -554,6 +621,75 @@ void TwitchBadgePickerDialog::selectChannel(const GqlBadge &badge)
         });
 }
 
+void TwitchBadgePickerDialog::deselectChannel()
+{
+    const auto token = this->authTokenOrMessage();
+    if (token.isEmpty())
+        return;
+
+    this->actionInFlight_ = true;
+    this->rebuildContent();
+
+    QPointer<TwitchBadgePickerDialog> self = this;
+    const auto channelId = this->channel_->roomId();
+
+    TwitchGql::deselectChannelBadge(
+        channelId, token,
+        [self] {
+            if (!self)
+                return;
+            self->actionInFlight_ = false;
+            self->badges_.useCustomChannelBadge = false;
+            self->channel_->addSystemMessage(
+                QStringLiteral("Channel badge disabled."));
+            self->rebuildContent();
+        },
+        [self](const QString &error) {
+            if (!self)
+                return;
+            self->actionInFlight_ = false;
+            self->setStatus(
+                MoltorinoAuth::normalizeAuthError("deselecting badge", error),
+                true);
+            self->rebuildContent();
+        });
+}
+
+void TwitchBadgePickerDialog::setFlairHidden(bool hidden)
+{
+    const auto token = this->authTokenOrMessage();
+    if (token.isEmpty())
+        return;
+
+    this->actionInFlight_ = true;
+    this->rebuildContent();
+
+    QPointer<TwitchBadgePickerDialog> self = this;
+
+    TwitchGql::setBadgeModifierHidden(
+        hidden, token,
+        [self](bool actual) {
+            if (!self)
+                return;
+            self->actionInFlight_ = false;
+            self->badges_.isBadgeModifierHidden = actual;
+            self->channel_->addSystemMessage(
+                actual ? QStringLiteral("Badge flair hidden.")
+                       : QStringLiteral("Badge flair shown."));
+            self->rebuildContent();
+        },
+        [self](const QString &error) {
+            if (!self)
+                return;
+            self->actionInFlight_ = false;
+            self->setStatus(
+                MoltorinoAuth::normalizeAuthError("updating badge flair",
+                                                  error),
+                true);
+            self->rebuildContent();
+        });
+}
+
 void TwitchBadgePickerDialog::refreshStyle()
 {
     auto *fonts = getApp()->getFonts();
@@ -596,6 +732,14 @@ void TwitchBadgePickerDialog::refreshStyle()
             border: 1px solid %3; border-radius: 4px; padding: 4px 8px;
         }
         QPushButton#TwitchBadgePickerNoBadge:hover { background: %6; border-color: %5; }
+        QPushButton#TwitchBadgePickerToggle {
+            background: %3; border: 1px solid %3;
+            border-radius: 12px; padding: 0;
+        }
+        QPushButton#TwitchBadgePickerToggle:checked {
+            background: #9146ff; border-color: #9146ff;
+        }
+        QLabel#TwitchBadgePickerToggleLabel { color: %2; }
     )")
                             .arg(bg, text, border, buttonBg, focusedBorder,
                                  hoverBg));

@@ -5339,6 +5339,18 @@ void TwitchGql::getChatSettingsBadges(
             badges.authorityBadges = badgesFromArray(
                 userSelf.value("availableChannelAuthorityBadges").toArray());
 
+            badges.useCustomChannelBadge = !userSelf.value("selectedBadge").isNull()
+                && !userSelf.value("selectedBadge").toObject().value("setID").toString().isEmpty();
+
+            badges.isBadgeModifierHidden = data.value("currentUser").toObject()
+                .value("subscriptionSettings").toObject()
+                .value("isBadgeModifierHidden").toBool(false);
+
+            const auto tierStr = data.value("user").toObject()
+                .value("subscriptionBenefit").toObject()
+                .value("tier").toString();
+            badges.subscriptionTier = tierStr.toInt();
+
             successCallback(std::move(badges));
         })
         .onError([failureCallback](const NetworkResult &result) {
@@ -5421,6 +5433,78 @@ void TwitchGql::selectChannelBadge(
             }
 
             successCallback();
+        })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void TwitchGql::deselectChannelBadge(
+    const QString &channelID, const QString &oauthToken,
+    std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject input;
+    input.insert("channelID", channelID);
+
+    QJsonObject variables;
+    variables.insert("input", input);
+
+    makePersistedGqlRequest(
+        "ChatSettings_DeselectChannelBadge",
+        "ba0c75a2d924ecf9eafa78fae615c79930ebf34145a480b14084daf43ffbe484",
+        variables, oauthToken)
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            const auto gqlError = extractFirstGqlErrorMessage(root);
+            if (!gqlError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + gqlError);
+                return;
+            }
+            successCallback();
+        })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void TwitchGql::setBadgeModifierHidden(
+    bool hidden, const QString &oauthToken,
+    std::function<void(bool)> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject input;
+    input.insert("isBadgeModifierHidden", hidden);
+
+    QJsonObject variables;
+    variables.insert("input", input);
+
+    const QString operationName = hidden
+        ? QStringLiteral("ChatSettings_DeselectBadgeModifier")
+        : QStringLiteral("ChatSettings_SelectBadgeModifier");
+    const QString hash = hidden
+        ? QStringLiteral("d3457649ee7afa66054ccae83e079a16f402de1599f218c17ed50ead574a6b3f")
+        : QStringLiteral("1d7967f485c32fd0d68d39a735823dd98581ea079f58f68230ad316d6fa852df");
+
+    makePersistedGqlRequest(operationName, hash, variables, oauthToken)
+        .onSuccess([hidden, successCallback,
+                    failureCallback](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            const auto gqlError = extractFirstGqlErrorMessage(root);
+            if (!gqlError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + gqlError);
+                return;
+            }
+            const auto actual = payloadDataObject(root)
+                .value("updateUserSubscriptionSettings").toObject()
+                .value("subscriptionSettings").toObject()
+                .value("isBadgeModifierHidden").toBool(hidden);
+            successCallback(actual);
         })
         .onError([failureCallback](const NetworkResult &result) {
             failureCallback("Network Error: " + result.formatError());

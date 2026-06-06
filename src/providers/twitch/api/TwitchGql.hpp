@@ -145,7 +145,20 @@ struct GqlChatSettingsBadges {
     GqlBadge selectedChannelBadge;
     QVector<GqlBadge> availableChannel;
     QVector<GqlBadge> authorityBadges;
+    bool useCustomChannelBadge = false;
+    bool isBadgeModifierHidden = false;
+    int subscriptionTier = 0;             //(1000=T1, 2000=T2, 3000=T3)
 };
+
+void deselectChannelBadge(
+    const QString &channelID, const QString &oauthToken,
+    std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback);
+
+void setBadgeModifierHidden(
+    bool hidden, const QString &oauthToken,
+    std::function<void(bool)> successCallback,
+    std::function<void(const QString &)> failureCallback);
 
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
 struct GqlChannelPointReward {
