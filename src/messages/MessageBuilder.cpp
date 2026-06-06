@@ -24,11 +24,14 @@
 #include "messages/MessageThread.hpp"
 #include "providers/bttv/BttvBadges.hpp"
 #include "providers/bttv/BttvEmotes.hpp"
+#include "providers/chatsen/ChatsenBadges.hpp"
 #include "providers/chatterino/ChatterinoBadges.hpp"
 #include "providers/colors/ColorProvider.hpp"
+#include "providers/dankchat/DankChatBadges.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/ffzap/FfzApBadges.hpp"
 #include "providers/folhinha/FolhinhaBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/links/LinkResolver.hpp"
@@ -1982,9 +1985,12 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
 
     builder.appendChatterinoBadges(userID);
     builder.appendFfzBadges(twitchChannel, userID);
+    builder.appendFfzApBadges(userID);
     builder.appendBttvBadges(userID);
     builder.appendMoltorinoBadges(userID);
     builder.appendSeventvBadges(userID);
+    builder.appendDankChatBadges(userID);
+    builder.appendChatsenBadges(userID);
     builder.appendHomiesBadges(userID);
     builder.appendFolhinhaBadges(userID);
 
@@ -3052,6 +3058,35 @@ void MessageBuilder::appendFolhinhaBadges(const QString &userID)
     if (auto badge = getApp()->getFolhinhaBadges()->getBadge({userID}))
     {
         this->emplace<BadgeElement>(*badge, MessageElementFlag::BadgeFolhinha);
+        this->message().externalBadges.emplace_back((*badge)->name.string);
+    }
+}
+
+void MessageBuilder::appendFfzApBadges(const QString &userID)
+{
+    if (auto badge = getApp()->getFfzApBadges()->getBadge(userID))
+    {
+        this->emplace<FfzBadgeElement>(
+            badge->emote, MessageElementFlag::BadgeFfzAp, badge->color);
+
+        this->message().externalBadges.emplace_back(badge->emote->name.string);
+    }
+}
+
+void MessageBuilder::appendDankChatBadges(const QString &userID)
+{
+    if (auto badge = getApp()->getDankChatBadges()->getBadge(userID))
+    {
+        this->emplace<BadgeElement>(*badge, MessageElementFlag::BadgeDankChat);
+        this->message().externalBadges.emplace_back((*badge)->name.string);
+    }
+}
+
+void MessageBuilder::appendChatsenBadges(const QString &userID)
+{
+    if (auto badge = getApp()->getChatsenBadges()->getBadge(userID))
+    {
+        this->emplace<BadgeElement>(*badge, MessageElementFlag::BadgeChatsen);
         this->message().externalBadges.emplace_back((*badge)->name.string);
     }
 }

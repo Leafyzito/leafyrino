@@ -20,6 +20,8 @@ class BttvBadges : public BadgeRegistry
 public:
     BttvBadges() = default;
 
+    void load();
+
 protected:
     QString idForBadge(const QJsonObject &badgeJson) const override;
     EmotePtr createBadge(const QString &id,
