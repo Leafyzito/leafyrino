@@ -15,6 +15,7 @@
 #    include <QVector>
 
 class QLabel;
+class QLineEdit;
 class QPushButton;
 class QScrollArea;
 class QResizeEvent;
@@ -69,6 +70,7 @@ private:
     QLabel *headerTitleLabel_{};
     QPushButton *globalTabButton_{};
     QPushButton *channelTabButton_{};
+    QLineEdit *searchInput_{};
     Button *pinButton_{};
     SvgButton *closeButton_{};
     QScrollArea *scrollArea_{};
@@ -84,8 +86,8 @@ private:
     bool initialFetchDone_ = false;
     QString statusText_;
     bool statusIsError_ = false;
-    bool useCustomChannelBadge_ = false;
     bool isBadgeModifierHidden_ = false;
+    QString searchQuery_;
 
     static std::vector<QPointer<TwitchBadgePickerDialog>> activeDialogs_;
 };
