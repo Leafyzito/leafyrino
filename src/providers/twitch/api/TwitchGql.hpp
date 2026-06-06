@@ -176,6 +176,26 @@ struct GqlChannelPointRedeemResult {
     QString emoteId;
     QString emoteToken;
 };
+
+struct GqlBadge {
+    QString id;
+    QString setID;
+    QString version;
+    QString title;
+    QString image1x;
+    QString image2x;
+    QString image4x;
+};
+
+struct GqlChatSettingsBadges {
+    GqlBadge selectedGlobalBadge;
+    QVector<GqlBadge> availableGlobal;
+
+    GqlBadge selectedChannelBadge;
+    QVector<GqlBadge> availableChannel;
+    QVector<GqlBadge> authorityBadges;
+};
+
 #endif
 
 namespace TwitchGql {
@@ -394,6 +414,20 @@ void validateCustomAuthToken(
 void getModeratedChannels(
     const QString &oauthToken,
     std::function<void(QVector<GqlModeratedChannel>)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void getChatSettingsBadges(
+    const QString &channelLogin, const QString &oauthToken,
+    std::function<void(GqlChatSettingsBadges)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void selectGlobalBadge(
+    const QString &badgeSetID, const QString &badgeSetVersion,
+    const QString &oauthToken,
+    std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void selectChannelBadge(
+    const QString &badgeSetID, const QString &badgeSetVersion,
+    const QString &channelID, const QString &oauthToken,
+    std::function<void()> successCallback,
     std::function<void(const QString &)> failureCallback);
 
 }  // namespace TwitchGql

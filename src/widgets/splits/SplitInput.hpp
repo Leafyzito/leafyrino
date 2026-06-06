@@ -248,6 +248,7 @@ protected:
         QLabel *channelPointsLabel;
         SvgButton *predictionButton;
         SvgButton *pollButton;
+        SvgButton *badgeButton;
         SvgButton *outgoingTranslateButton;
         SvgButton *emoteButton;
     } ui_{};
@@ -303,6 +304,7 @@ protected:
     qint64 lastManualChannelPointsRefreshMs_ = 0;
     bool predictionButtonWanted_ = false;
     bool pollButtonWanted_ = false;
+    bool badgeButtonWanted_ = false;
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
     bool channelPointRewardPromptRequiresText_ = false;
     std::function<void(const QString &)> channelPointRewardPromptSubmit_;

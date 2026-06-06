@@ -1648,6 +1648,28 @@ std::optional<TwitchChannel::PollEvent> parsePollEventFromGql(
     return poll;
 }
 
+GqlBadge badgeFromJson(const QJsonObject &obj)
+{
+    return GqlBadge{
+        .id      = obj["id"].toString(),
+        .setID   = obj["setID"].toString(),
+        .version = obj["version"].toString(),
+        .title   = obj["title"].toString(),
+        .image1x = obj["image1x"].toString(),
+        .image2x = obj["image2x"].toString(),
+        .image4x = obj["image4x"].toString(),
+    };
+}
+
+QVector<GqlBadge> badgesFromArray(const QJsonArray &arr)
+{
+    QVector<GqlBadge> result;
+    result.reserve(arr.size());
+    for (const auto &val : arr)
+        result.push_back(badgeFromJson(val.toObject()));
+    return result;
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -5264,6 +5286,146 @@ query ModeratedChannels($cursor: Cursor) {
     };
 
     (*requestForwardPage)({});
+}
+
+void TwitchGql::getChatSettingsBadges(
+    const QString &channelLogin, const QString &oauthToken,
+    std::function<void(GqlChatSettingsBadges)> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject variables;
+    variables.insert("channelLogin", channelLogin);
+
+    makePersistedGqlRequest(
+        "ChatSettings_Badges",
+        "f30c0381c916b81bad77302c3cf986094364fa2dfc63a598804cb5ee3743225c",
+        variables, oauthToken)
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            if (root.isUndefined() || root.isNull())
+            {
+                failureCallback("Failed to parse GQL response");
+                return;
+            }
+            const auto gqlError = extractFirstGqlErrorMessage(root);
+            if (!gqlError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + gqlError);
+                return;
+            }
+
+            const auto data        = payloadDataObject(root);
+            const auto currentUser = data.value("currentUser").toObject();
+            const auto userSelf    = data.value("user").toObject()
+                                         .value("self").toObject();
+
+            GqlChatSettingsBadges badges;
+
+            if (!currentUser.value("selectedBadge").isNull())
+                badges.selectedGlobalBadge =
+                    badgeFromJson(currentUser.value("selectedBadge").toObject());
+
+            badges.availableGlobal =
+                badgesFromArray(currentUser.value("availableBadges").toArray());
+
+            if (!userSelf.value("selectedBadge").isNull())
+                badges.selectedChannelBadge =
+                    badgeFromJson(userSelf.value("selectedBadge").toObject());
+
+            badges.availableChannel =
+                badgesFromArray(userSelf.value("availableBadges").toArray());
+
+            badges.authorityBadges = badgesFromArray(
+                userSelf.value("availableChannelAuthorityBadges").toArray());
+
+            successCallback(std::move(badges));
+        })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void TwitchGql::selectGlobalBadge(
+    const QString &badgeSetID, const QString &badgeSetVersion,
+    const QString &oauthToken,
+    std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject input;
+    input.insert("badgeSetID", badgeSetID);
+    input.insert("badgeSetVersion", badgeSetVersion);
+
+    QJsonObject variables;
+    variables.insert("input", input);
+
+    makePersistedGqlRequest(
+        "ChatSettings_SelectGlobalBadge",
+        "5e1b7f0ba771ca8eb81c0fcd5b8f4ff559ec2dc71cc9256e04ec2665049fc4e5",
+        variables, oauthToken)
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            const auto gqlError = extractFirstGqlErrorMessage(root);
+            if (!gqlError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + gqlError);
+                return;
+            }
+            successCallback();
+        })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void TwitchGql::selectChannelBadge(
+    const QString &badgeSetID, const QString &badgeSetVersion,
+    const QString &channelID, const QString &oauthToken,
+    std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject input;
+    input.insert("badgeSetID", badgeSetID);
+    input.insert("badgeSetVersion", badgeSetVersion);
+    input.insert("channelID", channelID);
+
+    QJsonObject variables;
+    variables.insert("input", input);
+
+    makePersistedGqlRequest(
+        "ChatSettings_SelectChannelBadge",
+        "c611ec7794e2c8a0f368fa8bb2bce9ff84fbd66f768d0e5dfc86440eeb18f2aa",
+        variables, oauthToken)
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            const auto gqlError = extractFirstGqlErrorMessage(root);
+            if (!gqlError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + gqlError);
+                return;
+            }
+
+            const auto isSuccessful = payloadDataObject(root)
+                                          .value("selectChannelBadge")
+                                          .toObject()
+                                          .value("isSuccessful")
+                                          .toBool();
+            if (!isSuccessful)
+            {
+                failureCallback("Badge selection failed");
+                return;
+            }
+
+            successCallback();
+        })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
 }
 
 }  // namespace chatterino
