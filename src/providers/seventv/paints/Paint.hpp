@@ -19,9 +19,9 @@ public:
     QPixmap getPixmap(const QString &text, const QFont &font, QColor userColor,
                       QSizeF size, float scale, float dpr) const;
 
-    Paint(QString id)
-        : id(std::move(id)) {}
-        , name(std::move(name)) {};
+    Paint(QString id, QString name = {})
+        : id(std::move(id))
+        , name(std::move(name)) {}
     virtual ~Paint() = default;
 
     Paint(const Paint &) = default;
