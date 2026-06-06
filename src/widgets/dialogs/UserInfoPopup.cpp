@@ -32,6 +32,8 @@
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "providers/twitch/TwitchNameHistory.hpp"
+#include "providers/seventv/paints/Paint.hpp"
+#include "providers/seventv/SeventvPaints.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
@@ -1315,6 +1317,12 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                     }
                 });
             }
+            {
+                auto *paintPixmap = new QLabel(this);
+                paintPixmap->hide();
+                this->ui_.seventvPaintPixmapLabel = paintPixmap;
+                vbox.addWidget(paintPixmap);
+            }
             vbox.emplace<Label>("").assign(&this->ui_.statusLabel);
             vbox.emplace<Label>("").assign(&this->ui_.chatterCountLabel);
             createUsercardStatusRow(vbox, &this->ui_.followageRow,
@@ -2123,6 +2131,7 @@ void UserInfoPopup::setData(const QString &name,
     this->seventvUserLookupInFlight_ = false;
     this->seventvUserLookupFinished_ = false;
     this->refreshSevenTVUserButtonVisibility();
+    this->refreshSeventvPaint();
     this->refreshTargetModerationStatus();
     if (!this->isKick_)
     {
@@ -4504,6 +4513,33 @@ void UserInfoPopup::updateAvatarUrl()
     {
         this->avatarUrl_ = this->seventvAvatarUrl_;
     }
+}
+
+void UserInfoPopup::refreshSeventvPaint()
+{
+    const auto paint = getApp()->getSeventvPaints()->getPaint(
+        this->userName_.toLower(), this->isKick_);
+    this->seventvPaint_ = paint;
+
+    if (!paint)
+    {
+        this->ui_.seventvPaintPixmapLabel->hide();
+        return;
+    }
+
+    const auto font =
+        getApp()->getFonts()->getFont(FontStyle::UiMedium, this->scale());
+    const auto dpr = this->devicePixelRatioF();
+    const auto &paintName = paint->name.isEmpty() ? paint->id : paint->name;
+    const QSizeF size(200.0 * this->scale(), 18.0 * this->scale());
+
+    const auto pixmap =
+        paint->getPixmap(QStringLiteral("7TV Paint: ") + paintName, font,
+                         this->ui_.nameLabel->color(), size,
+                         this->scale(), dpr);
+
+    this->ui_.seventvPaintPixmapLabel->setPixmap(pixmap);
+    this->ui_.seventvPaintPixmapLabel->show();
 }
 
 }  // namespace chatterino

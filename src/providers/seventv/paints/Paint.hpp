@@ -20,7 +20,8 @@ public:
                       QSizeF size, float scale, float dpr) const;
 
     Paint(QString id)
-        : id(std::move(id)) {};
+        : id(std::move(id)) {}
+        , name(std::move(name)) {};
     virtual ~Paint() = default;
 
     Paint(const Paint &) = default;
@@ -29,6 +30,7 @@ public:
     Paint &operator=(Paint &&) = delete;
 
     QString id;
+    QString name;
 
 protected:
     static QColor overlayColors(QColor background, QColor foreground);
