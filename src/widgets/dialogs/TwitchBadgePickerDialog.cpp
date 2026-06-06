@@ -15,8 +15,8 @@
 #include "widgets/buttons/Button.hpp"
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/helper/Line.hpp"
-#include "util/NetworkRequest.hpp"
-#include "util/NetworkResult.hpp"
+#include "common/network/NetworkRequest.hpp"
+#include "common/network/NetworkResult.hpp"
 
 #include <QCursor>
 #include <QDateTime>
@@ -49,6 +49,7 @@ constexpr int BADGE_TILE_PADDING = 4;
 constexpr QSize BADGE_ICON_SIZE(36, 36);
 constexpr float BADGE_IMAGE_SCALE =
     float(BADGE_ICON_SIZE.width()) / float(BADGE_ICON_SIZE.width() / 2);
+constexpr char BADGE_SELECTED_COLOR[] = "#9146ff";
 
 int scaledSeparatorHeight(float scale)
 {
@@ -82,18 +83,52 @@ QLabel *makeEmptyListLabel(const QString &text, QWidget *parent)
 
 ImageSet badgeImages(const GqlBadge &badge)
 {
-    const auto empty = getEmptyImagePtr();
     const auto base = BADGE_ICON_SIZE / 2;
 
+    ImagePtr image1;
+    ImagePtr image2;
+    ImagePtr image3;
+
+    if (!badge.image1x.isEmpty())
+    {
+        image1 = Image::fromUrl(Url{badge.image1x}, 2, base);
+    }
+    if (!badge.image2x.isEmpty())
+    {
+        image2 = Image::fromUrl(Url{badge.image2x}, 1, BADGE_ICON_SIZE);
+    }
+    if (!badge.image4x.isEmpty())
+    {
+        image3 = Image::fromUrl(Url{badge.image4x}, 0.5, BADGE_ICON_SIZE * 2);
+    }
+
+    // Fall back to the best available resolution when a slot is missing.
+    if (!image2 && image1)
+    {
+        image2 = image1;
+    }
+    if (!image3 && image2)
+    {
+        image3 = image2;
+    }
+    if (!image1 && image2)
+    {
+        image1 = image2;
+    }
+    if (!image2 && image3)
+    {
+        image2 = image3;
+    }
+    if (!image1 && image3)
+    {
+        image1 = image3;
+    }
+
+    const auto empty = getEmptyImagePtr();
     return ImageSet{
-        badge.image1x.isEmpty() ? empty
-                                : Image::fromUrl(Url{badge.image1x}, 2, base),
-        badge.image2x.isEmpty()
-            ? empty
-            : Image::fromUrl(Url{badge.image2x}, 1, BADGE_ICON_SIZE),
-        badge.image4x.isEmpty()
-            ? empty
-            : Image::fromUrl(Url{badge.image4x}, 0.5, BADGE_ICON_SIZE * 2),
+        image1 ? image1 : empty,
+        image2 ? image2 : empty,
+        image3 ? image3 : empty,
     };
 }
 
@@ -265,7 +300,7 @@ protected:
 
         if (this->selected_)
         {
-            painter.setPen(QPen(QColor("#f5a623"), 2));
+            painter.setPen(QPen(QColor(BADGE_SELECTED_COLOR), 2));
             painter.setBrush(Qt::NoBrush);
             painter.drawRoundedRect(rect, 3, 3);
             const auto innerRect = rect.adjusted(2, 2, -2, -2);
@@ -344,7 +379,7 @@ protected:
 
         if (this->selected_)
         {
-            painter.setPen(QPen(QColor("#f5a623"), 2));
+            painter.setPen(QPen(QColor(BADGE_SELECTED_COLOR), 2));
             painter.setBrush(Qt::NoBrush);
             painter.drawRoundedRect(rect, 3, 3);
             const auto innerRect = rect.adjusted(2, 2, -2, -2);

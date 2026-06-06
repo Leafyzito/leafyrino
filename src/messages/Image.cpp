@@ -376,6 +376,7 @@ ImagePtr getEmptyImagePtr()
 
 Image::Image()
     : empty_(true)
+    , frames_(std::make_unique<detail::Frames>())
 {
 }
 
