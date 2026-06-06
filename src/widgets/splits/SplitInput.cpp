@@ -423,6 +423,12 @@ SplitInput::SplitInput(QWidget *parent, Split *_chatWidget,
                 this->split_->getSelectedChannel().get()));
         },
         this->managedConnections_);
+    getSettings()->showSelectBadgeButton.connect(
+        [this](const auto &, auto) {
+            this->bindChannelPoints(dynamic_cast<TwitchChannel *>(
+                this->split_->getSelectedChannel().get()));
+        },
+        this->managedConnections_);
     getSettings()->enableChannelPointsDisplay.connect(
         [this](const auto &, auto) {
             this->bindChannelPoints(dynamic_cast<TwitchChannel *>(
@@ -3715,7 +3721,8 @@ void SplitInput::bindChannelPoints(TwitchChannel *channel)
                                   (canModerate || hasActivePoll);
         this->ui_.pollButton->setToolTip(hasActivePoll ? "Open poll"
                                                        : "Create poll");
-        this->badgeButtonWanted_ = channel != nullptr;
+        this->badgeButtonWanted_ =
+            getSettings()->showSelectBadgeButton && channel != nullptr;
         this->updateActionRowCompactness();
     };
 

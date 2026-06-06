@@ -385,6 +385,7 @@ public:
     BoolSetting showBadgesFfzAp = {"/appearance/badges/ffzap", true};
     BoolSetting showBadgesDankChat = {"/appearance/badges/dankchat", true};
     BoolSetting showBadgesChatsen = {"/appearance/badges/chatsen", true};
+    BoolSetting showSelectBadgeButton = {"/client/showSelectBadgeButton", true};
     BoolSetting animateSevenTVBadges = {"/appearance/badges/animateSeventv",
                                         true};
     BoolSetting showUserinfoPopupChatters = {
