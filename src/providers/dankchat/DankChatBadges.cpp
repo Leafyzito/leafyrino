@@ -145,8 +145,7 @@ void DankChatBadges::load()
         })
         .onError([](const NetworkResult &result) {
             qCWarning(chatterinoApp)
-                << "[DankChat] Failed to load badges:"
-                << result.formatError();
+                << "[DankChat] Failed to load badges:" << result.formatError();
         })
         .execute();
 }

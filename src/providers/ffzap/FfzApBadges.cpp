@@ -1,9 +1,9 @@
 #include "providers/ffzap/FfzApBadges.hpp"
 
 #include "common/Literals.hpp"
-#include "common/QLogging.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
+#include "common/QLogging.hpp"
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
 
@@ -21,12 +21,9 @@ namespace {
 constexpr QSize BADGE_BASE_SIZE(18, 18);
 
 static const std::unordered_map<QString, QString> FFZAP_HELPERS = {
-    {u"26964566"_s, u"FFZ:AP Developer"_s},
-    {u"11819690"_s, u"FFZ:AP Helper"_s},
-    {u"36442149"_s, u"FFZ:AP Helper"_s},
-    {u"29519423"_s, u"FFZ:AP Helper"_s},
-    {u"22025290"_s, u"FFZ:AP Helper"_s},
-    {u"4867723"_s,  u"FFZ:AP Helper"_s},
+    {u"26964566"_s, u"FFZ:AP Developer"_s}, {u"11819690"_s, u"FFZ:AP Helper"_s},
+    {u"36442149"_s, u"FFZ:AP Helper"_s},    {u"29519423"_s, u"FFZ:AP Helper"_s},
+    {u"22025290"_s, u"FFZ:AP Helper"_s},    {u"4867723"_s, u"FFZ:AP Helper"_s},
 };
 
 }  // namespace
@@ -74,9 +71,9 @@ void FfzApBadges::load()
                                             : u"FFZ:AP Supporter"_s;
 
                 const bool isColored = obj[u"badge_is_colored"_s].toBool();
-                const QColor color = isColored
-                                         ? QColor(obj[u"badge_color"_s].toString())
-                                         : QColor{};
+                const QColor color =
+                    isColored ? QColor(obj[u"badge_color"_s].toString())
+                              : QColor{};
 
                 auto emote = Emote{
                     .name = EmoteName{u"ffzap:" % tooltip},
@@ -110,8 +107,7 @@ void FfzApBadges::load()
         })
         .onError([](const NetworkResult &result) {
             qCWarning(chatterinoApp)
-                << "[FFZ:AP] Failed to load badges:"
-                << result.formatError();
+                << "[FFZ:AP] Failed to load badges:" << result.formatError();
         })
         .execute();
 }

@@ -6,9 +6,9 @@
 
 #include "Application.hpp"
 #include "common/Literals.hpp"
-#include "common/QLogging.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
+#include "common/QLogging.hpp"
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
 #include "messages/ImageSet.hpp"
@@ -112,8 +112,7 @@ void BttvBadges::load()
             for (const auto &userValue : users)
             {
                 const auto userObject = userValue.toObject();
-                const auto providerId =
-                    userObject[u"providerId"_s].toString();
+                const auto providerId = userObject[u"providerId"_s].toString();
                 const auto badgeObject = userObject[u"badge"_s].toObject();
 
                 if (providerId.isEmpty() || badgeObject.isEmpty())
@@ -146,8 +145,7 @@ void BttvBadges::load()
         })
         .onError([](const NetworkResult &result) {
             qCWarning(chatterinoBttv)
-                << "Failed to load BTTV staff badges:"
-                << result.formatError();
+                << "Failed to load BTTV staff badges:" << result.formatError();
         })
         .execute();
 }

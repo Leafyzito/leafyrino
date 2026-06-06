@@ -26,8 +26,8 @@
 #include "providers/bttv/BttvEmotes.hpp"
 #include "providers/chatsen/ChatsenBadges.hpp"
 #include "providers/chatterino/ChatterinoBadges.hpp"
-#include "providers/dankchat/DankChatBadges.hpp"
 #include "providers/colors/ColorProvider.hpp"
+#include "providers/dankchat/DankChatBadges.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
@@ -3067,12 +3067,9 @@ void MessageBuilder::appendFfzApBadges(const QString &userID)
     if (auto badge = getApp()->getFfzApBadges()->getBadge(userID))
     {
         this->emplace<FfzBadgeElement>(
-            badge->emote,
-            MessageElementFlag::BadgeFfzAp,
-            badge->color);
+            badge->emote, MessageElementFlag::BadgeFfzAp, badge->color);
 
-        this->message().externalBadges.emplace_back(
-            badge->emote->name.string);
+        this->message().externalBadges.emplace_back(badge->emote->name.string);
     }
 }
 

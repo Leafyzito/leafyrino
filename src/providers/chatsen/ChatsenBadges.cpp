@@ -109,8 +109,7 @@ void ChatsenBadges::load()
                     continue;
                 }
 
-                const QString tooltip =
-                    title.isEmpty() ? name : title;
+                const QString tooltip = title.isEmpty() ? name : title;
 
                 auto emote = Emote{
                     .name = EmoteName{u"chatsen:" % name},
@@ -119,8 +118,7 @@ void ChatsenBadges::load()
                     .homePage = Url{},
                     .id = EmoteId{name},
                 };
-                catalog[name] =
-                    std::make_shared<const Emote>(std::move(emote));
+                catalog[name] = std::make_shared<const Emote>(std::move(emote));
             }
 
             // Passo 2: para cada usuário, selecionar o badge de maior prioridade
@@ -145,8 +143,7 @@ void ChatsenBadges::load()
                 for (const auto &badgeVal : userBadges)
                 {
                     const auto badgeObj = badgeVal.toObject();
-                    const auto badgeName =
-                        badgeObj[u"badgeName"_s].toString();
+                    const auto badgeName = badgeObj[u"badgeName"_s].toString();
 
                     const int priority = priorityForBadge(badgeName);
                     if (priority >= bestPriority)
@@ -182,8 +179,7 @@ void ChatsenBadges::load()
         })
         .onError([](const NetworkResult &result) {
             qCWarning(chatterinoApp)
-                << "[Chatsen] Failed to load badges:"
-                << result.formatError();
+                << "[Chatsen] Failed to load badges:" << result.formatError();
         })
         .execute();
 }
