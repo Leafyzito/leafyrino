@@ -25,6 +25,22 @@ using namespace chatterino::literals;
 
 namespace {
 
+constexpr QSize BADGE_BASE_SIZE(18, 18);
+
+QString badgeTierUrl(const QString &url, int tier)
+{
+    return url + u"?chatsen-tier="_s + QString::number(tier);
+}
+
+ImageSet createBadgeImages(const QString &url)
+{
+    return ImageSet{
+        Image::fromUrl(Url{badgeTierUrl(url, 1)}, 1.0, BADGE_BASE_SIZE),
+        Image::fromUrl(Url{badgeTierUrl(url, 2)}, 0.5, BADGE_BASE_SIZE * 2),
+        Image::fromUrl(Url{badgeTierUrl(url, 4)}, 0.25, BADGE_BASE_SIZE * 4),
+    };
+}
+
 const std::unordered_map<QString, int> CHATSEN_BADGE_PRIORITY = {
     {u"developer"_s, 0},
     {u"early_supporter"_s, 1},
@@ -98,8 +114,7 @@ void ChatsenBadges::load()
 
                 auto emote = Emote{
                     .name = EmoteName{u"chatsen:" % name},
-                    .images = ImageSet(
-                        Image::fromUrl(Url{image}, 18.0 / 72.0)),
+                    .images = createBadgeImages(image),
                     .tooltip = Tooltip{tooltip},
                     .homePage = Url{},
                     .id = EmoteId{name},

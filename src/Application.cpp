@@ -255,6 +255,7 @@ void Application::initialize(Settings &settings, const Paths &paths)
     this->windows->initialize();
 
     this->ffzBadges->load();
+    this->bttvBadges->load();
     this->moltorinoSupporterBadges->initialize();
 
     this->bttvEmotes->loadEmotes();

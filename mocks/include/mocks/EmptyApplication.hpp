@@ -188,6 +188,24 @@ public:
         return nullptr;
     }
 
+    FfzApBadges *getFfzApBadges() override
+    {
+        assert(!"getFfzApBadges was called without being initialized");
+        return nullptr;
+    }
+
+    DankChatBadges *getDankChatBadges() override
+    {
+        assert(!"getDankChatBadges was called without being initialized");
+        return nullptr;
+    }
+
+    ChatsenBadges *getChatsenBadges() override
+    {
+        assert(!"getChatsenBadges was called without being initialized");
+        return nullptr;
+    }
+
     MoltorinoSupporterBadges *getMoltorinoSupporterBadges() override
     {
         return nullptr;

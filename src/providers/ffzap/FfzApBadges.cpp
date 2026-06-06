@@ -16,6 +16,10 @@ namespace chatterino {
 
 using namespace chatterino::literals;
 
+namespace {
+
+constexpr QSize BADGE_BASE_SIZE(18, 18);
+
 static const std::unordered_map<QString, QString> FFZAP_HELPERS = {
     {u"26964566"_s, u"FFZ:AP Developer"_s},
     {u"11819690"_s, u"FFZ:AP Helper"_s},
@@ -24,6 +28,8 @@ static const std::unordered_map<QString, QString> FFZAP_HELPERS = {
     {u"22025290"_s, u"FFZ:AP Helper"_s},
     {u"4867723"_s,  u"FFZ:AP Helper"_s},
 };
+
+}  // namespace
 
 FfzApBadges::FfzApBadges()
 {
@@ -59,8 +65,8 @@ void FfzApBadges::load()
                 if (id.isEmpty() || id == u"undefined"_s)
                     continue;
 
-                const auto imageUrl =
-                    u"https://api.ffzap.com/v1/user/badge/" % id % u"/3";
+                const auto badgeBaseUrl =
+                    u"https://api.ffzap.com/v1/user/badge/" % id;
 
                 const auto helperIt = FFZAP_HELPERS.find(id);
                 const QString tooltip = helperIt != FFZAP_HELPERS.end()
@@ -74,10 +80,18 @@ void FfzApBadges::load()
 
                 auto emote = Emote{
                     .name = EmoteName{u"ffzap:" % tooltip},
-                    .images = ImageSet(Image::fromUrl(Url{imageUrl}, 1.0)),
+                    .images =
+                        ImageSet{
+                            Image::fromUrl(Url{badgeBaseUrl % u"/1"}, 1.0,
+                                           BADGE_BASE_SIZE),
+                            Image::fromUrl(Url{badgeBaseUrl % u"/2"}, 0.5,
+                                           BADGE_BASE_SIZE * 2),
+                            Image::fromUrl(Url{badgeBaseUrl % u"/3"}, 0.25,
+                                           BADGE_BASE_SIZE * 4),
+                        },
                     .tooltip = Tooltip{tooltip},
                     .homePage = Url{},
-                    .id = EmoteId{imageUrl},
+                    .id = EmoteId{badgeBaseUrl % u"/1"},
                 };
 
                 map[id] = Badge{
