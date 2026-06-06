@@ -19,6 +19,7 @@
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/helper/Line.hpp"
 
+#include <pajlada/signals/signalholder.hpp>
 #include <QCursor>
 #include <QDateTime>
 #include <QDesktopServices>
@@ -36,8 +37,6 @@
 #include <QTimer>
 #include <QUrl>
 #include <QVBoxLayout>
-
-#include <pajlada/signals/signalholder.hpp>
 
 #include <cmath>
 
@@ -366,8 +365,7 @@ public:
         this->setToolTip(badge.title);
 
         this->connections_.managedConnect(
-            getApp()->getWindows()->layoutRequested,
-            [this](Channel *) {
+            getApp()->getWindows()->layoutRequested, [this](Channel *) {
                 this->refreshImageIfNeeded();
             });
     }
