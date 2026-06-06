@@ -27,17 +27,12 @@ namespace {
 
 constexpr QSize BADGE_BASE_SIZE(18, 18);
 
-QString badgeTierUrl(const QString &url, int tier)
-{
-    return url + u"?chatsen-tier="_s + QString::number(tier);
-}
-
 ImageSet createBadgeImages(const QString &url)
 {
     return ImageSet{
-        Image::fromUrl(Url{badgeTierUrl(url, 1)}, 1.0, BADGE_BASE_SIZE),
-        Image::fromUrl(Url{badgeTierUrl(url, 2)}, 0.5, BADGE_BASE_SIZE * 2),
-        Image::fromUrl(Url{badgeTierUrl(url, 4)}, 0.25, BADGE_BASE_SIZE * 4),
+        Image::fromUrl(Url{url}, 1.0, BADGE_BASE_SIZE),
+        Image::fromUrl(Url{url}, 0.5, BADGE_BASE_SIZE * 2),
+        Image::fromUrl(Url{url}, 0.25, BADGE_BASE_SIZE * 4),
     };
 }
 
