@@ -4,8 +4,6 @@
 
 #include "widgets/dialogs/TwitchBadgePickerDialog.hpp"
 
-#if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
-
 #    include "messages/Image.hpp"
 #    include "providers/moltorino/MoltorinoAuth.hpp"
 #    include "providers/twitch/TwitchChannel.hpp"
@@ -628,5 +626,3 @@ QString TwitchBadgePickerDialog::authTokenOrMessage()
 }
 
 }  // namespace chatterino
-
-#endif

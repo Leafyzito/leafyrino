@@ -128,6 +128,25 @@ struct PredictionTemplate {
     int durationSeconds = 120;
 };
 
+struct GqlBadge {
+    QString id;
+    QString setID;
+    QString version;
+    QString title;
+    QString image1x;
+    QString image2x;
+    QString image4x;
+};
+
+struct GqlChatSettingsBadges {
+    GqlBadge selectedGlobalBadge;
+    QVector<GqlBadge> availableGlobal;
+
+    GqlBadge selectedChannelBadge;
+    QVector<GqlBadge> availableChannel;
+    QVector<GqlBadge> authorityBadges;
+};
+
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
 struct GqlChannelPointReward {
     QString id;
@@ -175,25 +194,6 @@ struct GqlChannelPointRedeemResult {
     qint64 balance = -1;
     QString emoteId;
     QString emoteToken;
-};
-
-struct GqlBadge {
-    QString id;
-    QString setID;
-    QString version;
-    QString title;
-    QString image1x;
-    QString image2x;
-    QString image4x;
-};
-
-struct GqlChatSettingsBadges {
-    GqlBadge selectedGlobalBadge;
-    QVector<GqlBadge> availableGlobal;
-
-    GqlBadge selectedChannelBadge;
-    QVector<GqlBadge> availableChannel;
-    QVector<GqlBadge> authorityBadges;
 };
 
 #endif

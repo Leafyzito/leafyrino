@@ -6,8 +6,6 @@
 
 #include "providers/moltorino/MoltorinoFeatureFlags.hpp"
 
-#if 1
-
 #    include "providers/twitch/api/TwitchGql.hpp"
 #    include "widgets/DraggablePopup.hpp"
 
@@ -56,7 +54,6 @@ private:
     void rebuildChannelBadges();
     void clearContent();
     void refreshStyle();
-    void scheduleLayoutRefresh(int delayMs = 35);
     void setStatus(const QString &text, bool error = false);
     void selectGlobal(const GqlBadge &badge);
     void selectChannel(const GqlBadge &badge);
@@ -85,11 +82,8 @@ private:
     bool initialFetchDone_ = false;
     QString statusText_;
     bool statusIsError_ = false;
-    QTimer layoutRefreshTimer_;
 
     static std::vector<QPointer<TwitchBadgePickerDialog>> activeDialogs_;
 };
 
 }  // namespace chatterino
-
-#endif
