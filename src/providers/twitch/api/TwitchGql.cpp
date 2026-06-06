@@ -1651,10 +1651,10 @@ std::optional<TwitchChannel::PollEvent> parsePollEventFromGql(
 GqlBadge badgeFromJson(const QJsonObject &obj)
 {
     return GqlBadge{
-        .id      = obj["id"].toString(),
-        .setID   = obj["setID"].toString(),
+        .id = obj["id"].toString(),
+        .setID = obj["setID"].toString(),
         .version = obj["version"].toString(),
-        .title   = obj["title"].toString(),
+        .title = obj["title"].toString(),
         .image1x = obj["image1x"].toString(),
         .image2x = obj["image2x"].toString(),
         .image4x = obj["image4x"].toString(),
@@ -5315,16 +5315,16 @@ void TwitchGql::getChatSettingsBadges(
                 return;
             }
 
-            const auto data        = payloadDataObject(root);
+            const auto data = payloadDataObject(root);
             const auto currentUser = data.value("currentUser").toObject();
-            const auto userSelf    = data.value("user").toObject()
-                                         .value("self").toObject();
+            const auto userSelf =
+                data.value("user").toObject().value("self").toObject();
 
             GqlChatSettingsBadges badges;
 
             if (!currentUser.value("selectedBadge").isNull())
-                badges.selectedGlobalBadge =
-                    badgeFromJson(currentUser.value("selectedBadge").toObject());
+                badges.selectedGlobalBadge = badgeFromJson(
+                    currentUser.value("selectedBadge").toObject());
 
             badges.availableGlobal =
                 badgesFromArray(currentUser.value("availableBadges").toArray());
@@ -5339,17 +5339,26 @@ void TwitchGql::getChatSettingsBadges(
             badges.authorityBadges = badgesFromArray(
                 userSelf.value("availableChannelAuthorityBadges").toArray());
 
-            badges.useCustomChannelBadge = !userSelf.value("selectedBadge").isNull()
-                && !userSelf.value("selectedBadge").toObject().value("setID").toString().isEmpty();
+            badges.useCustomChannelBadge =
+                !userSelf.value("selectedBadge").isNull() &&
+                !userSelf.value("selectedBadge")
+                     .toObject()
+                     .value("setID")
+                     .toString()
+                     .isEmpty();
 
-           const auto subscriptionSettings = data.value("currentUser").toObject()
-                .value("subscriptionSettings").toObject();
+            const auto subscriptionSettings = data.value("currentUser")
+                                                  .toObject()
+                                                  .value("subscriptionSettings")
+                                                  .toObject();
 
             badges.isBadgeModifierHidden =
-                subscriptionSettings.value("isBadgeModifierHidden").toBool(false);
+                subscriptionSettings.value("isBadgeModifierHidden")
+                    .toBool(false);
 
             badges.subscriptionTier =
-                subscriptionSettings.contains("isBadgeModifierHidden") ? 2000 : 0;
+                subscriptionSettings.contains("isBadgeModifierHidden") ? 2000
+                                                                       : 0;
 
             successCallback(std::move(badges));
         })
@@ -5361,8 +5370,7 @@ void TwitchGql::getChatSettingsBadges(
 
 void TwitchGql::selectGlobalBadge(
     const QString &badgeSetID, const QString &badgeSetVersion,
-    const QString &oauthToken,
-    std::function<void()> successCallback,
+    const QString &oauthToken, std::function<void()> successCallback,
     std::function<void(const QString &)> failureCallback)
 {
     QJsonObject input;
@@ -5376,17 +5384,17 @@ void TwitchGql::selectGlobalBadge(
         "ChatSettings_SelectGlobalBadge",
         "5e1b7f0ba771ca8eb81c0fcd5b8f4ff559ec2dc71cc9256e04ec2665049fc4e5",
         variables, oauthToken)
-        .onSuccess([successCallback,
-                    failureCallback](const NetworkResult &result) {
-            const auto root = result.parseJsonValue();
-            const auto gqlError = extractFirstGqlErrorMessage(root);
-            if (!gqlError.isEmpty())
-            {
-                failureCallback("Twitch API Error: " + gqlError);
-                return;
-            }
-            successCallback();
-        })
+        .onSuccess(
+            [successCallback, failureCallback](const NetworkResult &result) {
+                const auto root = result.parseJsonValue();
+                const auto gqlError = extractFirstGqlErrorMessage(root);
+                if (!gqlError.isEmpty())
+                {
+                    failureCallback("Twitch API Error: " + gqlError);
+                    return;
+                }
+                successCallback();
+            })
         .onError([failureCallback](const NetworkResult &result) {
             failureCallback("Network Error: " + result.formatError());
         })
@@ -5411,29 +5419,29 @@ void TwitchGql::selectChannelBadge(
         "ChatSettings_SelectChannelBadge",
         "c611ec7794e2c8a0f368fa8bb2bce9ff84fbd66f768d0e5dfc86440eeb18f2aa",
         variables, oauthToken)
-        .onSuccess([successCallback,
-                    failureCallback](const NetworkResult &result) {
-            const auto root = result.parseJsonValue();
-            const auto gqlError = extractFirstGqlErrorMessage(root);
-            if (!gqlError.isEmpty())
-            {
-                failureCallback("Twitch API Error: " + gqlError);
-                return;
-            }
+        .onSuccess(
+            [successCallback, failureCallback](const NetworkResult &result) {
+                const auto root = result.parseJsonValue();
+                const auto gqlError = extractFirstGqlErrorMessage(root);
+                if (!gqlError.isEmpty())
+                {
+                    failureCallback("Twitch API Error: " + gqlError);
+                    return;
+                }
 
-            const auto isSuccessful = payloadDataObject(root)
-                                          .value("selectChannelBadge")
-                                          .toObject()
-                                          .value("isSuccessful")
-                                          .toBool();
-            if (!isSuccessful)
-            {
-                failureCallback("Badge selection failed");
-                return;
-            }
+                const auto isSuccessful = payloadDataObject(root)
+                                              .value("selectChannelBadge")
+                                              .toObject()
+                                              .value("isSuccessful")
+                                              .toBool();
+                if (!isSuccessful)
+                {
+                    failureCallback("Badge selection failed");
+                    return;
+                }
 
-            successCallback();
-        })
+                successCallback();
+            })
         .onError([failureCallback](const NetworkResult &result) {
             failureCallback("Network Error: " + result.formatError());
         })
@@ -5455,17 +5463,17 @@ void TwitchGql::deselectChannelBadge(
         "ChatSettings_DeselectChannelBadge",
         "ba0c75a2d924ecf9eafa78fae615c79930ebf34145a480b14084daf43ffbe484",
         variables, oauthToken)
-        .onSuccess([successCallback,
-                    failureCallback](const NetworkResult &result) {
-            const auto root = result.parseJsonValue();
-            const auto gqlError = extractFirstGqlErrorMessage(root);
-            if (!gqlError.isEmpty())
-            {
-                failureCallback("Twitch API Error: " + gqlError);
-                return;
-            }
-            successCallback();
-        })
+        .onSuccess(
+            [successCallback, failureCallback](const NetworkResult &result) {
+                const auto root = result.parseJsonValue();
+                const auto gqlError = extractFirstGqlErrorMessage(root);
+                if (!gqlError.isEmpty())
+                {
+                    failureCallback("Twitch API Error: " + gqlError);
+                    return;
+                }
+                successCallback();
+            })
         .onError([failureCallback](const NetworkResult &result) {
             failureCallback("Network Error: " + result.formatError());
         })
@@ -5483,12 +5491,14 @@ void TwitchGql::setBadgeModifierHidden(
     QJsonObject variables;
     variables.insert("input", input);
 
-    const QString operationName = hidden
-        ? QStringLiteral("ChatSettings_DeselectBadgeModifier")
-        : QStringLiteral("ChatSettings_SelectBadgeModifier");
-    const QString hash = hidden
-        ? QStringLiteral("d3457649ee7afa66054ccae83e079a16f402de1599f218c17ed50ead574a6b3f")
-        : QStringLiteral("1d7967f485c32fd0d68d39a735823dd98581ea079f58f68230ad316d6fa852df");
+    const QString operationName =
+        hidden ? QStringLiteral("ChatSettings_DeselectBadgeModifier")
+               : QStringLiteral("ChatSettings_SelectBadgeModifier");
+    const QString hash =
+        hidden ? QStringLiteral("d3457649ee7afa66054ccae83e079a16f402de1599f218"
+                                "c17ed50ead574a6b3f")
+               : QStringLiteral("1d7967f485c32fd0d68d39a735823dd98581ea079f58f6"
+                                "8230ad316d6fa852df");
 
     makePersistedGqlRequest(operationName, hash, variables, oauthToken)
         .onSuccess([hidden, successCallback,
@@ -5501,9 +5511,12 @@ void TwitchGql::setBadgeModifierHidden(
                 return;
             }
             const auto actual = payloadDataObject(root)
-                .value("updateUserSubscriptionSettings").toObject()
-                .value("subscriptionSettings").toObject()
-                .value("isBadgeModifierHidden").toBool(hidden);
+                                    .value("updateUserSubscriptionSettings")
+                                    .toObject()
+                                    .value("subscriptionSettings")
+                                    .toObject()
+                                    .value("isBadgeModifierHidden")
+                                    .toBool(hidden);
             successCallback(actual);
         })
         .onError([failureCallback](const NetworkResult &result) {

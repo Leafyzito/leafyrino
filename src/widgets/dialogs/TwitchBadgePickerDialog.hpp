@@ -5,14 +5,13 @@
 #pragma once
 
 #include "providers/moltorino/MoltorinoFeatureFlags.hpp"
+#include "providers/twitch/api/TwitchGql.hpp"
+#include "widgets/DraggablePopup.hpp"
 
-#    include "providers/twitch/api/TwitchGql.hpp"
-#    include "widgets/DraggablePopup.hpp"
-
-#    include <QPointer>
-#    include <QString>
-#    include <QTimer>
-#    include <QVector>
+#include <QPointer>
+#include <QString>
+#include <QTimer>
+#include <QVector>
 
 class QLabel;
 class QLineEdit;
@@ -31,11 +30,9 @@ class TwitchChannel;
 class TwitchBadgePickerDialog : public DraggablePopup
 {
 public:
-    TwitchBadgePickerDialog(TwitchChannel *channel,
-                            QWidget *parent = nullptr);
+    TwitchBadgePickerDialog(TwitchChannel *channel, QWidget *parent = nullptr);
 
-    static void showDialog(TwitchChannel *channel,
-                           QWidget *parent = nullptr);
+    static void showDialog(TwitchChannel *channel, QWidget *parent = nullptr);
 
 protected:
     void themeChangedEvent() override;

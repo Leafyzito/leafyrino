@@ -4,33 +4,33 @@
 
 #include "widgets/dialogs/TwitchBadgePickerDialog.hpp"
 
-#    include "Application.hpp"
-#    include "messages/Image.hpp"
-#    include "messages/ImageSet.hpp"
-#    include "providers/moltorino/MoltorinoAuth.hpp"
-#    include "providers/twitch/TwitchChannel.hpp"
-#    include "providers/twitch/api/TwitchGql.hpp"
-#    include "singletons/Fonts.hpp"
-#    include "singletons/Theme.hpp"
-#    include "widgets/buttons/Button.hpp"
-#    include "widgets/buttons/SvgButton.hpp"
-#    include "widgets/helper/Line.hpp"
+#include "Application.hpp"
+#include "messages/Image.hpp"
+#include "messages/ImageSet.hpp"
+#include "providers/moltorino/MoltorinoAuth.hpp"
+#include "providers/twitch/api/TwitchGql.hpp"
+#include "providers/twitch/TwitchChannel.hpp"
+#include "singletons/Fonts.hpp"
+#include "singletons/Theme.hpp"
+#include "widgets/buttons/Button.hpp"
+#include "widgets/buttons/SvgButton.hpp"
+#include "widgets/helper/Line.hpp"
 
-#    include <QCursor>
-#    include <QGridLayout>
-#    include <QHBoxLayout>
-#    include <QLabel>
-#    include <QLineEdit>
-#    include <QPainter>
-#    include <QPushButton>
-#    include <QResizeEvent>
-#    include <QScrollArea>
-#    include <QScrollBar>
-#    include <QShowEvent>
-#    include <QTimer>
-#    include <QVBoxLayout>
+#include <QCursor>
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPainter>
+#include <QPushButton>
+#include <QResizeEvent>
+#include <QScrollArea>
+#include <QScrollBar>
+#include <QShowEvent>
+#include <QTimer>
+#include <QVBoxLayout>
 
-#    include <cmath>
+#include <cmath>
 
 namespace chatterino {
 
@@ -80,9 +80,8 @@ ImageSet badgeImages(const GqlBadge &badge)
     const auto base = BADGE_ICON_SIZE / 2;
 
     return ImageSet{
-        badge.image1x.isEmpty()
-            ? empty
-            : Image::fromUrl(Url{badge.image1x}, 2, base),
+        badge.image1x.isEmpty() ? empty
+                                : Image::fromUrl(Url{badge.image1x}, 2, base),
         badge.image2x.isEmpty()
             ? empty
             : Image::fromUrl(Url{badge.image2x}, 1, BADGE_ICON_SIZE),
@@ -167,7 +166,7 @@ protected:
         else if (this->underMouse() && this->isEnabled())
         {
             trackBg = theme->isLightTheme() ? trackBg.darker(104)
-                                             : trackBg.lighter(108);
+                                            : trackBg.lighter(108);
             trackBorder = theme->splits.header.focusedBorder;
         }
 
@@ -205,17 +204,17 @@ protected:
     }
 };
 
-QWidget *makeSettingRow(const QString &labelText, BadgePickerToggleSwitch *toggle,
-                        QWidget *parent, float scale)
+QWidget *makeSettingRow(const QString &labelText,
+                        BadgePickerToggleSwitch *toggle, QWidget *parent,
+                        float scale)
 {
     auto *row = new QWidget(parent);
     row->setObjectName("TwitchBadgePickerSettingRow");
 
     auto *rowLayout = new QHBoxLayout(row);
-    rowLayout->setContentsMargins(scaledMetric(scale, 8, 4),
-                                  scaledMetric(scale, 6, 3),
-                                  scaledMetric(scale, 8, 4),
-                                  scaledMetric(scale, 6, 3));
+    rowLayout->setContentsMargins(
+        scaledMetric(scale, 8, 4), scaledMetric(scale, 6, 3),
+        scaledMetric(scale, 8, 4), scaledMetric(scale, 6, 3));
     rowLayout->setSpacing(scaledMetric(scale, 8, 4));
 
     auto *label = new QLabel(labelText, row);
@@ -251,7 +250,8 @@ protected:
         painter.setRenderHint(QPainter::Antialiasing, true);
 
         const auto rect = this->rect().adjusted(0, 0, -1, -1);
-        paintBadgeTileBackground(painter, rect, this->underMouse(), this->isDown());
+        paintBadgeTileBackground(painter, rect, this->underMouse(),
+                                 this->isDown());
 
         const int pad = BADGE_TILE_PADDING;
         const QRect iconRect(pad, pad, rect.width() - pad * 2,
@@ -307,7 +307,8 @@ protected:
         painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
         const auto rect = this->rect().adjusted(0, 0, -1, -1);
-        paintBadgeTileBackground(painter, rect, this->underMouse(), this->isDown());
+        paintBadgeTileBackground(painter, rect, this->underMouse(),
+                                 this->isDown());
 
         const int pad = BADGE_TILE_PADDING;
         const QRect imgRect(pad, pad, rect.width() - pad * 2,
@@ -395,8 +396,8 @@ TwitchBadgePickerDialog::TwitchBadgePickerDialog(TwitchChannel *channel,
     // Tab row
     auto *tabRow = new QHBoxLayout();
     tabRow->setSpacing(4);
-    tabRow->setContentsMargins(margin, scaledMetric(this->scale(), 4, 2), margin,
-                               0);
+    tabRow->setContentsMargins(margin, scaledMetric(this->scale(), 4, 2),
+                               margin, 0);
 
     this->globalTabButton_ = new QPushButton("Global Badge", container);
     this->globalTabButton_->setObjectName("TwitchBadgePickerTab");
@@ -505,9 +506,8 @@ void TwitchBadgePickerDialog::showDialog(TwitchChannel *channel,
 
     dialog->show();
     const auto size = dialog->size();
-    dialog->showAndMoveTo(
-        center - QPoint(size.width() / 2, size.height() / 2),
-        widgets::BoundsChecking::DesiredPosition);
+    dialog->showAndMoveTo(center - QPoint(size.width() / 2, size.height() / 2),
+                          widgets::BoundsChecking::DesiredPosition);
     dialog->raise();
     dialog->activateWindow();
     dialog->loadBadges(false);
@@ -648,8 +648,9 @@ void TwitchBadgePickerDialog::rebuildGlobalBadges()
             noBadgeTile->setStyleSheet(
                 "border: 2px solid #9146ff; border-radius: 3px;");
         }
-        QObject::connect(noBadgeTile, &QPushButton::clicked, this,
-                         [this] { this->selectGlobal({}); });
+        QObject::connect(noBadgeTile, &QPushButton::clicked, this, [this] {
+            this->selectGlobal({});
+        });
         grid->addWidget(noBadgeTile, row, col);
         col = 1;
     }
@@ -667,10 +668,12 @@ void TwitchBadgePickerDialog::rebuildGlobalBadges()
 
         if (!selected.setID.isEmpty() && badge.setID == selected.setID &&
             badge.version == selected.version)
-            tile->setStyleSheet("border: 2px solid #9146ff; border-radius: 3px;");
+            tile->setStyleSheet(
+                "border: 2px solid #9146ff; border-radius: 3px;");
 
-        QObject::connect(tile, &QPushButton::clicked, this,
-                         [this, badge] { this->selectGlobal(badge); });
+        QObject::connect(tile, &QPushButton::clicked, this, [this, badge] {
+            this->selectGlobal(badge);
+        });
         grid->addWidget(tile, row, col);
         ++shown;
         if (++col >= BADGE_GRID_COLUMNS)
@@ -711,36 +714,33 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
     toggleButton->setEnabled(!this->actionInFlight_);
     toggleButton->updateMetrics(scale);
 
-    QObject::connect(toggleButton, &QPushButton::clicked, this,
-                     [this](bool checked) {
-                         if (checked)
-                         {
-                             if (!this->badges_.selectedChannelBadge.setID
-                                      .isEmpty())
-                             {
-                                 this->selectChannel(
-                                     this->badges_.selectedChannelBadge);
-                             }
-                             else
-                             {
-                                 this->badges_.useCustomChannelBadge = true;
-                                 this->rebuildContent();
-                             }
-                         }
-                         else
-                         {
-                             this->deselectChannel();
-                         }
-                     });
+    QObject::connect(
+        toggleButton, &QPushButton::clicked, this, [this](bool checked) {
+            if (checked)
+            {
+                if (!this->badges_.selectedChannelBadge.setID.isEmpty())
+                {
+                    this->selectChannel(this->badges_.selectedChannelBadge);
+                }
+                else
+                {
+                    this->badges_.useCustomChannelBadge = true;
+                    this->rebuildContent();
+                }
+            }
+            else
+            {
+                this->deselectChannel();
+            }
+        });
 
-    this->contentLayout_->addWidget(makeSettingRow(
-        "Use Custom Badge for This Channel", toggleButton,
-        this->contentWidget_, scale));
+    this->contentLayout_->addWidget(
+        makeSettingRow("Use Custom Badge for This Channel", toggleButton,
+                       this->contentWidget_, scale));
 
     if (this->badges_.subscriptionTier >= 2000)
     {
-        auto *flairButton =
-            new BadgePickerToggleSwitch(this->contentWidget_);
+        auto *flairButton = new BadgePickerToggleSwitch(this->contentWidget_);
         flairButton->setChecked(!this->badges_.isBadgeModifierHidden);
         flairButton->setEnabled(!this->actionInFlight_);
         flairButton->updateMetrics(scale);
@@ -750,9 +750,9 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
                              this->setFlairHidden(!checked);
                          });
 
-        this->contentLayout_->addWidget(makeSettingRow(
-            "Badge Flair for Tier 2 and 3 Subscriptions", flairButton,
-            this->contentWidget_, scale));
+        this->contentLayout_->addWidget(
+            makeSettingRow("Badge Flair for Tier 2 and 3 Subscriptions",
+                           flairButton, this->contentWidget_, scale));
     }
 
     if (available.isEmpty())
@@ -769,7 +769,7 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
     this->contentLayout_->addWidget(label);
 
     auto *gridWidget = new QWidget(this->contentWidget_);
-    auto *grid       = new QGridLayout(gridWidget);
+    auto *grid = new QGridLayout(gridWidget);
     grid->setContentsMargins(0, 0, 0, 0);
     grid->setSpacing(4);
 
@@ -784,17 +784,18 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
         }
 
         auto *tile = new BadgeTileButton(badge, gridWidget);
-        tile->setEnabled(!this->actionInFlight_
-                         && this->badges_.useCustomChannelBadge);
+        tile->setEnabled(!this->actionInFlight_ &&
+                         this->badges_.useCustomChannelBadge);
 
         if (!selected.setID.isEmpty() && badge.setID == selected.setID &&
-            badge.version == selected.version
-            && this->badges_.useCustomChannelBadge)
+            badge.version == selected.version &&
+            this->badges_.useCustomChannelBadge)
             tile->setStyleSheet(
                 "border: 2px solid #9146ff; border-radius: 3px;");
 
-        QObject::connect(tile, &QPushButton::clicked, this,
-                         [this, badge] { this->selectChannel(badge); });
+        QObject::connect(tile, &QPushButton::clicked, this, [this, badge] {
+            this->selectChannel(badge);
+        });
         grid->addWidget(tile, row, col);
         ++shown;
         if (++col >= BADGE_GRID_COLUMNS)
@@ -857,8 +858,7 @@ void TwitchBadgePickerDialog::setStatus(const QString &text, bool error)
     muted.setAlpha(150);
     const auto color =
         error ? QStringLiteral("#ff9e9e") : muted.name(QColor::HexArgb);
-    this->statusLabel_->setStyleSheet(
-        QStringLiteral("color: %1;").arg(color));
+    this->statusLabel_->setStyleSheet(QStringLiteral("color: %1;").arg(color));
 }
 
 void TwitchBadgePickerDialog::selectGlobal(const GqlBadge &badge)
@@ -993,10 +993,9 @@ void TwitchBadgePickerDialog::setFlairHidden(bool hidden)
             if (!self)
                 return;
             self->actionInFlight_ = false;
-            self->setStatus(
-                MoltorinoAuth::normalizeAuthError("updating badge flair",
-                                                  error),
-                true);
+            self->setStatus(MoltorinoAuth::normalizeAuthError(
+                                "updating badge flair", error),
+                            true);
             self->rebuildContent();
         });
 }
@@ -1033,8 +1032,8 @@ void TwitchBadgePickerDialog::refreshStyle()
     {
         if (auto *rowLayout = qobject_cast<QHBoxLayout *>(row->layout()))
         {
-            rowLayout->setContentsMargins(rowPaddingX, rowPaddingY,
-                                          rowPaddingX, rowPaddingY);
+            rowLayout->setContentsMargins(rowPaddingX, rowPaddingY, rowPaddingX,
+                                          rowPaddingY);
             rowLayout->setSpacing(rowSpacing);
         }
     }
@@ -1169,8 +1168,8 @@ void TwitchBadgePickerDialog::refreshStyle()
         }
     )")
                             .arg(bg, text, border, muted, inputBg,
-                                 QString::number(radius), focusedBorder, hoverBg,
-                                 QString::number(inputPaddingX),
+                                 QString::number(radius), focusedBorder,
+                                 hoverBg, QString::number(inputPaddingX),
                                  QString::number(scrollbarWidth),
                                  QString::number(scrollbarRadius),
                                  QString::number(scrollbarMinHeight),
@@ -1180,7 +1179,8 @@ void TwitchBadgePickerDialog::refreshStyle()
 void TwitchBadgePickerDialog::applySizeConstraints()
 {
     const int w = std::max(1, int(DEFAULT_DIALOG_SIZE.width() * this->scale()));
-    const int h = std::max(1, int(DEFAULT_DIALOG_SIZE.height() * this->scale()));
+    const int h =
+        std::max(1, int(DEFAULT_DIALOG_SIZE.height() * this->scale()));
     this->setMinimumSize(
         QSize(std::min(w, std::max(180, int(220 * this->scale()))),
               std::min(h, std::max(120, int(180 * this->scale())))));

@@ -147,7 +147,7 @@ struct GqlChatSettingsBadges {
     QVector<GqlBadge> authorityBadges;
     bool useCustomChannelBadge = false;
     bool isBadgeModifierHidden = false;
-    int subscriptionTier = 0;             //(1000=T1, 2000=T2, 3000=T3)
+    int subscriptionTier = 0;  //(1000=T1, 2000=T2, 3000=T3)
 };
 
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
@@ -422,20 +422,19 @@ void getChatSettingsBadges(
     const QString &channelLogin, const QString &oauthToken,
     std::function<void(GqlChatSettingsBadges)> successCallback,
     std::function<void(const QString &)> failureCallback);
-void selectGlobalBadge(
-    const QString &badgeSetID, const QString &badgeSetVersion,
-    const QString &oauthToken,
-    std::function<void()> successCallback,
-    std::function<void(const QString &)> failureCallback);
-void selectChannelBadge(
-    const QString &badgeSetID, const QString &badgeSetVersion,
-    const QString &channelID, const QString &oauthToken,
-    std::function<void()> successCallback,
-    std::function<void(const QString &)> failureCallback);
-void deselectChannelBadge(
-    const QString &channelID, const QString &oauthToken,
-    std::function<void()> successCallback,
-    std::function<void(const QString &)> failureCallback);
+void selectGlobalBadge(const QString &badgeSetID,
+                       const QString &badgeSetVersion,
+                       const QString &oauthToken,
+                       std::function<void()> successCallback,
+                       std::function<void(const QString &)> failureCallback);
+void selectChannelBadge(const QString &badgeSetID,
+                        const QString &badgeSetVersion,
+                        const QString &channelID, const QString &oauthToken,
+                        std::function<void()> successCallback,
+                        std::function<void(const QString &)> failureCallback);
+void deselectChannelBadge(const QString &channelID, const QString &oauthToken,
+                          std::function<void()> successCallback,
+                          std::function<void(const QString &)> failureCallback);
 void setBadgeModifierHidden(
     bool hidden, const QString &oauthToken,
     std::function<void(bool)> successCallback,
