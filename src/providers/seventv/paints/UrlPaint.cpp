@@ -8,8 +8,7 @@ namespace chatterino {
 
 UrlPaint::UrlPaint(QString name, QString id, ImagePtr image,
                    std::vector<PaintDropShadow> dropShadows)
-    : Paint(std::move(id))
-    , name_(std::move(name))
+    : Paint(std::move(id), std::move(name))
     , image_(std::move(image))
     , dropShadows_(std::move(dropShadows))
 {

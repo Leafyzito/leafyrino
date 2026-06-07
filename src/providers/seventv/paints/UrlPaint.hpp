@@ -16,7 +16,6 @@ public:
     bool animated() const override;
 
 private:
-    const QString name_;
     const ImagePtr image_;
 
     const std::vector<PaintDropShadow> dropShadows_;

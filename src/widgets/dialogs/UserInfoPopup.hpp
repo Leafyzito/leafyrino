@@ -47,8 +47,9 @@ struct HelixUser;
 struct IvrSubage;
 struct IvrUserProfile;
 class LabelButton;
-class PixmapButton;
 class LiveIndicator;
+class Paint;
+class PixmapButton;
 
 class UserInfoPopup final : public DraggablePopup
 {
@@ -90,6 +91,7 @@ private:
     void updateNotes();
     void refreshSevenTVUserButtonVisibility();
     void refreshSeventvPaint();
+    void updateSeventvPaintPixmap();
     void resetNameHistory();
     bool applyCachedNameHistory();
     void updateNameHistoryButton();

@@ -7,8 +7,7 @@ namespace chatterino {
 LinearGradientPaint::LinearGradientPaint(
     QString name, QString id, std::optional<QColor> color, QGradientStops stops,
     bool repeat, float angle, std::vector<PaintDropShadow> dropShadows)
-    : Paint(std::move(id))
-    , name_(std::move(name))
+    : Paint(std::move(id), std::move(name))
     , color_(color)
     , stops_(std::move(stops))
     , repeat_(repeat)

@@ -9,6 +9,8 @@
 #include <QLabel>
 #include <QPainter>
 
+#include <algorithm>
+
 namespace chatterino {
 
 using namespace Qt::Literals::StringLiterals;
@@ -26,9 +28,28 @@ qreal textBaseline(const QFont &font, const QRectF &rect)
 
 QPixmap Paint::getPixmap(const QString &text, const QFont &font,
                          QColor userColor, QSizeF size, float scale,
-                         float dpr) const
+                         float dpr, bool centerVertically) const
 {
-    QPixmap pixmap((size * dpr).toSize());
+    QSizeF drawSize = size;
+    if (centerVertically && getSettings()->displaySevenTVPaintShadows)
+    {
+        float shadowExtent = 0;
+        for (const auto &shadow : this->getDropShadows())
+        {
+            if (!shadow.isValid())
+            {
+                continue;
+            }
+
+            shadowExtent = std::max(
+                shadowExtent,
+                shadow.scaled(scale / dpr).extentBelow());
+        }
+
+        drawSize.setHeight(size.height() + shadowExtent);
+    }
+
+    QPixmap pixmap((drawSize * dpr).toSize());
     pixmap.setDevicePixelRatio(dpr);
     pixmap.fill(Qt::transparent);
 
@@ -36,12 +57,14 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
     pixmapPainter.setRenderHint(QPainter::SmoothPixmapTransform);
     pixmapPainter.setFont(font);
 
-    const QRectF pixmapRect(QPointF{}, size);
+    const QRectF pixmapRect(QPointF{}, drawSize);
+    const QRectF textRect(QPointF{}, size);
 
     // NOTE: draw colon separately from the nametag
     // otherwise the paint would extend onto the colon
-    bool drawColon = false;
-    QRectF nametagBoundingRect = pixmapRect;
+      bool drawColon = false;
+    QRectF nametagBoundingRect =
+        centerVertically ? textRect : pixmapRect;
     QString nametagText = text;
     if (nametagText.endsWith(':'))
     {
@@ -50,8 +73,9 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
         const auto textBounds = pixmapPainter.boundingRect(
             QRectF(0, 0, 10000, 10000), nametagText,
             QTextOption(Qt::AlignLeft | Qt::AlignTop));
-        nametagBoundingRect =
-            QRectF(0, 0, textBounds.width(), pixmapRect.height());
+        nametagBoundingRect = QRectF(
+            0, 0, textBounds.width(),
+            centerVertically ? textRect.height() : pixmapRect.height());
     }
 
     QPen pen;
@@ -59,15 +83,24 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
     pen.setBrush(brush);
     pixmapPainter.setPen(pen);
 
-    const auto baseline = textBaseline(font, nametagBoundingRect);
-    pixmapPainter.drawText(QPointF(nametagBoundingRect.left(), baseline),
-                           nametagText);
+    if (centerVertically)
+    {
+        pixmapPainter.drawText(
+            nametagBoundingRect, nametagText,
+            QTextOption(Qt::AlignLeft | Qt::AlignVCenter));
+    }
+    else
+    {
+        const auto baseline = textBaseline(font, nametagBoundingRect);
+        pixmapPainter.drawText(QPointF(nametagBoundingRect.left(), baseline),
+                               nametagText);
+    }
     pixmapPainter.end();
 
     if (!this->getDropShadows().empty() &&
         getSettings()->displaySevenTVPaintShadows)
     {
-        QPixmap outMap((size * dpr).toSize());
+        QPixmap outMap((drawSize * dpr).toSize());
         outMap.setDevicePixelRatio(dpr);
         for (const auto &shadow : this->getDropShadows())
         {
@@ -93,6 +126,7 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
     if (drawColon)
     {
         auto colonColor = getApp()->getThemes()->messages.textColors.regular;
+        const auto baseline = textBaseline(font, nametagBoundingRect);
 
         pixmapPainter.begin(&pixmap);
 
