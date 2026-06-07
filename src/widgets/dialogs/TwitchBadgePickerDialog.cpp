@@ -14,10 +14,12 @@
 #include "providers/twitch/TwitchChannel.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
+#include "singletons/WindowManager.hpp"
 #include "widgets/buttons/Button.hpp"
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/helper/Line.hpp"
 
+#include <pajlada/signals/signalholder.hpp>
 #include <QCursor>
 #include <QDateTime>
 #include <QDesktopServices>
@@ -361,6 +363,11 @@ public:
         this->setFixedSize(BADGE_ICON_SIZE.width() + BADGE_TILE_PADDING * 2,
                            BADGE_ICON_SIZE.height() + BADGE_TILE_PADDING * 2);
         this->setToolTip(badge.title);
+
+        this->connections_.managedConnect(
+            getApp()->getWindows()->layoutRequested, [this](Channel *) {
+                this->refreshImageIfNeeded();
+            });
     }
 
     const GqlBadge &badge() const
@@ -406,10 +413,12 @@ protected:
         const auto &image = this->images_.getImageOrLoaded(BADGE_IMAGE_SCALE);
         if (auto pixmap = image->pixmapOrLoad())
         {
+            this->attemptRefresh_ = false;
             painter.drawPixmap(imgRect, *pixmap, pixmap->rect());
         }
         else
         {
+            this->attemptRefresh_ = true;
             auto muted = getApp()->getThemes()->window.text;
             muted.setAlpha(50);
             painter.setBrush(muted);
@@ -424,9 +433,26 @@ protected:
     }
 
 private:
+    void refreshImageIfNeeded()
+    {
+        if (!this->attemptRefresh_)
+        {
+            return;
+        }
+
+        const auto &image = this->images_.getImageOrLoaded(BADGE_IMAGE_SCALE);
+        if (image->pixmapOrLoad())
+        {
+            this->attemptRefresh_ = false;
+            this->update();
+        }
+    }
+
     GqlBadge badge_;
     ImageSet images_;
     bool selected_ = false;
+    bool attemptRefresh_ = false;
+    pajlada::Signals::SignalHolder connections_;
 };
 
 }  // namespace
