@@ -135,7 +135,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         auto *themes = getApp()->getThemes();
         auto available = themes->availableThemes();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-        available.emplace_back("System", "System");
+        available.emplace(available.begin(), "System", "System");
 #endif
 
         SettingWidget::dropdown("Theme", themes->themeName, available)

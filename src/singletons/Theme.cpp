@@ -289,6 +289,71 @@ const std::vector<ThemeDescriptor> Theme::builtInThemes{
         .path = ":/themes/Black.json",
         .name = "Black",
     },
+    {
+        .key = "Bloody-Mary",
+        .path = ":/themes/Bloody-Mary.json",
+        .name = "Bloody Mary",
+    },
+    {
+        .key = "Blue-Steel",
+        .path = ":/themes/Blue-Steel.json",
+        .name = "Blue Steel",
+    },
+    {
+        .key = "Chocolate",
+        .path = ":/themes/Chocolate.json",
+        .name = "Chocolate",
+    },
+    {
+        .key = "Cobalt",
+        .path = ":/themes/Cobalt.json",
+        .name = "Cobalt",
+    },
+    {
+        .key = "Dark-Mint",
+        .path = ":/themes/Dark-Mint.json",
+        .name = "Dark Mint",
+    },
+    {
+        .key = "Deep-Blue",
+        .path = ":/themes/Deep-Blue.json",
+        .name = "Deep Blue",
+    },
+    {
+        .key = "Goth",
+        .path = ":/themes/Goth.json",
+        .name = "Goth",
+    },
+    {
+        .key = "New-Black",
+        .path = ":/themes/New-Black.json",
+        .name = "New Black",
+    },
+    {
+        .key = "New-Dark",
+        .path = ":/themes/New-Dark.json",
+        .name = "New Dark",
+    },
+    {
+        .key = "Purple",
+        .path = ":/themes/Purple.json",
+        .name = "Purple",
+    },
+    {
+        .key = "Rose",
+        .path = ":/themes/Rose.json",
+        .name = "Rose",
+    },
+    {
+        .key = "Tokyo-Night",
+        .path = ":/themes/Tokyo-Night.json",
+        .name = "Tokyo Night",
+    },
+    {
+        .key = "Wine",
+        .path = ":/themes/Wine.json",
+        .name = "Wine",
+    },
 };
 
 const ThemeDescriptor Theme::fallbackTheme = Theme::builtInThemes.at(2);
