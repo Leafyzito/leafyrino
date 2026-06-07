@@ -20,6 +20,17 @@ bool PaintDropShadow::isValid() const
     return radius_ > 0;
 }
 
+float PaintDropShadow::extentBelow() const
+{
+    auto radius = this->radius_;
+    if (getSettings()->largeSevenTVPaintShadows)
+    {
+        radius *= 3;
+    }
+
+    return this->yOffset_ + radius;
+}
+
 PaintDropShadow PaintDropShadow::scaled(float scale) const
 {
     return {this->xOffset_ * scale, this->yOffset_ * scale,

@@ -15,6 +15,9 @@ public:
     PaintDropShadow scaled(float scale) const;
     void apply(QPixmapDropShadowFilter &effect) const;
 
+    /// Approximate space needed below the painted text for the shadow.
+    float extentBelow() const;
+
 private:
     const float xOffset_;
     const float yOffset_;

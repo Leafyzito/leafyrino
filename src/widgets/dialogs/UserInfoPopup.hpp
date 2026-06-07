@@ -21,6 +21,7 @@
 #include <chrono>
 #include <functional>
 #include <map>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -46,8 +47,9 @@ struct HelixUser;
 struct IvrSubage;
 struct IvrUserProfile;
 class LabelButton;
-class PixmapButton;
 class LiveIndicator;
+class Paint;
+class PixmapButton;
 
 class UserInfoPopup final : public DraggablePopup
 {
@@ -88,6 +90,8 @@ private:
                                    bool enableLazyLoadOnSuccess);
     void updateNotes();
     void refreshSevenTVUserButtonVisibility();
+    void refreshSeventvPaint();
+    void updateSeventvPaintPixmap();
     void resetNameHistory();
     bool applyCachedNameHistory();
     void updateNameHistoryButton();
@@ -243,6 +247,8 @@ private:
         LabelButton *usercardLabel = nullptr;
         LabelButton *userlogsLabel = nullptr;
         LabelButton *sevenTVUserLabel = nullptr;
+        QLabel *seventvPaintPixmapLabel = nullptr;
+        QWidget *seventvPaintRow = nullptr;
         LabelButton *rolesLabel = nullptr;
         LabelButton *switchAvatars = nullptr;
 
@@ -250,6 +256,7 @@ private:
     } ui_;
 
     QMovie *seventvAvatar_ = nullptr;
+    std::shared_ptr<Paint> seventvPaint_;
     bool isTwitchAvatarShown_ = true;
     QPixmap avatarPixmap_;
     QPointer<EditUserNotesDialog> editUserNotesDialog_;

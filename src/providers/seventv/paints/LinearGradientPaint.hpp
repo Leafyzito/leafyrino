@@ -18,7 +18,6 @@ public:
     bool animated() const override;
 
 private:
-    const QString name_;
     const std::optional<QColor> color_;
     const QGradientStops stops_;
     const bool repeat_;

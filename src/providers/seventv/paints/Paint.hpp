@@ -17,10 +17,14 @@ public:
     virtual bool animated() const = 0;
 
     QPixmap getPixmap(const QString &text, const QFont &font, QColor userColor,
-                      QSizeF size, float scale, float dpr) const;
+                      QSizeF size, float scale, float dpr,
+                      bool centerVertically = false) const;
 
-    Paint(QString id)
-        : id(std::move(id)) {};
+    Paint(QString id, QString name = {})
+        : id(std::move(id))
+        , name(std::move(name))
+    {
+    }
     virtual ~Paint() = default;
 
     Paint(const Paint &) = default;
@@ -29,6 +33,7 @@ public:
     Paint &operator=(Paint &&) = delete;
 
     QString id;
+    QString name;
 
 protected:
     static QColor overlayColors(QColor background, QColor foreground);

@@ -25,6 +25,8 @@
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/pronouns/Pronouns.hpp"
+#include "providers/seventv/paints/Paint.hpp"
+#include "providers/seventv/SeventvPaints.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/api/TwitchGql.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
@@ -109,6 +111,7 @@ constexpr QStringView TEXT_UNSPECIFIED = u"(unspecified)";
 constexpr QStringView TEXT_LOADING = u"(loading...)";
 constexpr QStringView TEXT_LAST_LIVE = u"Last Live: %1";
 constexpr QStringView TEXT_COLOR = u"Color: %1";
+constexpr QStringView TEXT_SEVENTV_PAINT = u"7TV Paint: ";
 constexpr QStringView TEXT_CHATTERS = u"Chatters: %1";
 
 constexpr QStringView SEVENTV_TWITCH_USER_API =
@@ -325,6 +328,31 @@ void createUsercardStatusRow(LayoutCreator<QVBoxLayout> &vbox, QWidget **rowOut,
     *rowOut = row;
     *iconOut = icon;
     *labelOut = label;
+}
+
+void createUsercardPaintRow(LayoutCreator<QVBoxLayout> &vbox, QWidget **rowOut,
+                            QLabel **pixmapOut)
+{
+    auto *row = new QWidget;
+    auto *layout = new QHBoxLayout(row);
+    layout->setContentsMargins(8, 0, 8, 0);
+    layout->setSpacing(0);
+
+    auto *prefixLabel = new Label(QString(TEXT_SEVENTV_PAINT));
+    prefixLabel->setPadding({});
+    layout->addWidget(prefixLabel, 0, Qt::AlignVCenter);
+
+    auto *paintPixmap = new QLabel(row);
+    paintPixmap->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    paintPixmap->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    layout->addWidget(paintPixmap, 0, Qt::AlignVCenter);
+    layout->addStretch(1);
+
+    row->setVisible(false);
+    vbox->addWidget(row);
+
+    *rowOut = row;
+    *pixmapOut = paintPixmap;
 }
 
 void createUsercardColorRow(LayoutCreator<QVBoxLayout> &vbox, QWidget **rowOut,
@@ -1315,6 +1343,8 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                     }
                 });
             }
+            createUsercardPaintRow(vbox, &this->ui_.seventvPaintRow,
+                                   &this->ui_.seventvPaintPixmapLabel);
             vbox.emplace<Label>("").assign(&this->ui_.statusLabel);
             vbox.emplace<Label>("").assign(&this->ui_.chatterCountLabel);
             createUsercardStatusRow(vbox, &this->ui_.followageRow,
@@ -1629,6 +1659,11 @@ void UserInfoPopup::themeChangedEvent()
     }
 
     this->updateUsercardStatusIcons();
+
+    if (this->seventvPaint_)
+    {
+        this->updateSeventvPaintPixmap();
+    }
 }
 
 void UserInfoPopup::scaleChangedEvent(float /*scale*/)
@@ -1897,6 +1932,11 @@ void UserInfoPopup::installEvents()
             this->userStateChanged_.invoke();
         },
         this->signalHolder_);
+    getSettings()->showUsercardSevenTVPaint.connect(
+        [this](bool) {
+            this->refreshSeventvPaint();
+        },
+        this->signalHolder_);
     getSettings()->showSevenTVUsercardButton.connect(
         [this](bool enabled) {
             if (enabled && this->seventvUserID_.isEmpty() &&
@@ -1945,6 +1985,17 @@ void UserInfoPopup::installEvents()
             this->maybeStartUsercardMessageAutoLoad();
         },
         this->signalHolder_);
+    this->signalHolder_.managedConnect(
+        getApp()->getWindows()->gifRepaintRequested, [this] {
+            if (!this->isVisible() ||
+                !getSettings()->showUsercardSevenTVPaint ||
+                !this->seventvPaint_ || !this->seventvPaint_->animated())
+            {
+                return;
+            }
+
+            this->updateSeventvPaintPixmap();
+        });
 }
 
 void UserInfoPopup::refreshTargetModerationStatus()
@@ -2123,6 +2174,7 @@ void UserInfoPopup::setData(const QString &name,
     this->seventvUserLookupInFlight_ = false;
     this->seventvUserLookupFinished_ = false;
     this->refreshSevenTVUserButtonVisibility();
+    this->refreshSeventvPaint();
     this->refreshTargetModerationStatus();
     if (!this->isKick_)
     {
@@ -3893,6 +3945,7 @@ void UserInfoPopup::resetUsercardInfoRows()
     this->ui_.bannedAvatarLabel->hide();
 
     this->updateUsercardStatusIcons();
+    this->refreshSeventvPaint();
 }
 
 void UserInfoPopup::applyIvrUserProfile(const IvrUserProfile &profile)
@@ -3944,6 +3997,7 @@ void UserInfoPopup::applyIvrUserProfile(const IvrUserProfile &profile)
             this->ui_.userColorLabel->setText("Color: " + colorHex);
             this->updateUsercardStatusIcons();
             this->ui_.userColorRow->setVisible(true);
+            this->updateSeventvPaintPixmap();
         }
         else
         {
@@ -3951,6 +4005,7 @@ void UserInfoPopup::applyIvrUserProfile(const IvrUserProfile &profile)
             this->ui_.userColorRow->setProperty("swatch-color", {});
             this->ui_.userColorLabel->setText("Color: " % TEXT_UNAVAILABLE);
             this->ui_.userColorRow->setVisible(true);
+            this->updateSeventvPaintPixmap();
         }
     }
 
@@ -4504,6 +4559,71 @@ void UserInfoPopup::updateAvatarUrl()
     {
         this->avatarUrl_ = this->seventvAvatarUrl_;
     }
+}
+
+void UserInfoPopup::refreshSeventvPaint()
+{
+    if (!getSettings()->showUsercardSevenTVPaint)
+    {
+        this->seventvPaint_ = nullptr;
+        if (this->ui_.seventvPaintRow)
+        {
+            this->ui_.seventvPaintRow->hide();
+        }
+        return;
+    }
+
+    const auto paint = getApp()->getSeventvPaints()->getPaint(
+        this->userName_.toLower(), this->isKick_);
+    this->seventvPaint_ = paint;
+
+    if (!paint)
+    {
+        this->ui_.seventvPaintRow->hide();
+        return;
+    }
+
+    this->ui_.seventvPaintRow->show();
+    this->updateSeventvPaintPixmap();
+}
+
+void UserInfoPopup::updateSeventvPaintPixmap()
+{
+    const auto paint = this->seventvPaint_;
+    if (!paint || !this->ui_.seventvPaintPixmapLabel)
+    {
+        return;
+    }
+
+    const auto font =
+        getApp()->getFonts()->getFont(FontStyle::UiMedium, this->scale());
+    const auto dpr = this->devicePixelRatioF();
+    const QString paintName = paint->name.isEmpty() ? paint->id : paint->name;
+
+    const QFontMetricsF metrics(font);
+    const int lineHeight = std::max(1, qRound(metrics.height()));
+    const int paintWidth =
+        std::max(1, qRound(metrics.horizontalAdvance(paintName)));
+    const QSizeF size(paintWidth, lineHeight);
+
+    this->ui_.seventvPaintPixmapLabel->setFixedSize(paintWidth, lineHeight);
+
+    QColor userColor = Qt::white;
+    if (this->ui_.userColorRow)
+    {
+        const auto colorText =
+            this->ui_.userColorRow->property("swatch-color").toString();
+        if (!colorText.isEmpty())
+        {
+            userColor = QColor(colorText);
+        }
+    }
+
+    const auto pixmap = paint->getPixmap(paintName, font, userColor, size,
+                                         this->scale(), dpr, true);
+
+    this->ui_.seventvPaintPixmapLabel->setPixmap(pixmap);
+    this->ui_.seventvPaintPixmapLabel->setToolTip(paintName);
 }
 
 }  // namespace chatterino
