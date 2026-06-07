@@ -1932,6 +1932,11 @@ void UserInfoPopup::installEvents()
             this->userStateChanged_.invoke();
         },
         this->signalHolder_);
+    getSettings()->showUsercardSevenTVPaint.connect(
+        [this](bool) {
+            this->refreshSeventvPaint();
+        },
+        this->signalHolder_);
     getSettings()->showSevenTVUsercardButton.connect(
         [this](bool enabled) {
             if (enabled && this->seventvUserID_.isEmpty() &&
@@ -1982,8 +1987,9 @@ void UserInfoPopup::installEvents()
         this->signalHolder_);
     this->signalHolder_.managedConnect(
         getApp()->getWindows()->gifRepaintRequested, [this] {
-            if (!this->isVisible() || !this->seventvPaint_ ||
-                !this->seventvPaint_->animated())
+            if (!this->isVisible() ||
+                !getSettings()->showUsercardSevenTVPaint ||
+                !this->seventvPaint_ || !this->seventvPaint_->animated())
             {
                 return;
             }
@@ -3939,6 +3945,7 @@ void UserInfoPopup::resetUsercardInfoRows()
     this->ui_.bannedAvatarLabel->hide();
 
     this->updateUsercardStatusIcons();
+    this->refreshSeventvPaint();
 }
 
 void UserInfoPopup::applyIvrUserProfile(const IvrUserProfile &profile)
@@ -4556,6 +4563,16 @@ void UserInfoPopup::updateAvatarUrl()
 
 void UserInfoPopup::refreshSeventvPaint()
 {
+    if (!getSettings()->showUsercardSevenTVPaint)
+    {
+        this->seventvPaint_ = nullptr;
+        if (this->ui_.seventvPaintRow)
+        {
+            this->ui_.seventvPaintRow->hide();
+        }
+        return;
+    }
+
     const auto paint = getApp()->getSeventvPaints()->getPaint(
         this->userName_.toLower(), this->isKick_);
     this->seventvPaint_ = paint;

@@ -88,6 +88,10 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->setTooltip("Show the user's Twitch chat color.")
         ->addKeywords({"usercard", "color", "chat"})
         ->addTo(layout);
+    SettingWidget::checkbox("Show 7TV paint", s.showUsercardSevenTVPaint)
+        ->setTooltip("Show the user's equipped 7TV paint on the usercard.")
+        ->addKeywords({"usercard", "7tv", "seventv", "paint", "cosmetic"})
+        ->addTo(layout);
     SettingWidget::checkbox("Show Twitch status", s.showUsercardStatus)
         ->setTooltip(
             "Show whether the user is Staff, Partner, Affiliate, or Regular.")
