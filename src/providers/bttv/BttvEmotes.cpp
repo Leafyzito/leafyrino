@@ -39,7 +39,11 @@ const QSet<QStringView> ZERO_WIDTH_EMOTES{
 constexpr QStringView EMOTE_CDN_FORMAT =
     u"https://cdn.betterttv.net/emote/%1/%2.webp";
 
-constexpr QSize EMOTE_BASE_SIZE(28, 28);
+QSize emoteBaseSize(const QJsonObject &jsonEmote)
+{
+    return {jsonEmote.value("width").toInt(28),
+            jsonEmote.value("height").toInt(28)};
+}
 
 struct CreateEmoteResult {
     EmoteId id;
@@ -67,19 +71,20 @@ std::pair<Outcome, EmoteMap> parseGlobalEmotes(const QJsonArray &jsonEmotes,
 
     for (auto jsonEmote : jsonEmotes)
     {
-        auto id = EmoteId{jsonEmote.toObject().value("id").toString()};
-        auto name = EmoteName{jsonEmote.toObject().value("code").toString()};
+        auto emoteJson = jsonEmote.toObject();
+        auto id = EmoteId{emoteJson.value("id").toString()};
+        auto name = EmoteName{emoteJson.value("code").toString()};
+        auto baseSize = emoteBaseSize(emoteJson);
 
         auto emote = Emote({
             .name = name,
             .images =
                 ImageSet{
-                    Image::fromUrl(getEmoteLinkV3(id, "1x"), 1,
-                                   EMOTE_BASE_SIZE),
+                    Image::fromUrl(getEmoteLinkV3(id, "1x"), 1, baseSize),
                     Image::fromUrl(getEmoteLinkV3(id, "2x"), 0.5,
-                                   EMOTE_BASE_SIZE * 2),
+                                   baseSize * 2),
                     Image::fromUrl(getEmoteLinkV3(id, "3x"), 0.25,
-                                   EMOTE_BASE_SIZE * 4),
+                                   baseSize * 4),
                 },
             .tooltip = Tooltip{name.string + "<br>Global BetterTTV Emote"},
             .homePage = Url{EMOTE_LINK_FORMAT.arg(id.string)},
@@ -104,15 +109,15 @@ CreateEmoteResult createChannelEmote(const QString &channelDisplayName,
         author.string = jsonEmote["channel"].toString();
     }
 
+    auto baseSize = emoteBaseSize(jsonEmote);
+
     auto emote = Emote({
         .name = name,
         .images =
             ImageSet{
-                Image::fromUrl(getEmoteLinkV3(id, "1x"), 1, EMOTE_BASE_SIZE),
-                Image::fromUrl(getEmoteLinkV3(id, "2x"), 0.5,
-                               EMOTE_BASE_SIZE * 2),
-                Image::fromUrl(getEmoteLinkV3(id, "3x"), 0.25,
-                               EMOTE_BASE_SIZE * 4),
+                Image::fromUrl(getEmoteLinkV3(id, "1x"), 1, baseSize),
+                Image::fromUrl(getEmoteLinkV3(id, "2x"), 0.5, baseSize * 2),
+                Image::fromUrl(getEmoteLinkV3(id, "3x"), 0.25, baseSize * 4),
             },
         .tooltip =
             Tooltip{QString("%1<br>%2 BetterTTV Emote<br>By: %3")
