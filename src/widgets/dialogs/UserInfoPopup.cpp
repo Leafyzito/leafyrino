@@ -1318,10 +1318,22 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                 });
             }
             {
-                auto *paintPixmap = new QLabel(this);
-                paintPixmap->hide();
+                auto *paintRow = new QWidget(this);
+                paintRow->hide();
+                this->ui_.seventvPaintRow = paintRow;
+
+                auto *paintLayout = new QHBoxLayout(paintRow);
+                paintLayout->setContentsMargins(0, 0, 0, 0);
+                paintLayout->setSpacing(4);
+
+                auto *prefixLabel = new QLabel("7TV Paint:", paintRow);
+                paintLayout->addWidget(prefixLabel, 0);
+
+                auto *paintPixmap = new QLabel(paintRow);
                 this->ui_.seventvPaintPixmapLabel = paintPixmap;
-                vbox.addWidget(paintPixmap);
+                paintLayout->addWidget(paintPixmap, 1);
+
+                vbox.addWidget(paintRow);
             }
             vbox.emplace<Label>("").assign(&this->ui_.statusLabel);
             vbox.emplace<Label>("").assign(&this->ui_.chatterCountLabel);
@@ -4523,7 +4535,7 @@ void UserInfoPopup::refreshSeventvPaint()
 
     if (!paint)
     {
-        this->ui_.seventvPaintPixmapLabel->hide();
+        this->ui_.seventvPaintRow->hide();
         return;
     }
 
@@ -4531,15 +4543,15 @@ void UserInfoPopup::refreshSeventvPaint()
         getApp()->getFonts()->getFont(FontStyle::UiMedium, this->scale());
     const auto dpr = this->devicePixelRatioF();
     const auto &paintName = paint->name.isEmpty() ? paint->id : paint->name;
-    const QSizeF size(200.0 * this->scale(), 18.0 * this->scale());
+    const QSizeF size(180.0 * this->scale(), 18.0 * this->scale());
 
     const auto pixmap =
-        paint->getPixmap(QStringLiteral("7TV Paint: ") + paintName, font,
+        paint->getPixmap(paintName, font,
                          this->ui_.nameLabel->color(), size,
                          this->scale(), dpr);
 
     this->ui_.seventvPaintPixmapLabel->setPixmap(pixmap);
-    this->ui_.seventvPaintPixmapLabel->show();
+    this->ui_.seventvPaintRow->show();
 }
 
 }  // namespace chatterino

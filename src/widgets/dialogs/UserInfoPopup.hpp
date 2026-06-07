@@ -246,6 +246,7 @@ private:
         LabelButton *userlogsLabel = nullptr;
         LabelButton *sevenTVUserLabel = nullptr;
         QLabel *seventvPaintPixmapLabel = nullptr;
+        QWidget *seventvPaintRow = nullptr;
         LabelButton *rolesLabel = nullptr;
         LabelButton *switchAvatars = nullptr;
 
