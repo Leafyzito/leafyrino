@@ -27,8 +27,8 @@ qreal textBaseline(const QFont &font, const QRectF &rect)
 }  // namespace
 
 QPixmap Paint::getPixmap(const QString &text, const QFont &font,
-                         QColor userColor, QSizeF size, float scale,
-                         float dpr, bool centerVertically) const
+                         QColor userColor, QSizeF size, float scale, float dpr,
+                         bool centerVertically) const
 {
     QSizeF drawSize = size;
     if (centerVertically && getSettings()->displaySevenTVPaintShadows)
@@ -41,9 +41,8 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
                 continue;
             }
 
-            shadowExtent = std::max(
-                shadowExtent,
-                shadow.scaled(scale / dpr).extentBelow());
+            shadowExtent = std::max(shadowExtent,
+                                    shadow.scaled(scale / dpr).extentBelow());
         }
 
         drawSize.setHeight(size.height() + shadowExtent);
@@ -62,9 +61,8 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
 
     // NOTE: draw colon separately from the nametag
     // otherwise the paint would extend onto the colon
-      bool drawColon = false;
-    QRectF nametagBoundingRect =
-        centerVertically ? textRect : pixmapRect;
+    bool drawColon = false;
+    QRectF nametagBoundingRect = centerVertically ? textRect : pixmapRect;
     QString nametagText = text;
     if (nametagText.endsWith(':'))
     {
@@ -73,9 +71,9 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
         const auto textBounds = pixmapPainter.boundingRect(
             QRectF(0, 0, 10000, 10000), nametagText,
             QTextOption(Qt::AlignLeft | Qt::AlignTop));
-        nametagBoundingRect = QRectF(
-            0, 0, textBounds.width(),
-            centerVertically ? textRect.height() : pixmapRect.height());
+        nametagBoundingRect =
+            QRectF(0, 0, textBounds.width(),
+                   centerVertically ? textRect.height() : pixmapRect.height());
     }
 
     QPen pen;
@@ -85,9 +83,8 @@ QPixmap Paint::getPixmap(const QString &text, const QFont &font,
 
     if (centerVertically)
     {
-        pixmapPainter.drawText(
-            nametagBoundingRect, nametagText,
-            QTextOption(Qt::AlignLeft | Qt::AlignVCenter));
+        pixmapPainter.drawText(nametagBoundingRect, nametagText,
+                               QTextOption(Qt::AlignLeft | Qt::AlignVCenter));
     }
     else
     {

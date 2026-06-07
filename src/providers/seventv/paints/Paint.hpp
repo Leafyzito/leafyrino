@@ -22,7 +22,9 @@ public:
 
     Paint(QString id, QString name = {})
         : id(std::move(id))
-        , name(std::move(name)) {}
+        , name(std::move(name))
+    {
+    }
     virtual ~Paint() = default;
 
     Paint(const Paint &) = default;

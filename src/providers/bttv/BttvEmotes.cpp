@@ -81,8 +81,7 @@ std::pair<Outcome, EmoteMap> parseGlobalEmotes(const QJsonArray &jsonEmotes,
             .images =
                 ImageSet{
                     Image::fromUrl(getEmoteLinkV3(id, "1x"), 1, baseSize),
-                    Image::fromUrl(getEmoteLinkV3(id, "2x"), 0.5,
-                                   baseSize * 2),
+                    Image::fromUrl(getEmoteLinkV3(id, "2x"), 0.5, baseSize * 2),
                     Image::fromUrl(getEmoteLinkV3(id, "3x"), 0.25,
                                    baseSize * 4),
                 },

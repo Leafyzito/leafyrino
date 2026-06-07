@@ -18,10 +18,10 @@
 #include <QPointer>
 #include <QString>
 
-#include <memory>
 #include <chrono>
 #include <functional>
 #include <map>
+#include <memory>
 #include <utility>
 #include <vector>
 

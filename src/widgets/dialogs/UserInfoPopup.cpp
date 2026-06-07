@@ -25,6 +25,8 @@
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/pronouns/Pronouns.hpp"
+#include "providers/seventv/paints/Paint.hpp"
+#include "providers/seventv/SeventvPaints.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/api/TwitchGql.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
@@ -32,8 +34,6 @@
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "providers/twitch/TwitchNameHistory.hpp"
-#include "providers/seventv/paints/Paint.hpp"
-#include "providers/seventv/SeventvPaints.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
@@ -4598,12 +4598,12 @@ void UserInfoPopup::updateSeventvPaintPixmap()
     const auto font =
         getApp()->getFonts()->getFont(FontStyle::UiMedium, this->scale());
     const auto dpr = this->devicePixelRatioF();
-    const QString paintName =
-        paint->name.isEmpty() ? paint->id : paint->name;
+    const QString paintName = paint->name.isEmpty() ? paint->id : paint->name;
 
     const QFontMetricsF metrics(font);
     const int lineHeight = std::max(1, qRound(metrics.height()));
-    const int paintWidth = std::max(1, qRound(metrics.horizontalAdvance(paintName)));
+    const int paintWidth =
+        std::max(1, qRound(metrics.horizontalAdvance(paintName)));
     const QSizeF size(paintWidth, lineHeight);
 
     this->ui_.seventvPaintPixmapLabel->setFixedSize(paintWidth, lineHeight);
