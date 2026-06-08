@@ -3211,4 +3211,184 @@ MessageColor MessageBuilder::textColor() const
     return this->textColor_;
 }
 
+namespace {
+
+constexpr QSize BADGE_PREVIEW_ICON_SIZE(36, 36);
+
+ImageSet badgePreviewImages(const BadgePreviewFallback &badge)
+{
+    const auto base = BADGE_PREVIEW_ICON_SIZE / 2;
+
+    ImagePtr image1;
+    ImagePtr image2;
+    ImagePtr image3;
+
+    if (!badge.image1x.isEmpty())
+    {
+        image1 = Image::fromUrl(Url{badge.image1x}, 2, base);
+    }
+    if (!badge.image2x.isEmpty())
+    {
+        image2 = Image::fromUrl(Url{badge.image2x}, 1, BADGE_PREVIEW_ICON_SIZE);
+    }
+    if (!badge.image4x.isEmpty())
+    {
+        image3 = Image::fromUrl(Url{badge.image4x}, 0.5,
+                                BADGE_PREVIEW_ICON_SIZE * 2);
+    }
+
+    if (!image2 && image1)
+    {
+        image2 = image1;
+    }
+    if (!image3 && image2)
+    {
+        image3 = image2;
+    }
+    if (!image1 && image2)
+    {
+        image1 = image2;
+    }
+    if (!image2 && image3)
+    {
+        image2 = image3;
+    }
+    if (!image1 && image3)
+    {
+        image1 = image3;
+    }
+
+    const auto empty = getEmptyImagePtr();
+    return ImageSet{
+        image1 ? image1 : empty,
+        image2 ? image2 : empty,
+        image3 ? image3 : empty,
+    };
+}
+
+EmotePtr emoteFromBadgePreviewFallback(const BadgePreviewFallback &badge)
+{
+    return std::make_shared<const Emote>(Emote{
+        .name = EmoteName{},
+        .images = badgePreviewImages(badge),
+        .tooltip = Tooltip{badge.title},
+    });
+}
+
+void appendPreviewTwitchBadge(MessageBuilder &builder, const TwitchBadge &badge,
+                              const BadgePreviewFallback *fallback,
+                              TwitchChannel *channel)
+{
+    std::optional<EmotePtr> badgeEmote = getTwitchBadge(badge, channel);
+    if (!badgeEmote && fallback != nullptr && !fallback->setID.isEmpty())
+    {
+        badgeEmote = emoteFromBadgePreviewFallback(*fallback);
+    }
+
+    if (!badgeEmote)
+    {
+        return;
+    }
+
+    auto tooltip = (*badgeEmote)->tooltip.string;
+
+    if (badge.key_ == "moderator" && getSettings()->useCustomFfzModeratorBadges)
+    {
+        if (auto customModBadge = channel->ffzCustomModBadge())
+        {
+            auto *modBadgeEl = builder.emplace<ModBadgeElement>(
+                *customModBadge, MessageElementFlag::BadgeChannelAuthority);
+            modBadgeEl->setTooltip((*customModBadge)->tooltip.string);
+            modBadgeEl->setTwitchBadge(badge.key_, badge.value_);
+            return;
+        }
+    }
+    else if (badge.key_ == "vip" && getSettings()->useCustomFfzVipBadges)
+    {
+        if (auto customVipBadge = channel->ffzCustomVipBadge())
+        {
+            auto *vipBadgeEl = builder.emplace<VipBadgeElement>(
+                *customVipBadge, MessageElementFlag::BadgeChannelAuthority);
+            vipBadgeEl->setTooltip((*customVipBadge)->tooltip.string);
+            vipBadgeEl->setTwitchBadge(badge.key_, badge.value_);
+            return;
+        }
+    }
+
+    auto *badgeEl = builder.emplace<BadgeElement>(*badgeEmote, badge.flag_);
+    badgeEl->setTooltip(tooltip);
+    badgeEl->setTwitchBadge(badge.key_, badge.value_);
+}
+
+}  // namespace
+
+MessagePtr MessageBuilder::makeSelfBadgePreviewMessage(
+    TwitchChannel *channel, const QString &userId, const QString &loginName,
+    const QString &displayName, const std::optional<QColor> &userColor,
+    const std::vector<TwitchBadge> &twitchBadges,
+    const std::vector<BadgePreviewFallback> &badgeFallbacks)
+{
+    if (channel == nullptr)
+    {
+        return nullptr;
+    }
+
+    std::unordered_map<QString, const BadgePreviewFallback *> fallbackBySetID;
+    for (const auto &fallback : badgeFallbacks)
+    {
+        if (!fallback.setID.isEmpty())
+        {
+            fallbackBySetID[fallback.setID] = &fallback;
+        }
+    }
+
+    MessageBuilder builder;
+    builder->id = QStringLiteral("badge-picker-preview");
+    builder->loginName = loginName;
+    builder->userID = userId;
+    builder->channelName = channel->getName();
+
+    QVariantMap tags;
+    tags[QStringLiteral("display-name")] =
+        displayName.isEmpty() ? loginName : displayName;
+    tags[QStringLiteral("user-id")] = userId;
+
+    if (userColor && userColor->isValid())
+    {
+        tags[QStringLiteral("color")] = userColor->name(QColor::HexRgb);
+    }
+    builder.parseUsernameColor(tags, userId);
+
+    for (const auto &badge : twitchBadges)
+    {
+        const BadgePreviewFallback *fallback = nullptr;
+        if (const auto it = fallbackBySetID.find(badge.key_);
+            it != fallbackBySetID.end())
+        {
+            fallback = it->second;
+        }
+
+        appendPreviewTwitchBadge(builder, badge, fallback, channel);
+    }
+
+    builder.message().twitchBadges = twitchBadges;
+
+    builder.appendChatterinoBadges(userId);
+    builder.appendFfzBadges(channel, userId);
+    builder.appendFfzApBadges(userId);
+    builder.appendBttvBadges(userId);
+    builder.appendMoltorinoBadges(userId);
+    builder.appendSeventvBadges(userId);
+    builder.appendDankChatBadges(userId);
+    builder.appendChatsenBadges(userId);
+    builder.appendHomiesBadges(userId);
+    builder.appendFolhinhaBadges(userId);
+
+    MessageParseArgs args;
+    args.isAction = true;
+    builder.appendUsername(tags, args);
+
+    return builder.release();
+}
+
 }  // namespace chatterino

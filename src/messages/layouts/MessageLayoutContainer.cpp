@@ -20,6 +20,7 @@
 #include <QPainter>
 #include <QVarLengthArray>
 
+#include <algorithm>
 #include <optional>
 
 namespace {
@@ -652,6 +653,27 @@ size_t MessageLayoutContainer::getLastCharacterIndex() const
 qreal MessageLayoutContainer::getWidth() const
 {
     return this->width_;
+}
+
+qreal MessageLayoutContainer::getLayoutContentWidth() const
+{
+    if (this->elements_.empty())
+    {
+        return 0;
+    }
+
+    qreal maxRight = 0;
+    for (const auto &element : this->elements_)
+    {
+        if (element->getLine() != 0)
+        {
+            continue;
+        }
+
+        maxRight = std::max(maxRight, element->getRect().right());
+    }
+
+    return maxRight + (MARGIN.left() + MARGIN.right()) * this->scale_;
 }
 
 qreal MessageLayoutContainer::getHeight() const

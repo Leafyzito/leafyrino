@@ -59,6 +59,7 @@ public:
     int getHeight() const;
     int getFirstLineHeight() const;
     int getWidth() const;
+    int getLayoutContentWidth() const;
     size_t getLineCount() const;
 
     MessageLayoutFlags flags;

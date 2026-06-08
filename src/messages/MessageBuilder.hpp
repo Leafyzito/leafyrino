@@ -8,6 +8,7 @@
 #include "singletons/Fonts.hpp"
 
 #include <IrcMessage>
+#include <QColor>
 #include <QRegularExpression>
 #include <QString>
 #include <QTime>
@@ -16,7 +17,9 @@
 
 #include <ctime>
 #include <memory>
+#include <optional>
 #include <utility>
+#include <vector>
 
 namespace chatterino {
 
@@ -31,6 +34,7 @@ using EmotePtr = std::shared_ptr<const Emote>;
 
 class Channel;
 class TwitchChannel;
+class TwitchBadge;
 class MessageThread;
 class IgnorePhrase;
 struct HelixVip;
@@ -87,6 +91,16 @@ struct HighlightAlert {
     bool playSound = false;
     bool windowAlert = false;
 };
+
+struct BadgePreviewFallback {
+    QString setID;
+    QString version;
+    QString title;
+    QString image1x;
+    QString image2x;
+    QString image4x;
+};
+
 class MessageBuilder
 {
 public:
@@ -216,6 +230,12 @@ public:
     static MessagePtrMut makeClearChatMessage(const QDateTime &now,
                                               const QString &actor,
                                               uint32_t count = 1);
+
+    static MessagePtr makeSelfBadgePreviewMessage(
+        TwitchChannel *channel, const QString &userId, const QString &loginName,
+        const QString &displayName, const std::optional<QColor> &userColor,
+        const std::vector<TwitchBadge> &twitchBadges,
+        const std::vector<BadgePreviewFallback> &badgeFallbacks);
 
 private:
     struct TextState {

@@ -10,11 +10,16 @@
 #include "controllers/accounts/AccountController.hpp"
 #include "messages/Image.hpp"
 #include "messages/ImageSet.hpp"
+#include "messages/layouts/MessageLayout.hpp"
+#include "messages/layouts/MessageLayoutContext.hpp"
+#include "messages/MessageBuilder.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/api/TwitchGql.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
+#include "providers/twitch/TwitchBadge.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
+#include "providers/twitch/TwitchUsers.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
@@ -24,6 +29,7 @@
 #include "widgets/dialogs/ColorPickerDialog.hpp"
 #include "widgets/helper/color/ColorButton.hpp"
 #include "widgets/helper/Line.hpp"
+#include "widgets/helper/MessageView.hpp"
 
 #include <pajlada/signals/signalholder.hpp>
 #include <QColor>
@@ -31,6 +37,7 @@
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QGridLayout>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -40,23 +47,27 @@
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
 #include <QResizeEvent>
+#include <QScreen>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QSet>
 #include <QShowEvent>
+#include <QtGlobal>
 #include <QTimer>
 #include <QUrl>
 #include <QVBoxLayout>
 
 #include <cmath>
+#include <optional>
+#include <unordered_map>
 
 namespace chatterino {
 
 namespace {
 
-constexpr QSize DEFAULT_DIALOG_SIZE(332, 400);
+constexpr QSize DEFAULT_DIALOG_SIZE(332, 440);
 constexpr int HEADER_SEPARATOR_HEIGHT = 8;
-constexpr int BADGE_GRID_COLUMNS = 6;
+constexpr int BADGE_GRID_SPACING = 4;
 constexpr int BADGE_TILE_PADDING = 4;
 constexpr QSize BADGE_ICON_SIZE(36, 36);
 constexpr float BADGE_IMAGE_SCALE =
@@ -76,6 +87,24 @@ int scaledMetric(float scale, int base, int minimum)
 int contentHorizontalMargin(float scale)
 {
     return scaledMetric(scale, 12, 6);
+}
+
+int badgeTileSize()
+{
+    return BADGE_ICON_SIZE.width() + BADGE_TILE_PADDING * 2;
+}
+
+int badgeGridColumnsForWidth(int availableWidth)
+{
+    if (availableWidth <= 0)
+    {
+        const int fallbackWidth =
+            DEFAULT_DIALOG_SIZE.width() - contentHorizontalMargin(1.0F) * 2;
+        availableWidth = fallbackWidth;
+    }
+
+    const int stride = badgeTileSize() + BADGE_GRID_SPACING;
+    return std::max(1, (availableWidth + BADGE_GRID_SPACING) / stride);
 }
 
 bool badgeMatchesSearch(const GqlBadge &badge, const QString &needle)
@@ -556,6 +585,184 @@ QString normalizeCustomHexInput(const QString &text)
     return trimmed;
 }
 
+std::vector<BadgePreviewFallback> toBadgePreviewFallbacks(
+    const std::unordered_map<QString, GqlBadge> &lookup)
+{
+    std::vector<BadgePreviewFallback> result;
+    result.reserve(lookup.size());
+
+    for (const auto &[setID, badge] : lookup)
+    {
+        std::ignore = setID;
+        result.push_back({
+            .setID = badge.setID,
+            .version = badge.version,
+            .title = badge.title,
+            .image1x = badge.image1x,
+            .image2x = badge.image2x,
+            .image4x = badge.image4x,
+        });
+    }
+
+    return result;
+}
+
+std::vector<TwitchBadge> collectPreviewBadges(
+    const GqlChatSettingsBadges &badgeState, TwitchChannel *channel,
+    const QString &userId)
+{
+    std::vector<TwitchBadge> badges;
+    QSet<QString> addedSetIds;
+
+    const auto addBadge = [&](const QString &setID, const QString &version) {
+        if (setID.isEmpty() || addedSetIds.contains(setID))
+        {
+            return;
+        }
+        addedSetIds.insert(setID);
+        badges.emplace_back(setID, version);
+    };
+
+    for (const auto &badge : badgeState.authorityBadges)
+    {
+        addBadge(badge.setID, badge.version);
+    }
+
+    if (channel != nullptr)
+    {
+        const auto snapshot = channel->getMessageSnapshot(100);
+        for (auto it = snapshot.rbegin(); it != snapshot.rend(); ++it)
+        {
+            if ((*it)->userID != userId)
+            {
+                continue;
+            }
+
+            for (const auto &tb : (*it)->twitchBadges)
+            {
+                if (tb.flag_ == MessageElementFlag::BadgeSubscription)
+                {
+                    addBadge(tb.key_, tb.value_);
+                }
+            }
+            break;
+        }
+    }
+
+    // Custom channel badges replace the global vanity badge, not the sub badge.
+    if (badgeState.useCustomChannelBadge)
+    {
+        addBadge(badgeState.selectedChannelBadge.setID,
+                 badgeState.selectedChannelBadge.version);
+    }
+    else
+    {
+        addBadge(badgeState.selectedGlobalBadge.setID,
+                 badgeState.selectedGlobalBadge.version);
+    }
+
+    return badges;
+}
+
+std::unordered_map<QString, GqlBadge> gqlBadgeLookup(
+    const GqlChatSettingsBadges &badgeState)
+{
+    std::unordered_map<QString, GqlBadge> lookup;
+
+    const auto add = [&](const GqlBadge &badge) {
+        if (!badge.setID.isEmpty())
+        {
+            lookup[badge.setID] = badge;
+        }
+    };
+
+    for (const auto &badge : badgeState.authorityBadges)
+    {
+        add(badge);
+    }
+    add(badgeState.selectedGlobalBadge);
+    add(badgeState.selectedChannelBadge);
+
+    for (const auto &badge : badgeState.availableGlobal)
+    {
+        add(badge);
+    }
+    for (const auto &badge : badgeState.availableChannel)
+    {
+        add(badge);
+    }
+
+    return lookup;
+}
+
+QString resolveSelfDisplayName(const QString &userId, const QString &loginName,
+                               TwitchChannel *channel)
+{
+    if (auto twitchUser = getApp()->getTwitchUsers()->resolveID({userId});
+        twitchUser && !twitchUser->displayName.isEmpty())
+    {
+        return twitchUser->displayName;
+    }
+
+    if (channel != nullptr)
+    {
+        const auto snapshot = channel->getMessageSnapshot(100);
+        for (auto it = snapshot.rbegin(); it != snapshot.rend(); ++it)
+        {
+            if ((*it)->userID != userId)
+            {
+                continue;
+            }
+
+            if (!(*it)->displayName.isEmpty())
+            {
+                return (*it)->displayName;
+            }
+
+            if (!(*it)->localizedName.isEmpty())
+            {
+                return (*it)->localizedName;
+            }
+            break;
+        }
+    }
+
+    return loginName;
+}
+
+int contentHorizontalChrome(float scale)
+{
+    return contentHorizontalMargin(scale) * 2 + scaledMetric(scale, 12, 8);
+}
+
+int measureMessageContentWidth(const MessagePtr &message, float scale,
+                               float dpr)
+{
+    if (message == nullptr)
+    {
+        return 0;
+    }
+
+    MessageLayout layout(message);
+    MessageColors colors;
+    colors.applyTheme(getApp()->getThemes(), false, 255);
+
+    constexpr int PROBE_WIDTH = 10000;
+    layout.layout(
+        {
+            .messageColors = colors,
+            .flags = getApp()->getWindows()->getWordFlags(),
+            .width = PROBE_WIDTH,
+            .scale = scale,
+            .imageScale = scale * dpr,
+            .selectedChannel = nullptr,
+            .message = *message,
+        },
+        false);
+
+    return layout.getLayoutContentWidth();
+}
+
 }  // namespace
 
 std::vector<QPointer<TwitchBadgePickerDialog>>
@@ -608,6 +815,16 @@ TwitchBadgePickerDialog::TwitchBadgePickerDialog(TwitchChannel *channel,
     separator->setObjectName("TwitchBadgePickerDialogSeparator");
     separator->setFixedHeight(scaledSeparatorHeight(this->scale()));
     this->mainLayout_->addWidget(separator);
+
+    this->previewWidget_ = new QWidget(container);
+    this->previewWidget_->setObjectName("TwitchBadgePickerPreview");
+    auto *previewLayout = new QVBoxLayout(this->previewWidget_);
+    previewLayout->setContentsMargins(0, scaledMetric(this->scale(), 4, 2), 0,
+                                      scaledMetric(this->scale(), 4, 2));
+    previewLayout->setSpacing(0);
+    this->previewView_ = new MessageView(this->previewWidget_);
+    previewLayout->addWidget(this->previewView_);
+    this->mainLayout_->addWidget(this->previewWidget_);
 
     // Tab rows
     const int tabSpacing = 4;
@@ -777,11 +994,48 @@ void TwitchBadgePickerDialog::scaleChangedEvent(float scale)
     DraggablePopup::scaleChangedEvent(scale);
     this->refreshStyle();
     this->applySizeConstraints();
+    this->updatePreview();
+    if (this->badgeGridColumns() != this->lastBadgeGridColumns_)
+    {
+        this->rebuildContent();
+    }
+}
+
+int TwitchBadgePickerDialog::badgeGridColumns() const
+{
+    int availableWidth = 0;
+    if (this->scrollArea_ != nullptr)
+    {
+        availableWidth = this->scrollArea_->viewport()->width();
+    }
+
+    if (availableWidth <= 0)
+    {
+        const float scale = this->scale();
+        availableWidth =
+            int(std::round(float(this->scaleIndependentWidth()) * scale)) -
+            contentHorizontalMargin(scale) * 2;
+    }
+
+    return badgeGridColumnsForWidth(availableWidth);
 }
 
 void TwitchBadgePickerDialog::resizeEvent(QResizeEvent *event)
 {
     DraggablePopup::resizeEvent(event);
+
+    const int minW = this->minimumWidth();
+    const int minH = this->minimumHeight();
+    if (this->width() < minW || this->height() < minH)
+    {
+        this->resize(std::max(this->width(), minW),
+                     std::max(this->height(), minH));
+    }
+
+    if (this->badgeGridColumns() != this->lastBadgeGridColumns_)
+    {
+        this->rebuildContent();
+    }
 
     if (this->scrollArea_ != nullptr)
     {
@@ -873,7 +1127,9 @@ void TwitchBadgePickerDialog::rebuildContent()
         this->rebuildColors();
 
     this->contentLayout_->addStretch(1);
+    this->lastBadgeGridColumns_ = this->badgeGridColumns();
     this->applySizeConstraints();
+    this->updatePreview();
 
     if (this->scrollArea_ != nullptr)
     {
@@ -898,10 +1154,12 @@ void TwitchBadgePickerDialog::rebuildGlobalBadges()
     label->setObjectName("TwitchBadgePickerSectionLabel");
     this->contentLayout_->addWidget(label);
 
+    const int gridColumns = this->badgeGridColumns();
+
     auto *gridWidget = new QWidget(this->contentWidget_);
     auto *grid = new QGridLayout(gridWidget);
     grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(4);
+    grid->setSpacing(BADGE_GRID_SPACING);
 
     int row = 0;
     int col = 0;
@@ -939,7 +1197,7 @@ void TwitchBadgePickerDialog::rebuildGlobalBadges()
         });
         grid->addWidget(tile, row, col);
         ++shown;
-        if (++col >= BADGE_GRID_COLUMNS)
+        if (++col >= gridColumns)
         {
             col = 0;
             ++row;
@@ -1031,10 +1289,12 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
     label->setObjectName("TwitchBadgePickerSectionLabel");
     this->contentLayout_->addWidget(label);
 
+    const int gridColumns = this->badgeGridColumns();
+
     auto *gridWidget = new QWidget(this->contentWidget_);
     auto *grid = new QGridLayout(gridWidget);
     grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(4);
+    grid->setSpacing(BADGE_GRID_SPACING);
 
     int row = 0;
     int col = 0;
@@ -1060,7 +1320,7 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
         });
         grid->addWidget(tile, row, col);
         ++shown;
-        if (++col >= BADGE_GRID_COLUMNS)
+        if (++col >= gridColumns)
         {
             col = 0;
             ++row;
@@ -1217,18 +1477,20 @@ void TwitchBadgePickerDialog::rebuildEventBadges()
         return tile;
     };
 
+    const int gridColumns = this->badgeGridColumns();
+
     auto makeGrid = [&](const QVector<EventBadge> &badges) {
         auto *gridWidget = new QWidget(this->contentWidget_);
         auto *grid = new QGridLayout(gridWidget);
         grid->setContentsMargins(0, 0, 0, 0);
-        grid->setSpacing(4);
+        grid->setSpacing(BADGE_GRID_SPACING);
         int row = 0;
         int col = 0;
         for (const auto &badge : badges)
         {
             auto *tile = makeTile(badge, gridWidget);
             grid->addWidget(tile, row, col);
-            if (++col >= BADGE_GRID_COLUMNS)
+            if (++col >= gridColumns)
             {
                 col = 0;
                 ++row;
@@ -1311,10 +1573,12 @@ void TwitchBadgePickerDialog::rebuildColors()
     label->setObjectName("TwitchBadgePickerSectionLabel");
     this->contentLayout_->addWidget(label);
 
+    const int gridColumns = this->badgeGridColumns();
+
     auto *gridWidget = new QWidget(this->contentWidget_);
     auto *grid = new QGridLayout(gridWidget);
     grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(4);
+    grid->setSpacing(BADGE_GRID_SPACING);
 
     int row = 0;
     int col = 0;
@@ -1339,7 +1603,7 @@ void TwitchBadgePickerDialog::rebuildColors()
         });
 
         grid->addWidget(tile, row, col);
-        if (++col >= BADGE_GRID_COLUMNS)
+        if (++col >= gridColumns)
         {
             col = 0;
             ++row;
@@ -1623,6 +1887,84 @@ void TwitchBadgePickerDialog::setStatus(const QString &text, bool error)
     this->statusLabel_->setStyleSheet(QStringLiteral("color: %1;").arg(color));
 }
 
+void TwitchBadgePickerDialog::applyPreviewDialogWidth(int contentPixelWidth)
+{
+    const auto scale = this->scale();
+    const int chrome = contentHorizontalChrome(scale);
+    int targetPixelWidth = std::max(int(DEFAULT_DIALOG_SIZE.width() * scale),
+                                    contentPixelWidth + chrome);
+
+    if (const auto *screen = QGuiApplication::primaryScreen())
+    {
+        const int maxWidth = screen->availableGeometry().width() * 9 / 10;
+        targetPixelWidth = std::min(targetPixelWidth, maxWidth);
+    }
+
+    const int scaleIndependentWidth =
+        std::max(this->scaleIndependentWidth(),
+                 std::max(DEFAULT_DIALOG_SIZE.width(),
+                          int(std::ceil(float(targetPixelWidth) / scale))));
+
+    if (this->scaleIndependentWidth() != scaleIndependentWidth)
+    {
+        this->setScaleIndependentWidth(scaleIndependentWidth);
+    }
+
+    this->applySizeConstraints();
+}
+
+void TwitchBadgePickerDialog::updatePreview()
+{
+    if (this->previewView_ == nullptr || this->previewWidget_ == nullptr)
+    {
+        return;
+    }
+
+    const auto user = getApp()->getAccounts()->twitch.getCurrent();
+    const bool showPreview = user && !user->isAnon();
+    this->previewWidget_->setVisible(showPreview);
+
+    if (!showPreview)
+    {
+        this->previewView_->clearMessage();
+        return;
+    }
+
+    const auto message = this->buildPreviewMessage();
+    const int contentWidth = measureMessageContentWidth(
+        message, this->scale(), float(this->devicePixelRatioF()));
+    this->applyPreviewDialogWidth(contentWidth);
+    this->previewView_->setWidth(contentWidth);
+    this->previewView_->setFullMessage(message);
+}
+
+MessagePtr TwitchBadgePickerDialog::buildPreviewMessage() const
+{
+    if (this->channel_ == nullptr)
+    {
+        return nullptr;
+    }
+
+    const auto user = getApp()->getAccounts()->twitch.getCurrent();
+    if (user->isAnon())
+    {
+        return nullptr;
+    }
+
+    const QString userId = user->getUserId();
+    const QString loginName = user->getUserName();
+    const QString displayName =
+        resolveSelfDisplayName(userId, loginName, this->channel_);
+    const QColor userColor = user->color();
+    const std::optional<QColor> color =
+        userColor.isValid() ? std::optional(userColor) : std::nullopt;
+
+    return MessageBuilder::makeSelfBadgePreviewMessage(
+        this->channel_, userId, loginName, displayName, color,
+        collectPreviewBadges(this->badges_, this->channel_, userId),
+        toBadgePreviewFallbacks(gqlBadgeLookup(this->badges_)));
+}
+
 void TwitchBadgePickerDialog::selectGlobal(const GqlBadge &badge)
 {
     const auto token = this->authTokenOrMessage();
@@ -1631,8 +1973,10 @@ void TwitchBadgePickerDialog::selectGlobal(const GqlBadge &badge)
 
     const bool clearing = badge.setID.isEmpty();
 
+    this->badges_.selectedGlobalBadge = clearing ? GqlBadge{} : badge;
     this->actionInFlight_ = true;
     this->rebuildContent();
+    this->updatePreview();
 
     QPointer<TwitchBadgePickerDialog> self = this;
     TwitchGql::selectGlobalBadge(
@@ -1665,8 +2009,11 @@ void TwitchBadgePickerDialog::selectChannel(const GqlBadge &badge)
     if (token.isEmpty())
         return;
 
+    this->badges_.selectedChannelBadge = badge;
+    this->badges_.useCustomChannelBadge = true;
     this->actionInFlight_ = true;
     this->rebuildContent();
+    this->updatePreview();
 
     QPointer<TwitchBadgePickerDialog> self = this;
     const auto channelId = this->channel_->roomId();
@@ -1700,8 +2047,10 @@ void TwitchBadgePickerDialog::deselectChannel()
     if (token.isEmpty())
         return;
 
+    this->badges_.useCustomChannelBadge = false;
     this->actionInFlight_ = true;
     this->rebuildContent();
+    this->updatePreview();
 
     QPointer<TwitchBadgePickerDialog> self = this;
     const auto channelId = this->channel_->roomId();
@@ -1734,8 +2083,10 @@ void TwitchBadgePickerDialog::setFlairHidden(bool hidden)
     if (token.isEmpty())
         return;
 
+    this->badges_.isBadgeModifierHidden = hidden;
     this->actionInFlight_ = true;
     this->rebuildContent();
+    this->updatePreview();
 
     QPointer<TwitchBadgePickerDialog> self = this;
 
@@ -1878,6 +2229,12 @@ void TwitchBadgePickerDialog::refreshStyle()
         QWidget#TwitchBadgePickerHeader {
             background: transparent;
         }
+        QWidget#TwitchBadgePickerPreview {
+            background: %5;
+            border: 1px solid %3;
+            border-radius: %6px;
+            padding: 4px 6px;
+        }
         QFrame#TwitchBadgePickerDialogSeparator,
         QWidget#TwitchBadgePickerDialogSeparator {
             background: %3;
@@ -2000,12 +2357,22 @@ void TwitchBadgePickerDialog::refreshStyle()
 
 void TwitchBadgePickerDialog::applySizeConstraints()
 {
-    const int w = std::max(1, int(DEFAULT_DIALOG_SIZE.width() * this->scale()));
-    const int h =
-        std::max(1, int(DEFAULT_DIALOG_SIZE.height() * this->scale()));
-    this->setMinimumSize(
-        QSize(std::min(w, std::max(180, int(220 * this->scale()))),
-              std::min(h, std::max(120, int(180 * this->scale())))));
+    const int requiredW =
+        std::max(1, int(this->scaleIndependentWidth() * this->scale()));
+    const int requiredH =
+        std::max(1, int(this->scaleIndependentHeight() * this->scale()));
+
+    const int minW = std::max(this->minimumWidth(), requiredW);
+    const int minH = std::max(this->minimumHeight(), requiredH);
+
+    this->setMinimumSize(minW, minH);
+    this->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+
+    if (this->width() < minW || this->height() < minH)
+    {
+        this->resize(std::max(this->width(), minW),
+                     std::max(this->height(), minH));
+    }
 }
 
 QString TwitchBadgePickerDialog::authTokenOrMessage()

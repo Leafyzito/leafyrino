@@ -74,6 +74,9 @@ struct MessageLayoutContainer {
 
     qreal getWidth() const;
 
+    /// Width of the laid-out content (ignoring the layout canvas width).
+    qreal getLayoutContentWidth() const;
+
     qreal getHeight() const;
 
     int getFirstLineHeight() const;

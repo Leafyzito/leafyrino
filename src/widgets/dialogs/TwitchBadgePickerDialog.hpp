@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "messages/Message.hpp"
 #include "providers/moltorino/MoltorinoFeatureFlags.hpp"
 #include "providers/twitch/api/TwitchGql.hpp"
 #include "widgets/DraggablePopup.hpp"
@@ -26,6 +27,7 @@ class QVBoxLayout;
 
 namespace chatterino {
 
+class MessageView;
 class SvgButton;
 class Button;
 class TwitchChannel;
@@ -80,6 +82,10 @@ private:
     QString authTokenOrMessage();
     void applySizeConstraints();
     void updateSearchVisibility();
+    void updatePreview();
+    [[nodiscard]] MessagePtr buildPreviewMessage() const;
+    void applyPreviewDialogWidth(int contentPixelWidth);
+    [[nodiscard]] int badgeGridColumns() const;
 
     TwitchChannel *channel_{};
 
@@ -98,6 +104,8 @@ private:
     QWidget *contentWidget_{};
     QVBoxLayout *contentLayout_{};
     QLabel *statusLabel_{};
+    QWidget *previewWidget_{};
+    MessageView *previewView_{};
 
     View view_ = View::GlobalBadges;
     GqlChatSettingsBadges badges_;
@@ -108,6 +116,7 @@ private:
     QString statusText_;
     bool statusIsError_ = false;
     QString searchQuery_;
+    int lastBadgeGridColumns_ = -1;
 
     QVector<EventBadge> eventBadgesCache_;
     bool eventBadgesLoading_ = false;

@@ -74,6 +74,12 @@ int MessageLayout::getWidth() const
     return static_cast<int>(this->container_.getWidth());
 }
 
+int MessageLayout::getLayoutContentWidth() const
+{
+    return static_cast<int>(
+        std::ceil(this->container_.getLayoutContentWidth()));
+}
+
 size_t MessageLayout::getLineCount() const
 {
     return this->container_.getLineCount();
