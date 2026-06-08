@@ -7,6 +7,7 @@
 #include "Application.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
+#include "providers/IvrApi.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
@@ -216,7 +217,8 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
         resultList->show();
     };
 
-    auto loadChatters = [=](auto modList, auto vipList, bool isBroadcaster) {
+    auto loadChatters = [=](auto modList, auto vipList,
+                            bool showModVipSections) {
         getHelix()->getChatters(
             twitchChannel->roomId(),
             getApp()->getAccounts()->twitch.getCurrent()->getUserId(), 50000,
@@ -259,7 +261,7 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
                 vipChatters.sort();
                 chatterList.sort();
 
-                if (isBroadcaster)
+                if (showModVipSections)
                 {
                     addUserList(modChatters, QString("Moderators"));
                     addUserList(vipChatters, QString("VIPs"));
@@ -300,7 +302,7 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
                 QSet<QString> modList;
                 for (const auto &mod : mods)
                 {
-                    modList.insert(mod.userName.toLower());
+                    modList.insert(mod.userLogin.toLower());
                 }
 
                 getHelix()->getChannelVIPs(
@@ -309,7 +311,7 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
                         QSet<QString> vipList;
                         for (const auto &vip : vips)
                         {
-                            vipList.insert(vip.userName.toLower());
+                            vipList.insert(vip.userLogin.toLower());
                         }
 
                         loadChatters(modList, vipList, true);
@@ -328,9 +330,27 @@ ChatterListWidget::ChatterListWidget(const TwitchChannel *twitchChannel,
     }
     else if (twitchChannel->hasModRights())
     {
-        QSet<QString> modList;
-        QSet<QString> vipList;
-        loadChatters(modList, vipList, false);
+        getIvr()->getModVip(
+            twitchChannel->getName(),
+            [=](const std::vector<HelixModerator> &mods,
+                const std::vector<HelixVip> &vips) {
+                QSet<QString> modList;
+                for (const auto &mod : mods)
+                {
+                    modList.insert(mod.userLogin.toLower());
+                }
+
+                QSet<QString> vipList;
+                for (const auto &vip : vips)
+                {
+                    vipList.insert(vip.userLogin.toLower());
+                }
+
+                loadChatters(modList, vipList, true);
+            },
+            [=]() {
+                loadChatters(QSet<QString>{}, QSet<QString>{}, false);
+            });
     }
     else
     {
