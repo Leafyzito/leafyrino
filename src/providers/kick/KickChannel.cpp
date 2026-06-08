@@ -160,26 +160,28 @@ EmotePtr KickChannel::seventvEmote(const EmoteName &name) const
 void KickChannel::addSeventvEmote(
     const seventv::eventapi::EmoteAddDispatch &dispatch)
 {
-    if (!SeventvEmotes::addEmote(this->seventvEmotes_, dispatch))
+    auto emote = SeventvEmotes::addEmote(this->seventvEmotes_, dispatch);
+    if (!emote)
     {
         return;
     }
 
     this->addOrReplaceSeventvAddRemove(true, dispatch.actorName,
-                                       dispatch.emoteJson["name"].toString());
+                                       LiveUpdateEmote{*emote});
 }
 
 void KickChannel::updateSeventvEmote(
     const seventv::eventapi::EmoteUpdateDispatch &dispatch)
 {
-    if (!SeventvEmotes::updateEmote(this->seventvEmotes_, dispatch))
+    auto updated = SeventvEmotes::updateEmote(this->seventvEmotes_, dispatch);
+    if (!updated)
     {
         return;
     }
 
-    auto builder =
-        MessageBuilder(liveUpdatesUpdateEmoteMessage, "7TV", dispatch.actorName,
-                       dispatch.emoteName, dispatch.oldEmoteName);
+    auto builder = MessageBuilder(
+        liveUpdatesUpdateEmoteMessage, "7TV", dispatch.actorName,
+        (*updated)->name.string, dispatch.oldEmoteName, *updated);
     this->addMessage(builder.release(), MessageContext::Original);
 }
 
@@ -193,7 +195,7 @@ void KickChannel::removeSeventvEmote(
     }
 
     this->addOrReplaceSeventvAddRemove(false, dispatch.actorName,
-                                       (*removed)->name.string);
+                                       LiveUpdateEmote{*removed});
 }
 
 void KickChannel::updateSeventvUser(
@@ -756,29 +758,29 @@ void KickChannel::updateSeventvData(const QString &newUserID,
 
 void KickChannel::addOrReplaceSeventvAddRemove(bool isEmoteAdd,
                                                const QString &actor,
-                                               const QString &emoteName)
+                                               const LiveUpdateEmote &emote)
 {
     if (this->tryReplaceLastSeventvAddOrRemove(
             isEmoteAdd ? MessageFlag::LiveUpdatesAdd
                        : MessageFlag::LiveUpdatesRemove,
-            actor, emoteName))
+            actor, emote))
     {
         return;
     }
 
-    this->lastSeventvEmoteNames_ = {emoteName};
+    this->lastSeventvEmotes_ = {emote};
 
     MessagePtr msg;
     if (isEmoteAdd)
     {
         msg = MessageBuilder(liveUpdatesAddEmoteMessage, "7TV", actor,
-                             this->lastSeventvEmoteNames_)
+                             this->lastSeventvEmotes_)
                   .release();
     }
     else
     {
         msg = MessageBuilder(liveUpdatesRemoveEmoteMessage, "7TV", actor,
-                             this->lastSeventvEmoteNames_)
+                             this->lastSeventvEmotes_)
                   .release();
     }
     this->lastSeventvMessage_ = msg;
@@ -788,7 +790,7 @@ void KickChannel::addOrReplaceSeventvAddRemove(bool isEmoteAdd,
 
 bool KickChannel::tryReplaceLastSeventvAddOrRemove(MessageFlag op,
                                                    const QString &actor,
-                                                   const QString &emoteName)
+                                                   const LiveUpdateEmote &emote)
 {
     auto last = this->lastSeventvMessage_.lock();
     if (!last || !last->flags.has(op) ||
@@ -798,7 +800,7 @@ bool KickChannel::tryReplaceLastSeventvAddOrRemove(MessageFlag op,
         return false;
     }
 
-    this->lastSeventvEmoteNames_.push_back(emoteName);
+    this->lastSeventvEmotes_.push_back(emote);
 
     auto makeReplacement = [&](MessageFlag op) -> MessageBuilder {
         if (op == MessageFlag::LiveUpdatesAdd)
@@ -807,7 +809,7 @@ bool KickChannel::tryReplaceLastSeventvAddOrRemove(MessageFlag op,
                 liveUpdatesAddEmoteMessage,
                 "7TV",
                 last->loginName,
-                this->lastSeventvEmoteNames_,
+                this->lastSeventvEmotes_,
             };
         }
 
@@ -815,7 +817,7 @@ bool KickChannel::tryReplaceLastSeventvAddOrRemove(MessageFlag op,
             liveUpdatesRemoveEmoteMessage,
             "7TV",
             last->loginName,
-            this->lastSeventvEmoteNames_,
+            this->lastSeventvEmotes_,
         };
     };
 

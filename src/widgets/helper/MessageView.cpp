@@ -283,10 +283,13 @@ void MessageView::updateHoverTooltip(QMouseEvent *event)
     auto *element = &hoverLayoutElement->getCreator();
     const bool isLinkValid = hoverLayoutElement->getLink().isValid();
     const auto *emoteElement = dynamic_cast<const EmoteElement *>(element);
+    const auto *emoteLinkElement =
+        dynamic_cast<const EmoteLinkElement *>(element);
     const auto *layeredEmoteElement =
         dynamic_cast<const LayeredEmoteElement *>(element);
     const bool isNotEmote =
-        emoteElement == nullptr && layeredEmoteElement == nullptr;
+        emoteElement == nullptr && emoteLinkElement == nullptr &&
+        layeredEmoteElement == nullptr;
 
     if (element->getTooltip().isEmpty() ||
         (isLinkValid && isNotEmote && !getSettings()->linkInfoTooltip))
@@ -297,7 +300,8 @@ void MessageView::updateHoverTooltip(QMouseEvent *event)
     {
         const auto *badgeElement = dynamic_cast<const BadgeElement *>(element);
 
-        if (badgeElement || emoteElement || layeredEmoteElement)
+        if (badgeElement || emoteElement || emoteLinkElement ||
+            layeredEmoteElement)
         {
             const auto showThumbnailSetting =
                 getSettings()->emotesTooltipPreview.getEnum();
@@ -307,13 +311,13 @@ void MessageView::updateHoverTooltip(QMouseEvent *event)
                 (showThumbnailSetting == ThumbnailPreviewMode::ShowOnShift &&
                  event->modifiers() == Qt::ShiftModifier);
 
-            if (emoteElement)
+            if (emoteElement || emoteLinkElement)
             {
+                const auto emote = emoteElement ? emoteElement->getEmote()
+                                                : emoteLinkElement->getEmote();
                 const auto scale = getSettings()->emoteTooltipScale.getEnum();
                 this->tooltipWidget_->setOne(TooltipEntry::scaled(
-                    showThumbnail
-                        ? emoteElement->getEmote()->images.getImage(3.0)
-                        : nullptr,
+                    showThumbnail ? emote->images.getImage(3.0) : nullptr,
                     element->getTooltip(), getTooltipScale(scale)));
             }
             else if (layeredEmoteElement)

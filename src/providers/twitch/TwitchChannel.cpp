@@ -2775,7 +2775,7 @@ void TwitchChannel::addBttvEmote(
                                       message);
 
     this->addOrReplaceLiveUpdatesAddRemove(true, "BTTV", QString() /*actor*/,
-                                           emote->name.string);
+                                           LiveUpdateEmote{emote});
 }
 
 void TwitchChannel::updateBttvEmote(
@@ -2796,7 +2796,7 @@ void TwitchChannel::updateBttvEmote(
 
     auto builder = MessageBuilder(liveUpdatesUpdateEmoteMessage, "BTTV",
                                   QString() /* actor */, newEmote->name.string,
-                                  oldEmote->name.string);
+                                  oldEmote->name.string, newEmote);
     this->addMessage(builder.release(), MessageContext::Original);
 }
 
@@ -2810,32 +2810,34 @@ void TwitchChannel::removeBttvEmote(
     }
 
     this->addOrReplaceLiveUpdatesAddRemove(false, "BTTV", QString() /*actor*/,
-                                           (*removed)->name.string);
+                                           LiveUpdateEmote{*removed});
 }
 
 void TwitchChannel::addSeventvEmote(
     const seventv::eventapi::EmoteAddDispatch &dispatch)
 {
-    if (!SeventvEmotes::addEmote(this->seventvEmotes_, dispatch))
+    auto emote = SeventvEmotes::addEmote(this->seventvEmotes_, dispatch);
+    if (!emote)
     {
         return;
     }
 
-    this->addOrReplaceLiveUpdatesAddRemove(
-        true, "7TV", dispatch.actorName, dispatch.emoteJson["name"].toString());
+    this->addOrReplaceLiveUpdatesAddRemove(true, "7TV", dispatch.actorName,
+                                           LiveUpdateEmote{*emote});
 }
 
 void TwitchChannel::updateSeventvEmote(
     const seventv::eventapi::EmoteUpdateDispatch &dispatch)
 {
-    if (!SeventvEmotes::updateEmote(this->seventvEmotes_, dispatch))
+    auto updated = SeventvEmotes::updateEmote(this->seventvEmotes_, dispatch);
+    if (!updated)
     {
         return;
     }
 
-    auto builder =
-        MessageBuilder(liveUpdatesUpdateEmoteMessage, "7TV", dispatch.actorName,
-                       dispatch.emoteName, dispatch.oldEmoteName);
+    auto builder = MessageBuilder(
+        liveUpdatesUpdateEmoteMessage, "7TV", dispatch.actorName,
+        (*updated)->name.string, dispatch.oldEmoteName, *updated);
     this->addMessage(builder.release(), MessageContext::Original);
 }
 
@@ -2849,7 +2851,7 @@ void TwitchChannel::removeSeventvEmote(
     }
 
     this->addOrReplaceLiveUpdatesAddRemove(false, "7TV", dispatch.actorName,
-                                           (*removed)->name.string);
+                                           LiveUpdateEmote{*removed});
 }
 
 void TwitchChannel::updateSeventvUser(
@@ -2930,29 +2932,29 @@ void TwitchChannel::updateSeventvData(const QString &newUserID,
 void TwitchChannel::addOrReplaceLiveUpdatesAddRemove(bool isEmoteAdd,
                                                      const QString &platform,
                                                      const QString &actor,
-                                                     const QString &emoteName)
+                                                     const LiveUpdateEmote &emote)
 {
     if (this->tryReplaceLastLiveUpdateAddOrRemove(
             isEmoteAdd ? MessageFlag::LiveUpdatesAdd
                        : MessageFlag::LiveUpdatesRemove,
-            platform, actor, emoteName))
+            platform, actor, emote))
     {
         return;
     }
 
-    this->lastLiveUpdateEmoteNames_ = {emoteName};
+    this->lastLiveUpdateEmotes_ = {emote};
 
     MessagePtr msg;
     if (isEmoteAdd)
     {
         msg = MessageBuilder(liveUpdatesAddEmoteMessage, platform, actor,
-                             this->lastLiveUpdateEmoteNames_)
+                             this->lastLiveUpdateEmotes_)
                   .release();
     }
     else
     {
         msg = MessageBuilder(liveUpdatesRemoveEmoteMessage, platform, actor,
-                             this->lastLiveUpdateEmoteNames_)
+                             this->lastLiveUpdateEmotes_)
                   .release();
     }
     this->lastLiveUpdateEmotePlatform_ = platform;
@@ -2963,7 +2965,7 @@ void TwitchChannel::addOrReplaceLiveUpdatesAddRemove(bool isEmoteAdd,
 
 bool TwitchChannel::tryReplaceLastLiveUpdateAddOrRemove(
     MessageFlag op, const QString &platform, const QString &actor,
-    const QString &emoteName)
+    const LiveUpdateEmote &emote)
 {
     if (this->lastLiveUpdateEmotePlatform_ != platform)
     {
@@ -2977,7 +2979,7 @@ bool TwitchChannel::tryReplaceLastLiveUpdateAddOrRemove(
         return false;
     }
     // Update the message
-    this->lastLiveUpdateEmoteNames_.push_back(emoteName);
+    this->lastLiveUpdateEmotes_.push_back(emote);
 
     auto makeReplacement = [&](MessageFlag op) -> MessageBuilder {
         if (op == MessageFlag::LiveUpdatesAdd)
@@ -2986,7 +2988,7 @@ bool TwitchChannel::tryReplaceLastLiveUpdateAddOrRemove(
                 liveUpdatesAddEmoteMessage,
                 platform,
                 last->loginName,
-                this->lastLiveUpdateEmoteNames_,
+                this->lastLiveUpdateEmotes_,
             };
         }
 
@@ -2995,7 +2997,7 @@ bool TwitchChannel::tryReplaceLastLiveUpdateAddOrRemove(
             liveUpdatesRemoveEmoteMessage,
             platform,
             last->loginName,
-            this->lastLiveUpdateEmoteNames_,
+            this->lastLiveUpdateEmotes_,
         };
     };
 

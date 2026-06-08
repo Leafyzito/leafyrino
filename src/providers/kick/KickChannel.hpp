@@ -24,6 +24,7 @@ class EmoteMap;
 
 struct Emote;
 using EmotePtr = std::shared_ptr<const Emote>;
+struct LiveUpdateEmote;
 
 struct EmoteName;
 
@@ -166,9 +167,9 @@ private:
     void updateSeventvData(const QString &newUserID,
                            const QString &newEmoteSetID);
     void addOrReplaceSeventvAddRemove(bool isEmoteAdd, const QString &actor,
-                                      const QString &emoteName);
+                                      const LiveUpdateEmote &emote);
     bool tryReplaceLastSeventvAddOrRemove(MessageFlag op, const QString &actor,
-                                          const QString &emoteName);
+                                          const LiveUpdateEmote &emote);
 
     void emitSendWait();
 
@@ -186,7 +187,7 @@ private:
 
     std::weak_ptr<const Message> lastSeventvMessage_;
 
-    std::vector<QString> lastSeventvEmoteNames_;
+    std::vector<LiveUpdateEmote> lastSeventvEmotes_;
     QDateTime nextSeventvActivity_;
 
     std::queue<std::chrono::steady_clock::time_point> lastMessageTimestamps_;

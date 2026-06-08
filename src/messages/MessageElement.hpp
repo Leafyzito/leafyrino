@@ -456,6 +456,27 @@ private:
     QString userLoginName_;
 };
 
+// A linked emote name shown as text (e.g. in live-update system messages).
+class EmoteLinkElement : public TextElement
+{
+public:
+    static constexpr std::string_view TYPE = "emote-link";
+
+    EmoteLinkElement(const EmotePtr &emote, MessageElementFlags flags,
+                     const MessageColor &color = MessageColor::System);
+    ~EmoteLinkElement() override = default;
+
+    EmotePtr getEmote() const;
+
+    std::unique_ptr<MessageElement> clone() const override;
+
+    QJsonObject toJson() const override;
+    std::string_view type() const override;
+
+private:
+    EmotePtr emote_;
+};
+
 // contains emote data and will pick the emote based on :
 //   a) are images for the emote type enabled
 //   b) which size it wants

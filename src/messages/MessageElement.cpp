@@ -1479,6 +1479,45 @@ std::string_view LinkElement::type() const
     return std::remove_pointer_t<decltype(this)>::TYPE;
 }
 
+EmoteLinkElement::EmoteLinkElement(const EmotePtr &emote,
+                                   MessageElementFlags flags,
+                                   const MessageColor &color)
+    : TextElement(emote->name.string, flags, color)
+    , emote_(emote)
+{
+    this->setTooltip(emote->tooltip.string);
+    if (!emote->homePage.string.isEmpty())
+    {
+        this->setLink({Link::Url, emote->homePage.string});
+    }
+}
+
+EmotePtr EmoteLinkElement::getEmote() const
+{
+    return this->emote_;
+}
+
+std::unique_ptr<MessageElement> EmoteLinkElement::clone() const
+{
+    auto el = std::make_unique<EmoteLinkElement>(this->emote_, this->getFlags(),
+                                                 this->color());
+    el->cloneFrom(*this);
+    return el;
+}
+
+QJsonObject EmoteLinkElement::toJson() const
+{
+    auto base = TextElement::toJson();
+    base["type"_L1] = u"EmoteLinkElement"_s;
+    base["emoteName"_L1] = this->emote_->name.string;
+    return base;
+}
+
+std::string_view EmoteLinkElement::type() const
+{
+    return std::remove_pointer_t<decltype(this)>::TYPE;
+}
+
 MentionElement::MentionElement(const QString &displayName, QString loginName_,
                                MessageColor fallbackColor_,
                                MessageColor userColor_)

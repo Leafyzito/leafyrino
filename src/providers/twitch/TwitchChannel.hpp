@@ -43,6 +43,7 @@ enum class HighlightState;
 
 struct Emote;
 using EmotePtr = std::shared_ptr<const Emote>;
+struct LiveUpdateEmote;
 class EmoteMap;
 
 class TwitchBadges;
@@ -639,12 +640,12 @@ private:
      * @param isEmoteAdd true if the emote was added, false if it was removed.
      * @param platform The platform the emote was updated on ("7TV", "BTTV", "FFZ")
      * @param actor The actor performing the update (possibly empty)
-     * @param emoteName The emote's name
+     * @param emote The emote that was added or removed
      */
     void addOrReplaceLiveUpdatesAddRemove(bool isEmoteAdd,
                                           const QString &platform,
                                           const QString &actor,
-                                          const QString &emoteName);
+                                          const LiveUpdateEmote &emote);
 
     /**
      * Tries to replace the last emote update message.
@@ -658,13 +659,13 @@ private:
      * @param op The emote operation (LiveUpdatesAdd or LiveUpdatesRemove)
      * @param platform The emote platform  ("7TV", "BTTV", "FFZ")
      * @param actor The actor performing the action (possibly empty)
-     * @param emoteName The updated emote's name
+     * @param emote The updated emote
      * @return true, if the last message was replaced
      */
     bool tryReplaceLastLiveUpdateAddOrRemove(MessageFlag op,
                                              const QString &platform,
                                              const QString &actor,
-                                             const QString &emoteName);
+                                             const LiveUpdateEmote &emote);
 
     // Data
     const QString subscriptionUrl_;
@@ -789,8 +790,8 @@ private:
     QString lastLiveUpdateEmoteActor_;
     /** A weak reference to the last live emote update message. */
     std::weak_ptr<const Message> lastLiveUpdateMessage_;
-    /** A list of the emotes listed in the lat live emote update message. */
-    std::vector<QString> lastLiveUpdateEmoteNames_;
+    /** A list of the emotes listed in the last live emote update message. */
+    std::vector<LiveUpdateEmote> lastLiveUpdateEmotes_;
 
     pajlada::Signals::SignalHolder signalHolder_;
     std::vector<boost::signals2::scoped_connection> bSignals_;

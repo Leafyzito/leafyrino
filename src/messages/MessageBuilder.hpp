@@ -101,6 +101,16 @@ struct BadgePreviewFallback {
     QString image4x;
 };
 
+struct LiveUpdateEmote {
+    QString name;
+    QString url;
+    EmotePtr emote;
+
+    LiveUpdateEmote() = default;
+
+    explicit LiveUpdateEmote(EmotePtr emote);
+};
+
 class MessageBuilder
 {
 public:
@@ -118,13 +128,13 @@ public:
 
     MessageBuilder(LiveUpdatesAddEmoteMessageTag, const QString &platform,
                    const QString &actor,
-                   const std::vector<QString> &emoteNames);
+                   const std::vector<LiveUpdateEmote> &emotes);
     MessageBuilder(LiveUpdatesRemoveEmoteMessageTag, const QString &platform,
                    const QString &actor,
-                   const std::vector<QString> &emoteNames);
+                   const std::vector<LiveUpdateEmote> &emotes);
     MessageBuilder(LiveUpdatesUpdateEmoteMessageTag, const QString &platform,
                    const QString &actor, const QString &emoteName,
-                   const QString &oldEmoteName);
+                   const QString &oldEmoteName, const EmotePtr &emote);
     MessageBuilder(LiveUpdatesUpdateEmoteSetMessageTag, const QString &platform,
                    const QString &actor, const QString &emoteSetName);
 
