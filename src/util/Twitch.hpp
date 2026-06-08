@@ -8,6 +8,8 @@
 #include <QString>
 #include <QStringList>
 
+#include <optional>
+
 namespace chatterino {
 
 extern const QStringList VALID_HELIX_COLORS;
@@ -30,5 +32,11 @@ QRegularExpression twitchUserLoginRegexp();
 QRegularExpression twitchUserNameRegexp();
 
 void cleanHelixColorName(QString &color);
+
+QString helixColorDisplayHex(const QString &helixColorName);
+
+QString formatHelixColorLabel(const QString &helixColorName);
+
+std::optional<QString> helixColorNameFromDisplayHex(const QString &hex);
 
 }  // namespace chatterino

@@ -408,3 +408,34 @@ TEST(UtilTwitch, CleanHelixColor)
             << expectedColor;
     }
 }
+
+TEST(UtilTwitch, HelixColorDisplayHex)
+{
+    for (const auto &name : VALID_HELIX_COLORS)
+    {
+        const auto hex = helixColorDisplayHex(name);
+        EXPECT_FALSE(hex.isEmpty()) << name << " has no display hex";
+        EXPECT_TRUE(hex.startsWith('#')) << name << " hex is malformed";
+    }
+
+    EXPECT_EQ(helixColorDisplayHex("blue"), "#0000FF");
+    EXPECT_EQ(helixColorDisplayHex("blue_violet"), "#8A2BE2");
+    EXPECT_EQ(helixColorDisplayHex("cadet_blue"), "#5F9EA0");
+    EXPECT_TRUE(helixColorDisplayHex("unknown").isEmpty());
+}
+
+TEST(UtilTwitch, FormatHelixColorLabel)
+{
+    EXPECT_EQ(formatHelixColorLabel("blue"), "Blue");
+    EXPECT_EQ(formatHelixColorLabel("blue_violet"), "Blue Violet");
+    EXPECT_EQ(formatHelixColorLabel("yellow_green"), "Yellow Green");
+}
+
+TEST(UtilTwitch, HelixColorNameFromDisplayHex)
+{
+    EXPECT_EQ(helixColorNameFromDisplayHex("#0000FF"), "blue");
+    EXPECT_EQ(helixColorNameFromDisplayHex("#8a2be2"), "blue_violet");
+    EXPECT_EQ(helixColorNameFromDisplayHex("#5F9EA0"), "cadet_blue");
+    EXPECT_FALSE(helixColorNameFromDisplayHex("#123456").has_value());
+    EXPECT_FALSE(helixColorNameFromDisplayHex("").has_value());
+}

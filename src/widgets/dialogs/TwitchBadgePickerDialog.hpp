@@ -58,14 +58,17 @@ private:
         GlobalBadges,
         ChannelBadges,
         EventBadges,
+        Color,
     };
 
     void loadBadges(bool force = false);
     void loadEventBadges(bool force = false);
+    void switchView(View view);
     void rebuildContent();
     void rebuildGlobalBadges();
     void rebuildChannelBadges();
     void rebuildEventBadges();
+    void rebuildColors();
     void clearContent();
     void deselectChannel();
     void setFlairHidden(bool hidden);
@@ -73,8 +76,10 @@ private:
     void setStatus(const QString &text, bool error = false);
     void selectGlobal(const GqlBadge &badge);
     void selectChannel(const GqlBadge &badge);
+    void selectColor(const QString &color);
     QString authTokenOrMessage();
     void applySizeConstraints();
+    void updateSearchVisibility();
 
     TwitchChannel *channel_{};
 
@@ -83,6 +88,9 @@ private:
     QLabel *headerTitleLabel_{};
     QPushButton *globalTabButton_{};
     QPushButton *channelTabButton_{};
+    QPushButton *eventTabButton_{};
+    QPushButton *colorTabButton_{};
+    QWidget *searchRowWidget_{};
     QLineEdit *searchInput_{};
     Button *pinButton_{};
     SvgButton *closeButton_{};
@@ -101,7 +109,6 @@ private:
     bool statusIsError_ = false;
     QString searchQuery_;
 
-    QPushButton *eventTabButton_{};
     QVector<EventBadge> eventBadgesCache_;
     bool eventBadgesLoading_ = false;
     bool eventBadgesLoaded_ = false;
