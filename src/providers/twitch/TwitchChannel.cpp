@@ -2835,9 +2835,9 @@ void TwitchChannel::updateSeventvEmote(
         return;
     }
 
-    auto builder = MessageBuilder(
-        liveUpdatesUpdateEmoteMessage, "7TV", dispatch.actorName,
-        (*updated)->name.string, dispatch.oldEmoteName, *updated);
+    auto builder = MessageBuilder(liveUpdatesUpdateEmoteMessage, "7TV",
+                                  dispatch.actorName, (*updated)->name.string,
+                                  dispatch.oldEmoteName, *updated);
     this->addMessage(builder.release(), MessageContext::Original);
 }
 
@@ -2929,10 +2929,9 @@ void TwitchChannel::updateSeventvData(const QString &newUserID,
     });
 }
 
-void TwitchChannel::addOrReplaceLiveUpdatesAddRemove(bool isEmoteAdd,
-                                                     const QString &platform,
-                                                     const QString &actor,
-                                                     const LiveUpdateEmote &emote)
+void TwitchChannel::addOrReplaceLiveUpdatesAddRemove(
+    bool isEmoteAdd, const QString &platform, const QString &actor,
+    const LiveUpdateEmote &emote)
 {
     if (this->tryReplaceLastLiveUpdateAddOrRemove(
             isEmoteAdd ? MessageFlag::LiveUpdatesAdd

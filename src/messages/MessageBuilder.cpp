@@ -362,16 +362,16 @@ void appendLiveUpdateAddRemoveElements(
 }
 
 void appendLinkedLiveUpdateEmoteName(MessageBuilder &builder,
-                                     const QString &name,
-                                     const EmotePtr &emote,
+                                     const QString &name, const EmotePtr &emote,
                                      QString &messageText)
 {
     if (emote)
     {
         messageText.append(name);
         messageText.append(' ');
-        builder.emplace<EmoteLinkElement>(emote, MessageElementFlag::Text,
-                                          MessageColor::System)
+        builder
+            .emplace<EmoteLinkElement>(emote, MessageElementFlag::Text,
+                                       MessageColor::System)
             ->setTrailingSpace(false);
         return;
     }

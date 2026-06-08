@@ -287,9 +287,9 @@ void MessageView::updateHoverTooltip(QMouseEvent *event)
         dynamic_cast<const EmoteLinkElement *>(element);
     const auto *layeredEmoteElement =
         dynamic_cast<const LayeredEmoteElement *>(element);
-    const bool isNotEmote =
-        emoteElement == nullptr && emoteLinkElement == nullptr &&
-        layeredEmoteElement == nullptr;
+    const bool isNotEmote = emoteElement == nullptr &&
+                            emoteLinkElement == nullptr &&
+                            layeredEmoteElement == nullptr;
 
     if (element->getTooltip().isEmpty() ||
         (isLinkValid && isNotEmote && !getSettings()->linkInfoTooltip))

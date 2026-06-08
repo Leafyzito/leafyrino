@@ -179,9 +179,9 @@ void KickChannel::updateSeventvEmote(
         return;
     }
 
-    auto builder = MessageBuilder(
-        liveUpdatesUpdateEmoteMessage, "7TV", dispatch.actorName,
-        (*updated)->name.string, dispatch.oldEmoteName, *updated);
+    auto builder = MessageBuilder(liveUpdatesUpdateEmoteMessage, "7TV",
+                                  dispatch.actorName, (*updated)->name.string,
+                                  dispatch.oldEmoteName, *updated);
     this->addMessage(builder.release(), MessageContext::Original);
 }
 
