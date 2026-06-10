@@ -2,6 +2,8 @@ app-id: com.leafyzito.leafyrino
 runtime: org.kde.Platform
 runtime-version: "6.10"
 sdk: org.kde.Sdk
+base: io.qt.qtwebengine.BaseApp
+base-version: "6.10"
 command: Leafyrino
 finish-args:
   - --socket=wayland
@@ -10,11 +12,19 @@ finish-args:
   - --share=network
   - --socket=pulseaudio
   - --device=dri
+  - --env=QTWEBENGINEPROCESS_PATH=/app/bin/QtWebEngineProcess
   - --talk-name=org.freedesktop.Flatpak
   - --filesystem=xdg-data/chatterino:create
   - --filesystem=~/.var/app/com.chatterino.chatterino/data/chatterino:ro
 build-options:
   no-debuginfo: true
+  arch:
+    aarch64:
+      prepend-pkg-config-path: /app/lib/aarch64-linux-gnu/pkgconfig
+    x86_64:
+      prepend-pkg-config-path: /app/lib/x86_64-linux-gnu/pkgconfig
+cleanup-commands:
+  - /app/cleanup-BaseApp.sh
 cleanup:
   - /include
 modules:
@@ -80,6 +90,7 @@ modules:
       - -DBUILD_BENCHMARKS=OFF
       - -DUSE_PRECOMPILED_HEADERS=OFF
       - -DCHATTERINO_STATIC_QT_BUILD=OFF
+      - -DCHATTERINO_WITH_STREAM_PLAYER=On
     sources:
       - type: dir
         path: ..
