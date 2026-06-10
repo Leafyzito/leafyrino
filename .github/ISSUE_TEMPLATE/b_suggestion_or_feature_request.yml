@@ -1,0 +1,46 @@
+name: Suggestions or feature request
+description: Got something you think should change or be added?
+labels: [feature-request]
+
+body:
+  - type: checkboxes
+    id: acknowledgments
+    attributes:
+      label: Checklist
+      description:
+      options:
+        - label: I've searched the [issues and pull requests](https://github.com/leafyzito/leafyrino/issues?q=) for similar suggestions
+          required: true
+
+  - type: textarea
+    id: description
+    validations:
+      required: true
+    attributes:
+      label: Describe your suggestion
+      description: |
+        Write a brief description of what you'd like to see changed or added.
+        Focus on the problem or use case you want solved, not just a specific implementation.
+      placeholder: |
+        Examples:
+          - I'd like to be able to do X when Y happens.
+          - It would be helpful if Z worked differently because...
+
+  - type: textarea
+    id: motivation
+    validations:
+      required: true
+    attributes:
+      label: Why would this be useful?
+      description: Explain how this would improve your experience or solve a problem you run into.
+      placeholder: |
+        Examples:
+          - I often need to do X and currently have to work around it by...
+          - This would save time when...
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or mockups
+      description: Optional, but helpful for illustrating UI changes or similar ideas.
+      placeholder: You can upload them using the text editor's dedicated button.
