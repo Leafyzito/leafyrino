@@ -36,8 +36,8 @@ PlayerChannel::PlayerChannel(const QString &name, Platform platform)
     }
     else
     {
-        this->localizedName_ = this->displayName_ % u' ' % platformLabel %
-                               u" Player";
+        this->localizedName_ =
+            this->displayName_ % u' ' % platformLabel % u" Player";
     }
 }
 

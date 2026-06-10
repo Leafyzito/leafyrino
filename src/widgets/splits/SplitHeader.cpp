@@ -574,14 +574,13 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                 if (playerChannel &&
                     playerChannel->platform() == PlayerChannel::Platform::Kick)
                 {
-                    QDesktopServices::openUrl(QUrl(
-                        QStringLiteral("https://kick.com/") +
-                        KickApi::slugify(channelName)));
+                    QDesktopServices::openUrl(
+                        QUrl(QStringLiteral("https://kick.com/") +
+                             KickApi::slugify(channelName)));
                     return;
                 }
-                QDesktopServices::openUrl(
-                    QUrl(QStringLiteral("https://www.twitch.tv/") +
-                         channelName));
+                QDesktopServices::openUrl(QUrl(
+                    QStringLiteral("https://www.twitch.tv/") + channelName));
             });
         }
     }
@@ -1206,9 +1205,9 @@ void SplitHeader::updateChannelText()
 
     if (indirectChannel.getType() == Channel::Type::Player)
     {
-        this->titleLabel_->setText(
-            channel->getLocalizedName().isEmpty() ? "<empty>"
-                                                  : channel->getLocalizedName());
+        this->titleLabel_->setText(channel->getLocalizedName().isEmpty()
+                                       ? "<empty>"
+                                       : channel->getLocalizedName());
         return;
     }
 

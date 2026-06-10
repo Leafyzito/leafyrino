@@ -406,8 +406,7 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
 
         ui.playerPlatform = new QComboBox;
         ui.playerPlatform->addItem(
-            "Twitch",
-            QVariant::fromValue(PlayerChannel::Platform::Twitch));
+            "Twitch", QVariant::fromValue(PlayerChannel::Platform::Twitch));
         ui.playerPlatform->addItem(
             "Kick", QVariant::fromValue(PlayerChannel::Platform::Kick));
         layout->addWidget(ui.playerPlatform);
@@ -416,15 +415,15 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
         ui.playerName->setPlaceholderText("Channel name");
         layout->addWidget(ui.playerName);
 
-        auto *playerAccountLabel = new QLabel(
-            "The player is not connected to your account. You "
-            "may still see ads even if you are subscribed, and "
-            "subscriber-only streams will not play.");
+        auto *playerAccountLabel =
+            new QLabel("The player is not connected to your account. You "
+                       "may still see ads even if you are subscribed, and "
+                       "subscriber-only streams will not play.");
         playerAccountLabel->setWordWrap(true);
         layout->addWidget(playerAccountLabel);
 
-        auto *playerBetaLabel = new QLabel(
-            "This is in beta and can be kinda buggy.");
+        auto *playerBetaLabel =
+            new QLabel("This is in beta and can be kinda buggy.");
         playerBetaLabel->setWordWrap(true);
         layout->addWidget(playerBetaLabel);
 
@@ -590,11 +589,10 @@ IndirectChannel SelectChannelDialog::getSelectedChannel() const
 #ifdef CHATTERINO_WITH_STREAM_PLAYER
     if (this->ui_.notebook->isSelected(this->ui_.playerPage))
     {
-        const auto platform =
-            this->ui_.playerPlatform->currentData()
-                .value<PlayerChannel::Platform>();
+        const auto platform = this->ui_.playerPlatform->currentData()
+                                  .value<PlayerChannel::Platform>();
         return PlayerChannel::getOrCreate(this->ui_.playerName->text(),
-                                         platform);
+                                          platform);
     }
 #endif
 
