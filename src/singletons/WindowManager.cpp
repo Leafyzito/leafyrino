@@ -18,7 +18,7 @@
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #ifdef CHATTERINO_WITH_STREAM_PLAYER
-#    include "providers/twitch/PlayerChannel.hpp"
+#    include "util/PlayerChannel.hpp"
 #endif
 #include "singletons/Paths.hpp"
 #include "singletons/Settings.hpp"

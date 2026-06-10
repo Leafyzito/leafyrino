@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "providers/twitch/PlayerChannel.hpp"
+#include "util/PlayerChannel.hpp"
 
 #include "common/Common.hpp"
 #include "providers/kick/KickApi.hpp"

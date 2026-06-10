@@ -1131,8 +1131,8 @@ if (CHATTERINO_WITH_STREAM_PLAYER)
     target_compile_definitions(${LIBRARY_PROJECT} PUBLIC CHATTERINO_WITH_STREAM_PLAYER)
     target_link_libraries(${LIBRARY_PROJECT} PUBLIC Qt${MAJOR_QT_VERSION}::WebEngineWidgets)
     target_sources(${LIBRARY_PROJECT} PRIVATE
-        providers/twitch/PlayerChannel.cpp
-        providers/twitch/PlayerChannel.hpp
+        util/PlayerChannel.cpp
+        util/PlayerChannel.hpp
         widgets/splits/StreamPlayerView.cpp
         widgets/splits/StreamPlayerView.hpp
     )

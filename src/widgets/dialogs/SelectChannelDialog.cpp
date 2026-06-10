@@ -13,7 +13,7 @@
 #include "singletons/Theme.hpp"
 #include "util/MultiChannel.hpp"
 #ifdef CHATTERINO_WITH_STREAM_PLAYER
-#    include "providers/twitch/PlayerChannel.hpp"
+#    include "util/PlayerChannel.hpp"
 #endif
 #include "widgets/BasePopup.hpp"
 #include "widgets/helper/MicroNotebook.hpp"

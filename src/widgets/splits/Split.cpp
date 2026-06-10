@@ -49,7 +49,7 @@
 #include "widgets/splits/SplitMpsOverlay.hpp"
 #include "widgets/splits/SplitOverlay.hpp"
 #ifdef CHATTERINO_WITH_STREAM_PLAYER
-#    include "providers/twitch/PlayerChannel.hpp"
+#    include "util/PlayerChannel.hpp"
 #    include "widgets/splits/StreamPlayerView.hpp"
 #endif
 #include "widgets/Window.hpp"
