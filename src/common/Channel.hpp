@@ -61,6 +61,8 @@ public:
         Kick,
         /// Misc
         Misc,
+        /// Twitch stream player (no chat)
+        Player,
         Multi,
     };
 

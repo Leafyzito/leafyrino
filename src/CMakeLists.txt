@@ -1126,6 +1126,18 @@ if (CHATTERINO_SPELLCHECK)
     target_link_libraries(${LIBRARY_PROJECT} PRIVATE hunspell::hunspell)
 endif()
 
+if (CHATTERINO_WITH_STREAM_PLAYER)
+    find_package(Qt${MAJOR_QT_VERSION} REQUIRED COMPONENTS WebEngineWidgets)
+    target_compile_definitions(${LIBRARY_PROJECT} PUBLIC CHATTERINO_WITH_STREAM_PLAYER)
+    target_link_libraries(${LIBRARY_PROJECT} PUBLIC Qt${MAJOR_QT_VERSION}::WebEngineWidgets)
+    target_sources(${LIBRARY_PROJECT} PRIVATE
+        providers/twitch/PlayerChannel.cpp
+        providers/twitch/PlayerChannel.hpp
+        widgets/splits/StreamPlayerView.cpp
+        widgets/splits/StreamPlayerView.hpp
+    )
+endif()
+
 if (CHATTERINO_ALLOW_PRIVATE_QT_API)
     target_link_libraries(${LIBRARY_PROJECT} PUBLIC Qt${MAJOR_QT_VERSION}::GuiPrivate)
     target_compile_definitions(${LIBRARY_PROJECT} PUBLIC

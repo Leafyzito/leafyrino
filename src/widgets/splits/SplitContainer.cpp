@@ -865,6 +865,8 @@ QString channelTypeToString(Channel::Type value) noexcept
             return "automod";
         case Type::Misc:
             return "misc";
+        case Type::Player:
+            return "player";
     }
 }
 

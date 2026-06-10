@@ -101,6 +101,11 @@ private:
         QWidget *twitchPage;
         QWidget *kickPage;
         QWidget *multiPage;
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+        QWidget *playerPage;
+        QComboBox *playerPlatform;
+        QLineEdit *playerName;
+#endif
     } ui_{};
 
     EventFilter tabFilter_;

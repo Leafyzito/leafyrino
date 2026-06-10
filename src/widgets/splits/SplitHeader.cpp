@@ -16,7 +16,11 @@
 #include "controllers/hotkeys/HotkeyCategory.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "controllers/notifications/NotificationController.hpp"
+#include "providers/kick/KickApi.hpp"
 #include "providers/kick/KickChannel.hpp"
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+#    include "providers/twitch/PlayerChannel.hpp"
+#endif
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
@@ -39,6 +43,7 @@
 #include "widgets/splits/SplitContainer.hpp"
 #include "widgets/TooltipWidget.hpp"
 
+#include <QDesktopServices>
 #include <QDrag>
 #include <QHBoxLayout>
 #include <QInputDialog>
@@ -520,6 +525,12 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
     auto selected = this->split_->getSelectedChannel();
     auto *twitchChannel = dynamic_cast<TwitchChannel *>(selected.get());
     auto *kickChannel = dynamic_cast<KickChannel *>(selected.get());
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+    const bool isPlayerSplit =
+        this->split_->getIndirectChannel().getType() == Channel::Type::Player;
+#else
+    const bool isPlayerSplit = false;
+#endif
 
     menu->addAction(
         "Change channel",
@@ -552,7 +563,30 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                     h->getDisplaySequence(HotkeyCategory::Split, "pickFilters"),
                     this->split_, &Split::setFiltersDialog);
 
-    if (twitchChannel)
+    if (isPlayerSplit)
+    {
+        const auto channelName = selected->getName();
+        if (!channelName.isEmpty())
+        {
+            menu->addSeparator();
+            auto *playerChannel = dynamic_cast<PlayerChannel *>(selected.get());
+            menu->addAction(OPEN_IN_BROWSER, [channelName, playerChannel] {
+                if (playerChannel &&
+                    playerChannel->platform() == PlayerChannel::Platform::Kick)
+                {
+                    QDesktopServices::openUrl(QUrl(
+                        QStringLiteral("https://kick.com/") +
+                        KickApi::slugify(channelName)));
+                    return;
+                }
+                QDesktopServices::openUrl(
+                    QUrl(QStringLiteral("https://www.twitch.tv/") +
+                         channelName));
+            });
+        }
+    }
+
+    if (twitchChannel && !isPlayerSplit)
     {
         menu->addSeparator();
 
@@ -592,12 +626,12 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                         this->split_, &Split::recoverDismissedPanels);
         menu->addSeparator();
     }
-    else if (kickChannel)
+    else if (kickChannel && !isPlayerSplit)
     {
         menu->addSeparator();
     }
 
-    if (twitchChannel || kickChannel)
+    if ((twitchChannel || kickChannel) && !isPlayerSplit)
     {
         menu->addAction(
             OPEN_IN_BROWSER,
@@ -680,7 +714,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
             &SplitHeader::reconnect);
     }
 
-    if (twitchChannel || kickChannel)
+    if ((twitchChannel || kickChannel) && !isPlayerSplit)
     {
         auto bothSeq = h->getDisplaySequence(
             HotkeyCategory::Split, "reloadEmotes", {std::vector<QString>()});
@@ -699,7 +733,8 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
         }
     }
 
-    if ((twitchChannel || kickChannel) && !selected->isEmpty())
+    if ((twitchChannel || kickChannel) && !isPlayerSplit &&
+        !selected->isEmpty())
     {
         menu->addSeparator();
 
@@ -1168,6 +1203,14 @@ void SplitHeader::updateChannelText()
     auto selectedChannel = this->split_->getSelectedChannel();
 
     auto title = channel->getLocalizedName();
+
+    if (indirectChannel.getType() == Channel::Type::Player)
+    {
+        this->titleLabel_->setText(
+            channel->getLocalizedName().isEmpty() ? "<empty>"
+                                                  : channel->getLocalizedName());
+        return;
+    }
 
     if (indirectChannel.getType() == Channel::Type::TwitchWatching)
     {

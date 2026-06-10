@@ -79,6 +79,9 @@ struct SplitDescriptor {
     MultiChannelIndicatorMode mcIndicator = MultiChannelIndicatorMode::None;
     uint32_t mcIndex = 0;
 
+    /// "twitch" or "kick" — only used when type_ is "player"
+    QString playerPlatform_;
+
     static void loadFromJSON(SplitDescriptor &descriptor,
                              const QJsonObject &root, const QJsonObject &data);
 
