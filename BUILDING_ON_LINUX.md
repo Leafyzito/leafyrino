@@ -100,6 +100,7 @@ The WSL scripts assume Qt is installed at `/home/<user>/Qt/6.10.2/gcc_64`. Set `
    ```sh
    cmake -DBUILD_WITH_QTKEYCHAIN=OFF -DCHATTERINO_SPELLCHECK=On ..
    ```
+   To enable the embedded Twitch/Kick stream player, add `-DCHATTERINO_WITH_STREAM_PLAYER=ON` to this command (requires Qt WebEngine, e.g. `qt6-webengine-dev` on Debian/Ubuntu).
 1. Build the project
    ```sh
    cmake --build .

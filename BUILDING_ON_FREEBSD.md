@@ -19,6 +19,7 @@ FreeBSD 15.0-SNAP.
    ```sh
    cmake ..
    ```
+   To enable the embedded Twitch/Kick stream player, add `-DCHATTERINO_WITH_STREAM_PLAYER=ON` to this command (requires Qt WebEngine).
 1. Build the project
    ```sh
    make

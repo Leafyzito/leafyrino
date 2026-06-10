@@ -117,6 +117,7 @@ nmake
 
 To build a debug build, you'll also need to add the `-s compiler.runtime_type=Debug` flag to the `conan install` invocation. See [this StackOverflow post](https://stackoverflow.com/questions/59828611/windeployqt-doesnt-deploy-qwindowsd-dll-for-a-debug-application/75607313#75607313)
 To build with plugins add `-DCHATTERINO_PLUGINS=ON` to `cmake` command.
+To enable the embedded Twitch/Kick stream player, add `-DCHATTERINO_WITH_STREAM_PLAYER=ON` to the `cmake` command (requires the Qt WebEngine component from the Qt installer).
 
 #### Deploying Qt libraries
 
