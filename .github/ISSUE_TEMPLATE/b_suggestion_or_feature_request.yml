@@ -1,6 +1,6 @@
 name: Suggestions or feature request
 description: Got something you think should change or be added?
-labels: [feature-request]
+labels: [suggestion]
 
 body:
   - type: checkboxes
