@@ -1571,8 +1571,16 @@ std::optional<TwitchChannel::PollEvent> parsePollEventFromGql(
     poll.status = viewablePoll.value("status").toString();
     poll.remainingDurationMilliseconds =
         viewablePoll.value("remainingDurationMilliseconds").toInt();
-    poll.createdAt = parseGqlDateTime(viewablePoll.value("createdAt"));
-    auto endsAt = parseGqlDateTime(viewablePoll.value("endsAt"));
+    poll.createdAt = parseGqlDateTime(viewablePoll.value("startedAt"));
+    if (!poll.createdAt.isValid())
+    {
+        poll.createdAt = parseGqlDateTime(viewablePoll.value("createdAt"));
+    }
+    auto endsAt = parseGqlDateTime(viewablePoll.value("endedAt"));
+    if (!endsAt.isValid())
+    {
+        endsAt = parseGqlDateTime(viewablePoll.value("endsAt"));
+    }
     if (endsAt.isValid())
     {
         poll.endsAt = endsAt;
@@ -1585,6 +1593,7 @@ std::optional<TwitchChannel::PollEvent> parsePollEventFromGql(
 
     poll.createdByName =
         userDisplayNameFromValue(viewablePoll.value("createdBy"));
+    poll.endedByName = userDisplayNameFromValue(viewablePoll.value("endedBy"));
     poll.currentUserId = currentUserId;
 
     const auto settings = viewablePoll.value("settings").toObject();
@@ -1593,11 +1602,15 @@ std::optional<TwitchChannel::PollEvent> parsePollEventFromGql(
     poll.pointsPerVote = cpVotes.value("cost").toInt();
 
     const auto topContributor =
-        viewablePoll.value("topChannelPointsContributor").toObject();
-    const auto topContributorName = userDisplayNameFromValue(topContributor);
+        viewablePoll.value("topCommunityPointsContributor").toObject();
+    const auto topContributorName = userDisplayNameFromValue(
+        topContributor.value("user").toObject().isEmpty()
+            ? topContributor
+            : topContributor.value("user"));
     const int topContributorAmount =
-        topContributor.value("contribution")
-            .toInt(topContributor.value("amount").toInt());
+        topContributor.value("communityPointsAmount")
+            .toInt(topContributor.value("contribution")
+                       .toInt(topContributor.value("amount").toInt()));
 
     const auto choices = viewablePoll.value("choices").toArray();
     poll.choices.reserve(size_t(choices.size()));
@@ -4913,10 +4926,61 @@ void TwitchGql::getActivePoll(
     QJsonObject variables;
     variables.insert("login", channelLogin);
 
-    makePersistedGqlRequest(
-        "ChannelPollContext_GetViewablePoll",
-        "e83188a3836c636393df3191665e543a03733d7c51d3ade3d85e42aa46c2bf55",
-        variables, oauthToken)
+    static const char *pollQuery = R"(
+        query ChannelPollContext($login: String!) {
+            user(login: $login) {
+                viewablePoll {
+                    id
+                    title
+                    status
+                    remainingDurationMilliseconds
+                    startedAt
+                    endedAt
+                    createdBy { displayName login }
+                    endedBy { displayName login }
+                    settings {
+                        communityPointsVotes {
+                            isEnabled
+                            cost
+                        }
+                    }
+                    topCommunityPointsContributor {
+                        communityPointsAmount
+                        user {
+                            displayName
+                            login
+                        }
+                    }
+                    choices {
+                        id
+                        title
+                        totalVoters
+                        votes {
+                            total
+                            base
+                            communityPoints
+                        }
+                    }
+                    self {
+                        voter {
+                            choices {
+                                pollChoice { id }
+                                votes {
+                                    base
+                                    communityPoints
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            currentUser {
+                id
+            }
+        }
+    )";
+
+    makeInlineGqlRequest(pollQuery, variables, oauthToken)
         .onSuccess(
             [successCallback, failureCallback](const NetworkResult &result) {
                 const auto root = result.parseJsonValue();

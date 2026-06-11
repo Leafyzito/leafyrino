@@ -182,6 +182,54 @@ QJsonObject makeChannelPointRedemption(QString redemptionId,
     return redemption;
 }
 
+QJsonObject makePollChoice(const QString &id, const QString &title, int votes = 0)
+{
+    return QJsonObject{
+        {"id", id},
+        {"title", title},
+        {"votes", QJsonObject{{"total", votes}, {"base", votes}}},
+    };
+}
+
+QJsonObject makePollObject(const QString &id, const QString &title,
+                           const QString &status,
+                           const QJsonObject &createdBy = {},
+                           const QJsonObject &endedBy = {},
+                           const QJsonArray &choices = {})
+{
+    QJsonObject poll{
+        {"poll_id", id},
+        {"title", title},
+        {"status", status},
+        {"choices", choices},
+    };
+    if (!createdBy.isEmpty())
+    {
+        poll.insert("created_by", createdBy);
+    }
+    if (!endedBy.isEmpty())
+    {
+        poll.insert("ended_by", endedBy);
+    }
+    return poll;
+}
+
+QJsonObject makePollUpdatePayload(const QString &type, const QJsonObject &poll)
+{
+    return QJsonObject{
+        {"type", type},
+        {"data", QJsonObject{{"poll", poll}}},
+    };
+}
+
+QJsonArray defaultPollChoices()
+{
+    return QJsonArray{
+        makePollChoice("choice-1", "Red", 3),
+        makePollChoice("choice-2", "Blue", 1),
+    };
+}
+
 QJsonObject makePinnedChatUnpinPayload(const QString &pinId)
 {
     return QJsonObject{
@@ -369,6 +417,175 @@ TEST(TwitchChannel, PredictionCanceledClearsActivePrediction)
     });
 
     EXPECT_FALSE((*channel.accessPrediction()).has_value());
+}
+
+TEST(TwitchChannel, PollPubSubCreateSetsCreatedByName)
+{
+    MockApplication app;
+    TwitchChannel channel("pajlada");
+
+    int signalCount = 0;
+    auto connection = channel.pollChanged.connect([&signalCount] {
+        signalCount++;
+    });
+
+    channel.handlePollUpdate(makePollUpdatePayload(
+        "POLL_CREATE",
+        makePollObject("poll-1", "Favorite color?", "ACTIVE",
+                       QJsonObject{{"display_name", "Moderator"}}, {},
+                       defaultPollChoices())));
+
+    const auto poll = *channel.accessPoll();
+    ASSERT_TRUE(poll.has_value());
+    EXPECT_EQ(poll->id, "poll-1");
+    EXPECT_EQ(poll->title, "Favorite color?");
+    EXPECT_EQ(poll->status, "ACTIVE");
+    EXPECT_EQ(poll->createdByName, "Moderator");
+    EXPECT_EQ(signalCount, 1);
+}
+
+TEST(TwitchChannel, PollPubSubEndTerminatedSetsEndedByName)
+{
+    MockApplication app;
+    TwitchChannel channel("pajlada");
+
+    TwitchChannel::PollEvent activePoll;
+    activePoll.id = "poll-1";
+    activePoll.title = "Favorite color?";
+    activePoll.status = "ACTIVE";
+    activePoll.createdByName = "Moderator";
+    activePoll.choices = {
+        {.id = "choice-1", .title = "Red", .totalVotes = 3},
+        {.id = "choice-2", .title = "Blue", .totalVotes = 1},
+    };
+    activePoll.totalVotes = 4;
+    channel.setActivePoll(activePoll);
+
+    channel.handlePollUpdate(makePollUpdatePayload(
+        "POLL_END",
+        makePollObject("poll-1", "Favorite color?", "TERMINATED", {},
+                       QJsonObject{{"display_name", "Editor"}},
+                       defaultPollChoices())));
+
+    const auto poll = *channel.accessPoll();
+    ASSERT_TRUE(poll.has_value());
+    EXPECT_EQ(poll->status, "TERMINATED");
+    EXPECT_EQ(poll->endedByName, "Editor");
+}
+
+TEST(TwitchChannel, PollSystemMessageDedup)
+{
+    MockApplication app;
+    TwitchChannel channel("pajlada");
+
+    const auto payload = makePollUpdatePayload(
+        "POLL_CREATE",
+        makePollObject("poll-1", "Favorite color?", "ACTIVE",
+                       QJsonObject{{"display_name", "Moderator"}}, {},
+                       defaultPollChoices()));
+
+    const auto messageCountBefore = channel.getMessageSnapshot().size();
+
+    channel.handlePollUpdate(payload);
+    channel.handlePollUpdate(payload);
+
+    const auto messages = channel.getMessageSnapshot();
+    ASSERT_EQ(messages.size(), messageCountBefore + 1);
+    EXPECT_EQ(messages.back()->messageText,
+              "Moderator created a poll: \"Favorite color?\"");
+}
+
+TEST(TwitchChannel, PollMergePreservesEndedByName)
+{
+    MockApplication app;
+    TwitchChannel channel("pajlada");
+
+    TwitchChannel::PollEvent poll;
+    poll.id = "poll-1";
+    poll.title = "Favorite color?";
+    poll.status = "TERMINATED";
+    poll.createdByName = "Moderator";
+    poll.endedByName = "Editor";
+    poll.choices = {
+        {.id = "choice-1", .title = "Red", .totalVotes = 3},
+        {.id = "choice-2", .title = "Blue", .totalVotes = 1},
+    };
+    poll.totalVotes = 4;
+    channel.setActivePoll(poll);
+
+    TwitchChannel::PollEvent update = poll;
+    update.endedByName.clear();
+    update.choices[0].totalVotes = 5;
+    update.totalVotes = 6;
+    channel.setActivePoll(update);
+
+    const auto activePoll = *channel.accessPoll();
+    ASSERT_TRUE(activePoll.has_value());
+    EXPECT_EQ(activePoll->endedByName, "Editor");
+    EXPECT_EQ(activePoll->choices[0].totalVotes, 5);
+}
+
+TEST(TwitchChannel, PollCreateDefersSystemMessageUntilCreatorKnown)
+{
+    MockApplication app;
+    TwitchChannel channel("pajlada");
+
+    const auto messageCountBefore = channel.getMessageSnapshot().size();
+
+    channel.handlePollUpdate(makePollUpdatePayload(
+        "POLL_CREATE",
+        makePollObject("poll-1", "sad", "ACTIVE", {}, {},
+                       defaultPollChoices())));
+
+    EXPECT_EQ(channel.getMessageSnapshot().size(), messageCountBefore);
+
+    TwitchChannel::PollEvent poll;
+    poll.id = "poll-1";
+    poll.title = "sad";
+    poll.status = "ACTIVE";
+    poll.createdByName = "Leafyzito";
+    poll.choices = {
+        {.id = "choice-1", .title = "Red", .totalVotes = 0},
+        {.id = "choice-2", .title = "Blue", .totalVotes = 0},
+    };
+    channel.setActivePoll(poll);
+
+    const auto messages = channel.getMessageSnapshot();
+    ASSERT_EQ(messages.size(), messageCountBefore + 1);
+    EXPECT_EQ(messages.back()->messageText,
+              "Leafyzito created a poll: \"sad\"");
+}
+
+TEST(TwitchChannel, PollCompletedUsesTwitchWhenEndedByMissing)
+{
+    MockApplication app;
+    TwitchChannel channel("pajlada");
+
+    channel.handlePollUpdate(makePollUpdatePayload(
+        "POLL_END",
+        makePollObject("poll-1", "Favorite color?", "COMPLETED", {}, {},
+                       defaultPollChoices())));
+
+    const auto messages = channel.getMessageSnapshot();
+    ASSERT_FALSE(messages.empty());
+    EXPECT_EQ(messages.back()->messageText,
+              "Twitch ended the poll: \"Red\" won");
+}
+
+TEST(TwitchChannel, PollUpdateCompletedEmitsSystemMessage)
+{
+    MockApplication app;
+    TwitchChannel channel("pajlada");
+
+    channel.handlePollUpdate(makePollUpdatePayload(
+        "POLL_UPDATE",
+        makePollObject("poll-1", "Favorite color?", "COMPLETED", {}, {},
+                       defaultPollChoices())));
+
+    const auto messages = channel.getMessageSnapshot();
+    ASSERT_FALSE(messages.empty());
+    EXPECT_EQ(messages.back()->messageText,
+              "Twitch ended the poll: \"Red\" won");
 }
 
 TEST(TwitchChannel, DuplicatePinnedChatUnpinOnlyAddsOneSystemMessage)

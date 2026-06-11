@@ -720,10 +720,28 @@ void PollBanner::updateLayout()
         return;
     }
 
-    QString metadata = "Poll";
-    if (!this->poll_->createdByName.isEmpty())
+    QString metadata;
+    const auto status = this->poll_->status.toUpper();
+    if (status == "TERMINATED" && !this->poll_->endedByName.isEmpty())
     {
-        metadata += QString(" by %1").arg(this->poll_->createdByName);
+        metadata =
+            QString("Ended early by %1").arg(this->poll_->endedByName);
+    }
+    else if (status == "ARCHIVED" && !this->poll_->endedByName.isEmpty())
+    {
+        metadata = QString("Archived by %1").arg(this->poll_->endedByName);
+    }
+    else if (status == "COMPLETED" || !pollIsActive(*this->poll_))
+    {
+        metadata = QStringLiteral("Poll ended");
+    }
+    else if (!this->poll_->createdByName.isEmpty())
+    {
+        metadata = QString("Poll by %1").arg(this->poll_->createdByName);
+    }
+    else
+    {
+        metadata = QStringLiteral("Poll");
     }
     const auto age = formatPollAge(this->poll_->createdAt);
     if (!age.isEmpty())

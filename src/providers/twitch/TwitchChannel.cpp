@@ -429,6 +429,74 @@ QString predictionSystemMessageKey(
     return subject + ':' + kind + ':' + prediction.winningOutcomeId;
 }
 
+QString pollWinnerTitle(const TwitchChannel::PollEvent &poll)
+{
+    if (poll.choices.empty())
+    {
+        return {};
+    }
+
+    const auto leaderIt = std::max_element(
+        poll.choices.begin(), poll.choices.end(),
+        [](const auto &a, const auto &b) { return a.totalVotes < b.totalVotes; });
+    if (leaderIt->totalVotes <= 0)
+    {
+        return {};
+    }
+
+    return leaderIt->title;
+}
+
+QString pollTerminalSystemMessageKind(const QString &status)
+{
+    if (status.compare("TERMINATED", Qt::CaseInsensitive) == 0)
+    {
+        return QStringLiteral("terminated");
+    }
+    if (status.compare("ARCHIVED", Qt::CaseInsensitive) == 0)
+    {
+        return QStringLiteral("archived");
+    }
+    if (status.compare("COMPLETED", Qt::CaseInsensitive) == 0)
+    {
+        return QStringLiteral("completed");
+    }
+
+    return {};
+}
+
+QString pollSystemMessageKind(const QString &type,
+                              const TwitchChannel::PollEvent &poll)
+{
+    if (type == "POLL_CREATE")
+    {
+        return QStringLiteral("created");
+    }
+    if (type == "POLL_END" || type == "POLL_UPDATE")
+    {
+        return pollTerminalSystemMessageKind(poll.status);
+    }
+
+    return {};
+}
+
+QString pollSystemMessageKey(const QString &kind,
+                             const TwitchChannel::PollEvent &poll)
+{
+    if (kind.isEmpty())
+    {
+        return {};
+    }
+
+    auto subject = poll.id;
+    if (subject.isEmpty())
+    {
+        subject = poll.title;
+    }
+
+    return subject + ':' + kind + ':' + poll.status;
+}
+
 QString sanitizeChatWarningReason(QString reason)
 {
     reason.replace(QChar(0x034F), QString());
@@ -4360,10 +4428,44 @@ void TwitchChannel::setActivePoll(std::optional<PollEvent> poll)
             {
                 poll->createdByName = previous.createdByName;
             }
+            if (poll->endedByName.isEmpty())
+            {
+                poll->endedByName = previous.endedByName;
+            }
         }
         *locked = std::move(poll);
     }
+
+    {
+        auto locked = this->activePoll_.accessConst();
+        if (locked->has_value())
+        {
+            this->tryEmitPollCreatedSystemMessage(**locked);
+        }
+    }
+
     this->pollChanged.invoke();
+}
+
+void TwitchChannel::tryEmitPollCreatedSystemMessage(const PollEvent &poll)
+{
+    if (poll.createdByName.isEmpty() || poll.title.isEmpty())
+    {
+        return;
+    }
+
+    const auto kind = QStringLiteral("created");
+    const auto key = pollSystemMessageKey(kind, poll);
+    if (!getSettings()->showPredictionSystemMessages || key.isEmpty() ||
+        key == this->lastPollSystemMessageKey_)
+    {
+        return;
+    }
+
+    this->lastPollSystemMessageKey_ = key;
+    this->addSystemMessage(
+        QString("%1 created a poll: \"%2\"")
+            .arg(poll.createdByName, poll.title));
 }
 
 void TwitchChannel::setActiveRaid(std::optional<RaidEvent> raid)
@@ -4567,7 +4669,63 @@ void TwitchChannel::handlePollUpdate(const QJsonObject &payload)
         poll = data;
     }
 
-    auto finishCurrentPoll = [this, &poll] {
+    auto emitPollSystemMessages = [this](const QString &messageType,
+                                         const PollEvent &pollEvent) {
+        const auto systemMessageKind =
+            pollSystemMessageKind(messageType, pollEvent);
+        const auto systemMessageKey =
+            pollSystemMessageKey(systemMessageKind, pollEvent);
+        if (!getSettings()->showPredictionSystemMessages ||
+            systemMessageKind.isEmpty())
+        {
+            return;
+        }
+
+        if (systemMessageKind == "created")
+        {
+            this->tryEmitPollCreatedSystemMessage(pollEvent);
+            return;
+        }
+
+        if (systemMessageKey == this->lastPollSystemMessageKey_)
+        {
+            return;
+        }
+
+        this->lastPollSystemMessageKey_ = systemMessageKey;
+        if (systemMessageKind == "completed")
+        {
+            const auto actor =
+                predictionActorOrFallback(pollEvent.endedByName);
+            const auto winnerTitle = pollWinnerTitle(pollEvent);
+            if (winnerTitle.isEmpty())
+            {
+                this->addSystemMessage(
+                    QString("%1 ended the poll: \"%2\"")
+                        .arg(actor, pollEvent.title));
+            }
+            else
+            {
+                this->addSystemMessage(
+                    QString("%1 ended the poll: \"%2\" won")
+                        .arg(actor, winnerTitle));
+            }
+        }
+        else if (systemMessageKind == "terminated")
+        {
+            this->addSystemMessage(
+                QString("%1 ended the poll early")
+                    .arg(predictionActorOrFallback(pollEvent.endedByName)));
+        }
+        else if (systemMessageKind == "archived")
+        {
+            this->addSystemMessage(
+                QString("%1 archived the poll")
+                    .arg(predictionActorOrFallback(pollEvent.endedByName)));
+        }
+    };
+
+    auto finishCurrentPoll = [this, &poll, &type, &emitPollSystemMessages] {
         std::optional<PollEvent> currentPoll;
         {
             auto locked = this->activePoll_.accessConst();
@@ -4591,7 +4749,28 @@ void TwitchChannel::handlePollUpdate(const QJsonObject &payload)
         currentPoll->status = status;
         currentPoll->remainingDurationMilliseconds = 0;
         currentPoll->endsAt = QDateTime::currentDateTimeUtc();
+
+        const auto endedBy = objectFromAnyKey(poll, "ended_by", "endedBy");
+        const auto endedByName = userDisplayNameFromObject(endedBy);
+        if (!endedByName.isEmpty())
+        {
+            currentPoll->endedByName = endedByName;
+        }
+
+        emitPollSystemMessages(type, *currentPoll);
+
+        const bool needsEndedByBackfill =
+            type == "POLL_END" &&
+            (status.compare("TERMINATED", Qt::CaseInsensitive) == 0 ||
+             status.compare("ARCHIVED", Qt::CaseInsensitive) == 0) &&
+            currentPoll->endedByName.isEmpty();
+
         this->setActivePoll(std::move(currentPoll));
+
+        if (needsEndedByBackfill)
+        {
+            this->refreshPollIfStale(true);
+        }
     };
 
     if (poll.isEmpty())
@@ -4654,10 +4833,11 @@ void TwitchChannel::handlePollUpdate(const QJsonObject &payload)
     event.pointsPerVote = pointsVotes.value("cost").toInt(
         pointsVotes.value("community_points_cost").toInt());
 
-    const auto createdBy = poll.value("created_by").toObject().isEmpty()
-                               ? poll.value("createdBy").toObject()
-                               : poll.value("created_by").toObject();
+    const auto createdBy = objectFromAnyKey(poll, "created_by", "createdBy");
     event.createdByName = userDisplayNameFromObject(createdBy);
+
+    const auto endedBy = objectFromAnyKey(poll, "ended_by", "endedBy");
+    event.endedByName = userDisplayNameFromObject(endedBy);
 
     const auto topContributor =
         poll.value("top_channel_points_contributor").toObject();
@@ -4720,7 +4900,22 @@ void TwitchChannel::handlePollUpdate(const QJsonObject &payload)
         }
     }
 
+    emitPollSystemMessages(type, event);
+
+    const bool needsCreatorBackfill =
+        type == "POLL_CREATE" && event.createdByName.isEmpty();
+    const bool needsEndedByBackfill =
+        type == "POLL_END" &&
+        (event.status.compare("TERMINATED", Qt::CaseInsensitive) == 0 ||
+         event.status.compare("ARCHIVED", Qt::CaseInsensitive) == 0) &&
+        event.endedByName.isEmpty();
+
     this->setActivePoll(std::move(event));
+
+    if (needsCreatorBackfill || needsEndedByBackfill)
+    {
+        this->refreshPollIfStale(true);
+    }
 }
 
 void TwitchChannel::handleRaidUpdate(const QJsonObject &payload)

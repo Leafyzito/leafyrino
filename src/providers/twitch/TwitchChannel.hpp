@@ -238,6 +238,7 @@ public:
         QDateTime createdAt;
         std::optional<QDateTime> endsAt;
         QString createdByName;
+        QString endedByName;  // mod who terminated/archived
         QString currentUserId;
         bool channelPointsVotingEnabled = false;
         int pointsPerVote = 0;
@@ -343,6 +344,7 @@ public:
     void handlePollUpdate(const QJsonObject &payload);
     void refreshActivePoll();
     void refreshPollIfStale(bool force = false);
+    void tryEmitPollCreatedSystemMessage(const PollEvent &poll);
     qint64 channelPointBalance() const;
     bool isChannelPointsFetchInFlight() const;
     bool shouldShowChannelPoints() const;
@@ -688,6 +690,7 @@ private:
     std::atomic<bool> pollFetchInFlight_{false};
     QDateTime lastPollRefreshAt_;
     QDateTime lastPollUpdateAt_;
+    QString lastPollSystemMessageKey_;
     UniqueAccess<std::optional<ChatWarning>> activeChatWarning_;
     UniqueAccess<std::optional<RaidEvent>> activeRaid_;
     QString locallyClearedRaidId_;

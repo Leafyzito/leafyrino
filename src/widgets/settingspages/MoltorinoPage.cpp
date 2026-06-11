@@ -548,8 +548,8 @@ MoltorinoPage::MoltorinoPage()
 
     SettingWidget::checkbox("Show prediction chat messages",
                             s.showPredictionSystemMessages)
-        ->setTooltip("Show chat messages when predictions are created, "
-                     "locked, paid out, or refunded.")
+        ->setTooltip("Show chat messages when predictions or polls are "
+                     "created, locked, ended, paid out, refunded, or archived.")
         ->addTo(*view);
 
     SettingWidget::checkbox("Close prediction menu after betting",
