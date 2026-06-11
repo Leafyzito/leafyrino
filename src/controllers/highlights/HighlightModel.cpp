@@ -135,8 +135,7 @@ void HighlightModel::afterInit()
     followRow[Column::UseRegex]->setFlags({});
     followRow[Column::CaseSensitive]->setFlags({});
 
-    QUrl followSound =
-        QUrl(getSettings()->followHighlightSoundUrl.getValue());
+    QUrl followSound = QUrl(getSettings()->followHighlightSoundUrl.getValue());
     setFilePathItem(followRow[Column::SoundPath], followSound, false);
 
     auto followColor = ColorProvider::instance().color(ColorType::Follow);

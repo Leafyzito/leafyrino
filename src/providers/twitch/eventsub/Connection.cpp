@@ -600,11 +600,11 @@ void Connection::onChannelFollow(
 
     const auto userColor =
         twitch::getUserColor({
-                               .userLogin = login,
-                               .userID = payload.event.userID.qt(),
-                               .userDataController = getApp()->getUserData(),
-                               .channelChatters = channel,
-                           })
+                                 .userLogin = login,
+                                 .userID = payload.event.userID.qt(),
+                                 .userDataController = getApp()->getUserData(),
+                                 .channelChatters = channel,
+                             })
             .value_or(MessageColor::System);
 
     const auto messageText =
@@ -680,8 +680,7 @@ void Connection::claimHelixAuthMode(bool alternate)
     }
 }
 
-bool Connection::canHandleSubscription(
-    const SubscriptionRequest &request) const
+bool Connection::canHandleSubscription(const SubscriptionRequest &request) const
 {
     if (!this->twitchUserID.isEmpty() &&
         this->twitchUserID != request.ownerTwitchUserID)

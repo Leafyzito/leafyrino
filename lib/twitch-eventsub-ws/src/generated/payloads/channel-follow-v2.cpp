@@ -102,9 +102,8 @@ boost::json::result_for<Event, boost::json::value>::type tag_invoke(
         return broadcasterUserName.error();
     }
 
-    static_assert(
-        std::is_trivially_copyable_v<std::remove_reference_t<
-            decltype(std::declval<Event>().followedAt)>>);
+    static_assert(std::is_trivially_copyable_v<std::remove_reference_t<
+                      decltype(std::declval<Event>().followedAt)>>);
     const auto *jvfollowedAt = root.if_contains("followed_at");
     if (jvfollowedAt == nullptr)
     {

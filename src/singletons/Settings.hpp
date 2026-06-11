@@ -700,8 +700,8 @@ public:
         "/highlighting/follow/enableSound", false};
     BoolSetting enableFollowHighlightTaskbar = {
         "/highlighting/follow/enableTaskbarFlashing", false};
-    QStringSetting followHighlightSoundUrl = {
-        "/highlighting/follow/soundUrl", ""};
+    QStringSetting followHighlightSoundUrl = {"/highlighting/follow/soundUrl",
+                                              ""};
     QStringSetting followHighlightColor = {"/highlighting/follow/color", ""};
 
     BoolSetting enableAutomodHighlight = {

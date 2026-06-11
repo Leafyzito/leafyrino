@@ -3579,10 +3579,9 @@ void Helix::createEventSubSubscription(
 
     const auto useOverride = !oauthTokenOverride.isEmpty();
     auto postRequest =
-        useOverride
-            ? this->makePost("eventsub/subscriptions", {}, clientIdOverride,
-                             oauthTokenOverride)
-            : this->makePost("eventsub/subscriptions", {});
+        useOverride ? this->makePost("eventsub/subscriptions", {},
+                                     clientIdOverride, oauthTokenOverride)
+                    : this->makePost("eventsub/subscriptions", {});
 
     std::move(postRequest)
         .json(body)

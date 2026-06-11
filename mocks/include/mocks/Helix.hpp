@@ -490,16 +490,15 @@ public:
                  FailureCallback<QString> failureCallback),
                 (override));
 
-    MOCK_METHOD(void, createEventSubSubscription,
-                (const eventsub::SubscriptionRequest &request,
-                 const QString &sessionID,
-                 ResultCallback<HelixCreateEventSubSubscriptionResponse>
-                     successCallback,
-                 (FailureCallback<HelixCreateEventSubSubscriptionError, QString>
-                      failureCallback),
-                 (const QString &clientIdOverride,
-                  const QString &oauthTokenOverride)),
-                (override));
+    MOCK_METHOD(
+        void, createEventSubSubscription,
+        (const eventsub::SubscriptionRequest &request, const QString &sessionID,
+         ResultCallback<HelixCreateEventSubSubscriptionResponse>
+             successCallback,
+         (FailureCallback<HelixCreateEventSubSubscriptionError, QString>
+              failureCallback),
+         (const QString &clientIdOverride, const QString &oauthTokenOverride)),
+        (override));
 
     MOCK_METHOD(void, deleteEventSubSubscription,
                 (const QString &request, ResultCallback<> successCallback,

@@ -60,12 +60,12 @@
 #include "widgets/Window.hpp"
 
 #include <IrcConnection>
+#include <QDateTime>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QLocale>
-#include <QDateTime>
 #include <QStringBuilder>
 #include <QThread>
 #include <QTimer>
@@ -3334,8 +3334,8 @@ void TwitchChannel::refreshPubSub()
         }
         else
         {
-            followAuth = MoltorinoAuth::resolveModerationToken(
-                roomId, this->getName());
+            followAuth =
+                MoltorinoAuth::resolveModerationToken(roomId, this->getName());
         }
 
         const auto moderatorUserId = followAuth.userId.isEmpty()
@@ -3345,24 +3345,25 @@ void TwitchChannel::refreshPubSub()
         if (followAuth.hasToken())
         {
             this->eventSubChannelFollowHandle =
-                getApp()->getEventSub()->subscribe(eventsub::SubscriptionRequest{
-                    .subscriptionType = "channel.follow",
-                    .subscriptionVersion = "2",
-                    .ownerTwitchUserID = currentTwitchUserID,
-                    .conditions =
-                        {
+                getApp()->getEventSub()->subscribe(
+                    eventsub::SubscriptionRequest{
+                        .subscriptionType = "channel.follow",
+                        .subscriptionVersion = "2",
+                        .ownerTwitchUserID = currentTwitchUserID,
+                        .conditions =
                             {
-                                "broadcaster_user_id",
-                                roomId,
+                                {
+                                    "broadcaster_user_id",
+                                    roomId,
+                                },
+                                {
+                                    "moderator_user_id",
+                                    moderatorUserId,
+                                },
                             },
-                            {
-                                "moderator_user_id",
-                                moderatorUserId,
-                            },
-                        },
-                    .helixClientId = MoltorinoAuth::twitchTvClientId(),
-                    .helixOAuthToken = followAuth.token,
-                });
+                        .helixClientId = MoltorinoAuth::twitchTvClientId(),
+                        .helixOAuthToken = followAuth.token,
+                    });
         }
         else
         {

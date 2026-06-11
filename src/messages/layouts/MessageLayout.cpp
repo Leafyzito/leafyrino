@@ -422,8 +422,8 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
     else if (this->message_->flags.has(MessageFlag::Follow) &&
              ctx.preferences.enableFollowHighlight)
     {
-        backgroundColor = blendColors(backgroundColor,
-                                      *ctx.colorProvider.color(ColorType::Follow));
+        backgroundColor = blendColors(
+            backgroundColor, *ctx.colorProvider.color(ColorType::Follow));
     }
     else if ((this->message_->flags.has(MessageFlag::RedeemedHighlight) ||
               this->message_->flags.has(
