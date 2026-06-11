@@ -1305,7 +1305,9 @@ public:
         const eventsub::SubscriptionRequest &request, const QString &sessionID,
         ResultCallback<HelixCreateEventSubSubscriptionResponse> successCallback,
         FailureCallback<HelixCreateEventSubSubscriptionError, QString>
-            failureCallback) = 0;
+            failureCallback,
+        const QString &clientIdOverride = {},
+        const QString &oauthTokenOverride = {}) = 0;
 
     virtual void deleteEventSubSubscription(
         const QString &subscriptionID, ResultCallback<> successCallback,
@@ -1627,7 +1629,9 @@ public:
         const eventsub::SubscriptionRequest &request, const QString &sessionID,
         ResultCallback<HelixCreateEventSubSubscriptionResponse> successCallback,
         FailureCallback<HelixCreateEventSubSubscriptionError, QString>
-            failureCallback) final;
+            failureCallback,
+        const QString &clientIdOverride = {},
+        const QString &oauthTokenOverride = {}) final;
 
     void deleteEventSubSubscription(
         const QString &subscriptionID, ResultCallback<> successCallback,
@@ -1671,9 +1675,14 @@ protected:
 private:
     NetworkRequest makeRequest(const QString &url, const QUrlQuery &urlQuery,
                                NetworkRequestType type);
+    NetworkRequest makeRequest(const QString &url, const QUrlQuery &urlQuery,
+                               NetworkRequestType type, const QString &clientId,
+                               const QString &oauthToken);
     NetworkRequest makeGet(const QString &url, const QUrlQuery &urlQuery);
     NetworkRequest makeDelete(const QString &url, const QUrlQuery &urlQuery);
     NetworkRequest makePost(const QString &url, const QUrlQuery &urlQuery);
+    NetworkRequest makePost(const QString &url, const QUrlQuery &urlQuery,
+                            const QString &clientId, const QString &oauthToken);
     NetworkRequest makePut(const QString &url, const QUrlQuery &urlQuery);
     NetworkRequest makePatch(const QString &url, const QUrlQuery &urlQuery);
 

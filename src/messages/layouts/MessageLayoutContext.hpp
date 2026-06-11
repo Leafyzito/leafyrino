@@ -56,6 +56,7 @@ struct MessagePreferences {
     bool enableElevatedMessageHighlight{};
     bool enableFirstMessageHighlight{};
     bool enableSubHighlight{};
+    bool enableFollowHighlight{};
     bool enableWatchStreakHighlight{};
     bool enableAutomodHighlight{};
     bool enableClientDetectionHighlight{};

@@ -79,6 +79,7 @@ enum class MessageFlag : std::int64_t {
     WatchStreak = (1LL << 43),
     ChatWarning = (1LL << 44),
     RepeatedMessage = (1LL << 45),
+    Follow = (1LL << 46),
 };
 using MessageFlags = FlagsEnum<MessageFlag>;
 

@@ -145,6 +145,18 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->addKeywords({"url", "link", "wrap", "break"})
         ->addTo(layout);
 
+    layout.addTitle("Follow events");
+    layout.addDescription(
+        "Shows \"X followed the channel.\" system messages in chat. Only "
+        "works in channels where you are the broadcaster or a moderator. "
+        "Requires Moltorino auth (Settings → Moltorino → Authentication), "
+        "experimental EventSub enabled under Settings → General, and an app "
+        "restart after turning EventSub on.");
+    SettingWidget::checkbox("Show follow events in chat",
+                            s.showFollowEventsInChat)
+        ->addKeywords({"follow", "events", "eventsub", "chat", "moderator"})
+        ->addTo(layout);
+
     layout.addStretch();
 
     // Invisible element for width

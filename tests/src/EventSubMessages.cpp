@@ -181,6 +181,25 @@ const std::map<QString, std::string_view, QCompareCaseInsensitive>
             "cost": 0
         })",
         },
+        {
+            "channel-follow",
+            R"({
+            "id": "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
+            "status": "enabled",
+            "type": "channel.follow",
+            "version": "2",
+            "condition": {
+                "broadcaster_user_id": "11148817",
+                "moderator_user_id": "11148817"
+            },
+            "transport": {
+                "method": "websocket",
+                "session_id": "AgoQBFnyoXrLQxiCmkHTvJ8VNBIGY2VsbC1j"
+            },
+            "created_at": "2019-11-16T10:11:12.634234626Z",
+            "cost": 0
+        })",
+        },
     };
 
 class MockApplication : public mock::BaseApplication
@@ -278,6 +297,8 @@ public:
 
         this->mainChannel = makeMockTwitchChannel("pajlada");
         this->mainChannel->setRoomId("11148817");
+
+        getSettings()->showFollowEventsInChat = true;
 
         this->mockApplication->twitch.mockChannels.emplace("pajlada",
                                                            this->mainChannel);

@@ -71,7 +71,7 @@ public:
 private:
     void subscribe(const SubscriptionRequest &request, bool isRetry);
 
-    void createConnection();
+    void createConnection(bool alternateHelixAuth = false);
     void createConnection(std::string host, std::string port, std::string path,
                           std::unique_ptr<lib::Listener> listener);
     void registerConnection(std::weak_ptr<lib::Session> &&connection);
@@ -105,7 +105,7 @@ private:
     std::vector<std::weak_ptr<lib::Session>> connections;
 
     [[nodiscard]] std::optional<std::shared_ptr<lib::Session>>
-        getViableConnection(const QString &ownerTwitchUserID,
+        getViableConnection(const SubscriptionRequest &request,
                             uint32_t &openButNotReadyConnections);
 
     struct Subscription {

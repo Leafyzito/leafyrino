@@ -98,6 +98,15 @@ public:
         std::cout << "Channel moderate event!\n";
     }
 
+    void onChannelFollow(lib::messages::Metadata metadata,
+                         lib::payload::channel_follow::v2::Payload payload)
+        override
+    {
+        (void)metadata;
+        (void)payload;
+        std::cout << "Channel follow event!\n";
+    }
+
     // Add your new subscription types above this line
 };
 

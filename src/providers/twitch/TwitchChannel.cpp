@@ -60,6 +60,7 @@
 #include "widgets/Window.hpp"
 
 #include <IrcConnection>
+#include <QDateTime>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -97,6 +98,7 @@ using detail::isUnknownCommand;
 
 namespace {
 const QString MAGIC_MESSAGE_SUFFIX = u" \u034f"_s;
+
 constexpr int CLIP_CREATION_COOLDOWN = 5000;
 constexpr qint64 CHANNEL_POINTS_MIN_REFRESH_INTERVAL_MS = 10'000;
 constexpr qint64 CHANNEL_POINTS_STALE_AFTER_MS = 120'000;
@@ -604,6 +606,7 @@ TwitchChannel::TwitchChannel(const QString &name, bool anonymous)
             }
             this->eventSubChannelChatUserMessageHoldHandle.reset();
             this->eventSubChannelChatUserMessageUpdateHandle.reset();
+            this->eventSubChannelFollowHandle.reset();
             this->eventSubChannelModerateHandle.reset();
             this->eventSubAutomodMessageHoldHandle.reset();
             this->eventSubAutomodMessageUpdateHandle.reset();
@@ -643,6 +646,11 @@ TwitchChannel::TwitchChannel(const QString &name, bool anonymous)
         },
         this->signalHolder_);
     getSettings()->showRaidStatusAboveInput.connect(
+        [this](const auto &, auto) {
+            this->refreshPubSub();
+        },
+        this->signalHolder_);
+    getSettings()->showFollowEventsInChat.connect(
         [this](const auto &, auto) {
             this->refreshPubSub();
         },
@@ -3232,6 +3240,7 @@ void TwitchChannel::refreshPubSub()
         this->eventSubSuspiciousUserUpdateHandle.reset();
         this->eventSubChannelChatUserMessageHoldHandle.reset();
         this->eventSubChannelChatUserMessageUpdateHandle.reset();
+        this->eventSubChannelFollowHandle.reset();
     };
 
     if (this->isAnonymous())
@@ -3310,6 +3319,61 @@ void TwitchChannel::refreshPubSub()
     }
 
     const auto &currentTwitchUserID = currentAccount->getUserId();
+
+    if (getSettings()->showFollowEventsInChat && this->hasModRights())
+    {
+        MoltorinoAuthToken followAuth;
+        if (this->isBroadcaster())
+        {
+            followAuth = MoltorinoAuth::resolveSavedBroadcasterToken(
+                roomId, this->getName());
+            if (!followAuth.hasToken())
+            {
+                followAuth = MoltorinoAuth::resolveCurrentUserToken();
+            }
+        }
+        else
+        {
+            followAuth =
+                MoltorinoAuth::resolveModerationToken(roomId, this->getName());
+        }
+
+        const auto moderatorUserId = followAuth.userId.isEmpty()
+                                         ? currentTwitchUserID
+                                         : followAuth.userId;
+
+        if (followAuth.hasToken())
+        {
+            this->eventSubChannelFollowHandle =
+                getApp()->getEventSub()->subscribe(
+                    eventsub::SubscriptionRequest{
+                        .subscriptionType = "channel.follow",
+                        .subscriptionVersion = "2",
+                        .ownerTwitchUserID = currentTwitchUserID,
+                        .conditions =
+                            {
+                                {
+                                    "broadcaster_user_id",
+                                    roomId,
+                                },
+                                {
+                                    "moderator_user_id",
+                                    moderatorUserId,
+                                },
+                            },
+                        .helixClientId = MoltorinoAuth::twitchTvClientId(),
+                        .helixOAuthToken = followAuth.token,
+                    });
+        }
+        else
+        {
+            this->eventSubChannelFollowHandle.reset();
+        }
+    }
+    else
+    {
+        this->eventSubChannelFollowHandle.reset();
+    }
 
     if (this->hasModRights())
     {

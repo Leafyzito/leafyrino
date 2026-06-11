@@ -163,6 +163,14 @@ public:
         benchmark::DoNotOptimize(&metadata);
         benchmark::DoNotOptimize(&payload);
     }
+
+    void onChannelFollow(
+        const messages::Metadata &metadata,
+        const payload::channel_follow::v2::Payload &payload) override
+    {
+        benchmark::DoNotOptimize(&metadata);
+        benchmark::DoNotOptimize(&payload);
+    }
     // NOLINTEND(cppcoreguidelines-pro-type-const-cast)
 };
 

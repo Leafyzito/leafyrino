@@ -141,6 +141,12 @@ class NoOpListener : public chatterino::eventsub::lib::Listener
         override
     {
     }
+
+    void onChannelFollow(
+        const messages::Metadata &metadata,
+        const payload::channel_follow::v2::Payload &payload) override
+    {
+    }
 };
 
 }  // namespace
