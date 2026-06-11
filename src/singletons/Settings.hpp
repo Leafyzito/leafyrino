@@ -695,6 +695,15 @@ public:
     QStringSetting watchStreakHighlightColor = {
         "/highlighting/watchStreak/color", ""};
 
+    BoolSetting enableFollowHighlight = {"/highlighting/follow/enabled", true};
+    BoolSetting enableFollowHighlightSound = {
+        "/highlighting/follow/enableSound", false};
+    BoolSetting enableFollowHighlightTaskbar = {
+        "/highlighting/follow/enableTaskbarFlashing", false};
+    QStringSetting followHighlightSoundUrl = {
+        "/highlighting/follow/soundUrl", ""};
+    QStringSetting followHighlightColor = {"/highlighting/follow/color", ""};
+
     BoolSetting enableAutomodHighlight = {
         "/highlighting/automod/enabled",
         true,
@@ -1157,6 +1166,8 @@ public:
         "/moltorino/hideUnavailableModCommands", true};
     BoolSetting showFollowButtonInSplitHeader{
         "/moltorino/showFollowButtonInSplitHeader", true};
+    BoolSetting showFollowEventsInChat{"/moltorino/showFollowEventsInChat",
+                                       false};
     BoolSetting confirmUnfollowFromSplitHeader{
         "/moltorino/confirmUnfollowFromSplitHeader", true};
     BoolSetting transmitPresence{"/moltorino/client/runtime", true};

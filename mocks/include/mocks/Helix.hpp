@@ -496,7 +496,9 @@ public:
                  ResultCallback<HelixCreateEventSubSubscriptionResponse>
                      successCallback,
                  (FailureCallback<HelixCreateEventSubSubscriptionError, QString>
-                      failureCallback)),
+                      failureCallback),
+                 (const QString &clientIdOverride,
+                  const QString &oauthTokenOverride)),
                 (override));
 
     MOCK_METHOD(void, deleteEventSubSubscription,

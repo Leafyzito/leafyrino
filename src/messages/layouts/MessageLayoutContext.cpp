@@ -74,6 +74,12 @@ void MessagePreferences::connectSettings(Settings *settings,
         },
         holder);
 
+    settings->enableFollowHighlight.connect(
+        [this](const auto &newValue) {
+            this->enableFollowHighlight = newValue;
+        },
+        holder);
+
     settings->enableWatchStreakHighlight.connect(
         [this](const auto &newValue) {
             this->enableWatchStreakHighlight = newValue;

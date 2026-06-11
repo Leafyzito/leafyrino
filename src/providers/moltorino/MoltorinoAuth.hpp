@@ -60,6 +60,8 @@ struct MoltorinoAuthRefreshResult {
 
 namespace MoltorinoAuth {
 
+QString twitchTvClientId();
+
 std::vector<MoltorinoAuthAccount> accounts();
 MoltorinoAuthSummary summary();
 QString legacyToken();

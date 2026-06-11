@@ -121,6 +121,29 @@ void HighlightModel::afterInit()
 
     this->insertCustomRow(subRow, HighlightRowIndexes::SubRow);
 
+    std::vector<QStandardItem *> followRow = this->createRow();
+    setBoolItem(followRow[Column::Pattern],
+                getSettings()->enableFollowHighlight.getValue(), true, false);
+    followRow[Column::Pattern]->setData("Follows", Qt::DisplayRole);
+    followRow[Column::ShowInMentions]->setFlags({});
+    setBoolItem(followRow[Column::FlashTaskbar],
+                getSettings()->enableFollowHighlightTaskbar.getValue(), true,
+                false);
+    setBoolItem(followRow[Column::PlaySound],
+                getSettings()->enableFollowHighlightSound.getValue(), true,
+                false);
+    followRow[Column::UseRegex]->setFlags({});
+    followRow[Column::CaseSensitive]->setFlags({});
+
+    QUrl followSound =
+        QUrl(getSettings()->followHighlightSoundUrl.getValue());
+    setFilePathItem(followRow[Column::SoundPath], followSound, false);
+
+    auto followColor = ColorProvider::instance().color(ColorType::Follow);
+    setColorItem(followRow[Column::Color], *followColor, false);
+
+    this->insertCustomRow(followRow, HighlightRowIndexes::FollowRow);
+
     std::vector<QStandardItem *> redeemedRow = this->createRow();
     setBoolItem(redeemedRow[Column::Pattern],
                 getSettings()->enableRedeemedHighlight.getValue(), true, false);
@@ -282,6 +305,11 @@ void HighlightModel::customRowSetData(const std::vector<QStandardItem *> &row,
                     getSettings()->enableWatchStreakHighlight.setValue(
                         value.toBool());
                 }
+                else if (rowIndex == HighlightRowIndexes::FollowRow)
+                {
+                    getSettings()->enableFollowHighlight.setValue(
+                        value.toBool());
+                }
                 else if (rowIndex == HighlightRowIndexes::RedeemedRow)
                 {
                     getSettings()->enableRedeemedHighlight.setValue(
@@ -349,6 +377,11 @@ void HighlightModel::customRowSetData(const std::vector<QStandardItem *> &row,
                     getSettings()->enableSubHighlightTaskbar.setValue(
                         value.toBool());
                 }
+                else if (rowIndex == HighlightRowIndexes::FollowRow)
+                {
+                    getSettings()->enableFollowHighlightTaskbar.setValue(
+                        value.toBool());
+                }
                 else if (rowIndex == HighlightRowIndexes::RedeemedRow)
                 {
                 }
@@ -387,6 +420,11 @@ void HighlightModel::customRowSetData(const std::vector<QStandardItem *> &row,
                 else if (rowIndex == HighlightRowIndexes::SubRow)
                 {
                     getSettings()->enableSubHighlightSound.setValue(
+                        value.toBool());
+                }
+                else if (rowIndex == HighlightRowIndexes::FollowRow)
+                {
+                    getSettings()->enableFollowHighlightSound.setValue(
                         value.toBool());
                 }
                 else if (rowIndex == HighlightRowIndexes::RedeemedRow)
@@ -435,6 +473,11 @@ void HighlightModel::customRowSetData(const std::vector<QStandardItem *> &row,
                     getSettings()->subHighlightSoundUrl.setValue(
                         value.toString());
                 }
+                else if (rowIndex == HighlightRowIndexes::FollowRow)
+                {
+                    getSettings()->followHighlightSoundUrl.setValue(
+                        value.toString());
+                }
                 else if (rowIndex == HighlightRowIndexes::ThreadMessageRow)
                 {
                     getSettings()->threadHighlightSoundUrl.setValue(
@@ -475,6 +518,11 @@ void HighlightModel::customRowSetData(const std::vector<QStandardItem *> &row,
                 {
                     setColor(getSettings()->watchStreakHighlightColor,
                              ColorType::WatchStreak);
+                }
+                else if (rowIndex == HighlightRowIndexes::FollowRow)
+                {
+                    setColor(getSettings()->followHighlightColor,
+                             ColorType::Follow);
                 }
                 else if (rowIndex == HighlightRowIndexes::RedeemedRow)
                 {

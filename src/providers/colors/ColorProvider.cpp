@@ -45,6 +45,7 @@ QSet<QColor> ColorProvider::recentColors() const
 
     retVal.insert(*this->color(ColorType::SelfHighlight));
     retVal.insert(*this->color(ColorType::Subscription));
+    retVal.insert(*this->color(ColorType::Follow));
     retVal.insert(*this->color(ColorType::WatchStreak));
     retVal.insert(*this->color(ColorType::Whisper));
 
@@ -105,6 +106,9 @@ void ColorProvider::initTypeColorMap()
 
     initColor(ColorType::Subscription, getSettings()->subHighlightColor,
               HighlightPhrase::FALLBACK_SUB_COLOR);
+
+    initColor(ColorType::Follow, getSettings()->followHighlightColor,
+              HighlightPhrase::FALLBACK_FOLLOW_COLOR);
 
     initColor(ColorType::WatchStreak, getSettings()->watchStreakHighlightColor,
               HighlightPhrase::FALLBACK_WATCH_STREAK_COLOR);

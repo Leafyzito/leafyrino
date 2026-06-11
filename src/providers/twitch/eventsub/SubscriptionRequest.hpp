@@ -22,6 +22,11 @@ struct SubscriptionRequest {
 
     std::vector<std::pair<QString, QString>> conditions;
 
+    /// Optional Helix auth override for subscription creation (not part of
+    /// request identity).
+    QString helixClientId;
+    QString helixOAuthToken;
+
     friend QDebug operator<<(QDebug dbg, const SubscriptionRequest &v);
 };
 

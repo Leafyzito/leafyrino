@@ -1,0 +1,127 @@
+{
+    "input": {
+        "user_id": "1234",
+        "user_login": "cool_user",
+        "user_name": "Cool_User",
+        "broadcaster_user_id": "11148817",
+        "broadcaster_user_login": "pajlada",
+        "broadcaster_user_name": "pajlada",
+        "followed_at": "2020-07-15T18:16:11.17106713Z"
+    },
+    "output": [
+        {
+            "channelName": "",
+            "count": 1,
+            "displayName": "",
+            "elements": [
+                {
+                    "element": {
+                        "color": "System",
+                        "flags": "Timestamp",
+                        "link": {
+                            "type": "None",
+                            "value": ""
+                        },
+                        "style": "TimestampMedium",
+                        "tooltip": "",
+                        "trailingSpace": true,
+                        "type": "TextElement",
+                        "words": [
+                            "12:31"
+                        ]
+                    },
+                    "flags": "Timestamp",
+                    "format": "",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "time": "12:31:47",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TimestampElement"
+                },
+                {
+                    "color": "Text",
+                    "fallbackColor": "System",
+                    "flags": "Text|Mention",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "style": "ChatMedium",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "MentionElement",
+                    "userColor": "System",
+                    "userLoginName": "cool_user",
+                    "words": [
+                        "Cool_User"
+                    ]
+                },
+                {
+                    "color": "System",
+                    "flags": "Text",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "style": "ChatMedium",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TextElement",
+                    "words": [
+                        "followed"
+                    ]
+                },
+                {
+                    "color": "System",
+                    "flags": "Text",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "style": "ChatMedium",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TextElement",
+                    "words": [
+                        "the"
+                    ]
+                },
+                {
+                    "color": "System",
+                    "flags": "Text",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "style": "ChatMedium",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TextElement",
+                    "words": [
+                        "channel."
+                    ]
+                }
+            ],
+            "externalBadges": [
+            ],
+            "flags": "System|EventSub|Follow",
+            "frozen": true,
+            "id": "",
+            "localizedName": "",
+            "loginName": "",
+            "messageText": "Cool_User followed the channel. ",
+            "searchText": "Cool_User followed the channel. ",
+            "serverReceivedTime": "2024-05-14T12:31:47Z",
+            "timeoutUser": "",
+            "twitchBadgeInfos": {
+            },
+            "twitchBadges": [
+            ],
+            "userID": "",
+            "usernameColor": "#ff000000"
+        }
+    ]
+}

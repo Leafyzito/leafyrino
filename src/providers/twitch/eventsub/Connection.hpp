@@ -11,6 +11,7 @@
 #include <boost/date_time.hpp>
 #include <QString>
 
+#include <optional>
 #include <unordered_set>
 
 namespace chatterino::eventsub {
@@ -88,13 +89,19 @@ public:
         const lib::payload::channel_chat_user_message_update::v1::Payload
             &payload) override;
 
+    void onChannelFollow(
+        const lib::messages::Metadata &metadata,
+        const lib::payload::channel_follow::v2::Payload &payload) override;
+
     QString getSessionID() const;
 
     bool isSubscribedTo(const SubscriptionRequest &request) const;
     void markRequestSubscribed(const SubscriptionRequest &request);
     void markRequestUnsubscribed(const SubscriptionRequest &request);
 
-    bool canHandleSubscriptionFrom(const QString &otherTwitchUserID) const;
+    bool canHandleSubscription(const SubscriptionRequest &request) const;
+
+    void claimHelixAuthMode(bool alternate);
 
     void debug();
 
@@ -102,6 +109,10 @@ private:
     QString sessionID;
 
     QString twitchUserID;
+
+    /// Set when the first subscription is routed to this connection.
+    /// `true` = Moltorino/alternate Helix token, `false` = main account token.
+    std::optional<bool> alternateHelixAuth;
 
     std::unordered_set<SubscriptionRequest> subscriptions;
 };

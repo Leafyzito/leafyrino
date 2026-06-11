@@ -20,6 +20,7 @@
 #include "providers/twitch/TwitchBadge.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "providers/twitch/UserColor.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
 #include "singletons/WindowManager.hpp"
@@ -27,8 +28,8 @@
 #include "util/PostToThread.hpp"
 
 #include <boost/json.hpp>
-#include <QDateTime>
 #include <QTimer>
+#include <QVariant>
 #include <QVector>
 #include <twitch-eventsub-ws/listener.hpp>
 #include <twitch-eventsub-ws/session.hpp>
@@ -571,6 +572,71 @@ void Connection::onChannelChatUserMessageUpdate(
     });
 }
 
+void Connection::onChannelFollow(
+    const lib::messages::Metadata &metadata,
+    const lib::payload::channel_follow::v2::Payload &payload)
+{
+    if (!getSettings()->showFollowEventsInChat)
+    {
+        return;
+    }
+
+    auto *channel = dynamic_cast<TwitchChannel *>(
+        getApp()
+            ->getTwitch()
+            ->getChannelOrEmpty(payload.event.broadcasterUserLogin.qt())
+            .get());
+    if (!channel || channel->isEmpty())
+    {
+        qCDebug(LOG) << "Channel follow event for broadcaster we're not "
+                        "interested in"
+                     << payload.event.broadcasterUserLogin.qt();
+        return;
+    }
+
+    const auto login = payload.event.userLogin.qt();
+    const auto displayName = payload.event.userName.qt();
+    const auto time = chronoToQDateTime(metadata.messageTimestamp);
+
+    const auto userColor =
+        twitch::getUserColor({
+                               .userLogin = login,
+                               .userID = payload.event.userID.qt(),
+                               .userDataController = getApp()->getUserData(),
+                               .channelChatters = channel,
+                           })
+            .value_or(MessageColor::System);
+
+    const auto messageText =
+        QString("%1 followed the channel.").arg(displayName);
+
+    runInGuiThread([channel, login, displayName, userColor, messageText, time] {
+        auto msg = MessageBuilder::makeSystemMessageWithUser(
+            messageText, login, displayName, userColor, time.time());
+        msg->flags.set(MessageFlag::System, MessageFlag::EventSub,
+                       MessageFlag::Follow);
+
+        auto [highlighted, highlightResult] = getApp()->getHighlights()->check(
+            {}, {}, login, messageText, msg->flags);
+        if (highlighted)
+        {
+            msg->flags.set(MessageFlag::Highlighted);
+            msg->highlightColor = highlightResult.color;
+
+            MessageBuilder::triggerHighlights(
+                channel, msg,
+                {
+                    .customSound =
+                        highlightResult.customSoundUrl.value_or<QUrl>({}),
+                    .playSound = highlightResult.playSound,
+                    .windowAlert = highlightResult.alert,
+                });
+        }
+
+        channel->addMessage(msg, MessageContext::Original);
+    });
+}
+
 QString Connection::getSessionID() const
 {
     return this->sessionID;
@@ -602,14 +668,35 @@ void Connection::markRequestUnsubscribed(const SubscriptionRequest &request)
         // TODO: Verify that it's fine for us to reuse a connection for another
         // user after all old subscriptions are gone
         this->twitchUserID.clear();
+        this->alternateHelixAuth.reset();
     }
 }
 
-bool Connection::canHandleSubscriptionFrom(
-    const QString &otherTwitchUserID) const
+void Connection::claimHelixAuthMode(bool alternate)
 {
-    return this->twitchUserID.isEmpty() ||
-           this->twitchUserID == otherTwitchUserID;
+    if (!this->alternateHelixAuth.has_value())
+    {
+        this->alternateHelixAuth = alternate;
+    }
+}
+
+bool Connection::canHandleSubscription(
+    const SubscriptionRequest &request) const
+{
+    if (!this->twitchUserID.isEmpty() &&
+        this->twitchUserID != request.ownerTwitchUserID)
+    {
+        return false;
+    }
+
+    const bool wantsAlternateAuth = !request.helixOAuthToken.isEmpty();
+    if (this->alternateHelixAuth.has_value() &&
+        *this->alternateHelixAuth != wantsAlternateAuth)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void Connection::debug()

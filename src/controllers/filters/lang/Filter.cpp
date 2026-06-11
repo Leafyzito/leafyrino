@@ -30,6 +30,7 @@ const QMap<QString, Type> MESSAGE_TYPING_CONTEXT{
     {"flags.highlighted", Type::Bool},
     {"flags.points_redeemed", Type::Bool},
     {"flags.sub_message", Type::Bool},
+    {"flags.follow_message", Type::Bool},
     {"flags.system_message", Type::Bool},
     {"flags.reward_message", Type::Bool},
     {"flags.first_message", Type::Bool},
@@ -83,6 +84,7 @@ ContextMap buildContextMap(const MessagePtr &m, chatterino::Channel *channel)
      * flags.highlighted
      * flags.points_redeemed
      * flags.sub_message
+     * flags.follow_message
      * flags.system_message
      * flags.reward_message
      * flags.first_message
@@ -154,6 +156,7 @@ ContextMap buildContextMap(const MessagePtr &m, chatterino::Channel *channel)
         {"flags.highlighted", m->flags.has(MessageFlag::Highlighted)},
         {"flags.points_redeemed", m->flags.has(MessageFlag::RedeemedHighlight)},
         {"flags.sub_message", m->flags.has(MessageFlag::Subscription)},
+        {"flags.follow_message", m->flags.has(MessageFlag::Follow)},
         {"flags.system_message", m->flags.has(MessageFlag::System)},
         {"flags.reward_message",
          m->flags.has(MessageFlag::RedeemedChannelPointReward)},

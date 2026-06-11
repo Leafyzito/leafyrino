@@ -3555,7 +3555,8 @@ void Helix::createEventSubSubscription(
     const eventsub::SubscriptionRequest &request, const QString &sessionID,
     ResultCallback<HelixCreateEventSubSubscriptionResponse> successCallback,
     FailureCallback<HelixCreateEventSubSubscriptionError, QString>
-        failureCallback)
+        failureCallback,
+    const QString &clientIdOverride, const QString &oauthTokenOverride)
 {
     using Error = HelixCreateEventSubSubscriptionError;
 
@@ -3576,7 +3577,14 @@ void Helix::createEventSubSubscription(
 
     body.insert("transport", transport);
 
-    this->makePost("eventsub/subscriptions", {})
+    const auto useOverride = !oauthTokenOverride.isEmpty();
+    auto postRequest =
+        useOverride
+            ? this->makePost("eventsub/subscriptions", {}, clientIdOverride,
+                             oauthTokenOverride)
+            : this->makePost("eventsub/subscriptions", {});
+
+    std::move(postRequest)
         .json(body)
         .onSuccess([successCallback](const auto &result) {
             if (result.status() != 202)
@@ -3721,15 +3729,24 @@ void Helix::deleteEventSubSubscription(const QString &subscriptionID,
 NetworkRequest Helix::makeRequest(const QString &url, const QUrlQuery &urlQuery,
                                   NetworkRequestType type)
 {
+    return this->makeRequest(url, urlQuery, type, this->clientId,
+                             this->oauthToken);
+}
+
+NetworkRequest Helix::makeRequest(const QString &url, const QUrlQuery &urlQuery,
+                                  NetworkRequestType type,
+                                  const QString &clientId,
+                                  const QString &oauthToken)
+{
     assert(!url.startsWith("/"));
 
-    if (this->clientId.isEmpty())
+    if (clientId.isEmpty())
     {
         qCDebug(chatterinoTwitch)
             << "Helix::makeRequest called without a client ID set BabyRage";
     }
 
-    if (this->oauthToken.isEmpty())
+    if (oauthToken.isEmpty())
     {
         qCDebug(chatterinoTwitch)
             << "Helix::makeRequest called without an oauth token set BabyRage";
@@ -3753,8 +3770,8 @@ NetworkRequest Helix::makeRequest(const QString &url, const QUrlQuery &urlQuery,
     return NetworkRequest(fullUrl, type)
         .timeout(5 * 1000)
         .header("Accept", "application/json")
-        .header("Client-ID", this->clientId)
-        .header("Authorization", "Bearer " + this->oauthToken)
+        .header("Client-ID", clientId)
+        .header("Authorization", "Bearer " + oauthToken)
 #ifndef NDEBUG
         .ignoreSslErrors(ignoreSslErrors)
 #endif
@@ -3773,7 +3790,15 @@ NetworkRequest Helix::makeDelete(const QString &url, const QUrlQuery &urlQuery)
 
 NetworkRequest Helix::makePost(const QString &url, const QUrlQuery &urlQuery)
 {
-    return this->makeRequest(url, urlQuery, NetworkRequestType::Post);
+    return this->makePost(url, urlQuery, this->clientId, this->oauthToken);
+}
+
+NetworkRequest Helix::makePost(const QString &url, const QUrlQuery &urlQuery,
+                               const QString &clientId,
+                               const QString &oauthToken)
+{
+    return this->makeRequest(url, urlQuery, NetworkRequestType::Post, clientId,
+                             oauthToken);
 }
 
 NetworkRequest Helix::makePut(const QString &url, const QUrlQuery &urlQuery)

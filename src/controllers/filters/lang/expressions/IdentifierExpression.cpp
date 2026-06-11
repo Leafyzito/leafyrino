@@ -252,6 +252,10 @@ const AccessorMap &accessorMap()
             {Type::Bool, flagAccessor<MessageFlag::Subscription>},
         },
         {
+            u"flags.follow_message"_s,
+            {Type::Bool, flagAccessor<MessageFlag::Follow>},
+        },
+        {
             u"flags.system_message"_s,
             {Type::Bool, flagAccessor<MessageFlag::System>},
         },

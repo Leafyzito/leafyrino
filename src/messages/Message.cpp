@@ -57,6 +57,14 @@ ScrollbarHighlight Message::getScrollBarHighlight() const
         };
     }
 
+    if (this->flags.has(MessageFlag::Follow) &&
+        getSettings()->enableFollowHighlight)
+    {
+        return {
+            ColorProvider::instance().color(ColorType::Follow),
+        };
+    }
+
     if (this->flags.has(MessageFlag::RedeemedHighlight) ||
         this->flags.has(MessageFlag::RedeemedChannelPointReward))
     {

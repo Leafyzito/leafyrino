@@ -15,6 +15,7 @@ namespace chatterino {
 enum class ColorType {
     SelfHighlight,
     Subscription,
+    Follow,
     Whisper,
     RedeemedHighlight,
     WatchStreak,

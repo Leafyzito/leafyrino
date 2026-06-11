@@ -876,6 +876,11 @@ void validateToken(const QString &token,
 
 }  // namespace
 
+QString twitchTvClientId()
+{
+    return TWITCH_TV_CLIENT_ID;
+}
+
 std::vector<MoltorinoAuthAccount> accounts()
 {
     const auto raw = getSettings()->moltorinoAuthAccounts.getValue().trimmed();

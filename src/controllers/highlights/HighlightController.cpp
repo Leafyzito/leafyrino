@@ -100,6 +100,48 @@ void rebuildSubscriptionHighlights(Settings &settings,
     }
 }
 
+void rebuildFollowHighlights(Settings &settings,
+                             std::vector<HighlightCheck> &checks)
+{
+    if (settings.enableFollowHighlight)
+    {
+        auto highlightSound = settings.enableFollowHighlightSound.getValue();
+        auto highlightAlert = settings.enableFollowHighlightTaskbar.getValue();
+        auto highlightSoundUrlValue =
+            settings.followHighlightSoundUrl.getValue();
+        std::optional<QUrl> highlightSoundUrl;
+        if (!highlightSoundUrlValue.isEmpty())
+        {
+            highlightSoundUrl = highlightSoundUrlValue;
+        }
+
+        checks.emplace_back(HighlightCheck{
+            [=](const auto &args, const auto &twitchBadges,
+                const auto &senderName, const auto &originalMessage,
+                const auto &flags,
+                const auto self) -> std::optional<HighlightResult> {
+                (void)args;
+                (void)twitchBadges;
+                (void)senderName;
+                (void)originalMessage;
+                (void)self;
+
+                if (!flags.has(MessageFlag::Follow))
+                {
+                    return std::nullopt;
+                }
+
+                auto highlightColor =
+                    ColorProvider::instance().color(ColorType::Follow);
+
+                return HighlightResult{
+                    highlightAlert, highlightSound, highlightSoundUrl,
+                    highlightColor, false,
+                };
+            }});
+    }
+}
+
 void rebuildWhisperHighlights(Settings &settings,
                               std::vector<HighlightCheck> &checks)
 {
@@ -390,6 +432,11 @@ HighlightController::HighlightController(Settings &settings,
 
     this->rebuildListener_.addSetting(settings.subHighlightSoundUrl);
 
+    this->rebuildListener_.addSetting(settings.enableFollowHighlight);
+    this->rebuildListener_.addSetting(settings.enableFollowHighlightSound);
+    this->rebuildListener_.addSetting(settings.enableFollowHighlightTaskbar);
+    this->rebuildListener_.addSetting(settings.followHighlightSoundUrl);
+
     this->rebuildListener_.addSetting(settings.enableThreadHighlight);
     this->rebuildListener_.addSetting(settings.enableThreadHighlightSound);
     this->rebuildListener_.addSetting(settings.enableThreadHighlightTaskbar);
@@ -461,6 +508,8 @@ void HighlightController::rebuildChecks(Settings &settings)
     checks->clear();
 
     rebuildSubscriptionHighlights(settings, *checks);
+
+    rebuildFollowHighlights(settings, *checks);
 
     rebuildWhisperHighlights(settings, *checks);
 
