@@ -745,17 +745,7 @@ void PredictionDialog::setPrediction(
             prediction->outcomes.size();
 
     this->currentPrediction_ = prediction;
-    if (broadcasterView || !this->currentPrediction_.has_value() ||
-        this->currentPrediction_->outcomes.size() <= 2)
-    {
-        this->selectedBettingOutcomeId_.clear();
-    }
-    else if (!this->selectedBettingOutcomeId_.isEmpty() &&
-             findPredictionOutcome(*this->currentPrediction_,
-                                   this->selectedBettingOutcomeId_) == nullptr)
-    {
-        this->selectedBettingOutcomeId_.clear();
-    }
+    this->syncBettingOutcomeSelection();
 
     if (canUpdateInPlace && this->activeWidget_ != nullptr &&
         this->renderedBroadcasterView_ == broadcasterView)
@@ -988,6 +978,14 @@ bool PredictionDialog::eventFilter(QObject *watched, QEvent *event)
             watched->property("predictionBetOutcomeId").toString();
         if (!outcomeId.isEmpty() && !this->isBroadcasterView())
         {
+            if (this->currentPrediction_ &&
+                this->currentPrediction_->selfPoints > 0 &&
+                !this->currentPrediction_->selfOutcomeId.isEmpty() &&
+                outcomeId != this->currentPrediction_->selfOutcomeId)
+            {
+                return true;
+            }
+
             this->selectedBettingOutcomeId_ = outcomeId;
             this->updateUI();
             return true;
@@ -1380,17 +1378,7 @@ void PredictionDialog::updateUI()
     const bool broadcasterView = this->isBroadcasterView();
     this->renderedBroadcasterView_ = broadcasterView;
 
-    if (broadcasterView || !this->currentPrediction_.has_value() ||
-        this->currentPrediction_->outcomes.size() <= 2)
-    {
-        this->selectedBettingOutcomeId_.clear();
-    }
-    else if (!this->selectedBettingOutcomeId_.isEmpty() &&
-             findPredictionOutcome(*this->currentPrediction_,
-                                   this->selectedBettingOutcomeId_) == nullptr)
-    {
-        this->selectedBettingOutcomeId_.clear();
-    }
+    this->syncBettingOutcomeSelection();
 
     const float rawScale = this->scale();
     const float effectiveScale = contentScale(rawScale);
@@ -1534,6 +1522,30 @@ void PredictionDialog::updateUI()
 bool PredictionDialog::isBroadcasterView() const
 {
     return this->channel_ != nullptr && this->channel_->isBroadcaster();
+}
+
+void PredictionDialog::syncBettingOutcomeSelection()
+{
+    if (this->isBroadcasterView() || !this->currentPrediction_.has_value() ||
+        this->currentPrediction_->outcomes.size() <= 2)
+    {
+        this->selectedBettingOutcomeId_.clear();
+        return;
+    }
+
+    const auto &prediction = *this->currentPrediction_;
+    if (prediction.selfPoints > 0 && !prediction.selfOutcomeId.isEmpty())
+    {
+        this->selectedBettingOutcomeId_ = prediction.selfOutcomeId;
+        return;
+    }
+
+    if (!this->selectedBettingOutcomeId_.isEmpty() &&
+        findPredictionOutcome(prediction, this->selectedBettingOutcomeId_) ==
+            nullptr)
+    {
+        this->selectedBettingOutcomeId_.clear();
+    }
 }
 
 void PredictionDialog::buildCreateUI()
@@ -2506,6 +2518,9 @@ void PredictionDialog::buildBettingUI()
     auto *layout = static_cast<QVBoxLayout *>(this->activeWidget_->layout());
     const auto &prediction = *this->currentPrediction_;
     const bool broadcasterView = this->isBroadcasterView();
+    const bool hasExistingBet =
+        !broadcasterView && prediction.selfPoints > 0 &&
+        !prediction.selfOutcomeId.isEmpty();
     const float rawScale = this->scale();
     const float effectiveScale = contentScale(rawScale);
     const auto uiFont =
@@ -3070,6 +3085,7 @@ void PredictionDialog::buildBettingUI()
                     .arg(selectedColor.name()));
             detailLayout->addWidget(selectedTitle);
 
+            if (!hasExistingBet)
             {
                 const int navIconSize = std::max(11, int(13 * effectiveScale));
                 const int navBtnSize = std::max(18, int(22 * effectiveScale));
@@ -3415,6 +3431,11 @@ void PredictionDialog::buildBettingUI()
                             .arg(voteMinHeight)
                             .arg(btnColor.lighter(112).name())
                             .arg(btnColor.darker(112).name()));
+
+                    if (hasExistingBet && outcomeId != prediction.selfOutcomeId)
+                    {
+                        voteBtn->setEnabled(false);
+                    }
 
                     QObject::connect(
                         voteBtn, &QPushButton::clicked, this,

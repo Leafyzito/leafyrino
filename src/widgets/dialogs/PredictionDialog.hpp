@@ -63,6 +63,7 @@ private:
     void ensureCreateDraft();
     void startPrediction();
     bool isBroadcasterView() const;
+    void syncBettingOutcomeSelection();
     bool populatePredictionTemplates(PredictionTemplatePicker *picker);
     void fetchPredictionTemplates(PredictionTemplatePicker *picker);
 
