@@ -66,7 +66,6 @@ public:
                           QJsonObject &obj);
     static void encodeChannel(IndirectChannel channel, QJsonObject &obj);
     static void encodeFilters(Split *split, QJsonArray &arr);
-    static IndirectChannel decodeChannel(const SplitDescriptor &descriptor);
 
     void showSettingsDialog(
         QWidget *parent,

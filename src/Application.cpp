@@ -244,6 +244,22 @@ void Application::initialize(Settings &settings, const Paths &paths)
 {
     assert(!this->initialized);
 
+    // Show changelog
+    if (!this->args_.isFramelessEmbed &&
+        getSettings()->currentVersion.getValue() != "" &&
+        getSettings()->currentVersion.getValue() != CHATTERINO_VERSION)
+    {
+        auto *box = new QMessageBox(QMessageBox::Information, "Leafyrino",
+                                    "Show changelog?",
+                                    QMessageBox::Yes | QMessageBox::No);
+        box->setAttribute(Qt::WA_DeleteOnClose);
+        if (box->exec() == QMessageBox::Yes)
+        {
+            QDesktopServices::openUrl(
+                QUrl("https://www.chatterino.com/changelog"));
+        }
+    }
+
     if (!this->args_.isFramelessEmbed)
     {
         getSettings()->currentVersion.setValue(CHATTERINO_VERSION);

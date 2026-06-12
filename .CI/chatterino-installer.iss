@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Leafyrino7"
-#define MyAppVersion "7.5.5"
+#define MyAppVersion "2.5.5"
 #define MyAppPublisher "Leafyzito"
 #define MyAppURL "https://github.com/Leafyzito/leafyrino"
 #define MyAppExeName "Leafyrino7.exe"

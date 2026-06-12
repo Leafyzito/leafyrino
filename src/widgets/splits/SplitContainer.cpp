@@ -920,7 +920,7 @@ void SplitContainer::applyFromDescriptorRecursively(
         const auto &splitNode = *n;
 
         auto *split = new Split(this);
-        split->setChannel(WindowManager::decodeChannel(splitNode));
+        split->setChannel(splitNode.decodeChannel());
         split->setModerationMode(splitNode.moderationMode_);
         split->setFilters(splitNode.filters_);
         split->setCheckSpellingOverride(splitNode.spellCheckOverride);
@@ -960,7 +960,7 @@ void SplitContainer::applyFromDescriptorRecursively(
                 const auto &splitNode = *inner;
                 auto *split = new Split(this);
                 split->setFilters(splitNode.filters_);
-                split->setChannel(WindowManager::decodeChannel(splitNode));
+                split->setChannel(splitNode.decodeChannel());
                 split->setModerationMode(splitNode.moderationMode_);
                 split->setCheckSpellingOverride(splitNode.spellCheckOverride);
                 split->loadPerSplitPanelHides(

@@ -98,7 +98,7 @@ namespace chatterino {
 Args::Args(const QApplication &app, const Paths &paths)
 {
     QCommandLineParser parser;
-    parser.setApplicationDescription("Chatterino 2 Client for Twitch Chat");
+    parser.setApplicationDescription("Leafyrino Client for Twitch Chat");
     parser.addHelpOption();
 
     auto crashRecoveryOption = hiddenOption("crash-recovery");
@@ -122,7 +122,7 @@ Args::Args(const QApplication &app, const Paths &paths)
     QCommandLineOption loginOption(
         "login",
         "Starts Chatterino logged in as the account matching the supplied "
-        "username. If the supplied username does not match any account "
+        "username. If the supplied username does not match any account, "
         "Chatterino starts logged in as anonymous.",
         "username");
 

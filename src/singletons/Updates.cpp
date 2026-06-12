@@ -103,7 +103,11 @@ bool Updates::isDowngradeOf(const QString &online, const QString &current)
         return false;
     }
 
-    if (currentVersion.major == 7 && onlineVersion.major == 2)
+    if (onlineVersion.major == 7)
+    {
+        onlineVersion.major = 2;
+    }
+    else if (currentVersion.major == 7 && onlineVersion.major == 2)
     {
         currentVersion = {2, currentVersion.minor, currentVersion.patch,
                           currentVersion.prerelease_type,
@@ -148,6 +152,14 @@ void Updates::installUpdates()
     if (this->status_ != UpdateAvailable)
     {
         assert(false);
+        return;
+    }
+
+    if (Version::instance().isNightly())
+    {
+        // Since Nightly builds can be installed in many different ways, we ask the user to download the update manually.
+        QDesktopServices::openUrl(
+            QUrl("https://github.com/leafyzito/leafyrino/releases"));
         return;
     }
 
@@ -351,11 +363,6 @@ void Updates::checkForUpdates()
         return;
     }
 
-    if (version.isNightly())
-    {
-        return;
-    }
-
     auto onSuccess = [this](const NetworkResult &result) {
         const auto object = result.parseJson();
         if (object.empty())
@@ -514,6 +521,43 @@ bool Updates::isError() const
 bool Updates::isDowngrade() const
 {
     return this->isDowngrade_;
+}
+
+QString Updates::buildUpdateAvailableText() const
+{
+    const auto &version = Version::instance();
+
+    if (version.isNightly())
+    {
+        // Since Nightly builds can be installed in many different ways, we ask the user to download the update manually.
+        if (this->isDowngrade())
+        {
+            return QString(
+                       "The version online (%1) seems to be lower than the "
+                       "current (%2).\nEither a version was reverted or "
+                       "you are running a newer build.\n\nDo you want to "
+                       "head to github.com/leafyzito/leafyrino to download it?")
+                .arg(this->getOnlineVersion(), this->getCurrentVersion());
+        }
+
+        return QString(
+                   "An update (%1) is available.\n\nDo you want to head to "
+                   "github.com/leafyzito/leafyrino to download the new update?")
+            .arg(this->getOnlineVersion());
+    }
+
+    if (this->isDowngrade())
+    {
+        return QString("The version online (%1) seems to be lower than the "
+                       "current (%2).\nEither a version was reverted or "
+                       "you are running a newer build.\n\nDo you want to "
+                       "download and install it?")
+            .arg(this->getOnlineVersion(), this->getCurrentVersion());
+    }
+
+    return QString("An update (%1) is available.\n\nDo you want to "
+                   "download and install it?")
+        .arg(this->getOnlineVersion());
 }
 
 void Updates::setStatus_(Status status)

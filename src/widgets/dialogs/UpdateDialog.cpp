@@ -5,6 +5,7 @@
 #include "widgets/dialogs/UpdateDialog.hpp"
 
 #include "Application.hpp"
+#include "common/Version.hpp"
 #include "singletons/Updates.hpp"
 #include "util/LayoutCreator.hpp"
 #include "widgets/Label.hpp"
@@ -29,7 +30,17 @@ UpdateDialog::UpdateDialog()
         ->setWordWrap(true);
 
     auto buttons = layout.emplace<QDialogButtonBox>();
-    auto *install = buttons->addButton("Install", QDialogButtonBox::AcceptRole);
+
+    const auto *installText = [] {
+        if (Version::instance().isNightly())
+        {
+            return "Yes";
+        }
+
+        return "Install";
+    }();
+    auto *install =
+        buttons->addButton(installText, QDialogButtonBox::AcceptRole);
     this->ui_.installButton = install;
     auto *dismiss = buttons->addButton("Dismiss", QDialogButtonBox::RejectRole);
 
@@ -38,7 +49,7 @@ UpdateDialog::UpdateDialog()
         this->close();
     });
     QObject::connect(dismiss, &QPushButton::clicked, this, [this] {
-        this->buttonClicked.invoke(Dismiss);
+        this->dismissed.invoke();
         this->close();
     });
 
@@ -60,17 +71,7 @@ void UpdateDialog::updateStatusChanged(Updates::Status status)
     {
         case Updates::UpdateAvailable: {
             this->ui_.label->setText(
-                (getApp()->getUpdates().isDowngrade()
-                     ? QString(
-                           "The version online (%1) seems to be lower than the "
-                           "current (%2).\nEither a version was reverted or "
-                           "you are running a newer build.\n\nDo you want to "
-                           "download and install it?")
-                           .arg(getApp()->getUpdates().getOnlineVersion(),
-                                getApp()->getUpdates().getCurrentVersion())
-                     : QString("An update (%1) is available.\n\nDo you want to "
-                               "download and install it?")
-                           .arg(getApp()->getUpdates().getOnlineVersion())));
+                getApp()->getUpdates().buildUpdateAvailableText());
             this->updateGeometry();
         }
         break;
@@ -81,35 +82,34 @@ void UpdateDialog::updateStatusChanged(Updates::Status status)
         break;
 
         case Updates::Downloading: {
-            this->ui_.label->setText(
-                "Downloading updates.\n\nChatterino will restart "
-                "automatically when the download is done.");
+            this->ui_.label->setText("Downloading update...");
         }
         break;
 
         case Updates::DownloadFailed: {
-            this->ui_.label->setText("Failed to download the update.");
+            this->ui_.label->setText("Failed to download update.");
         }
         break;
 
         case Updates::WriteFileFailed: {
-            this->ui_.label->setText("Failed to save the update to disk.");
+            this->ui_.label->setText("Failed to write update to disk.");
         }
         break;
 
         case Updates::MissingPortableUpdater: {
-            this->ui_.label->setText("The portable updater (expected in " %
-                                     Updates::portableUpdaterPath() %
-                                     ") was not found.");
+            this->ui_.label->setText("Missing portable updater.");
         }
         break;
 
         case Updates::RunUpdaterFailed: {
-            this->ui_.label->setText("Failed to run the updater.");
+            this->ui_.label->setText("Failed to run updater.");
         }
         break;
 
-        default:;
+        default: {
+            this->ui_.label->setText("You shouldn't be seeing this dialog.");
+        }
+        break;
     }
 }
 
