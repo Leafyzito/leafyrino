@@ -724,8 +724,7 @@ void PollBanner::updateLayout()
     const auto status = this->poll_->status.toUpper();
     if (status == "TERMINATED" && !this->poll_->endedByName.isEmpty())
     {
-        metadata =
-            QString("Ended early by %1").arg(this->poll_->endedByName);
+        metadata = QString("Ended early by %1").arg(this->poll_->endedByName);
     }
     else if (status == "ARCHIVED" && !this->poll_->endedByName.isEmpty())
     {

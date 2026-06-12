@@ -436,9 +436,11 @@ QString pollWinnerTitle(const TwitchChannel::PollEvent &poll)
         return {};
     }
 
-    const auto leaderIt = std::max_element(
-        poll.choices.begin(), poll.choices.end(),
-        [](const auto &a, const auto &b) { return a.totalVotes < b.totalVotes; });
+    const auto leaderIt =
+        std::max_element(poll.choices.begin(), poll.choices.end(),
+                         [](const auto &a, const auto &b) {
+                             return a.totalVotes < b.totalVotes;
+                         });
     if (leaderIt->totalVotes <= 0)
     {
         return {};
@@ -4463,9 +4465,8 @@ void TwitchChannel::tryEmitPollCreatedSystemMessage(const PollEvent &poll)
     }
 
     this->lastPollSystemMessageKey_ = key;
-    this->addSystemMessage(
-        QString("%1 created a poll: \"%2\"")
-            .arg(poll.createdByName, poll.title));
+    this->addSystemMessage(QString("%1 created a poll: \"%2\"")
+                               .arg(poll.createdByName, poll.title));
 }
 
 void TwitchChannel::setActiveRaid(std::optional<RaidEvent> raid)
@@ -4695,20 +4696,17 @@ void TwitchChannel::handlePollUpdate(const QJsonObject &payload)
         this->lastPollSystemMessageKey_ = systemMessageKey;
         if (systemMessageKind == "completed")
         {
-            const auto actor =
-                predictionActorOrFallback(pollEvent.endedByName);
+            const auto actor = predictionActorOrFallback(pollEvent.endedByName);
             const auto winnerTitle = pollWinnerTitle(pollEvent);
             if (winnerTitle.isEmpty())
             {
-                this->addSystemMessage(
-                    QString("%1 ended the poll: \"%2\"")
-                        .arg(actor, pollEvent.title));
+                this->addSystemMessage(QString("%1 ended the poll: \"%2\"")
+                                           .arg(actor, pollEvent.title));
             }
             else
             {
-                this->addSystemMessage(
-                    QString("%1 ended the poll: \"%2\" won")
-                        .arg(actor, winnerTitle));
+                this->addSystemMessage(QString("%1 ended the poll: \"%2\" won")
+                                           .arg(actor, winnerTitle));
             }
         }
         else if (systemMessageKind == "terminated")

@@ -2518,9 +2518,8 @@ void PredictionDialog::buildBettingUI()
     auto *layout = static_cast<QVBoxLayout *>(this->activeWidget_->layout());
     const auto &prediction = *this->currentPrediction_;
     const bool broadcasterView = this->isBroadcasterView();
-    const bool hasExistingBet =
-        !broadcasterView && prediction.selfPoints > 0 &&
-        !prediction.selfOutcomeId.isEmpty();
+    const bool hasExistingBet = !broadcasterView && prediction.selfPoints > 0 &&
+                                !prediction.selfOutcomeId.isEmpty();
     const float rawScale = this->scale();
     const float effectiveScale = contentScale(rawScale);
     const auto uiFont =

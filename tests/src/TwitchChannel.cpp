@@ -182,7 +182,8 @@ QJsonObject makeChannelPointRedemption(QString redemptionId,
     return redemption;
 }
 
-QJsonObject makePollChoice(const QString &id, const QString &title, int votes = 0)
+QJsonObject makePollChoice(const QString &id, const QString &title,
+                           int votes = 0)
 {
     return QJsonObject{
         {"id", id},
@@ -462,10 +463,9 @@ TEST(TwitchChannel, PollPubSubEndTerminatedSetsEndedByName)
     channel.setActivePoll(activePoll);
 
     channel.handlePollUpdate(makePollUpdatePayload(
-        "POLL_END",
-        makePollObject("poll-1", "Favorite color?", "TERMINATED", {},
-                       QJsonObject{{"display_name", "Editor"}},
-                       defaultPollChoices())));
+        "POLL_END", makePollObject("poll-1", "Favorite color?", "TERMINATED",
+                                   {}, QJsonObject{{"display_name", "Editor"}},
+                                   defaultPollChoices())));
 
     const auto poll = *channel.accessPoll();
     ASSERT_TRUE(poll.has_value());
@@ -533,9 +533,8 @@ TEST(TwitchChannel, PollCreateDefersSystemMessageUntilCreatorKnown)
     const auto messageCountBefore = channel.getMessageSnapshot().size();
 
     channel.handlePollUpdate(makePollUpdatePayload(
-        "POLL_CREATE",
-        makePollObject("poll-1", "sad", "ACTIVE", {}, {},
-                       defaultPollChoices())));
+        "POLL_CREATE", makePollObject("poll-1", "sad", "ACTIVE", {}, {},
+                                      defaultPollChoices())));
 
     EXPECT_EQ(channel.getMessageSnapshot().size(), messageCountBefore);
 
@@ -562,9 +561,8 @@ TEST(TwitchChannel, PollCompletedUsesTwitchWhenEndedByMissing)
     TwitchChannel channel("pajlada");
 
     channel.handlePollUpdate(makePollUpdatePayload(
-        "POLL_END",
-        makePollObject("poll-1", "Favorite color?", "COMPLETED", {}, {},
-                       defaultPollChoices())));
+        "POLL_END", makePollObject("poll-1", "Favorite color?", "COMPLETED", {},
+                                   {}, defaultPollChoices())));
 
     const auto messages = channel.getMessageSnapshot();
     ASSERT_FALSE(messages.empty());
@@ -578,9 +576,8 @@ TEST(TwitchChannel, PollUpdateCompletedEmitsSystemMessage)
     TwitchChannel channel("pajlada");
 
     channel.handlePollUpdate(makePollUpdatePayload(
-        "POLL_UPDATE",
-        makePollObject("poll-1", "Favorite color?", "COMPLETED", {}, {},
-                       defaultPollChoices())));
+        "POLL_UPDATE", makePollObject("poll-1", "Favorite color?", "COMPLETED",
+                                      {}, {}, defaultPollChoices())));
 
     const auto messages = channel.getMessageSnapshot();
     ASSERT_FALSE(messages.empty());
