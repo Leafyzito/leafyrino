@@ -4,7 +4,7 @@
 
 set -eo pipefail
 
-_app_bundle="${APP_BUNDLE_PATH:-Leafyrino7.app}"
+_app_bundle="${APP_BUNDLE_PATH:-Leafyrino.app}"
 
 if [ -d "bin/${_app_bundle}" ] && [ ! -d "${_app_bundle}" ]; then
     >&2 echo "Moving bin/${_app_bundle} down one directory"

@@ -133,7 +133,7 @@ jobs:
         with:
           workflow: build.yml
           name_is_regexp: true
-          name: '((^[Cc]hatterino)-[^wW].+$)|(^Leafyrino7.+$)|(^.+\.7z$)'
+          name: '((^[Cc]hatterino)-[^wW].+$)|(^Leafyrino.+$)|(^.+\.7z$)'
           path: build/
 
       - name: Fix Directories
@@ -157,9 +157,9 @@ jobs:
           }
           rename_if_exists Chatterino-ubuntu-22.04-Qt-6.7.2.deb Chatterino-Ubuntu-22.04-Qt6.deb
           rename_if_exists Chatterino-ubuntu-24.04-Qt-6.7.2.deb Chatterino-Ubuntu-24.04-Qt6.deb
-          for appimage in Leafyrino7-x86_64-Qt-*.AppImage; do
+          for appimage in Leafyrino-x86_64-Qt-*.AppImage; do
             [ -f "$appimage" ] || continue
-            mv "$appimage" Leafyrino7-x86_64-Qt6.AppImage
+            mv "$appimage" Leafyrino-x86_64-Qt6.AppImage
             break
           done
           for dmg in chatterino-macos-Qt-*-universal.dmg; do

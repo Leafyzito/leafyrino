@@ -104,7 +104,7 @@ bool badgeSocketConfigured()
 QString savedClientId()
 {
     QSettings settings(QStringLiteral("Leafyrino"),
-                       QStringLiteral("Leafyrino7"));
+                       QStringLiteral("Leafyrino"));
     auto id = settings.value(QStringLiteral("presence/clientInstanceId"))
                   .toString()
                   .trimmed();
@@ -1287,7 +1287,7 @@ void MoltorinoPresence::launchDownloadedInstaller()
     this->updateStateChanged.invoke();
 
     const auto installerDir = QFileInfo(this->installerPath_).absoluteDir();
-    const auto logPath = installerDir.filePath("Leafyrino7-update-install.log");
+    const auto logPath = installerDir.filePath("Leafyrino-update-install.log");
     if (!launchAfterThisProcessExits(this->installerPath_,
                                      this->installerArgs(logPath),
                                      installerDir.absolutePath()))

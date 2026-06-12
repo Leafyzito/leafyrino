@@ -37,12 +37,12 @@ esac
 echo "Building Ubuntu .deb file on '$ubuntu_release'"
 echo "Dependencies: $dependencies"
 
-if [ -f ./bin/Leafyrino7 ] && [ -x ./bin/Leafyrino7 ]; then
-    app_executable="Leafyrino7"
+if [ -f ./bin/Leafyrino ] && [ -x ./bin/Leafyrino ]; then
+    app_executable="Leafyrino"
 elif [ -f ./bin/chatterino ] && [ -x ./bin/chatterino ]; then
     app_executable="chatterino"
 else
-    echo "ERROR: No Leafyrino7 or chatterino binary file found. This script must be run in the build folder, and the app must be built first."
+    echo "ERROR: No Leafyrino or chatterino binary file found. This script must be run in the build folder, and the app must be built first."
     exit 1
 fi
 

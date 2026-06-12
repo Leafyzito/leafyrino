@@ -21,8 +21,8 @@ BEGIN
             VALUE "FileDescription",  "Leafyrino"
             VALUE "FileVersion",      "@PROJECT_VERSION@"
             VALUE "SpecialBuild",     "@GIT_COMMIT@"
-            VALUE "InternalName",     "Leafyrino7"
-            VALUE "OriginalFilename", "Leafyrino7.exe"
+            VALUE "InternalName",     "Leafyrino"
+            VALUE "OriginalFilename", "Leafyrino.exe"
             VALUE "LegalCopyright",   "Project contributors 2016-@CURRENT_YEAR@"
             VALUE "Licence",          "MIT"
         END
