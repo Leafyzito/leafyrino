@@ -315,6 +315,41 @@ QString formatBetSummaryHtml(const TwitchChannel::PredictionEvent &prediction)
              outcomeColorValue.name(), outcomeTitle.toHtmlEscaped());
 }
 
+double predictionOutcomeMultiplier(
+    const TwitchChannel::PredictionEvent &prediction, const QString &outcomeId)
+{
+    qlonglong totalPoints = 0;
+    for (const auto &outcome : prediction.outcomes)
+    {
+        totalPoints += outcome.totalPoints;
+    }
+
+    const auto *outcome = findPredictionOutcome(prediction, outcomeId);
+    if (outcome == nullptr || outcome->totalPoints <= 0 || totalPoints <= 0)
+    {
+        return 0.0;
+    }
+
+    return static_cast<double>(totalPoints) / outcome->totalPoints;
+}
+
+QString formatBetPayoutSummaryText(
+    const TwitchChannel::PredictionEvent &prediction)
+{
+    const double multiplier =
+        predictionOutcomeMultiplier(prediction, prediction.selfOutcomeId);
+    if (multiplier <= 0.0 || prediction.selfPoints <= 0)
+    {
+        return QString();
+    }
+
+    const qlonglong potentialReturn = static_cast<qlonglong>(
+        std::llround(prediction.selfPoints * multiplier));
+
+    return QString("Potential return: %1")
+        .arg(formatChannelPoints(potentialReturn));
+}
+
 float contentScale(float scale)
 {
     const float taper = std::clamp((scale - 1.0F) / 0.6F, 0.0F, 1.0F);
@@ -961,6 +996,14 @@ void PredictionDialog::updateInPlace()
     this->barsAnim_->setStartValue(0.0);
     this->barsAnim_->setEndValue(1.0);
     this->barsAnim_->start();
+
+    if (auto *payoutLabel =
+            this->findChild<QLabel *>("PredictionBetPayoutLabel"))
+    {
+        const auto payoutText = formatBetPayoutSummaryText(prediction);
+        payoutLabel->setText(payoutText);
+        payoutLabel->setVisible(!payoutText.isEmpty());
+    }
 
     // Refresh the header subtitle (timer, status text)
     this->refreshHeader();
@@ -3322,6 +3365,17 @@ void PredictionDialog::buildBettingUI()
             betSummaryLabel->setWordWrap(true);
             betSummaryLabel->setAlignment(Qt::AlignCenter);
             bottomLayout->addWidget(betSummaryLabel);
+
+            const auto payoutText = formatBetPayoutSummaryText(prediction);
+            if (!payoutText.isEmpty())
+            {
+                auto *payoutLabel = new QLabel(payoutText, this->bottomWidget_);
+                payoutLabel->setObjectName("PredictionBetPayoutLabel");
+                payoutLabel->setFont(uiFont);
+                payoutLabel->setWordWrap(true);
+                payoutLabel->setAlignment(Qt::AlignCenter);
+                bottomLayout->addWidget(payoutLabel);
+            }
         }
 
         if (canWager)
@@ -3873,6 +3927,7 @@ void PredictionDialog::refreshStyle()
             QLabel#PredictionCountLabel,
             QLabel#PredictionBalanceLabel,
             QLabel#PredictionBetSummaryLabel,
+            QLabel#PredictionBetPayoutLabel,
             QLabel#PredictionInfoLabel,
             QLabel#PredictionOutcomeStats {
                 color: %6;
