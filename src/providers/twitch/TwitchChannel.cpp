@@ -4655,6 +4655,16 @@ void TwitchChannel::handlePredictionUpdate(const QJsonObject &payload)
         return;
     }
 
+    {
+        auto cur = this->activePrediction_.access();
+        if (cur->has_value() && (*cur)->id == prediction.id &&
+            (*cur)->selfPoints > 0)
+        {
+            prediction.selfPoints = (*cur)->selfPoints;
+            prediction.selfOutcomeId = (*cur)->selfOutcomeId;
+        }
+    }
+
     this->setActivePrediction(std::move(prediction));
 }
 

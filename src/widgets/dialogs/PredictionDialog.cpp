@@ -272,6 +272,51 @@ const TwitchChannel::PredictionOutcome *findPredictionOutcome(
     return nullptr;
 }
 
+void applyLocalPredictionBet(TwitchChannel::PredictionEvent &prediction,
+                             const QString &outcomeId, int points)
+{
+    if (prediction.selfOutcomeId == outcomeId && prediction.selfPoints > 0)
+    {
+        prediction.selfPoints += points;
+        return;
+    }
+
+    prediction.selfPoints = points;
+    prediction.selfOutcomeId = outcomeId;
+}
+
+QString formatBetSummaryHtml(const TwitchChannel::PredictionEvent &prediction)
+{
+    const auto *betOutcome =
+        findPredictionOutcome(prediction, prediction.selfOutcomeId);
+    const QString outcomeTitle =
+        betOutcome != nullptr ? betOutcome->title : QString("an outcome");
+
+    int outcomeIndex = 0;
+    if (betOutcome != nullptr)
+    {
+        for (int i = 0; i < static_cast<int>(prediction.outcomes.size()); ++i)
+        {
+            if (prediction.outcomes.at(i).id == betOutcome->id)
+            {
+                outcomeIndex = i;
+                break;
+            }
+        }
+    }
+
+    const QColor outcomeColorValue =
+        betOutcome != nullptr
+            ? outcomeColor(outcomeIndex, betOutcome->color)
+            : QColor("#64748b");
+
+    return QString("Your prediction: %1 on "
+                   "<span style=\"color:%2; font-weight:700;\">%3</span>")
+        .arg(formatChannelPoints(prediction.selfPoints),
+             outcomeColorValue.name(),
+             outcomeTitle.toHtmlEscaped());
+}
+
 float contentScale(float scale)
 {
     const float taper = std::clamp((scale - 1.0F) / 0.6F, 0.0F, 1.0F);
@@ -3249,14 +3294,17 @@ void PredictionDialog::buildBettingUI()
         }
     }
 
-    // ── Wager bottom bar (Active only) ─────────────────────
-    if (!broadcasterView && prediction.status == "ACTIVE" &&
-        (!multiOutcomeBetting || selectedOutcome != nullptr))
-    {
-        const qint64 balance = this->channel_->channelPointBalance();
-        const int maxBet = int(std::max<qint64>(
-            0, std::min<qint64>(balance > 0 ? balance : 250000, 250000)));
+    // ── Wager bottom bar / bet summary ─────────────────────
+    const bool canWager =
+        !broadcasterView && prediction.status == "ACTIVE" &&
+        (!multiOutcomeBetting || selectedOutcome != nullptr);
+    const bool showBetSummary =
+        !broadcasterView && hasExistingBet &&
+        (prediction.status == "ACTIVE" || prediction.status == "LOCKED" ||
+         prediction.status == "RESOLVED");
 
+    if (canWager || showBetSummary)
+    {
         this->bottomWidget_ = new QWidget();
         this->bottomWidget_->setObjectName("PredictionCard");
         this->bottomWidget_->setFont(uiFont);
@@ -3266,6 +3314,25 @@ void PredictionDialog::buildBettingUI()
         bottomLayout->setContentsMargins(sectionPad * 2, sectionPad * 1.5,
                                          sectionPad * 2, sectionPad * 1.5);
         bottomLayout->setSpacing(sectionSpacing);
+
+        if (showBetSummary)
+        {
+            auto *betSummaryLabel =
+                new QLabel(formatBetSummaryHtml(prediction),
+                           this->bottomWidget_);
+            betSummaryLabel->setObjectName("PredictionBetSummaryLabel");
+            betSummaryLabel->setFont(uiFont);
+            betSummaryLabel->setTextFormat(Qt::RichText);
+            betSummaryLabel->setWordWrap(true);
+            betSummaryLabel->setAlignment(Qt::AlignCenter);
+            bottomLayout->addWidget(betSummaryLabel);
+        }
+
+        if (canWager)
+        {
+        const qint64 balance = this->channel_->channelPointBalance();
+        const int maxBet = int(std::max<qint64>(
+            0, std::min<qint64>(balance > 0 ? balance : 250000, 250000)));
 
         // ── Wager + Balance header ──
         {
@@ -3464,10 +3531,9 @@ void PredictionDialog::buildBettingUI()
                                     QString outcomeTitle = "prediction";
                                     if (self->currentPrediction_)
                                     {
-                                        self->currentPrediction_->selfPoints =
-                                            points;
-                                        self->currentPrediction_
-                                            ->selfOutcomeId = outcomeId;
+                                        applyLocalPredictionBet(
+                                            *self->currentPrediction_, outcomeId,
+                                            points);
                                         for (const auto &o :
                                              self->currentPrediction_->outcomes)
                                         {
@@ -3504,10 +3570,9 @@ void PredictionDialog::buildBettingUI()
 
                                         if (mutatedPrediction.has_value())
                                         {
-                                            mutatedPrediction->selfPoints =
-                                                points;
-                                            mutatedPrediction->selfOutcomeId =
-                                                outcomeId;
+                                            applyLocalPredictionBet(
+                                                *mutatedPrediction, outcomeId,
+                                                points);
                                             self->channel_->setActivePrediction(
                                                 std::move(*mutatedPrediction));
                                         }
@@ -3618,10 +3683,9 @@ void PredictionDialog::buildBettingUI()
                                 }
                                 if (self->currentPrediction_)
                                 {
-                                    self->currentPrediction_->selfPoints =
-                                        points;
-                                    self->currentPrediction_->selfOutcomeId =
-                                        selectedOutcomeId;
+                                    applyLocalPredictionBet(
+                                        *self->currentPrediction_,
+                                        selectedOutcomeId, points);
                                 }
                                 // Update channel memory locally and broadcast.
                                 // Copy out of the shared guard before writing
@@ -3643,9 +3707,9 @@ void PredictionDialog::buildBettingUI()
 
                                     if (mutatedPrediction.has_value())
                                     {
-                                        mutatedPrediction->selfPoints = points;
-                                        mutatedPrediction->selfOutcomeId =
-                                            selectedOutcomeId;
+                                        applyLocalPredictionBet(
+                                            *mutatedPrediction,
+                                            selectedOutcomeId, points);
                                         self->channel_->setActivePrediction(
                                             std::move(*mutatedPrediction));
                                     }
@@ -3689,11 +3753,10 @@ void PredictionDialog::buildBettingUI()
             bottomLayout->addLayout(voteRow);
         }
 
+        }  // canWager
+
         this->mainLayout_->addWidget(this->bottomWidget_);
         this->bottomWidget_->show();
-    }
-    else
-    {
     }
 }
 
@@ -3802,6 +3865,7 @@ void PredictionDialog::refreshStyle()
             QLabel#PredictionHeaderSubtitle,
             QLabel#PredictionCountLabel,
             QLabel#PredictionBalanceLabel,
+            QLabel#PredictionBetSummaryLabel,
             QLabel#PredictionInfoLabel,
             QLabel#PredictionOutcomeStats {
                 color: %6;
