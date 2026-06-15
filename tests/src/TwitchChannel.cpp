@@ -247,6 +247,38 @@ QJsonObject makePinnedChatUnpinPayload(const QString &pinId)
     };
 }
 
+QJsonObject makePinnedChatPinPayload(const QString &pinId,
+                                     const QString &messageId,
+                                     const QString &messageText,
+                                     const QString &pinnerDisplayName)
+{
+    return QJsonObject{
+        {"type", "pin-message"},
+        {"data",
+         QJsonObject{
+             {"id", pinId},
+             {"pinned_by",
+              QJsonObject{
+                  {"display_name", pinnerDisplayName},
+                  {"login", pinnerDisplayName.toLower()},
+              }},
+             {"message",
+              QJsonObject{
+                  {"id", messageId},
+                  {"content", QJsonObject{{"text", messageText}}},
+              }},
+         }},
+    };
+}
+
+QJsonObject makePinnedChatUpdatePayload(const QString &pinId)
+{
+    return QJsonObject{
+        {"type", "update-message"},
+        {"data", QJsonObject{{"id", pinId}}},
+    };
+}
+
 TEST(TwitchChannel, ChannelPointsDefaultToUnknown)
 {
     MockApplication app;
@@ -583,6 +615,51 @@ TEST(TwitchChannel, PollUpdateCompletedEmitsSystemMessage)
     ASSERT_FALSE(messages.empty());
     EXPECT_EQ(messages.back()->messageText,
               "Twitch ended the poll: \"Red\" won");
+}
+
+TEST(TwitchChannel, PinnedChatPinAddsSystemMessage)
+{
+    MockApplication app;
+    TwitchChannel channel("pajlada");
+
+    const auto messageCountBefore = channel.getMessageSnapshot().size();
+    const auto payload =
+        makePinnedChatPinPayload("pin-1", "msg-1", "hello chat", "Moderator");
+
+    channel.handlePinnedChatUpdate(payload);
+
+    const auto messages = channel.getMessageSnapshot();
+    ASSERT_EQ(messages.size(), messageCountBefore + 1);
+    EXPECT_EQ(messages.back()->messageText, "Moderator pinned: \"hello chat\"");
+}
+
+TEST(TwitchChannel, DuplicatePinnedChatPinOnlyAddsOneSystemMessage)
+{
+    MockApplication app;
+    TwitchChannel channel("pajlada");
+
+    const auto messageCountBefore = channel.getMessageSnapshot().size();
+    const auto payload =
+        makePinnedChatPinPayload("pin-1", "msg-1", "hello chat", "Moderator");
+
+    channel.handlePinnedChatUpdate(payload);
+    channel.handlePinnedChatUpdate(payload);
+
+    const auto messages = channel.getMessageSnapshot();
+    ASSERT_EQ(messages.size(), messageCountBefore + 1);
+    EXPECT_EQ(messages.back()->messageText, "Moderator pinned: \"hello chat\"");
+}
+
+TEST(TwitchChannel, PinnedChatUpdateDoesNotAddSystemMessage)
+{
+    MockApplication app;
+    TwitchChannel channel("pajlada");
+
+    const auto messageCountBefore = channel.getMessageSnapshot().size();
+
+    channel.handlePinnedChatUpdate(makePinnedChatUpdatePayload("pin-1"));
+
+    EXPECT_EQ(channel.getMessageSnapshot().size(), messageCountBefore);
 }
 
 TEST(TwitchChannel, DuplicatePinnedChatUnpinOnlyAddsOneSystemMessage)

@@ -508,6 +508,11 @@ MoltorinoPage::MoltorinoPage()
             false)
         ->setToolTip("How pin times are formatted.");
 
+    SettingWidget::checkbox("Show pin notifications in chat",
+                            s.showPinNotifications)
+        ->setTooltip("Show a chat message when a moderator pins something.")
+        ->addTo(*view);
+
     SettingWidget::checkbox("Show unpin notifications in chat",
                             s.showUnpinNotifications)
         ->setTooltip("Show a chat message when a moderator unpins something.")

@@ -13,15 +13,18 @@
 #include <pajlada/signals/scoped-connection.hpp>
 #include <pajlada/signals/signal.hpp>
 #include <pajlada/signals/signalholder.hpp>
+#include <QDateTime>
 #include <QMovie>
 #include <QPixmap>
 #include <QPointer>
 #include <QString>
 
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -50,6 +53,7 @@ class LabelButton;
 class LiveIndicator;
 class Paint;
 class PixmapButton;
+class SvgButton;
 
 class UserInfoPopup final : public DraggablePopup
 {
@@ -61,10 +65,16 @@ public:
      * @param split Will be used as the popup's parent. Must not be null
      */
     UserInfoPopup(bool closeAutomatically, Split *split);
+    ~UserInfoPopup() override;
 
     void setData(const QString &name, const ChannelPtr &channel);
     void setData(const QString &name, const ChannelPtr &contextChannel,
                  const ChannelPtr &openingChannel);
+
+    static void notifyFollowMutation(const QString &targetId,
+                                     const QString &requestUserId,
+                                     const QString &requestLogin,
+                                     bool unfollow);
 
 protected:
     void themeChangedEvent() override;
@@ -103,6 +113,15 @@ private:
     void hideUsercardSubGiftRow();
     void resetUsercardInfoRows();
     void applyIvrUserProfile(const IvrUserProfile &profile);
+
+    bool isFollowing() const;
+    bool isFollowingStatusKnown() const;
+    void setFollowingStatus(bool following,
+                            std::optional<QDateTime> followedAt = std::nullopt);
+    void refreshFollowingStatus(bool force = false);
+    void resetFollowingStatus();
+    void updateUsercardFollowButton();
+    void toggleUsercardFollow();
 
     void loadAvatar(const QString &userID, const QString &pictureURL,
                     bool isKick);
@@ -187,6 +206,16 @@ private:
     ChannelPtr underlyingChannel_;
 
     pajlada::Signals::NoArgSignal userStateChanged_;
+    pajlada::Signals::NoArgSignal followingStatusChanged_;
+
+    bool following_ = false;
+    bool followingStatusKnown_ = false;
+    std::optional<QDateTime> followedAt_;
+    QString followingStatusUserId_;
+    QDateTime lastFollowingStatusRefreshAt_;
+    std::atomic<bool> followingStatusFetchInFlight_{false};
+    std::unique_ptr<pajlada::Signals::ScopedConnection>
+        followingStatusChangedConnection_;
 
     std::unique_ptr<pajlada::Signals::ScopedConnection> refreshConnection_;
     std::unique_ptr<pajlada::Signals::ScopedConnection>
@@ -210,6 +239,7 @@ private:
         PixmapButton *localizedNameCopyButton = nullptr;
 
         Label *nameLabel = nullptr;
+        SvgButton *followButton = nullptr;
         LabelButton *nameHistoryButton = nullptr;
         Label *localizedNameLabel = nullptr;
         Label *pronounsLabel = nullptr;

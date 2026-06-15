@@ -774,6 +774,8 @@ set(SOURCE_FILES
         widgets/buttons/Button.hpp
         widgets/buttons/DimButton.cpp
         widgets/buttons/DimButton.hpp
+        widgets/buttons/FollowButton.cpp
+        widgets/buttons/FollowButton.hpp
         widgets/buttons/DrawnButton.cpp
         widgets/buttons/DrawnButton.hpp
         # widgets/buttons/InitMoltorinoUpdateButton.cpp

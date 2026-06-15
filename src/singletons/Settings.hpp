@@ -886,6 +886,8 @@ public:
     BoolSetting showUsercardFollowerCount = {"/usercard/showFollowerCount",
                                              true};
     BoolSetting showUsercardCreatedDate = {"/usercard/showCreatedDate", true};
+    BoolSetting showFollowButtonInUsercard{"/usercard/showFollowButton", true};
+    BoolSetting confirmUnfollowFromUsercard{"/usercard/confirmUnfollow", true};
     BoolSetting showUsercardFollowage = {"/usercard/showFollowage", true};
     BoolSetting showUsercardFollowageRelativeTime = {
         "/usercard/showFollowageRelativeTime", true};
@@ -1010,6 +1012,8 @@ public:
     /// Header controls and banner chrome scale, separate from message text.
     FloatSetting pinnedContentScale{"/moltorino/pinnedMessages/contentScale",
                                     1.1f};
+    BoolSetting showPinNotifications{
+        "/moltorino/pinnedMessages/showPinNotifications", true};
     BoolSetting showUnpinNotifications{
         "/moltorino/pinnedMessages/showUnpinNotifications", true};
     IntSetting defaultPinDuration{"/moltorino/pinnedMessages/defaultDuration",

@@ -331,6 +331,7 @@ public:
     void refreshChatters();
     void refreshChannelPointsIfStale(bool force = false);
     void handlePinnedChatUpdate(const QJsonObject &data);
+    void tryEmitPinnedChatPinSystemMessage(const QJsonObject &innerData);
 
     // Predictions & Points
     SharedAccessGuard<const std::optional<PredictionEvent>> accessPrediction()
@@ -691,6 +692,7 @@ private:
     QDateTime lastPollRefreshAt_;
     QDateTime lastPollUpdateAt_;
     QString lastPollSystemMessageKey_;
+    QString lastPinSystemMessageKey_;
     UniqueAccess<std::optional<ChatWarning>> activeChatWarning_;
     UniqueAccess<std::optional<RaidEvent>> activeRaid_;
     QString locallyClearedRaidId_;

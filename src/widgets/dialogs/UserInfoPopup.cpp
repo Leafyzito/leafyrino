@@ -11,6 +11,8 @@
 #include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
 #include "controllers/accounts/AccountController.hpp"
+#include "controllers/commands/builtin/Misc.hpp"
+#include "controllers/commands/CommandContext.hpp"
 #include "controllers/commands/CommandController.hpp"
 #include "controllers/highlights/HighlightBlacklistUser.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
@@ -45,8 +47,10 @@
 #include "util/Helpers.hpp"
 #include "util/LayoutCreator.hpp"
 #include "util/PostToThread.hpp"
+#include "widgets/buttons/FollowButton.hpp"
 #include "widgets/buttons/LabelButton.hpp"
 #include "widgets/buttons/PixmapButton.hpp"
+#include "widgets/buttons/SvgButton.hpp"
 #include "widgets/dialogs/EditUserNotesDialog.hpp"
 #include "widgets/helper/ChannelView.hpp"
 #include "widgets/helper/InvisibleSizeGrip.hpp"
@@ -75,11 +79,14 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
+#include <QList>
 #include <QMenu>
 #include <QMessageBox>
 #include <QMetaEnum>
 #include <QMouseEvent>
 #include <QMovie>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QPainter>
@@ -510,6 +517,35 @@ QString formatUsercardFollowRelativeTime(const QDate &followedDate)
     }
 
     return QStringLiteral(" (today)");
+}
+
+QString formatFollowButtonToolTip(const QString &displayName, bool following,
+                                  const std::optional<QDateTime> &followedAt)
+{
+    if (!following)
+    {
+        return QString("Follow %1").arg(displayName);
+    }
+
+    QString tooltip = QString("Unfollow %1").arg(displayName);
+
+    if (!followedAt || !followedAt->isValid())
+    {
+        return tooltip;
+    }
+
+    const auto followedDate = followedAt->date();
+    const auto followingSince = followedDate.toString(Qt::ISODate);
+    auto relativeTime = QString();
+    if (getSettings()->showUsercardFollowageRelativeTime)
+    {
+        relativeTime = formatUsercardFollowRelativeTime(followedDate);
+    }
+
+    tooltip += u'\n' + QStringLiteral("Following since ") + followingSince +
+               relativeTime;
+
+    return tooltip;
 }
 
 QString formatUsercardStatus(const IvrUserProfile &profile)
@@ -1005,6 +1041,32 @@ QString hashUrl(const QString &url)
     return hashBytes.toHex();
 }
 
+constexpr qint64 FOLLOWING_STATUS_RETRY_INTERVAL_MS = 30'000;
+
+QMutex &activeUsercardsMutex()
+{
+    static QMutex mutex;
+    return mutex;
+}
+
+QList<QPointer<UserInfoPopup>> &activeUsercards()
+{
+    static QList<QPointer<UserInfoPopup>> cards;
+    return cards;
+}
+
+void registerActiveUsercard(UserInfoPopup *popup)
+{
+    QMutexLocker locker(&activeUsercardsMutex());
+    activeUsercards().append(popup);
+}
+
+void unregisterActiveUsercard(UserInfoPopup *popup)
+{
+    QMutexLocker locker(&activeUsercardsMutex());
+    activeUsercards().removeAll(popup);
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -1016,6 +1078,14 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
     , split_(split)
     , closeAutomatically_(closeAutomatically)
 {
+    registerActiveUsercard(this);
+
+    this->followingStatusChangedConnection_ =
+        std::make_unique<pajlada::Signals::ScopedConnection>(
+            this->followingStatusChanged_.connect([this] {
+                this->updateUsercardFollowButton();
+            }));
+
     assert(split != nullptr &&
            "split being nullptr causes lots of bugs down the road");
     this->setWindowTitle("Usercard");
@@ -1224,6 +1294,16 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                 this->updateAvatarUrl();
             });
 
+        avatarBox->addSpacing(2);
+        auto *followButton =
+            new SvgButton(followButtonSource(false), this, {4, 4});
+        followButton->hide();
+        this->ui_.followButton = followButton;
+        avatarBox->addWidget(followButton, 0, Qt::AlignHCenter);
+        QObject::connect(followButton, &Button::leftClicked, this, [this] {
+            this->toggleUsercardFollow();
+        });
+
         auto vbox = head.emplace<QVBoxLayout>();
         {
             // items on the right
@@ -1302,6 +1382,14 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                                     self->resetUsercardInfoRows();
                                     self->updateUserData();
                                 }
+
+                                if (!self->isKick_ &&
+                                    !self->userId_.isEmpty() &&
+                                    getSettings()->showFollowButtonInUsercard)
+                                {
+                                    self->refreshFollowingStatus(true);
+                                }
+                                self->updateUsercardFollowButton();
                                 self->userStateChanged_.invoke();
                             });
                         });
@@ -1666,9 +1754,15 @@ void UserInfoPopup::themeChangedEvent()
     }
 }
 
-void UserInfoPopup::scaleChangedEvent(float /*scale*/)
+void UserInfoPopup::scaleChangedEvent(float scale)
 {
     this->themeChangedEvent();
+
+    if (this->ui_.followButton != nullptr)
+    {
+        const int buttonSize = std::max(1, int(28 * scale));
+        this->ui_.followButton->setFixedSize(buttonSize, buttonSize);
+    }
 
     QTimer::singleShot(20, this, [this] {
         auto geo = this->geometry();
@@ -1961,6 +2055,15 @@ void UserInfoPopup::installEvents()
             this->updateNameHistoryButton();
         },
         this->signalHolder_);
+    getSettings()->showFollowButtonInUsercard.connect(
+        [this](bool enabled) {
+            if (enabled && !this->isKick_ && !this->userId_.isEmpty())
+            {
+                this->refreshFollowingStatus(false);
+            }
+            this->updateUsercardFollowButton();
+        },
+        this->signalHolder_);
     getSettings()->showUsercardLoadMoreMessagesButton.connect(
         [this](bool) {
             this->updateLoadMoreMessagesButton();
@@ -1980,6 +2083,12 @@ void UserInfoPopup::installEvents()
         this->signalHolder_);
     getSettings()->moltorinoAuthAccounts.connect(
         [this](const QString &, auto) {
+            if (!this->isKick_ && !this->userId_.isEmpty() &&
+                getSettings()->showFollowButtonInUsercard)
+            {
+                this->refreshFollowingStatus(true);
+            }
+            this->updateUsercardFollowButton();
             this->userStateChanged_.invoke();
             this->updateLoadMoreMessagesButton();
             this->maybeStartUsercardMessageAutoLoad();
@@ -2188,6 +2297,8 @@ void UserInfoPopup::setData(const QString &name,
     this->ui_.nameLabel->setText(name);
     this->ui_.nameLabel->setProperty("copy-text", name);
     this->resetUsercardInfoRows();
+    this->resetFollowingStatus();
+    this->updateUsercardFollowButton();
 
     if (this->isKick_)
     {
@@ -2196,6 +2307,10 @@ void UserInfoPopup::setData(const QString &name,
     else
     {
         this->updateUserData();
+        if (!this->userId_.isEmpty())
+        {
+            this->refreshFollowingStatus(false);
+        }
     }
 
     this->userStateChanged_.invoke();
@@ -2625,6 +2740,8 @@ void UserInfoPopup::updateUserData()
         }
 
         this->userId_ = user.id;
+        this->refreshFollowingStatus(false);
+        this->updateUsercardFollowButton();
 
         // Correct for when being opened with ID
         if (this->userName_.isEmpty())
@@ -2788,6 +2905,14 @@ void UserInfoPopup::updateUserData()
 
                             if (followedAt.isValid())
                             {
+                                if (this->isFollowing() &&
+                                    (!this->followedAt_ ||
+                                     !this->followedAt_->isValid()))
+                                {
+                                    this->followedAt_ = followedAt;
+                                    this->updateUsercardFollowButton();
+                                }
+
                                 const auto followedDate = followedAt.date();
                                 const auto followingSince =
                                     followedDate.toString(Qt::ISODate);
@@ -4624,6 +4749,298 @@ void UserInfoPopup::updateSeventvPaintPixmap()
 
     this->ui_.seventvPaintPixmapLabel->setPixmap(pixmap);
     this->ui_.seventvPaintPixmapLabel->setToolTip(paintName);
+}
+
+UserInfoPopup::~UserInfoPopup()
+{
+    unregisterActiveUsercard(this);
+}
+
+void UserInfoPopup::notifyFollowMutation(const QString &targetId,
+                                         const QString &requestUserId,
+                                         const QString &requestLogin,
+                                         bool unfollow)
+{
+    auto current = getApp()->getAccounts()->twitch.getCurrent();
+    bool accountMatches = false;
+    if (current && !current->isAnon())
+    {
+        const auto currentUserId = current->getUserId().trimmed();
+        const auto normalizedUserId = requestUserId.trimmed();
+        if (!currentUserId.isEmpty() && !normalizedUserId.isEmpty())
+        {
+            accountMatches = normalizedUserId == currentUserId;
+        }
+        else
+        {
+            const auto currentLogin =
+                current->getUserName().trimmed().toLower();
+            const auto normalizedLogin = requestLogin.trimmed().toLower();
+            accountMatches = !currentLogin.isEmpty() &&
+                             !normalizedLogin.isEmpty() &&
+                             normalizedLogin == currentLogin;
+        }
+    }
+
+    if (!accountMatches)
+    {
+        return;
+    }
+
+    QMutexLocker locker(&activeUsercardsMutex());
+    for (const auto &popup : activeUsercards())
+    {
+        if (!popup || popup->userId_ != targetId)
+        {
+            continue;
+        }
+
+        std::optional<QDateTime> followedAt;
+        if (!unfollow)
+        {
+            followedAt = QDateTime::currentDateTimeUtc();
+        }
+        popup->setFollowingStatus(!unfollow, followedAt);
+    }
+}
+
+bool UserInfoPopup::isFollowing() const
+{
+    return this->following_;
+}
+
+bool UserInfoPopup::isFollowingStatusKnown() const
+{
+    return this->followingStatusKnown_;
+}
+
+void UserInfoPopup::setFollowingStatus(bool following,
+                                       std::optional<QDateTime> followedAt)
+{
+    const bool changed = this->followingStatusKnown_ != true ||
+                         this->following_ != following ||
+                         this->followedAt_ != followedAt;
+
+    this->following_ = following;
+    this->followingStatusKnown_ = true;
+    this->followedAt_ = std::move(followedAt);
+    auto account = getApp()->getAccounts()->twitch.getCurrent();
+    if (account && !account->isAnon())
+    {
+        this->followingStatusUserId_ = account->getUserId();
+    }
+
+    if (changed)
+    {
+        this->followingStatusChanged_.invoke();
+    }
+}
+
+void UserInfoPopup::resetFollowingStatus()
+{
+    const bool changed = this->followingStatusKnown_ || this->following_;
+    this->following_ = false;
+    this->followingStatusKnown_ = false;
+    this->followedAt_.reset();
+    this->followingStatusUserId_.clear();
+    this->followingStatusFetchInFlight_.store(false);
+
+    if (changed)
+    {
+        this->followingStatusChanged_.invoke();
+    }
+}
+
+void UserInfoPopup::refreshFollowingStatus(bool force)
+{
+    if (getApp()->isTest())
+    {
+        return;
+    }
+
+    const auto targetUserId = this->userId_;
+    auto account = getApp()->getAccounts()->twitch.getCurrent();
+    const auto userId =
+        account && !account->isAnon() ? account->getUserId() : QString();
+
+    auto clearUnknown = [this] {
+        const bool changed = this->followingStatusKnown_ || this->following_;
+        this->following_ = false;
+        this->followingStatusKnown_ = false;
+        this->followedAt_.reset();
+        this->followingStatusUserId_.clear();
+        if (changed)
+        {
+            this->followingStatusChanged_.invoke();
+        }
+    };
+
+    if (targetUserId.isEmpty() || userId.isEmpty())
+    {
+        clearUnknown();
+        return;
+    }
+
+    if (userId == targetUserId)
+    {
+        this->followingStatusUserId_ = userId;
+        this->setFollowingStatus(false);
+        return;
+    }
+
+    if (!force && this->followingStatusKnown_ &&
+        this->followingStatusUserId_ == userId)
+    {
+        return;
+    }
+
+    const auto now = QDateTime::currentDateTimeUtc();
+    if (!force && this->lastFollowingStatusRefreshAt_.isValid() &&
+        this->lastFollowingStatusRefreshAt_.msecsTo(now) <
+            FOLLOWING_STATUS_RETRY_INTERVAL_MS)
+    {
+        return;
+    }
+
+    if (this->followingStatusFetchInFlight_.exchange(true))
+    {
+        return;
+    }
+
+    this->lastFollowingStatusRefreshAt_ = now;
+    const auto requestUserId = userId;
+    const auto requestTargetUserId = targetUserId;
+    QPointer<UserInfoPopup> self(this);
+
+    getHelix()->getFollowedChannel(
+        requestUserId, requestTargetUserId, this,
+        [self, requestUserId, requestTargetUserId](const auto &chan) {
+            if (!self)
+            {
+                return;
+            }
+
+            self->followingStatusFetchInFlight_.store(false);
+
+            auto current = getApp()->getAccounts()->twitch.getCurrent();
+            const auto currentUserId = current && !current->isAnon()
+                                           ? current->getUserId()
+                                           : QString();
+            if (currentUserId != requestUserId ||
+                self->userId_ != requestTargetUserId)
+            {
+                self->refreshFollowingStatus(true);
+                return;
+            }
+
+            self->followingStatusUserId_ = requestUserId;
+            self->setFollowingStatus(
+                chan.has_value(),
+                chan ? std::optional<QDateTime>(chan->followedAt)
+                     : std::nullopt);
+        },
+        [self](const QString &error) {
+            if (!self)
+            {
+                return;
+            }
+
+            self->followingStatusFetchInFlight_.store(false);
+            qCDebug(chatterinoTwitch)
+                << "Failed to refresh usercard following status for"
+                << self->userName_ << ':' << error;
+        });
+}
+
+void UserInfoPopup::updateUsercardFollowButton()
+{
+    if (this->ui_.followButton == nullptr)
+    {
+        return;
+    }
+
+    if (!getSettings()->showFollowButtonInUsercard || this->isKick_ ||
+        this->userId_.isEmpty() ||
+        !canUseFollowButtonForUser(this->userId_, this->userName_))
+    {
+        this->ui_.followButton->hide();
+        return;
+    }
+
+    const auto following =
+        this->isFollowingStatusKnown() && this->isFollowing();
+    const auto displayName =
+        this->ui_.localizedNameLabel->isVisible() &&
+                !this->ui_.localizedNameLabel->getText().isEmpty()
+            ? this->ui_.localizedNameLabel->getText()
+            : (this->ui_.nameLabel->getText().isEmpty()
+                   ? this->userName_
+                   : this->ui_.nameLabel->getText());
+
+    this->ui_.followButton->setSource(followButtonSource(following));
+    this->ui_.followButton->setToolTip(
+        formatFollowButtonToolTip(displayName, following, this->followedAt_));
+    const int buttonSize = std::max(1, int(28 * this->scale()));
+    this->ui_.followButton->setFixedSize(buttonSize, buttonSize);
+    this->ui_.followButton->show();
+}
+
+void UserInfoPopup::toggleUsercardFollow()
+{
+    if (this->isKick_ || this->userId_.isEmpty() || this->userName_.isEmpty())
+    {
+        return;
+    }
+
+    const auto command = this->isFollowingStatusKnown() && this->isFollowing()
+                             ? QStringLiteral("/unfollow")
+                             : QStringLiteral("/follow");
+
+    if (command == QStringLiteral("/unfollow") &&
+        getSettings()->confirmUnfollowFromUsercard)
+    {
+        const auto displayName =
+            this->ui_.localizedNameLabel->isVisible() &&
+                    !this->ui_.localizedNameLabel->getText().isEmpty()
+                ? this->ui_.localizedNameLabel->getText()
+                : (this->ui_.nameLabel->getText().isEmpty()
+                       ? this->userName_
+                       : this->ui_.nameLabel->getText());
+
+        QMessageBox box(this);
+        box.setWindowTitle("Unfollow channel?");
+        box.setIcon(QMessageBox::Question);
+        box.setText(
+            QString("Are you sure you want to unfollow %1?").arg(displayName));
+
+        auto *confirmButton =
+            box.addButton("Confirm", QMessageBox::DestructiveRole);
+        auto *cancelButton = box.addButton("Cancel", QMessageBox::RejectRole);
+        box.setDefaultButton(cancelButton);
+        box.setEscapeButton(cancelButton);
+        box.exec();
+
+        if (box.clickedButton() != confirmButton)
+        {
+            return;
+        }
+    }
+
+    CommandContext ctx{
+        .words = {command, this->userName_},
+        .rawText = command % u' ' % this->userName_,
+        .channel = this->channel_,
+        .twitchChannel =
+            dynamic_cast<TwitchChannel *>(this->underlyingChannel_.get()),
+        .kickChannel = nullptr,
+    };
+    const auto text = command == QStringLiteral("/unfollow")
+                          ? commands::unfollow(ctx)
+                          : commands::follow(ctx);
+    if (!text.isEmpty())
+    {
+        this->channel_->sendMessage(text);
+    }
 }
 
 }  // namespace chatterino

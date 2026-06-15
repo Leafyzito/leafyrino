@@ -451,8 +451,17 @@ struct HelixFollowedChannel {
         : broadcasterID(jsonObject["broadcaster_id"].toString())
         , broadcasterLogin(jsonObject["broadcaster_login"].toString())
         , broadcasterName(jsonObject["broadcaster_name"].toString())
-        , followedAt(QDateTime::fromString(jsonObject["followed_at"].toString(),
-                                           Qt::ISODate))
+        , followedAt([&jsonObject] {
+            const auto followedAtString = jsonObject["followed_at"].toString();
+            auto timestamp =
+                QDateTime::fromString(followedAtString, Qt::ISODateWithMs);
+            if (!timestamp.isValid())
+            {
+                timestamp =
+                    QDateTime::fromString(followedAtString, Qt::ISODate);
+            }
+            return timestamp;
+        }())
     {
     }
 };

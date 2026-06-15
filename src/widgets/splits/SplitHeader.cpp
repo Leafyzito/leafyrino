@@ -29,6 +29,7 @@
 #include "util/LayoutHelper.hpp"
 #include "util/MultiChannel.hpp"
 #include "widgets/buttons/DrawnButton.hpp"
+#include "widgets/buttons/FollowButton.hpp"
 #include "widgets/buttons/LabelButton.hpp"
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
@@ -62,25 +63,6 @@ constexpr const int ADD_SPLIT_BUTTON_WIDTH = 16;
 
 // 5 minutes
 constexpr const qint64 THUMBNAIL_MAX_AGE_MS = 5LL * 60 * 1000;
-
-bool canUseFollowButtonForChannel(const TwitchChannel &channel)
-{
-    QString ignored;
-    const auto auth = MoltorinoAuth::resolveSelectedUserToken(&ignored);
-    if (!auth.hasToken())
-    {
-        return false;
-    }
-
-    const auto roomId = channel.roomId();
-    if (!roomId.isEmpty() && !auth.userId.isEmpty() && auth.userId == roomId)
-    {
-        return false;
-    }
-
-    return auth.login.isEmpty() ||
-           auth.login.compare(channel.getName(), Qt::CaseInsensitive) != 0;
-}
 
 auto formatRoomModeUnclean(const TwitchChannel::RoomModes &modes) -> QString
 {
@@ -276,22 +258,6 @@ auto formatTitle(const TwitchChannel::StreamStatus &s, Settings &settings)
     }
 
     return title;
-}
-
-SvgButton::Src followButtonSource(bool following)
-{
-    if (following)
-    {
-        return {
-            .dark = ":/buttons/followEnabled-darkMode.svg",
-            .light = ":/buttons/followEnabled-lightMode.svg",
-        };
-    }
-
-    return {
-        .dark = ":/buttons/followDisabled-darkMode.svg",
-        .light = ":/buttons/followDisabled-lightMode.svg",
-    };
 }
 
 TwitchChannel::StreamStatus toTwitchStreamStatus(

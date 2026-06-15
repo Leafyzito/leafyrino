@@ -1026,6 +1026,9 @@ void runFollowMutation(const ChannelPtr &channel,
             twitchChannel->setFollowingStatus(!unfollow, followedAt);
         }
 
+        UserInfoPopup::notifyFollowMutation(targetId, requestUserId,
+                                            requestLogin, unfollow);
+
         channel->addSystemMessage(
             unfollow ? QString("You unfollowed %1.").arg(targetName)
                      : QString("You followed %1.").arg(targetName));

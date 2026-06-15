@@ -104,6 +104,18 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
     SettingWidget::checkbox("Show followage", s.showUsercardFollowage)
         ->addKeywords({"usercard", "followage", "follow"})
         ->addTo(layout);
+    SettingWidget::checkbox("Show follow button", s.showFollowButtonInUsercard)
+        ->setTooltip("Show a follow/unfollow button on usercards. Requires "
+                     "Moltorino auth (Settings → Moltorino → Authentication).")
+        ->addKeywords({"usercard", "follow", "button"})
+        ->addTo(layout);
+    SettingWidget::checkbox("Confirm before unfollowing from usercard",
+                            s.confirmUnfollowFromUsercard)
+        ->conditionallyEnabledBy(s.showFollowButtonInUsercard)
+        ->setTooltip("Ask before the usercard follow button unfollows a user. "
+                     "The /unfollow command still runs without a prompt.")
+        ->addKeywords({"usercard", "follow", "unfollow", "confirm"})
+        ->addTo(layout);
     SettingWidget::checkbox("Show gift sub gifter", s.showUsercardSubGiftGifter)
         ->setTooltip("When the user has an active gifted subscription in a "
                      "channel, show who gifted it on the usercard.")

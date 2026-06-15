@@ -365,6 +365,39 @@ QString pinnedChatEventPinId(const QJsonObject &data)
     return id;
 }
 
+QString pinnedChatEventPinnerName(const QJsonObject &data)
+{
+    return userDisplayNameFromObject(
+        objectFromAnyKey(data, "pinned_by", "pinnedBy"));
+}
+
+QString pinnedChatPinSystemMessageKey(const QJsonObject &innerData)
+{
+    const auto pinId = pinnedChatEventPinId(innerData);
+    if (!pinId.isEmpty())
+    {
+        return pinId;
+    }
+
+    const auto message = innerData.value("message").toObject();
+    return message.value("id").toString();
+}
+
+QString pinnedChatMessagePreviewText(const QJsonObject &innerData)
+{
+    const auto message = innerData.value("message").toObject();
+    const auto content = message.value("content").toObject();
+    auto text = content.value("text").toString().simplified();
+
+    const auto limit = getSettings()->deletedMessageLengthLimit.getValue();
+    if (limit > 0 && text.length() > limit)
+    {
+        text = QStringView(text).left(limit) % u'…';
+    }
+
+    return text;
+}
+
 QString predictionWinnerTitle(const TwitchChannel::PredictionEvent &prediction)
 {
     if (prediction.winningOutcomeId.isEmpty())
@@ -4272,6 +4305,57 @@ bool TwitchChannel::isLoadingRecentMessages() const
     return this->loadingRecentMessages_.test();
 }
 
+void TwitchChannel::tryEmitPinnedChatPinSystemMessage(
+    const QJsonObject &innerData)
+{
+    if (!getSettings()->showPinNotifications)
+    {
+        return;
+    }
+
+    const auto key = pinnedChatPinSystemMessageKey(innerData);
+    if (!key.isEmpty() && key == this->lastPinSystemMessageKey_)
+    {
+        return;
+    }
+
+    {
+        auto locked = this->currentPin_.accessConst();
+        if (locked->has_value() && (**locked).pinId == key)
+        {
+            return;
+        }
+    }
+
+    const auto pinnerName = pinnedChatEventPinnerName(innerData);
+    const auto messageText = pinnedChatMessagePreviewText(innerData);
+
+    QString systemText;
+    if (!pinnerName.isEmpty() && !messageText.isEmpty())
+    {
+        systemText = QString("%1 pinned: \"%2\"").arg(pinnerName, messageText);
+    }
+    else if (!pinnerName.isEmpty())
+    {
+        systemText = QString("%1 pinned a message.").arg(pinnerName);
+    }
+    else if (!messageText.isEmpty())
+    {
+        systemText = QString("A message was pinned: \"%1\"").arg(messageText);
+    }
+    else
+    {
+        systemText = QStringLiteral("A message was pinned.");
+    }
+
+    if (!key.isEmpty())
+    {
+        this->lastPinSystemMessageKey_ = key;
+    }
+
+    this->addSystemMessage(systemText);
+}
+
 void TwitchChannel::handlePinnedChatUpdate(const QJsonObject &data)
 {
     QString type = data.value("type").toString();
@@ -4279,30 +4363,13 @@ void TwitchChannel::handlePinnedChatUpdate(const QJsonObject &data)
     const auto innerData =
         innerDataValue.isObject() ? innerDataValue.toObject() : QJsonObject{};
 
-    if (type == "pin-message" || type == "update-message")
+    if (type == "pin-message")
     {
-        if (!innerData.isEmpty())
-        {
-            if (innerData.contains("message") &&
-                innerData["message"].isObject())
-            {
-                auto msgObj = innerData["message"].toObject();
-
-                PinnedMessage pin;
-                if (innerData.contains("id"))
-                    pin.pinId = innerData["id"].toString();
-                if (msgObj.contains("id"))
-                    pin.messageId = msgObj["id"].toString();
-                if (msgObj.contains("content") && msgObj["content"].isObject())
-                {
-                    auto contentObj = msgObj["content"].toObject();
-                    if (contentObj.contains("text"))
-                        pin.text = contentObj["text"].toString();
-                }
-                this->refreshPinnedMessage();
-                return;
-            }
-        }
+        this->tryEmitPinnedChatPinSystemMessage(innerData);
+        this->refreshPinnedMessage();
+    }
+    else if (type == "update-message")
+    {
         this->refreshPinnedMessage();
     }
     else if (type == "unpin-message")
@@ -4329,20 +4396,8 @@ void TwitchChannel::handlePinnedChatUpdate(const QJsonObject &data)
 
         if (currentPin.has_value() && getSettings()->showUnpinNotifications)
         {
-            QString unpinnerName;
-            if (!innerData.isEmpty())
-            {
-                if (innerData.contains("unpinned_by") &&
-                    innerData["unpinned_by"].isObject())
-                {
-                    auto unpinner = innerData["unpinned_by"].toObject();
-                    unpinnerName = unpinner.value("display_name").toString();
-                    if (unpinnerName.isEmpty())
-                    {
-                        unpinnerName = unpinner.value("login").toString();
-                    }
-                }
-            }
+            QString unpinnerName = userDisplayNameFromObject(
+                objectFromAnyKey(innerData, "unpinned_by", "unpinnedBy"));
 
             if (unpinnerName.isEmpty())
             {
@@ -4354,6 +4409,7 @@ void TwitchChannel::handlePinnedChatUpdate(const QJsonObject &data)
                     QString("%1 unpinned the message.").arg(unpinnerName));
             }
         }
+        this->lastPinSystemMessageKey_.clear();
         this->setPinnedMessage(std::nullopt);
     }
 }
