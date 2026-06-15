@@ -5042,6 +5042,8 @@ void UserInfoPopup::toggleUsercardFollow()
                        ? this->userName_
                        : this->ui_.nameLabel->getText());
 
+        const bool wasPinned = this->ensurePinned();
+
         QMessageBox box(this);
         box.setWindowTitle("Unfollow channel?");
         box.setIcon(QMessageBox::Question);
@@ -5054,6 +5056,11 @@ void UserInfoPopup::toggleUsercardFollow()
         box.setDefaultButton(cancelButton);
         box.setEscapeButton(cancelButton);
         box.exec();
+
+        if (wasPinned)
+        {
+            this->togglePinned();
+        }
 
         if (box.clickedButton() != confirmButton)
         {
