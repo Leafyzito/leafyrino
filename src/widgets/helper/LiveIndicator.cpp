@@ -4,9 +4,12 @@
 
 #include "widgets/helper/LiveIndicator.hpp"
 
+#include "Application.hpp"
+#include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
 #include "util/Helpers.hpp"
 
+#include <QFontMetrics>
 #include <QPainter>
 #include <QString>
 
@@ -24,8 +27,20 @@ LiveIndicator::LiveIndicator(QWidget *parent)
 
 void LiveIndicator::setViewers(int viewers)
 {
+    this->viewers_ = viewers;
     this->setToolTip(u"Live with %1 viewers"_s.arg(localizeNumbers(viewers)));
     this->updateScale();
+}
+
+void LiveIndicator::setTextMode(bool textMode)
+{
+    this->textMode_ = textMode;
+    this->updateScale();
+}
+
+QString LiveIndicator::displayText() const
+{
+    return localizeNumbers(this->viewers_);
 }
 
 void LiveIndicator::scaleChangedEvent(float)
@@ -50,6 +65,16 @@ void LiveIndicator::paintEvent(QPaintEvent *)
         }
     }
 
+    if (this->textMode_)
+    {
+        painter.setPen(color);
+        painter.setFont(
+            getApp()->getFonts()->getFont(FontStyle::UiMedium, this->scale()));
+        painter.drawText(this->rect(), Qt::AlignVCenter | Qt::AlignLeft,
+                         this->displayText());
+        return;
+    }
+
     painter.setBrush(color);
     painter.setPen(Qt::NoPen);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -72,7 +97,20 @@ void LiveIndicator::leaveEvent(QEvent *)
 
 void LiveIndicator::updateScale()
 {
-    this->setFixedWidth(qRound(6 * this->scale()));
+    if (this->textMode_)
+    {
+        const auto font =
+            getApp()->getFonts()->getFont(FontStyle::UiMedium, this->scale());
+        const QFontMetrics fontMetrics(font);
+        const auto text = this->displayText();
+        this->setFixedWidth(fontMetrics.horizontalAdvance(text));
+        this->setFixedHeight(fontMetrics.height());
+    }
+    else
+    {
+        this->setFixedWidth(qRound(6 * this->scale()));
+        this->setFixedHeight(qRound(6 * this->scale()));
+    }
 
     this->update();
 }

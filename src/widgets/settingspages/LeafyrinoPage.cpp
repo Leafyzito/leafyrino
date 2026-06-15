@@ -84,6 +84,12 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
                      "the stream title.")
         ->addKeywords({"usercard", "last", "live", "stream"})
         ->addTo(layout);
+    SettingWidget::checkbox("Show live viewer count",
+                            s.showUsercardLiveViewerCount)
+        ->setTooltip("When enabled, replaces the red live dot next to the "
+                     "username with the live viewer count.")
+        ->addKeywords({"usercard", "live", "viewer", "count", "indicator"})
+        ->addTo(layout);
     SettingWidget::checkbox("Show user color", s.showUsercardColor)
         ->setTooltip("Show the user's Twitch chat color.")
         ->addKeywords({"usercard", "color", "chat"})

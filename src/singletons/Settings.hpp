@@ -898,6 +898,8 @@ public:
                                              true};
     BoolSetting showUsercardChatterCount = {"/usercard/showChatterCount", true};
     BoolSetting showUsercardLastLive = {"/usercard/showLastLive", true};
+    BoolSetting showUsercardLiveViewerCount = {"/usercard/showLiveViewerCount",
+                                               false};
     BoolSetting showUsercardColor = {"/usercard/showColor", true};
     BoolSetting showUsercardSevenTVPaint = {"/usercard/showSevenTVPaint", true};
     BoolSetting showUsercardStatus = {"/usercard/showStatus", true};

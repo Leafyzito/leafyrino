@@ -113,6 +113,7 @@ private:
     void hideUsercardSubGiftRow();
     void resetUsercardInfoRows();
     void applyIvrUserProfile(const IvrUserProfile &profile);
+    void updateLiveIndicatorDisplay();
 
     bool isFollowing() const;
     bool isFollowingStatusKnown() const;
@@ -293,6 +294,8 @@ private:
 
     bool isKick_ = false;
     uint64_t kickUserID_ = 0;
+    bool isUserLive_ = false;
+    int liveViewerCount_ = 0;
 
     std::map<int, std::pair<std::function<void()>, std::function<bool()>>>
         mnemonicActions_;

@@ -2064,6 +2064,11 @@ void UserInfoPopup::installEvents()
             this->updateUsercardFollowButton();
         },
         this->signalHolder_);
+    getSettings()->showUsercardLiveViewerCount.connect(
+        [this](bool) {
+            this->updateLiveIndicatorDisplay();
+        },
+        this->signalHolder_);
     getSettings()->showUsercardLoadMoreMessagesButton.connect(
         [this](bool) {
             this->updateLoadMoreMessagesButton();
@@ -2838,13 +2843,15 @@ void UserInfoPopup::updateUserData()
 
                 if (isLive)
                 {
-                    this->ui_.liveIndicator->setViewers(stream.viewerCount);
-                    this->ui_.liveIndicator->show();
+                    this->isUserLive_ = true;
+                    this->liveViewerCount_ = stream.viewerCount;
                 }
                 else
                 {
-                    this->ui_.liveIndicator->hide();
+                    this->isUserLive_ = false;
+                    this->liveViewerCount_ = 0;
                 }
+                this->updateLiveIndicatorDisplay();
             },
             [id{user.id}]() {
                 qCWarning(chatterinoWidget)
@@ -4069,6 +4076,13 @@ void UserInfoPopup::resetUsercardInfoRows()
                                       settings->showUsercardStatus);
     this->ui_.bannedAvatarLabel->hide();
 
+    this->isUserLive_ = false;
+    this->liveViewerCount_ = 0;
+    if (this->ui_.liveIndicator)
+    {
+        this->ui_.liveIndicator->hide();
+    }
+
     this->updateUsercardStatusIcons();
     this->refreshSeventvPaint();
 }
@@ -4950,6 +4964,27 @@ void UserInfoPopup::refreshFollowingStatus(bool force)
                 << "Failed to refresh usercard following status for"
                 << self->userName_ << ':' << error;
         });
+}
+
+void UserInfoPopup::updateLiveIndicatorDisplay()
+{
+    if (this->ui_.liveIndicator == nullptr)
+    {
+        return;
+    }
+
+    this->ui_.liveIndicator->setTextMode(
+        getSettings()->showUsercardLiveViewerCount);
+
+    if (this->isUserLive_)
+    {
+        this->ui_.liveIndicator->setViewers(this->liveViewerCount_);
+        this->ui_.liveIndicator->show();
+    }
+    else
+    {
+        this->ui_.liveIndicator->hide();
+    }
 }
 
 void UserInfoPopup::updateUsercardFollowButton()

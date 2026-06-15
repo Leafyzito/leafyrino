@@ -14,6 +14,7 @@ public:
     LiveIndicator(QWidget *parent = nullptr);
 
     void setViewers(int viewers);
+    void setTextMode(bool textMode);
 
 protected:
     void scaleChangedEvent(float newScale) override;
@@ -23,8 +24,11 @@ protected:
 
 private:
     void updateScale();
+    QString displayText() const;
 
     bool hovered = false;
+    bool textMode_ = false;
+    int viewers_ = 0;
 };
 
 }  // namespace chatterino
