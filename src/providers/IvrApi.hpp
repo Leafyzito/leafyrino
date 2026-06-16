@@ -148,6 +148,7 @@ struct IvrUserProfile {
     std::optional<int> chatterCount;
     QString chatColor;
     bool isAffiliate = false;
+    bool isPreAffiliate = false;
     bool isPartner = false;
     bool isStaff = false;
     QString lastBroadcastStartedAt;
@@ -166,6 +167,7 @@ struct IvrUserProfile {
 
         const auto roles = root.value("roles").toObject();
         this->isAffiliate = roles.value("isAffiliate").toBool();
+        this->isPreAffiliate = roles.value("isPreAffiliate").toBool();
         this->isPartner = roles.value("isPartner").toBool();
         this->isStaff = roles.value("isStaff").toBool();
 

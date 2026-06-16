@@ -562,6 +562,10 @@ QString formatUsercardStatus(const IvrUserProfile &profile)
     {
         return "Affiliate";
     }
+    if (profile.isPreAffiliate)
+    {
+        return "Pre Affiliate";
+    }
 
     return "Non Affiliate";
 }
