@@ -9,6 +9,7 @@
 
 #include <memory>
 
+class QLabel;
 class QLineEdit;
 
 namespace chatterino {
@@ -35,6 +36,9 @@ protected:
 private:
     void initLayout();
     void search();
+    void updateResultCount(size_t matches, size_t total);
+    void layoutResultCountLabel();
+    void updateResultCountLabelStyle();
     void addShortcuts() override;
     std::vector<MessagePtr> buildSnapshot();
 
@@ -46,6 +50,7 @@ private:
 
     std::vector<MessagePtr> snapshot_;
     QLineEdit *searchInput_{};
+    QLabel *resultCountLabel_{};
     ChannelView *channelView_{};
     QString channelName_{};
     Split *split_ = nullptr;

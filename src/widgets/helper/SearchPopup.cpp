@@ -23,8 +23,11 @@
 #include "widgets/helper/ChannelView.hpp"
 #include "widgets/splits/Split.hpp"
 
+#include <QFontMetrics>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QLineEdit>
+#include <QPalette>
 #include <QPushButton>
 
 namespace chatterino {
@@ -204,14 +207,21 @@ void SearchPopup::showEvent(QShowEvent *e)
 
 bool SearchPopup::eventFilter(QObject *object, QEvent *event)
 {
-    if (object == this->searchInput_ && event->type() == QEvent::KeyPress)
+    if (object == this->searchInput_)
     {
-        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
-        if (keyEvent == QKeySequence::DeleteStartOfWord &&
-            this->searchInput_->selectionLength() > 0)
+        if (event->type() == QEvent::Resize)
         {
-            this->searchInput_->backspace();
-            return true;
+            this->layoutResultCountLabel();
+        }
+        else if (event->type() == QEvent::KeyPress)
+        {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+            if (keyEvent == QKeySequence::DeleteStartOfWord &&
+                this->searchInput_->selectionLength() > 0)
+            {
+                this->searchInput_->backspace();
+                return true;
+            }
         }
     }
     return false;
@@ -222,6 +232,23 @@ void SearchPopup::themeChangedEvent()
     BasePopup::themeChangedEvent();
 
     this->setPalette(getTheme()->palette);
+    this->updateResultCountLabelStyle();
+}
+
+void SearchPopup::updateResultCountLabelStyle()
+{
+    if (this->resultCountLabel_ == nullptr)
+    {
+        return;
+    }
+
+    const auto color =
+        this->searchInput_ != nullptr
+            ? this->searchInput_->palette().color(QPalette::PlaceholderText)
+            : getTheme()->palette.color(QPalette::PlaceholderText);
+    this->resultCountLabel_->setStyleSheet(
+        QStringLiteral("color: %1; background: transparent;")
+            .arg(color.name(QColor::HexRgb)));
 }
 
 void SearchPopup::search()
@@ -231,8 +258,58 @@ void SearchPopup::search()
         this->snapshot_ = this->buildSnapshot();
     }
 
-    this->channelView_->setChannel(filter(this->searchInput_->text(),
-                                          this->channelName_, this->snapshot_));
+    const auto total = this->snapshot_.size();
+    auto channel =
+        filter(this->searchInput_->text(), this->channelName_, this->snapshot_);
+    this->channelView_->setChannel(channel);
+    this->updateResultCount(channel->countMessages(), total);
+}
+
+void SearchPopup::updateResultCount(size_t matches, size_t total)
+{
+    if (this->searchInput_->text().trimmed().isEmpty())
+    {
+        this->resultCountLabel_->setText(QString::number(total));
+        this->resultCountLabel_->setToolTip(
+            QString("%1 messages in history").arg(total));
+    }
+    else
+    {
+        this->resultCountLabel_->setText(
+            QString("%1/%2").arg(matches).arg(total));
+        this->resultCountLabel_->setToolTip(
+            QString("%1 matching messages out of %2 total")
+                .arg(matches)
+                .arg(total));
+    }
+
+    const QFontMetrics fm(this->resultCountLabel_->font());
+    const int counterWidth =
+        fm.horizontalAdvance(this->resultCountLabel_->text());
+    constexpr int CLEAR_BUTTON_PADDING = 28;
+    this->searchInput_->setTextMargins(
+        0, 0, counterWidth + CLEAR_BUTTON_PADDING + 4, 0);
+    this->layoutResultCountLabel();
+}
+
+void SearchPopup::layoutResultCountLabel()
+{
+    if (this->resultCountLabel_ == nullptr || this->searchInput_ == nullptr)
+    {
+        return;
+    }
+
+    const QFontMetrics fm(this->resultCountLabel_->font());
+    const int labelWidth =
+        fm.horizontalAdvance(this->resultCountLabel_->text());
+    const int labelHeight = fm.height();
+
+    constexpr int CLEAR_BUTTON_PADDING = 28;
+    const int x =
+        this->searchInput_->width() - CLEAR_BUTTON_PADDING - labelWidth;
+    const int y = (this->searchInput_->height() - labelHeight) / 2;
+
+    this->resultCountLabel_->setGeometry(x, y, labelWidth, labelHeight);
 }
 
 std::vector<MessagePtr> SearchPopup::buildSnapshot()
@@ -301,6 +378,12 @@ void SearchPopup::initLayout()
                 this->searchInput_ = new QLineEdit(this);
                 layout2->addWidget(this->searchInput_);
 
+                this->resultCountLabel_ = new QLabel(this->searchInput_);
+                this->resultCountLabel_->setAttribute(
+                    Qt::WA_TransparentForMouseEvents);
+                this->resultCountLabel_->raise();
+                this->updateResultCountLabelStyle();
+
                 this->searchInput_->setPlaceholderText("Type to search");
                 this->searchInput_->setClearButtonEnabled(true);
                 this->searchInput_->findChild<QAbstractButton *>()->setIcon(
@@ -318,7 +401,7 @@ void SearchPopup::initLayout()
                 this, this->split_, ChannelView::Context::Search,
                 getSettings()->scrollbackSplitLimit);
 
-            layout1->addWidget(this->channelView_);
+            layout1->addWidget(this->channelView_, 1);
         }
 
         this->setLayout(layout1);
