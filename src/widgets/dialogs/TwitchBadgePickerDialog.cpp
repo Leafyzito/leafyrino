@@ -1150,7 +1150,19 @@ void TwitchBadgePickerDialog::rebuildGlobalBadges()
         return;
     }
 
-    auto *label = new QLabel("Your Badges", this->contentWidget_);
+    int badgeCount = 0;
+    for (const auto &badge : available)
+    {
+        if (badgeMatchesSearch(badge, needle))
+        {
+            ++badgeCount;
+        }
+    }
+
+    const auto labelText =
+        badgeCount > 0 ? QStringLiteral("Your Badges (%1)").arg(badgeCount)
+                       : QStringLiteral("Your Badges");
+    auto *label = new QLabel(labelText, this->contentWidget_);
     label->setObjectName("TwitchBadgePickerSectionLabel");
     this->contentLayout_->addWidget(label);
 
