@@ -8,6 +8,7 @@
 #include "messages/MessageBuilder.hpp"
 #include "providers/twitch/IrcMessageHandler.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
+#include "singletons/Settings.hpp"
 #include "util/Helpers.hpp"
 #include "util/VectorMessageSink.hpp"
 
@@ -78,6 +79,33 @@ std::vector<MessagePtr> buildRecentMessages(
     return std::move(sink).takeMessages();
 }
 
+QString recentMessagesApiUrlTemplate()
+{
+    if (!qEnvironmentVariable("CHATTERINO2_RECENT_MESSAGES_URL").isEmpty())
+    {
+        return Env::get().recentMessagesApiUrl;
+    }
+
+    switch (getSettings()->recentMessagesApi.getEnum())
+    {
+        case RecentMessagesApi::Zneix:
+            return QStringLiteral("https://recent-messages.zneix.eu/api/v2/"
+                                  "recent-messages/%1");
+
+        case RecentMessagesApi::Lilb:
+            return QStringLiteral(
+                "https://rm.lilb.dev/api/v2/recent-messages/%1");
+
+        case RecentMessagesApi::Zonian:
+            return QStringLiteral("https://logs.zonian.dev/rm/%1");
+
+        case RecentMessagesApi::Robotty:
+        default:
+            return QStringLiteral("https://recent-messages.robotty.de/api/v2/"
+                                  "recent-messages/%1");
+    }
+}
+
 QUrl constructRecentMessagesUrl(
     const QString &name, const int limit,
     const std::optional<std::chrono::time_point<std::chrono::system_clock>>
@@ -85,7 +113,7 @@ QUrl constructRecentMessagesUrl(
     const std::optional<std::chrono::time_point<std::chrono::system_clock>>
         before)
 {
-    QUrl url(Env::get().recentMessagesApiUrl.arg(name));
+    QUrl url(recentMessagesApiUrlTemplate().arg(name));
     QUrlQuery urlQuery(url);
     if (!urlQuery.hasQueryItem("limit"))
     {

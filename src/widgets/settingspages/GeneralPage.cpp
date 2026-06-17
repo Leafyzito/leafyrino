@@ -1572,6 +1572,12 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                             s.loadTwitchMessageHistoryOnConnect)
         ->addTo(layout);
 
+    SettingWidget::dropdown("Message history provider", s.recentMessagesApi)
+        ->setTooltip(
+            "Service used to load chat history when joining a channel.\n"
+            "CHATTERINO2_RECENT_MESSAGES_URL overrides this when set.")
+        ->addTo(layout);
+
     SettingWidget::intInput("Max number of history messages to load on connect",
                             s.twitchMessageHistoryLimit,
                             {

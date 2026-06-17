@@ -74,6 +74,13 @@ enum class ChatSendProtocol : int {
     Helix = 2,
 };
 
+enum class RecentMessagesApi : int {
+    Robotty = 0,
+    Zneix = 1,
+    Lilb = 2,
+    Zonian = 3,
+};
+
 enum class ShowModerationState : int {
     // Always show this moderation-related item
     Always = 0,
@@ -161,6 +168,23 @@ constexpr std::optional<std::string_view> qmagicenumDisplayName(
             return "5 seconds";
         case SplitMpsWindow::Seconds10:
             return "10 seconds";
+    }
+    return {};
+}
+
+constexpr std::optional<std::string_view> qmagicenumDisplayName(
+    RecentMessagesApi value) noexcept
+{
+    switch (value)
+    {
+        case RecentMessagesApi::Robotty:
+            return "Robotty - recent-messages.robotty.de";
+        case RecentMessagesApi::Zneix:
+            return "Zneix - recent-messages.zneix.eu";
+        case RecentMessagesApi::Lilb:
+            return "lilb - rm.lilb.dev";
+        case RecentMessagesApi::Zonian:
+            return "Zonian - logs.zonian.dev";
     }
     return {};
 }
@@ -851,6 +875,8 @@ public:
 
     BoolSetting loadTwitchMessageHistoryOnConnect = {
         "/misc/twitch/loadMessageHistoryOnConnect", true};
+    EnumStringSetting<RecentMessagesApi> recentMessagesApi = {
+        "/misc/twitch/recentMessagesApi", RecentMessagesApi::Robotty};
     IntSetting twitchMessageHistoryLimit = {
         "/misc/twitch/messageHistoryLimit",
         800,

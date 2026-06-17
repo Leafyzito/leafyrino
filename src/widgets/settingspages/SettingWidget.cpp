@@ -252,6 +252,8 @@ template SettingWidget *SettingWidget::dropdown<StreamLinkPreferredQuality>(
     EnumStringSetting<StreamLinkPreferredQuality> &setting);
 template SettingWidget *SettingWidget::dropdown<ChatSendProtocol>(
     const QString &label, EnumStringSetting<ChatSendProtocol> &setting);
+template SettingWidget *SettingWidget::dropdown<RecentMessagesApi>(
+    const QString &label, EnumStringSetting<RecentMessagesApi> &setting);
 template SettingWidget *SettingWidget::dropdown<TabStyle>(
     const QString &label, EnumStringSetting<TabStyle> &setting);
 template SettingWidget *SettingWidget::dropdown<ShowModerationState>(

@@ -25,6 +25,8 @@ std::vector<Communi::IrcMessage *> parseRecentMessages(
 std::vector<MessagePtr> buildRecentMessages(
     std::vector<Communi::IrcMessage *> &messages, Channel *channel);
 
+QString recentMessagesApiUrlTemplate();
+
 QUrl constructRecentMessagesUrl(
     const QString &name, int limit,
     std::optional<std::chrono::time_point<std::chrono::system_clock>> after,

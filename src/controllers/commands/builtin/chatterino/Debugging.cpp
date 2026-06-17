@@ -14,6 +14,7 @@
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "messages/MessageElement.hpp"
+#include "providers/recentmessages/Impl.hpp"
 #include "providers/twitch/eventsub/Controller.hpp"
 #include "providers/twitch/PubSubManager.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
@@ -92,7 +93,8 @@ QString listEnvironmentVariables(const CommandContext &ctx)
     auto env = Env::get();
 
     QStringList debugMessages{
-        "recentMessagesApiUrl: " + env.recentMessagesApiUrl,
+        "recentMessagesApiUrl: " +
+            recentmessages::detail::recentMessagesApiUrlTemplate(),
         "linkResolverUrl: " + env.linkResolverUrl,
         "proxyUrl: " + env.proxyUrl.value_or("N/A"),
         "twitchServerHost: " + env.twitchServerHost,
