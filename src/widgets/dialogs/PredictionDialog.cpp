@@ -1499,8 +1499,11 @@ void PredictionDialog::updateUI()
     auto *layout = new QVBoxLayout(this->activeWidget_);
     const bool createMode = !hasOpenPrediction(this->currentPrediction_) &&
                             this->channel_->hasModRights();
+    const bool emptyViewerState =
+        !hasOpenPrediction(this->currentPrediction_) &&
+        !this->channel_->hasModRights();
     const int topMargin = margin;
-    const int bottomMargin = 0;
+    const int bottomMargin = emptyViewerState ? margin : 0;
 
     layout->setContentsMargins(margin, topMargin, margin, bottomMargin);
     layout->setSpacing(spacing);
