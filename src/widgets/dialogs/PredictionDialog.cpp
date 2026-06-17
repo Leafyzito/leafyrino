@@ -1500,9 +1500,7 @@ void PredictionDialog::updateUI()
     const bool createMode = !hasOpenPrediction(this->currentPrediction_) &&
                             this->channel_->hasModRights();
     const int topMargin = margin;
-    const int bottomMargin = this->currentPrediction_.has_value()
-                                 ? margin
-                                 : std::max(6, int(10 * rawScale));
+    const int bottomMargin = 0;
 
     layout->setContentsMargins(margin, topMargin, margin, bottomMargin);
     layout->setSpacing(spacing);
@@ -1903,13 +1901,21 @@ void PredictionDialog::buildCreateUI()
 
     // ── Bottom bar (pinned below scroll area) ──────────────
     const int pad = std::max(1, int(3 * effectiveScale));
+    const int wrapperPad = std::max(3, int(5 * rawScale));
     this->bottomWidget_ = new QWidget();
     this->bottomWidget_->setObjectName("PredictionBottomBar");
-    this->bottomWidget_->setFont(uiFont);
     this->bottomWidget_->setSizePolicy(QSizePolicy::Preferred,
                                        QSizePolicy::Fixed);
-    auto *bottomLayout = new QVBoxLayout(this->bottomWidget_);
-    bottomLayout->setContentsMargins(pad, pad, pad, pad);
+    auto *bottomWrapperLayout = new QVBoxLayout(this->bottomWidget_);
+    bottomWrapperLayout->setContentsMargins(wrapperPad, 0, wrapperPad,
+                                            wrapperPad);
+    bottomWrapperLayout->setSpacing(0);
+
+    auto *bottomBar = new QWidget(this->bottomWidget_);
+    bottomBar->setFont(uiFont);
+    bottomBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    auto *bottomLayout = new QVBoxLayout(bottomBar);
+    bottomLayout->setContentsMargins(0, pad, 0, 0);
     bottomLayout->setSpacing(sectionSpacing);
 
     {
@@ -1921,7 +1927,7 @@ void PredictionDialog::buildCreateUI()
         durationLabel->setFont(buttonFont);
         durationRow->addWidget(durationLabel);
 
-        auto *durationCombo = new QComboBox(this->bottomWidget_);
+        auto *durationCombo = new QComboBox(bottomBar);
         durationCombo->setObjectName("PredictionCreateDurationCombo");
         durationCombo->setFont(uiFont);
         durationCombo->setFixedHeight(compactControlHeight);
@@ -1958,7 +1964,7 @@ void PredictionDialog::buildCreateUI()
 
         auto *startBtn = new QPushButton(
             this->createInFlight_ ? "Starting..." : "Start Prediction",
-            this->bottomWidget_);
+            bottomBar);
         startBtn->setObjectName("PredictionCreateStartButton");
         startBtn->setFont(buttonFont);
         startBtn->setFixedHeight(compactControlHeight);
@@ -1971,6 +1977,7 @@ void PredictionDialog::buildCreateUI()
         bottomLayout->addLayout(actions);
     }
 
+    bottomWrapperLayout->addWidget(bottomBar);
     this->mainLayout_->addWidget(this->bottomWidget_);
 }
 
@@ -2364,19 +2371,27 @@ void PredictionDialog::buildManageUI()
 
     // ── Bottom bar (pinned below scroll area) ──────────────
     const int pad = std::max(1, int(3 * effectiveScale));
+    const int wrapperPad = std::max(3, int(5 * rawScale));
     this->bottomWidget_ = new QWidget();
     this->bottomWidget_->setObjectName("PredictionBottomBar");
-    this->bottomWidget_->setFont(uiFont);
     this->bottomWidget_->setSizePolicy(QSizePolicy::Preferred,
                                        QSizePolicy::Fixed);
-    auto *bottomLayout = new QVBoxLayout(this->bottomWidget_);
-    bottomLayout->setContentsMargins(pad, pad, pad, pad);
+    auto *bottomWrapperLayout = new QVBoxLayout(this->bottomWidget_);
+    bottomWrapperLayout->setContentsMargins(wrapperPad, 0, wrapperPad,
+                                            wrapperPad);
+    bottomWrapperLayout->setSpacing(0);
+
+    auto *bottomBar = new QWidget(this->bottomWidget_);
+    bottomBar->setFont(uiFont);
+    bottomBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    auto *bottomLayout = new QVBoxLayout(bottomBar);
+    bottomLayout->setContentsMargins(0, pad, 0, 0);
     bottomLayout->setSpacing(rowSpacing);
 
     const auto predictionId = prediction.id;
     auto makeCancelButton = [this, predictionId, compactControlHeight,
-                             buttonFont]() {
-        auto *cancelButton = new QPushButton("Delete", this->bottomWidget_);
+                             buttonFont, bottomBar]() {
+        auto *cancelButton = new QPushButton("Delete", bottomBar);
         cancelButton->setObjectName("PredictionManageDangerButton");
         cancelButton->setFont(buttonFont);
         cancelButton->setFixedHeight(compactControlHeight);
@@ -2436,8 +2451,7 @@ void PredictionDialog::buildManageUI()
 
     if (prediction.status == "ACTIVE")
     {
-        auto *lockButton =
-            new QPushButton("Lock Submissions", this->bottomWidget_);
+        auto *lockButton = new QPushButton("Lock Submissions", bottomBar);
         lockButton->setObjectName("PredictionManagePrimaryButton");
         lockButton->setFont(buttonFont);
         lockButton->setFixedHeight(compactControlHeight);
@@ -2496,7 +2510,7 @@ void PredictionDialog::buildManageUI()
     }
     else
     {
-        auto *resolveCombo = new QComboBox(this->bottomWidget_);
+        auto *resolveCombo = new QComboBox(bottomBar);
         resolveCombo->setObjectName("PredictionManageResolveCombo");
         resolveCombo->setFont(uiFont);
         resolveCombo->setFixedHeight(compactControlHeight);
@@ -2521,7 +2535,7 @@ void PredictionDialog::buildManageUI()
                          });
         bottomLayout->addWidget(resolveCombo);
 
-        auto *resolveButton = new QPushButton("Complete", this->bottomWidget_);
+        auto *resolveButton = new QPushButton("Complete", bottomBar);
         resolveButton->setObjectName("PredictionManagePrimaryButton");
         resolveButton->setFont(buttonFont);
         resolveButton->setFixedHeight(compactControlHeight);
@@ -2595,6 +2609,7 @@ void PredictionDialog::buildManageUI()
         bottomLayout->addLayout(actionsRow);
     }
 
+    bottomWrapperLayout->addWidget(bottomBar);
     layout->addStretch(1);
     this->mainLayout_->addWidget(this->bottomWidget_);
 }
@@ -3346,19 +3361,28 @@ void PredictionDialog::buildBettingUI()
     if (canWager || showBetSummary)
     {
         this->bottomWidget_ = new QWidget();
-        this->bottomWidget_->setObjectName("PredictionCard");
-        this->bottomWidget_->setFont(uiFont);
+        this->bottomWidget_->setObjectName("PredictionBottomBar");
         this->bottomWidget_->setSizePolicy(QSizePolicy::Preferred,
                                            QSizePolicy::Fixed);
-        auto *bottomLayout = new QVBoxLayout(this->bottomWidget_);
+        auto *bottomWrapperLayout = new QVBoxLayout(this->bottomWidget_);
+        const int wrapperPad = std::max(3, int(5 * rawScale));
+        bottomWrapperLayout->setContentsMargins(wrapperPad, 0, wrapperPad,
+                                                wrapperPad);
+        bottomWrapperLayout->setSpacing(0);
+
+        auto *bottomCard = new QWidget(this->bottomWidget_);
+        bottomCard->setObjectName("PredictionCard");
+        bottomCard->setFont(uiFont);
+        bottomCard->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        auto *bottomLayout = new QVBoxLayout(bottomCard);
         bottomLayout->setContentsMargins(sectionPad * 2, sectionPad * 1.5,
                                          sectionPad * 2, sectionPad * 1.5);
         bottomLayout->setSpacing(sectionSpacing);
 
         if (showBetSummary)
         {
-            auto *betSummaryLabel = new QLabel(formatBetSummaryHtml(prediction),
-                                               this->bottomWidget_);
+            auto *betSummaryLabel =
+                new QLabel(formatBetSummaryHtml(prediction), bottomCard);
             betSummaryLabel->setObjectName("PredictionBetSummaryLabel");
             betSummaryLabel->setFont(uiFont);
             betSummaryLabel->setTextFormat(Qt::RichText);
@@ -3369,7 +3393,7 @@ void PredictionDialog::buildBettingUI()
             const auto payoutText = formatBetPayoutSummaryText(prediction);
             if (!payoutText.isEmpty())
             {
-                auto *payoutLabel = new QLabel(payoutText, this->bottomWidget_);
+                auto *payoutLabel = new QLabel(payoutText, bottomCard);
                 payoutLabel->setObjectName("PredictionBetPayoutLabel");
                 payoutLabel->setFont(uiFont);
                 payoutLabel->setWordWrap(true);
@@ -3389,7 +3413,7 @@ void PredictionDialog::buildBettingUI()
                 auto *wagerRow = new QHBoxLayout();
                 wagerRow->setSpacing(rowSpacing);
 
-                auto *wagerLabel = new QLabel("Wager", this->bottomWidget_);
+                auto *wagerLabel = new QLabel("Wager", bottomCard);
                 wagerLabel->setObjectName("PredictionSectionTitle");
                 wagerLabel->setFont(buttonFont);
                 wagerRow->addWidget(wagerLabel);
@@ -3398,7 +3422,7 @@ void PredictionDialog::buildBettingUI()
                 auto *balLabel = new QLabel(
                     QString("Bal: %1").arg(
                         balance >= 0 ? formatChannelPoints(balance) : "..."),
-                    this->bottomWidget_);
+                    bottomCard);
                 balLabel->setObjectName("PredictionBalanceLabel");
                 balLabel->setFont(uiFont);
                 wagerRow->addWidget(balLabel);
@@ -3411,7 +3435,7 @@ void PredictionDialog::buildBettingUI()
                 auto *inputRow = new QHBoxLayout();
                 inputRow->setSpacing(rowSpacing);
 
-                amountInput = new QLineEdit(this->bottomWidget_);
+                amountInput = new QLineEdit(bottomCard);
                 amountInput->setObjectName("PredictionWagerInput");
                 amountInput->setFont(uiFont);
                 amountInput->setFixedHeight(compactControlHeight);
@@ -3439,7 +3463,7 @@ void PredictionDialog::buildBettingUI()
                     {"10%", 10}, {"25%", 25}, {"50%", 50}};
                 for (const auto &qp : quickPcts)
                 {
-                    auto *btn = new QPushButton(qp.label, this->bottomWidget_);
+                    auto *btn = new QPushButton(qp.label, bottomCard);
                     btn->setObjectName("PredictionWagerQuickButton");
                     btn->setFont(statFont);
                     btn->setFixedHeight(compactControlHeight);
@@ -3459,7 +3483,7 @@ void PredictionDialog::buildBettingUI()
                     inputRow->addWidget(btn);
                 }
 
-                auto *maxBtn = new QPushButton("MAX", this->bottomWidget_);
+                auto *maxBtn = new QPushButton("MAX", bottomCard);
                 maxBtn->setObjectName("PredictionWagerQuickButton");
                 maxBtn->setFont(statFont);
                 maxBtn->setFixedHeight(compactControlHeight);
@@ -3494,7 +3518,7 @@ void PredictionDialog::buildBettingUI()
                         authError.isEmpty() ? moltorinoAuthRequiredMessage(
                                                   "placing prediction bets")
                                             : authError,
-                        this->bottomWidget_);
+                        bottomCard);
                     noAuthLabel->setObjectName("PredictionInfoLabel");
                     noAuthLabel->setWordWrap(true);
                     noAuthLabel->setAlignment(Qt::AlignCenter);
@@ -3510,8 +3534,7 @@ void PredictionDialog::buildBettingUI()
                         const auto outcomeId = outcome.id;
                         const QColor btnColor = outcomeColor(i, outcome.color);
 
-                        auto *voteBtn =
-                            new QPushButton("Vote", this->bottomWidget_);
+                        auto *voteBtn = new QPushButton("Vote", bottomCard);
                         voteBtn->setObjectName("PredictionVoteButtonDynamic");
                         voteBtn->setFont(buttonFont);
                         voteBtn->setFixedHeight(compactControlHeight);
@@ -3683,8 +3706,7 @@ void PredictionDialog::buildBettingUI()
                         std::max(14, int(20 * effectiveScale));
                     const auto selectedOutcomeId = selectedOutcome->id;
                     const auto selectedOutcomeTitle = selectedOutcome->title;
-                    auto *voteBtn =
-                        new QPushButton("Vote", this->bottomWidget_);
+                    auto *voteBtn = new QPushButton("Vote", bottomCard);
                     voteBtn->setFont(buttonFont);
                     voteBtn->setFixedHeight(compactControlHeight);
                     voteBtn->setSizePolicy(QSizePolicy::Expanding,
@@ -3816,6 +3838,7 @@ void PredictionDialog::buildBettingUI()
 
         }  // canWager
 
+        bottomWrapperLayout->addWidget(bottomCard);
         this->mainLayout_->addWidget(this->bottomWidget_);
         this->bottomWidget_->show();
     }
