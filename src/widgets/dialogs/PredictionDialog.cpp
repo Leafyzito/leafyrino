@@ -1702,6 +1702,7 @@ void PredictionDialog::buildCreateUI()
         QString("Prediction title (%1 chars)").arg(TITLE_LIMIT));
     titleInput->setText(this->draftTitle_);
     titleInput->beforeShowPopup = [this, titleInput] {
+        this->ensurePinned();
         return this->populatePredictionTemplates(titleInput);
     };
     QObject::connect(titleInput->lineEdit(), &QLineEdit::textEdited, this,
