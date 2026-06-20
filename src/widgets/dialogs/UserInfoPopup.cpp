@@ -126,6 +126,8 @@ constexpr QStringView SEVENTV_TWITCH_USER_API =
 constexpr QStringView SEVENTV_KICK_USER_API =
     u"https://7tv.io/v3/users/kick/%1";
 constexpr QStringView SEVENTV_USER_PAGE = u"https://7tv.app/users/";
+constexpr QStringView SUSGEE_PAINT_PAGE =
+    u"https://susgee.dev/paint/%1?utm_source=leafyrino";
 
 using namespace chatterino;
 
@@ -288,6 +290,46 @@ private:
     QHBoxLayout layout_;
 };
 
+class ClickablePaintName final : public Button
+{
+public:
+    ClickablePaintName()
+        : Button(nullptr)
+        , layout_(this)
+    {
+        this->layout_.setContentsMargins(0, 0, 0, 0);
+        this->layout_.setSpacing(0);
+        this->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        this->setCursor(Qt::PointingHandCursor);
+
+        this->pixmapLabel_ = new QLabel(this);
+        this->pixmapLabel_->setSizePolicy(QSizePolicy::Fixed,
+                                          QSizePolicy::Fixed);
+        this->pixmapLabel_->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        this->pixmapLabel_->setAttribute(Qt::WA_TransparentForMouseEvents);
+        this->layout_.addWidget(this->pixmapLabel_);
+    }
+
+    QLabel *pixmapLabel() const
+    {
+        return this->pixmapLabel_;
+    }
+
+protected:
+    void paintEvent(QPaintEvent * /*event*/) override
+    {
+        // Keep Button's reliable click handling without its hover/click wash.
+    }
+
+    void paintContent(QPainter & /*painter*/) override
+    {
+    }
+
+private:
+    QHBoxLayout layout_;
+    QLabel *pixmapLabel_ = nullptr;
+};
+
 Label *addCopyableLabel(LayoutCreator<QHBoxLayout> box, const char *tooltip,
                         PixmapButton **copyButton = nullptr)
 {
@@ -338,7 +380,7 @@ void createUsercardStatusRow(LayoutCreator<QVBoxLayout> &vbox, QWidget **rowOut,
 }
 
 void createUsercardPaintRow(LayoutCreator<QVBoxLayout> &vbox, QWidget **rowOut,
-                            QLabel **pixmapOut)
+                            QLabel **pixmapOut, Button **paintNameButtonOut)
 {
     auto *row = new QWidget;
     auto *layout = new QHBoxLayout(row);
@@ -349,17 +391,16 @@ void createUsercardPaintRow(LayoutCreator<QVBoxLayout> &vbox, QWidget **rowOut,
     prefixLabel->setPadding({});
     layout->addWidget(prefixLabel, 0, Qt::AlignVCenter);
 
-    auto *paintPixmap = new QLabel(row);
-    paintPixmap->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    paintPixmap->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    layout->addWidget(paintPixmap, 0, Qt::AlignVCenter);
+    auto *paintNameButton = new ClickablePaintName;
+    layout->addWidget(paintNameButton, 0, Qt::AlignVCenter);
     layout->addStretch(1);
 
     row->setVisible(false);
     vbox->addWidget(row);
 
     *rowOut = row;
-    *pixmapOut = paintPixmap;
+    *pixmapOut = paintNameButton->pixmapLabel();
+    *paintNameButtonOut = paintNameButton;
 }
 
 void createUsercardColorRow(LayoutCreator<QVBoxLayout> &vbox, QWidget **rowOut,
@@ -1435,8 +1476,24 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                     }
                 });
             }
+            Button *seventvPaintNameButton = nullptr;
             createUsercardPaintRow(vbox, &this->ui_.seventvPaintRow,
-                                   &this->ui_.seventvPaintPixmapLabel);
+                                   &this->ui_.seventvPaintPixmapLabel,
+                                   &seventvPaintNameButton);
+            if (seventvPaintNameButton)
+            {
+                QObject::connect(
+                    seventvPaintNameButton, &Button::leftClicked, this, [this] {
+                        if (!this->seventvPaint_ ||
+                            this->seventvPaint_->id.isEmpty())
+                        {
+                            return;
+                        }
+
+                        QDesktopServices::openUrl(QUrl(
+                            SUSGEE_PAINT_PAGE.arg(this->seventvPaint_->id)));
+                    });
+            }
             vbox.emplace<Label>("").assign(&this->ui_.statusLabel);
             vbox.emplace<Label>("").assign(&this->ui_.chatterCountLabel);
             createUsercardStatusRow(vbox, &this->ui_.followageRow,
