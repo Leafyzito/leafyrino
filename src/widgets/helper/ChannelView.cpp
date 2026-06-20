@@ -713,11 +713,7 @@ std::optional<QString> chatVaultBadgeUrl(const QString &setID,
     if (twitchChannel != nullptr)
     {
         static const QSet<QString> globalBadges = {
-            "lead_moderator",
-            "moderator",
-            "vip",
-            "broadcaster",
-            "founder",
+            "lead_moderator", "moderator", "vip", "broadcaster", "founder",
         };
         static const QSet<QString> channelBadges = {
             "subscriber",
