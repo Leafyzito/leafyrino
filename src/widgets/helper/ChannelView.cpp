@@ -692,6 +692,56 @@ std::optional<QString> chatVaultEmoteUrl(const Emote &emote)
     return std::nullopt;
 }
 
+std::optional<QString> chatVaultBadgeUrl(const QString &setID,
+                                         const QString &version,
+                                         const TwitchChannel *twitchChannel)
+{
+    const auto trimmedSetID = setID.trimmed();
+    if (trimmedSetID.isEmpty())
+    {
+        return std::nullopt;
+    }
+
+    QString path = trimmedSetID;
+
+    const auto trimmedVersion = version.trimmed();
+    if (!trimmedVersion.isEmpty())
+    {
+        path += QLatin1Char('/') + trimmedVersion;
+    }
+
+    if (twitchChannel != nullptr)
+    {
+        static const QSet<QString> globalBadges = {
+            "lead_moderator",
+            "moderator",
+            "vip",
+            "broadcaster",
+        };
+        static const QSet<QString> channelBadges = {
+            "subscriber",
+            "founder",
+            "bits",
+        };
+
+        if (!globalBadges.contains(trimmedSetID))
+        {
+            const bool needsChannel =
+                channelBadges.contains(trimmedSetID) ||
+                twitchChannel->twitchBadge(trimmedSetID, trimmedVersion)
+                    .has_value();
+
+            const auto roomId = twitchChannel->roomId();
+            if (!roomId.isEmpty() && needsChannel)
+            {
+                path += QLatin1Char('/') + roomId;
+            }
+        }
+    }
+
+    return QStringLiteral("https://chatvau.lt/badge/twitch/%1").arg(path);
+}
+
 ScrollbarHighlight scrollbarHighlightForMessage(
     const MessagePtr &message, const QSet<QString> &nukePreviewMessageIds)
 {
@@ -801,7 +851,8 @@ QMenu *addEmoteContextMenuItems(QMenu *menu, const Emote &emote,
 }
 
 void addImageContextMenuItems(QMenu *menu,
-                              const MessageLayoutElement *hoveredElement)
+                              const MessageLayoutElement *hoveredElement,
+                              const TwitchChannel *twitchChannel)
 {
     if (hoveredElement == nullptr)
     {
@@ -824,12 +875,13 @@ void addImageContextMenuItems(QMenu *menu,
                 const auto slug = *badgeElement->twitchBadgeSlug();
                 const auto version =
                     badgeElement->twitchBadgeVersion().value_or(QString());
-                openMenu->addSeparator();
-                openMenu->addAction("Open in &Chat Vault", [slug, version] {
-                    QDesktopServices::openUrl(
-                        QUrl("https://chatvau.lt/badge/twitch/" + slug + "/" +
-                             version));
-                });
+                if (auto url = chatVaultBadgeUrl(slug, version, twitchChannel))
+                {
+                    openMenu->addSeparator();
+                    openMenu->addAction("Open in &Chat Vault", [url = *url] {
+                        QDesktopServices::openUrl(QUrl(url));
+                    });
+                }
             }
         }
     }
@@ -3644,7 +3696,9 @@ void ChannelView::addContextMenuItems(
     menu->setAttribute(Qt::WA_DeleteOnClose);
 
     // Add image options if the element clicked contains an image (e.g. a badge or an emote)
-    addImageContextMenuItems(menu, hoveredElement);
+    const auto *twitchChannel =
+        dynamic_cast<TwitchChannel *>(this->underlyingChannel().get());
+    addImageContextMenuItems(menu, hoveredElement, twitchChannel);
 
     // Add link options if the element clicked contains a link
     addLinkContextMenuItems(menu, hoveredElement);
