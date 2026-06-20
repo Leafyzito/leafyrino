@@ -717,10 +717,10 @@ std::optional<QString> chatVaultBadgeUrl(const QString &setID,
             "moderator",
             "vip",
             "broadcaster",
+            "founder",
         };
         static const QSet<QString> channelBadges = {
             "subscriber",
-            "founder",
             "bits",
         };
 
