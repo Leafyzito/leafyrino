@@ -32,14 +32,29 @@ const QRegularExpression ESCAPE_TAG_REGEX(
     QRegularExpression::UseUnicodePropertiesOption);
 
 QString formatCompactWithSuffix(double value, QChar suffix,
-                                const QLocale &locale)
+                                const QLocale &locale, int fractionDigits)
 {
-    auto text = locale.toString(value, 'f', 1);
-    const auto trailingZero = QString(locale.decimalPoint()) + QChar('0');
+    auto text = locale.toString(value, 'f', fractionDigits);
 
-    if (text.endsWith(trailingZero))
+    if (fractionDigits > 0)
     {
-        text.chop(trailingZero.size());
+        const QString decimalPoint = locale.decimalPoint();
+        while (text.contains(decimalPoint))
+        {
+            if (text.endsWith(u'0'))
+            {
+                text.chop(1);
+            }
+            else if (text.endsWith(decimalPoint))
+            {
+                text.chop(1);
+                break;
+            }
+            else
+            {
+                break;
+            }
+        }
     }
 
     text += suffix;
@@ -208,7 +223,7 @@ QString kFormatNumbers(const int &number)
     return QString("%1K").arg(number / 1000);
 }
 
-QString formatCompactNumber(qint64 number)
+QString formatCompactNumber(qint64 number, int fractionDigits)
 {
     const auto locale = getSystemLocale();
     const bool negative = number < 0;
@@ -226,8 +241,8 @@ QString formatCompactNumber(qint64 number)
 
     if (absolute < 10'000)
     {
-        return withSign(
-            formatCompactWithSuffix(absolute / 1000.0, u'k', locale));
+        return withSign(formatCompactWithSuffix(absolute / 1000.0, u'k', locale,
+                                                fractionDigits));
     }
 
     if (absolute < 1'000'000)
@@ -237,8 +252,8 @@ QString formatCompactNumber(qint64 number)
 
     if (absolute < 10'000'000)
     {
-        return withSign(
-            formatCompactWithSuffix(absolute / 1'000'000.0, u'm', locale));
+        return withSign(formatCompactWithSuffix(absolute / 1'000'000.0, u'm',
+                                                locale, fractionDigits));
     }
 
     if (absolute < 1'000'000'000)
@@ -248,8 +263,8 @@ QString formatCompactNumber(qint64 number)
 
     if (absolute < 10'000'000'000)
     {
-        return withSign(
-            formatCompactWithSuffix(absolute / 1'000'000'000.0, u'b', locale));
+        return withSign(formatCompactWithSuffix(absolute / 1'000'000'000.0,
+                                                u'b', locale, fractionDigits));
     }
 
     if (absolute < 1'000'000'000'000)
@@ -260,7 +275,7 @@ QString formatCompactNumber(qint64 number)
     if (absolute < 10'000'000'000'000)
     {
         return withSign(formatCompactWithSuffix(absolute / 1'000'000'000'000.0,
-                                                u'T', locale));
+                                                u'T', locale, fractionDigits));
     }
 
     return withSign(locale.toString(absolute / 1'000'000'000'000) + QChar('T'));

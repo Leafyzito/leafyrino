@@ -40,6 +40,7 @@ TEST(Helpers, formatCompactNumber)
     EXPECT_EQ(formatCompactNumber(15'000), "15k");
     EXPECT_EQ(formatCompactNumber(1'000'000), "1m");
     EXPECT_EQ(formatCompactNumber(1'500'000), "1.5m");
+    EXPECT_EQ(formatCompactNumber(1'884'000, 2), "1.88m");
     EXPECT_EQ(formatCompactNumber(10'000'000), "10m");
     EXPECT_EQ(formatCompactNumber(1'500'000'000), "1.5b");
     EXPECT_EQ(formatCompactNumber(1'000'000'000'000), "1T");

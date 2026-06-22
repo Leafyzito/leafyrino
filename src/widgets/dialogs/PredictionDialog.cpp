@@ -285,6 +285,40 @@ void applyLocalPredictionBet(TwitchChannel::PredictionEvent &prediction,
     prediction.selfOutcomeId = outcomeId;
 }
 
+void applyLocalChannelPointsSpend(TwitchChannel *channel, int points)
+{
+    if (channel == nullptr || points <= 0)
+    {
+        return;
+    }
+
+    const auto balance = channel->channelPointBalance();
+    if (balance >= points)
+    {
+        channel->setChannelPointBalance(balance - points);
+    }
+
+    channel->refreshChannelPointsIfStale(true);
+}
+
+void updatePredictionBalanceLabel(QWidget *root, TwitchChannel *channel)
+{
+    if (root == nullptr || channel == nullptr)
+    {
+        return;
+    }
+
+    auto *balLabel = root->findChild<QLabel *>("PredictionBalanceLabel");
+    if (balLabel == nullptr)
+    {
+        return;
+    }
+
+    const qint64 balance = channel->channelPointBalance();
+    balLabel->setText(QString("Bal: %1").arg(
+        balance >= 0 ? formatChannelPoints(balance) : "..."));
+}
+
 QString formatBetSummaryHtml(const TwitchChannel::PredictionEvent &prediction)
 {
     const auto *betOutcome =
@@ -632,6 +666,16 @@ PredictionDialog::PredictionDialog(TwitchChannel *channel, QWidget *parent)
     this->managedConnections_.emplace_back(
         this->channel_->predictionChanged.connect([this] {
             this->setPrediction(*this->channel_->accessPrediction());
+        }));
+    this->managedConnections_.emplace_back(
+        this->channel_->channelPointsChanged.connect([this] {
+            if (this->isBroadcasterView() ||
+                !this->currentPrediction_.has_value() ||
+                this->currentPrediction_->status != "ACTIVE")
+            {
+                return;
+            }
+            updatePredictionBalanceLabel(this, this->channel_);
         }));
 
     auto *container = this->getLayoutContainer();
@@ -1007,6 +1051,8 @@ void PredictionDialog::updateInPlace()
 
     // Refresh the header subtitle (timer, status text)
     this->refreshHeader();
+
+    updatePredictionBalanceLabel(this, this->channel_);
 }
 
 void PredictionDialog::themeChangedEvent()
@@ -3658,6 +3704,9 @@ void PredictionDialog::buildBettingUI()
                                                         std::move(
                                                             *mutatedPrediction));
                                             }
+
+                                            applyLocalChannelPointsSpend(
+                                                self->channel_, points);
                                         }
 
                                         /*
@@ -3799,6 +3848,9 @@ void PredictionDialog::buildBettingUI()
                                             self->channel_->setActivePrediction(
                                                 std::move(*mutatedPrediction));
                                         }
+
+                                        applyLocalChannelPointsSpend(
+                                            self->channel_, points);
                                     }
 
                                     /*

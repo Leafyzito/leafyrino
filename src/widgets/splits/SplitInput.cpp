@@ -139,7 +139,7 @@ QString formatChannelPointsValue(qint64 balance)
         return QStringLiteral("...");
     }
 
-    return formatCompactNumber(balance);
+    return formatCompactNumber(balance, 2);
 }
 
 QString formatChannelPointsToolTip(qint64 balance)
