@@ -157,6 +157,7 @@ jobs:
           }
           rename_if_exists Chatterino-ubuntu-22.04-Qt-6.7.2.deb Chatterino-Ubuntu-22.04-Qt6.deb
           rename_if_exists Chatterino-ubuntu-24.04-Qt-6.7.2.deb Chatterino-Ubuntu-24.04-Qt6.deb
+          rename_if_exists Chatterino-ubuntu-24.04-Qt-6.9.3.deb Chatterino-Ubuntu-24.04-Qt6.deb
           for appimage in Leafyrino-x86_64-Qt-*.AppImage; do
             [ -f "$appimage" ] || continue
             mv "$appimage" Leafyrino-x86_64-Qt6.AppImage
