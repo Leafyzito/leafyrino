@@ -69,11 +69,30 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            cmake g++ git pkg-config \
-            libboost-dev libnotify-dev libssl-dev libsecret-1-dev \
-            hunspell libhunspell-dev \
-            file fuse libfuse2 patchelf
+          PACKAGES="cmake g++ git pkg-config libboost-dev libnotify-dev libssl-dev libsecret-1-dev hunspell libhunspell-dev file fuse libfuse2 patchelf"
+          if [ "${{ matrix.os }}" = "ubuntu-24.04" ]; then
+            PACKAGES="$PACKAGES libboost-json-dev"
+          fi
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $PACKAGES
+
+      - name: Cache Boost (Ubuntu 22.04)
+        if: matrix.os == 'ubuntu-22.04'
+        uses: actions/cache@v4
+        id: boost-cache
+        with:
+          path: ~/boost-1.83.0
+          key: boost-1.83.0-ubuntu-22.04-v1
+
+      - name: Install Boost with JSON (Ubuntu 22.04)
+        if: matrix.os == 'ubuntu-22.04' && steps.boost-cache.outputs.cache-hit != 'true'
+        run: |
+          BOOST_VER=1.83.0
+          BOOST_PREFIX="$HOME/boost-${BOOST_VER}"
+          wget -q "https://archives.boost.io/release/${BOOST_VER}/source/boost_1_83_0.tar.gz"
+          tar xf boost_1_83_0.tar.gz
+          cd boost_1_83_0
+          ./bootstrap.sh --prefix="${BOOST_PREFIX}"
+          ./b2 install --with-json --prefix="${BOOST_PREFIX}" -j"$(nproc)"
 
       - name: Install Qt6
         uses: jurplel/install-qt-action@v4.3.1
@@ -110,6 +129,9 @@ jobs:
         run: |
           mkdir build
           cd build
+          if [ "${{ matrix.os }}" = "ubuntu-22.04" ]; then
+            export CMAKE_PREFIX_PATH="$HOME/boost-1.83.0${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
+          fi
           CXXFLAGS=-fno-sized-deallocation cmake \
             -DCMAKE_INSTALL_PREFIX=appdir/usr/ \
             -DCMAKE_BUILD_TYPE=Release \
