@@ -53,7 +53,7 @@ jobs:
         with:
           cache: true
           cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-v2
-          modules: qtimageformats,qtcharts
+          modules: qtimageformats qtcharts
           version: ${{ matrix.qt-version }}
 
       - name: Install httpbox

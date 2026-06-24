@@ -29,7 +29,7 @@ jobs:
         skip-crashpad: [false]
       fail-fast: false
     env:
-      QT_MODULES: qtimageformats,qtcharts
+      QT_MODULES: qtimageformats qtcharts
       C2_USE_OPENSSL3: ${{ case(startsWith(matrix.qt-version, '6.'), 'True', 'False') }}
       C2_CONAN_CACHE_SUFFIX: ${{ case(startsWith(matrix.qt-version, '6.'), '-QT6', '') }}
 
