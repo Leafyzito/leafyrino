@@ -40,12 +40,20 @@ jobs:
     strategy:
       matrix:
         include:
+          - os: ubuntu-22.04
+            qt-version: 6.7.2
+            force-lto: false
+            skip-artifact: false
+            skip-crashpad: false
+            build-appimage: true
+            build-deb: true
+            plugins: true
           - os: ubuntu-24.04
             qt-version: 6.9.3
             force-lto: false
             skip-artifact: false
             skip-crashpad: false
-            build-appimage: true
+            build-appimage: false
             build-deb: true
             plugins: true
     env:
