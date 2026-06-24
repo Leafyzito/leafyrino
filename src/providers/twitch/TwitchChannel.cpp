@@ -12,6 +12,7 @@
 #include "common/network/NetworkResult.hpp"
 #include "common/QLogging.hpp"
 #include "controllers/accounts/AccountController.hpp"
+#include "controllers/channelpoints/ChannelPointsChartStore.hpp"
 #include "controllers/emotes/EmoteController.hpp"
 #include "controllers/notifications/NotificationController.hpp"
 #include "controllers/twitch/LiveController.hpp"
@@ -5150,6 +5151,7 @@ void TwitchChannel::handleUserPointsUpdate(const QJsonObject &payload)
     qCDebug(chatterinoTwitch) << "[Points] PubSub update for" << this->getName()
                               << "type:" << type << "balance:" << newBalance;
 
+    ChannelPointsChartStore::recordSample(channelId, newBalance);
     this->setChannelPointBalance(newBalance);
 }
 
@@ -5852,6 +5854,8 @@ void TwitchChannel::refreshChannelPoints()
                     << channel->getName();
                 */
                 channel->setChannelPointBalance(points);
+                ChannelPointsChartStore::recordSample(channel->roomId(),
+                                                      points);
                 channel->lastChannelPointsError_.clear();
                 channel->channelPointsChanged.invoke();
             });

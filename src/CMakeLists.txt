@@ -329,6 +329,9 @@ set(SOURCE_FILES
         controllers/twitch/LiveController.cpp
         controllers/twitch/LiveController.hpp
 
+        controllers/channelpoints/ChannelPointsChartStore.cpp
+        controllers/channelpoints/ChannelPointsChartStore.hpp
+
         controllers/userdata/UserDataController.cpp
         controllers/userdata/UserDataController.hpp
         controllers/userdata/UserData.hpp
@@ -803,6 +806,10 @@ set(SOURCE_FILES
         widgets/dialogs/ChannelFilterEditorDialog.hpp
         widgets/dialogs/ChannelPointsDialog.cpp
         widgets/dialogs/ChannelPointsDialog.hpp
+        widgets/dialogs/ChannelPointsChartDialog.cpp
+        widgets/dialogs/ChannelPointsChartDialog.hpp
+        widgets/dialogs/ChannelPointsChartView.cpp
+        widgets/dialogs/ChannelPointsChartView.hpp
         widgets/dialogs/ColorPickerDialog.cpp
         widgets/dialogs/ColorPickerDialog.hpp
         widgets/dialogs/EditHotkeyDialog.cpp
@@ -1097,6 +1104,7 @@ target_link_libraries(${LIBRARY_PROJECT}
         Qt${MAJOR_QT_VERSION}::Svg
         Qt${MAJOR_QT_VERSION}::SvgWidgets
         Qt${MAJOR_QT_VERSION}::Concurrent
+        Qt${MAJOR_QT_VERSION}::Charts
 
         LibCommuni::LibCommuni
         Pajlada::Serialize
