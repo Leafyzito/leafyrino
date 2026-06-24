@@ -2,8 +2,6 @@
 
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
 
-#    include "widgets/dialogs/ChannelPointsChartDialog.hpp"
-
 #    include "Application.hpp"
 #    include "providers/twitch/TwitchChannel.hpp"
 #    include "singletons/Fonts.hpp"
@@ -12,9 +10,10 @@
 #    include "util/WidgetHelpers.hpp"
 #    include "widgets/buttons/Button.hpp"
 #    include "widgets/buttons/SvgButton.hpp"
+#    include "widgets/dialogs/ChannelPointsChartDialog.hpp"
+#    include "widgets/dialogs/ChannelPointsChartView.hpp"
 #    include "widgets/helper/InvisibleSizeGrip.hpp"
 #    include "widgets/helper/Line.hpp"
-#    include "widgets/dialogs/ChannelPointsChartView.hpp"
 
 #    include <QCursor>
 #    include <QGridLayout>
@@ -94,7 +93,8 @@ ChannelPointsChartDialog::ChannelPointsChartDialog(TwitchChannel *channel,
     headerTextLayout->addWidget(this->headerTitleLabel_);
 
     this->headerSubtitleLabel_ = new QLabel(this->headerWidget_);
-    this->headerSubtitleLabel_->setObjectName("ChannelPointsChartHeaderSubtitle");
+    this->headerSubtitleLabel_->setObjectName(
+        "ChannelPointsChartHeaderSubtitle");
     this->headerSubtitleLabel_->setWordWrap(true);
     headerTextLayout->addWidget(this->headerSubtitleLabel_);
 
@@ -235,7 +235,8 @@ void ChannelPointsChartDialog::refreshStyle()
     auto mutedText = theme->window.text;
     mutedText.setAlpha(180);
 
-    this->getLayoutContainer()->setStyleSheet(QStringLiteral(R"(
+    this->getLayoutContainer()->setStyleSheet(
+        QStringLiteral(R"(
         QWidget#ChannelPointsChartDialogRoot {
             background: %1;
         }
@@ -246,8 +247,7 @@ void ChannelPointsChartDialog::refreshStyle()
             color: %3;
         }
     )")
-                                   .arg(background, text,
-                                        mutedText.name(QColor::HexArgb)));
+            .arg(background, text, mutedText.name(QColor::HexArgb)));
 
     if (auto *separator =
             this->findChild<QWidget *>("ChannelPointsChartDialogSeparator"))
@@ -262,8 +262,8 @@ void ChannelPointsChartDialog::applySizeConstraints()
 {
     const int minWidth =
         std::max(280, int(DEFAULT_DIALOG_SIZE.width() * 0.65F * this->scale()));
-    const int minHeight =
-        std::max(180, int(DEFAULT_DIALOG_SIZE.height() * 0.65F * this->scale()));
+    const int minHeight = std::max(
+        180, int(DEFAULT_DIALOG_SIZE.height() * 0.65F * this->scale()));
     const int defaultWidth =
         std::max(minWidth, int(DEFAULT_DIALOG_SIZE.width() * this->scale()));
     const int defaultHeight =

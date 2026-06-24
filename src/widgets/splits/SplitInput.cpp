@@ -54,8 +54,8 @@
 
 #include <QActionGroup>
 #include <QCompleter>
-#include <QDateTime>
 #include <QContextMenuEvent>
+#include <QDateTime>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMouseEvent>

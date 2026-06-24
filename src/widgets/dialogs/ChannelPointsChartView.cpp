@@ -2,11 +2,10 @@
 
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
 
-#    include "widgets/dialogs/ChannelPointsChartView.hpp"
-
 #    include "controllers/channelpoints/ChannelPointsChartStore.hpp"
 #    include "singletons/Theme.hpp"
 #    include "util/Helpers.hpp"
+#    include "widgets/dialogs/ChannelPointsChartView.hpp"
 
 #    include <QAreaSeries>
 #    include <QChart>
@@ -26,8 +25,8 @@
 #    include <QPen>
 #    include <QPushButton>
 #    include <QTimer>
-#    include <QVBoxLayout>
 #    include <QValueAxis>
+#    include <QVBoxLayout>
 
 #    include <algorithm>
 #    include <limits>
@@ -177,10 +176,10 @@ QVector<ChannelPointsChartSample> samplesForRange(
 
     if (!result.isEmpty() && result.first().time > *start)
     {
-        const auto it = std::find_if(all.rbegin(), all.rend(),
-                                     [&](const auto &sample) {
-                                         return sample.time < *start;
-                                     });
+        const auto it =
+            std::find_if(all.rbegin(), all.rend(), [&](const auto &sample) {
+                return sample.time < *start;
+            });
         if (it != all.rend())
         {
             result.prepend(*it);
@@ -345,11 +344,12 @@ public:
         auto *baseline = new QLineSeries(this->chart);
         const auto minTime = this->samples.first().time.toMSecsSinceEpoch();
         const auto maxTime = this->samples.last().time.toMSecsSinceEpoch();
-        const auto minBalance = std::min_element(
-            this->samples.begin(), this->samples.end(),
-            [](const auto &left, const auto &right) {
-                return left.balance < right.balance;
-            })->balance;
+        const auto minBalance =
+            std::min_element(this->samples.begin(), this->samples.end(),
+                             [](const auto &left, const auto &right) {
+                                 return left.balance < right.balance;
+                             })
+                ->balance;
         baseline->append(minTime, minBalance);
         baseline->append(maxTime, minBalance);
 
@@ -383,8 +383,7 @@ public:
             this->chart->addAxis(this->axisY, Qt::AlignLeft);
         }
 
-        const auto spanSeconds = qMax<qint64>(
-            1, (maxTime - minTime) / 1000);
+        const auto spanSeconds = qMax<qint64>(1, (maxTime - minTime) / 1000);
         this->axisX->setFormat(utcAxisFormat(spanSeconds));
         this->axisX->setTitleText(QStringLiteral("UTC"));
         this->axisX->setRange(QDateTime::fromMSecsSinceEpoch(minTime),
@@ -402,9 +401,8 @@ public:
         maxY += padding;
 
         this->axisY->setRange(minY, maxY);
-        this->axisY->setLabelFormat(
-            maxY >= 1'000'000 ? QStringLiteral("%.1e")
-                              : QStringLiteral("%.0f"));
+        this->axisY->setLabelFormat(maxY >= 1'000'000 ? QStringLiteral("%.1e")
+                                                      : QStringLiteral("%.0f"));
         this->axisY->setTitleText(QStringLiteral("Channel points"));
         this->axisY->setTickCount(8);
 
@@ -430,8 +428,8 @@ public:
             return;
         }
 
-        const auto chartPos = this->chart->mapToValue(viewportPos,
-                                                      this->lineSeries);
+        const auto chartPos =
+            this->chart->mapToValue(viewportPos, this->lineSeries);
         const auto index = nearestSampleIndex(
             this->samples,
             QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(chartPos.x())));
@@ -462,8 +460,8 @@ public:
 
         if (this->highlightDot == nullptr)
         {
-            this->highlightDot = new QGraphicsEllipseItem(-5, -5, 10, 10,
-                                                          this->chart);
+            this->highlightDot =
+                new QGraphicsEllipseItem(-5, -5, 10, 10, this->chart);
             this->highlightDot->setBrush(this->accentColor);
             this->highlightDot->setPen(Qt::NoPen);
             this->highlightDot->setZValue(11);
@@ -478,15 +476,15 @@ public:
             const auto delta =
                 sample.balance - this->samples[index - 1].balance;
             const auto sign = delta >= 0 ? QStringLiteral("+") : QString();
-            callout += QStringLiteral("\n") + sign +
-                       QLocale().toString(delta) +
+            callout += QStringLiteral("\n") + sign + QLocale().toString(delta) +
                        QStringLiteral(" since previous");
         }
 
         this->calloutLabel->setText(callout);
         this->calloutLabel->adjustSize();
 
-        auto calloutPos = point + QPointF(12, -this->calloutLabel->height() - 8);
+        auto calloutPos =
+            point + QPointF(12, -this->calloutLabel->height() - 8);
         const auto maxX = plotArea.right() - this->calloutLabel->width() - 4;
         const auto maxY = plotArea.bottom() - this->calloutLabel->height() - 4;
         calloutPos.setX(qBound(plotArea.left() + 4.0, calloutPos.x(), maxX));
@@ -506,20 +504,22 @@ ChannelPointsChartView::ChannelPointsChartView(QWidget *parent)
     layout->setSpacing(0);
 
     this->d_->toolbarWidget = new QWidget(this);
-    this->d_->toolbarWidget->setObjectName(QStringLiteral("ChannelPointsChartToolbar"));
+    this->d_->toolbarWidget->setObjectName(
+        QStringLiteral("ChannelPointsChartToolbar"));
     auto *toolbarLayout = new QHBoxLayout(this->d_->toolbarWidget);
     toolbarLayout->setContentsMargins(8, 6, 8, 4);
     toolbarLayout->setSpacing(6);
 
-    auto *rangeLabel = new QLabel(QStringLiteral("Range:"),
-                                  this->d_->toolbarWidget);
+    auto *rangeLabel =
+        new QLabel(QStringLiteral("Range:"), this->d_->toolbarWidget);
     rangeLabel->setObjectName(QStringLiteral("ChannelPointsChartRangeLabel"));
 
     this->d_->rangeCombo = new QComboBox(this->d_->toolbarWidget);
     this->d_->rangeCombo->setObjectName(
         QStringLiteral("ChannelPointsChartRangeCombo"));
     populateRangeCombo(this->d_->rangeCombo);
-    if (auto *listView = qobject_cast<QListView *>(this->d_->rangeCombo->view()))
+    if (auto *listView =
+            qobject_cast<QListView *>(this->d_->rangeCombo->view()))
     {
         listView->setSpacing(2);
         listView->setMouseTracking(true);
@@ -527,8 +527,8 @@ ChannelPointsChartView::ChannelPointsChartView(QWidget *parent)
     this->d_->rangeCombo->setToolTip(
         QStringLiteral("Show only points recorded in the selected period"));
 
-    this->d_->resetButton = new QPushButton(QStringLiteral("Reset"),
-                                            this->d_->toolbarWidget);
+    this->d_->resetButton =
+        new QPushButton(QStringLiteral("Reset"), this->d_->toolbarWidget);
     this->d_->resetButton->setObjectName(
         QStringLiteral("ChannelPointsChartResetButton"));
     this->d_->resetButton->setEnabled(false);
@@ -541,8 +541,8 @@ ChannelPointsChartView::ChannelPointsChartView(QWidget *parent)
 
     layout->addWidget(this->d_->toolbarWidget);
 
-    this->d_->emptyLabel = new QLabel(
-        QStringLiteral("No chart data yet for this channel."), this);
+    this->d_->emptyLabel =
+        new QLabel(QStringLiteral("No chart data yet for this channel."), this);
     this->d_->emptyLabel->setAlignment(Qt::AlignCenter);
     this->d_->emptyLabel->setWordWrap(true);
     layout->addWidget(this->d_->emptyLabel, 1);
@@ -653,18 +653,16 @@ void ChannelPointsChartView::applyTheme(const Theme &theme)
     this->d_->emptyLabel->setStyleSheet(
         QStringLiteral("color: %1;").arg(muted.name(QColor::HexArgb)));
 
-    this->d_->calloutLabel->setStyleSheet(QStringLiteral(
-        "QLabel#ChannelPointsChartCallout {"
-        " background-color: %1;"
-        " color: %2;"
-        " border: 1px solid %3;"
-        " border-radius: 6px;"
-        " padding: 6px 8px;"
-        "}")
-                                              .arg(background.darker(115)
-                                                       .name(QColor::HexArgb),
-                                                   text.name(QColor::HexArgb),
-                                                   grid.name(QColor::HexArgb)));
+    this->d_->calloutLabel->setStyleSheet(
+        QStringLiteral("QLabel#ChannelPointsChartCallout {"
+                       " background-color: %1;"
+                       " color: %2;"
+                       " border: 1px solid %3;"
+                       " border-radius: 6px;"
+                       " padding: 6px 8px;"
+                       "}")
+            .arg(background.darker(115).name(QColor::HexArgb),
+                 text.name(QColor::HexArgb), grid.name(QColor::HexArgb)));
 
     this->d_->chartView->setStyleSheet(
         QStringLiteral("background: %1; border: none;")
@@ -672,7 +670,8 @@ void ChannelPointsChartView::applyTheme(const Theme &theme)
 
     if (this->d_->toolbarWidget != nullptr)
     {
-        this->d_->toolbarWidget->setStyleSheet(QStringLiteral(R"(
+        this->d_->toolbarWidget->setStyleSheet(
+            QStringLiteral(R"(
             QWidget#ChannelPointsChartToolbar {
                 background: transparent;
             }
@@ -724,17 +723,12 @@ void ChannelPointsChartView::applyTheme(const Theme &theme)
                 font-weight: 600;
             }
         )")
-                                                   .arg(text.name(QColor::HexArgb),
-                                                        muted.name(QColor::HexArgb),
-                                                        grid.name(QColor::HexArgb),
-                                                        fieldBg.name(QColor::HexArgb),
-                                                        buttonHoverBg.name(
-                                                            QColor::HexArgb),
-                                                        popupBg.name(QColor::HexArgb),
-                                                        itemHoverBg.name(
-                                                            QColor::HexArgb),
-                                                        itemSelectedBg.name(
-                                                            QColor::HexArgb)));
+                .arg(text.name(QColor::HexArgb), muted.name(QColor::HexArgb),
+                     grid.name(QColor::HexArgb), fieldBg.name(QColor::HexArgb),
+                     buttonHoverBg.name(QColor::HexArgb),
+                     popupBg.name(QColor::HexArgb),
+                     itemHoverBg.name(QColor::HexArgb),
+                     itemSelectedBg.name(QColor::HexArgb)));
     }
 }
 

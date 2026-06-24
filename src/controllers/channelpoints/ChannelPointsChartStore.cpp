@@ -90,9 +90,8 @@ QVector<ChannelPointsChartSample> parseSamples(const QJsonArray &samples)
         }
 
         const auto object = value.toObject();
-        const auto time =
-            QDateTime::fromString(object.value("t"_L1).toString(),
-                                  Qt::ISODateWithMs);
+        const auto time = QDateTime::fromString(object.value("t"_L1).toString(),
+                                                Qt::ISODateWithMs);
         if (!time.isValid())
         {
             continue;
@@ -139,8 +138,7 @@ void ChannelPointsChartStore::recordSample(const QString &channelId,
     }
 
     samples.append(QJsonObject{
-        {"t"_L1,
-         QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)},
+        {"t"_L1, QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)},
         {"balance"_L1, balance},
     });
     cache.data.insert(channelId, samples);

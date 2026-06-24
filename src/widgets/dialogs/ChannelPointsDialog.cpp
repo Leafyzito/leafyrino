@@ -934,8 +934,8 @@ ChannelPointsDialog::ChannelPointsDialog(TwitchChannel *channel,
     headerLayout->addLayout(headerTextLayout);
     headerLayout->addStretch(1);
 
-    auto *chartButton = new QPushButton(QStringLiteral("Chart"),
-                                        this->headerWidget_);
+    auto *chartButton =
+        new QPushButton(QStringLiteral("Chart"), this->headerWidget_);
     chartButton->setObjectName("ChannelPointsUtilityButton");
     chartButton->setToolTip(
         QStringLiteral("View channel points history chart"));
