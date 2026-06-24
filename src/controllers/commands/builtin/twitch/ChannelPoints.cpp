@@ -12,6 +12,7 @@
 #include "widgets/Window.hpp"
 
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
+#    include "widgets/dialogs/ChannelPointsChartDialog.hpp"
 #    include "widgets/dialogs/ChannelPointsDialog.hpp"
 #    include "widgets/splits/SplitInput.hpp"
 #endif
@@ -98,6 +99,32 @@ QString openChannelPointRewards(const CommandContext &ctx)
     {
         ctx.channel->addSystemMessage(
             "Channel point rewards are not available in this build.");
+    }
+#endif
+
+    return {};
+}
+
+QString openChannelPointsChart(const CommandContext &ctx)
+{
+    if (ctx.twitchChannel == nullptr)
+    {
+        if (ctx.channel != nullptr)
+        {
+            ctx.channel->addSystemMessage(
+                "The /pointschart command only works in Twitch channels.");
+        }
+        return {};
+    }
+
+#if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
+    auto *split = findOpenSplitForChannel(ctx.channel);
+    ChannelPointsChartDialog::showDialog(ctx.twitchChannel, split);
+#else
+    if (ctx.channel != nullptr)
+    {
+        ctx.channel->addSystemMessage(
+            "Channel point charts are not available in this build.");
     }
 #endif
 

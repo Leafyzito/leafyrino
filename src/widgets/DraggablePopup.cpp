@@ -140,4 +140,12 @@ bool DraggablePopup::ensurePinned()
     return false;
 }
 
+void DraggablePopup::pinParentIfNeeded(QWidget *parent)
+{
+    if (auto *popup = qobject_cast<DraggablePopup *>(parent))
+    {
+        popup->ensurePinned();
+    }
+}
+
 }  // namespace chatterino

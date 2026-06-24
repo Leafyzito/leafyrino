@@ -29,7 +29,7 @@ jobs:
         qt-version: [6.7.1, 6.10.1]
       fail-fast: false
     env:
-      QT_MODULES: qtimageformats
+      QT_MODULES: qtimageformats qtcharts
 
     steps:
       - uses: actions/checkout@v6

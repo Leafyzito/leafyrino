@@ -29,6 +29,10 @@ protected:
 
     Button *createPinButton();
 
+    /// Pins \a parent when it is an auto-closing DraggablePopup so it stays
+    /// open while a child popup takes focus.
+    static void pinParentIfNeeded(QWidget *parent);
+
     std::shared_ptr<bool> lifetimeHack_;
 
     void togglePinned();

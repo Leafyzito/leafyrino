@@ -23,14 +23,12 @@ jobs:
   test:
     if: false # Disabled
     name: "Test ${{ matrix.os }}, Qt ${{ matrix.qt-version }}"
-    runs-on: ubuntu-latest
-    container: ${{ matrix.container }}
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         include:
-          - os: "ubuntu-22.04"
-            container: ghcr.io/chatterino/chatterino2-build-ubuntu-22.04:latest
-            qt-version: 6.7.1
+          - os: "ubuntu-24.04"
+            qt-version: 6.9.3
       fail-fast: false
 
     steps:
@@ -45,7 +43,18 @@ jobs:
         run: |
           sudo apt update
           sudo DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends install \
+            cmake g++ git pkg-config \
+            libboost-dev libnotify-dev libssl-dev libsecret-1-dev \
+            hunspell libhunspell-dev \
             libbenchmark-dev gcovr gnupg
+
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v4.3.1
+        with:
+          cache: true
+          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-v2
+          modules: qtimageformats qtcharts
+          version: ${{ matrix.qt-version }}
 
       - name: Install httpbox
         run: |
@@ -60,8 +69,6 @@ jobs:
             -DBUILD_TESTS=On \
             -DBUILD_BENCHMARKS=On \
             -DBUILD_APP=OFF \
-            -DCMAKE_PREFIX_PATH="$Qt6_DIR/lib/cmake" \
-            -DCHATTERINO_STATIC_QT_BUILD=On \
             -DCHATTERINO_GENERATE_COVERAGE=On \
             -DCMAKE_BUILD_TYPE=Debug \
             ..

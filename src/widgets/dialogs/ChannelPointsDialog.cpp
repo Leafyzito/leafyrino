@@ -12,6 +12,7 @@
 #    include "util/Helpers.hpp"
 #    include "widgets/buttons/Button.hpp"
 #    include "widgets/buttons/SvgButton.hpp"
+#    include "widgets/dialogs/ChannelPointsChartDialog.hpp"
 #    include "widgets/helper/Line.hpp"
 #    include "widgets/splits/SplitInput.hpp"
 
@@ -932,6 +933,17 @@ ChannelPointsDialog::ChannelPointsDialog(TwitchChannel *channel,
     headerTextLayout->addWidget(this->headerSubtitleLabel_);
     headerLayout->addLayout(headerTextLayout);
     headerLayout->addStretch(1);
+
+    auto *chartButton =
+        new QPushButton(QStringLiteral("Chart"), this->headerWidget_);
+    chartButton->setObjectName("ChannelPointsUtilityButton");
+    chartButton->setToolTip(
+        QStringLiteral("View channel points history chart"));
+    chartButton->setCursor(Qt::PointingHandCursor);
+    QObject::connect(chartButton, &QPushButton::clicked, this, [this] {
+        ChannelPointsChartDialog::showDialog(this->channel_, this);
+    });
+    headerLayout->addWidget(chartButton);
 
     this->pinButton_ = this->createPinButton();
     this->pinButton_->setToolTip("Pin Rewards Popup");

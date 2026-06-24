@@ -38,6 +38,7 @@
 #include "widgets/dialogs/TwitchBadgePickerDialog.hpp"
 #include "widgets/dialogs/UserInfoPopup.hpp"
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
+#    include "widgets/dialogs/ChannelPointsChartDialog.hpp"
 #    include "widgets/dialogs/ChannelPointsDialog.hpp"
 #endif
 #include "widgets/helper/ChannelView.hpp"
@@ -53,6 +54,7 @@
 
 #include <QActionGroup>
 #include <QCompleter>
+#include <QContextMenuEvent>
 #include <QDateTime>
 #include <QKeyEvent>
 #include <QMenu>
@@ -1950,6 +1952,28 @@ bool SplitInput::eventFilter(QObject *obj, QEvent *event)
                 return false;
             }
         }
+    }
+
+    if (obj == this->ui_.channelPointsLabel &&
+        event->type() == QEvent::ContextMenu)
+    {
+        auto *tc = dynamic_cast<TwitchChannel *>(
+            this->split_->getSelectedChannel().get());
+        if (!tc || !tc->shouldShowChannelPoints() ||
+            !this->channelPointsLabelWanted_)
+        {
+            return true;
+        }
+
+#if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
+        auto *contextEvent = static_cast<QContextMenuEvent *>(event);
+        QMenu menu(this);
+        menu.addAction(QStringLiteral("View points chart"), this, [tc, this] {
+            ChannelPointsChartDialog::showDialog(tc, this);
+        });
+        menu.exec(contextEvent->globalPos());
+#endif
+        return true;
     }
 
     if (obj == this->ui_.channelPointsLabel &&

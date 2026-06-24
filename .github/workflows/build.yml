@@ -34,19 +34,13 @@ env:
   C2_APP_BUNDLE: Leafyrino.app
 
 jobs:
-  build-ubuntu-docker:
-    # Our Ubuntu builds are built using Docker images that have been pre-published.
-    # This speeds up builds for us since we do some pre-building of packages that takes a long time
-    # However, this means if you need to add a dependency to the build, you'll need to do that
-    # in the https://github.com/Chatterino/docker repository first.
-    name: "Build Ubuntu in Docker"
-    runs-on: ubuntu-latest
-    container: ${{ matrix.container }}
+  build-ubuntu:
+    name: "Build Ubuntu ${{ matrix.os }}, Qt ${{ matrix.qt-version }}"
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-22.04
-            container: ghcr.io/chatterino/chatterino2-build-ubuntu-22.04:latest
             qt-version: 6.7.2
             force-lto: false
             skip-artifact: false
@@ -55,22 +49,13 @@ jobs:
             build-deb: true
             plugins: true
           - os: ubuntu-24.04
-            container: ghcr.io/chatterino/chatterino2-build-ubuntu-24.04:latest
-            qt-version: 6.7.2
+            qt-version: 6.9.3
             force-lto: false
             skip-artifact: false
             skip-crashpad: false
             build-appimage: false
             build-deb: true
             plugins: true
-          - os: ubuntu-24.04
-            container: ghcr.io/chatterino/chatterino2-build-ubuntu-24.04:latest
-            qt-version: 6.7.2
-            force-lto: false
-            skip-artifact: false
-            skip-crashpad: false
-            build-deb: false
-            plugins: false
     env:
       C2_ENABLE_LTO: ${{ matrix.force-lto }}
       C2_ENABLE_CRASHPAD: ${{ matrix.skip-crashpad == false }}
@@ -81,9 +66,43 @@ jobs:
           submodules: recursive
           fetch-depth: 0 # allows for tags access
 
-      - name: Fix git permission error
+      - name: Install system dependencies
         run: |
-          git config --global --add safe.directory '*'
+          sudo apt-get update
+          PACKAGES="cmake g++ git pkg-config libboost-dev libnotify-dev libssl-dev libsecret-1-dev hunspell libhunspell-dev file fuse libfuse2 patchelf"
+          if [ "${{ matrix.os }}" = "ubuntu-24.04" ]; then
+            PACKAGES="$PACKAGES libboost-json-dev"
+          fi
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $PACKAGES
+
+      - name: Cache Boost (Ubuntu 22.04)
+        if: matrix.os == 'ubuntu-22.04'
+        uses: actions/cache@v4
+        id: boost-cache
+        with:
+          path: ~/boost-1.83.0
+          key: boost-1.83.0-ubuntu-22.04-v1
+
+      - name: Install Boost with JSON (Ubuntu 22.04)
+        if: matrix.os == 'ubuntu-22.04' && steps.boost-cache.outputs.cache-hit != 'true'
+        run: |
+          BOOST_VER=1.83.0
+          BOOST_PREFIX="$HOME/boost-${BOOST_VER}"
+          BUILD_DIR="$(mktemp -d)"
+          cd "$BUILD_DIR"
+          wget -q "https://archives.boost.io/release/${BOOST_VER}/source/boost_1_83_0.tar.gz"
+          tar xf boost_1_83_0.tar.gz
+          cd boost_1_83_0
+          ./bootstrap.sh --prefix="${BOOST_PREFIX}"
+          ./b2 install --with-json --prefix="${BOOST_PREFIX}" -j"$(nproc)"
+
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v4.3.1
+        with:
+          cache: true
+          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-v2
+          modules: qtimageformats qtcharts
+          version: ${{ matrix.qt-version }}
 
       - name: Determine build type
         id: build-type
@@ -112,6 +131,9 @@ jobs:
         run: |
           mkdir build
           cd build
+          if [ "${{ matrix.os }}" = "ubuntu-22.04" ]; then
+            export CMAKE_PREFIX_PATH="$HOME/boost-1.83.0${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
+          fi
           CXXFLAGS=-fno-sized-deallocation cmake \
             -DCMAKE_INSTALL_PREFIX=appdir/usr/ \
             -DCMAKE_BUILD_TYPE=Release \
@@ -119,13 +141,11 @@ jobs:
             -DUSE_PRECOMPILED_HEADERS=OFF \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=On \
             -DCHATTERINO_LTO="$C2_ENABLE_LTO" \
-            -DCMAKE_PREFIX_PATH="$Qt6_DIR/lib/cmake" \
-            -DCHATTERINO_STATIC_QT_BUILD=On \
             -DCHATTERINO_NIGHTLY_BUILD=${{ steps.build-type.outputs.NIGHTLY_BUILD }} \
             -DFORCE_JSON_GENERATION=Off \
             -DCHATTERINO_PLUGINS=${{ case(matrix.plugins, 'On', 'Off') }} \
             ..
-          make -j"$(nproc)"
+          cmake --build . -j"$(nproc)"
 
       - name: Package - AppImage (Ubuntu)
         if: matrix.build-appimage
@@ -235,7 +255,7 @@ jobs:
         with:
           cache: true
           cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-v2
-          modules: qtimageformats
+          modules: qtimageformats qtcharts
           version: ${{ matrix.qt-version }}
 
       # WINDOWS
@@ -443,7 +463,7 @@ jobs:
           path: build/chatterino-macos-Qt-${{ matrix.qt-version }}-universal.dmg
 
   create-release:
-    needs: [build-ubuntu-docker, build-flatpak, build]
+    needs: [build-ubuntu, build-flatpak, build]
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref == 'refs/heads/leafyrino')
     permissions:
