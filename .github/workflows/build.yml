@@ -88,6 +88,8 @@ jobs:
         run: |
           BOOST_VER=1.83.0
           BOOST_PREFIX="$HOME/boost-${BOOST_VER}"
+          BUILD_DIR="$(mktemp -d)"
+          cd "$BUILD_DIR"
           wget -q "https://archives.boost.io/release/${BOOST_VER}/source/boost_1_83_0.tar.gz"
           tar xf boost_1_83_0.tar.gz
           cd boost_1_83_0
