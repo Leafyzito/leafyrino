@@ -387,7 +387,7 @@ void createUsercardPaintRow(LayoutCreator<QVBoxLayout> &vbox, QWidget **rowOut,
     layout->setContentsMargins(8, 0, 8, 0);
     layout->setSpacing(0);
 
-    auto *prefixLabel = new Label(QString(TEXT_SEVENTV_PAINT));
+    auto *prefixLabel = new Label(TEXT_SEVENTV_PAINT.toString());
     prefixLabel->setPadding({});
     layout->addWidget(prefixLabel, 0, Qt::AlignVCenter);
 
