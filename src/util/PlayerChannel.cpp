@@ -124,7 +124,7 @@ const QString &PlayerChannel::getLocalizedName() const
 
 QString PlayerChannel::cacheKey(const QString &name, Platform platform)
 {
-    return QString(platformSlug(platform)) % u':' % name.toLower();
+    return platformSlug(platform).toString() % u':' % name.toLower();
 }
 
 QString PlayerChannel::buildPlayerUrl(const QString &name, Platform platform)

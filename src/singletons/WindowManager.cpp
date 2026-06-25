@@ -1189,8 +1189,10 @@ void WindowManager::encodeChannel(IndirectChannel channel, QJsonObject &obj)
             if (auto *playerChannel =
                     dynamic_cast<PlayerChannel *>(channel.get().get()))
             {
-                obj.insert("platform", QString(PlayerChannel::platformSlug(
-                                           playerChannel->platform())));
+                obj.insert("platform",
+                           PlayerChannel::platformSlug(
+                               playerChannel->platform())
+                               .toString());
             }
         }
         break;

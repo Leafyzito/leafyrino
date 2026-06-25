@@ -81,7 +81,7 @@ else
     echo "No kimageformats archive provided; relying on Qt imageformats."
 fi
 
-macdeployqt "${_app_bundle}" "${_macdeployqt_args[@]}" -webenginewidgets -verbose=1
+macdeployqt "${_app_bundle}" "${_macdeployqt_args[@]}" -verbose=1
 
 if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
     # Validate that the app bundle was codesigned correctly
