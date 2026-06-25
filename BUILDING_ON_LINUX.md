@@ -7,20 +7,20 @@ For all dependencies below we use Qt 6. Our minimum supported version is Qt 5.15
 ### Ubuntu 22.04
 
 ```sh
-sudo apt install qt6-base-dev qt6-svg-dev qt6-image-formats-plugins libboost-dev libboost-json-dev libnotify-dev libssl-dev libsecret-1-dev pkg-config cmake g++ git hunspell libhunspell-dev
+sudo apt install qt6-base-dev qt6-svg-dev qt6-charts-dev qt6-webengine-dev qt6-image-formats-plugins libboost-dev libboost-json-dev libnotify-dev libssl-dev libsecret-1-dev pkg-config cmake g++ git hunspell libhunspell-dev
 ```
 
-Qt Charts is not in the default 22.04 repositories; install it with [aqt](https://github.com/miurahr/aqtinstall) or use the same [install-qt-action](https://github.com/jurplel/install-qt-action) modules as CI (`qtimageformats`, `qtcharts`). Jammy ships Boost 1.74 without JSON; CI builds Boost 1.83 for `boost/json.hpp`.
+Qt Charts is not in the default 22.04 repositories; install it with [aqt](https://github.com/miurahr/aqtinstall) or use the same [install-qt-action](https://github.com/jurplel/install-qt-action) modules as CI (`qtimageformats`, `qtcharts`, `qtwebengine`, `qtwebchannel`, `qtpositioning`). Jammy ships Boost 1.74 without JSON; CI builds Boost 1.83 for `boost/json.hpp`.
 
 CI builds on `ubuntu-22.04` with Qt 6.7.2 and produces the AppImage and `.deb` packages.
 
 ### Ubuntu 24.04 and later
 
 ```sh
-sudo apt install qt6-base-dev qt6-svg-dev qt6-charts-dev qt6-image-formats-plugins libboost-dev libboost-json-dev libnotify-dev libssl-dev libsecret-1-dev pkg-config cmake g++ git hunspell libhunspell-dev
+sudo apt install qt6-base-dev qt6-svg-dev qt6-charts-dev qt6-webengine-dev qt6-image-formats-plugins libboost-dev libboost-json-dev libnotify-dev libssl-dev libsecret-1-dev pkg-config cmake g++ git hunspell libhunspell-dev
 ```
 
-CI builds on `ubuntu-24.04` with Qt 6.9.3 using [install-qt-action](https://github.com/jurplel/install-qt-action) with the `qtcharts` module. No Chatterino/docker image is required.
+CI builds on `ubuntu-24.04` with Qt 6.9.3 using [install-qt-action](https://github.com/jurplel/install-qt-action) with the `qtimageformats`, `qtcharts`, `qtwebengine`, `qtwebchannel`, and `qtpositioning` modules. No Chatterino/docker image is required.
 
 ### Debian 13 (trixie) or later
 
