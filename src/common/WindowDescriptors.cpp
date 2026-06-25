@@ -14,7 +14,7 @@
 #include "util/MultiChannel.hpp"
 #include "util/QMagicEnum.hpp"
 #ifdef CHATTERINO_WITH_STREAM_PLAYER
-#include "util/PlayerChannel.hpp"
+#    include "util/PlayerChannel.hpp"
 #endif
 #include "widgets/Window.hpp"
 
