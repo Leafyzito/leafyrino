@@ -38,6 +38,7 @@ jobs:
     name: "Build Ubuntu ${{ matrix.os }}, Qt ${{ matrix.qt-version }}"
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-22.04
@@ -100,8 +101,8 @@ jobs:
         uses: jurplel/install-qt-action@v4.3.1
         with:
           cache: true
-          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-webengine-v1
-          modules: qtimageformats qtcharts qtwebengine qtwebchannel qtpositioning
+          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-webengine-v2
+          modules: qtimageformats qtcharts qtwebengine qtwebchannel qtpositioning qtserialport
           version: ${{ matrix.qt-version }}
 
       - name: Determine build type
@@ -202,7 +203,7 @@ jobs:
             force-lto: true
             skip-artifact: false
             skip-crashpad: false
-          # Windows on ARM
+          # Windows on ARM (Qt WebEngine requires 6.10+ on windows_arm64)
           - os: windows-11-arm
             qt-version: 6.10.3
             force-lto: true
@@ -250,13 +251,23 @@ jobs:
             exit 1
           fi
 
-      - name: Install Qt6
-        if: startsWith(matrix.qt-version, '6.')
+      - name: Install Qt6 (Windows ARM)
+        if: startsWith(matrix.qt-version, '6.') && matrix.os == 'windows-11-arm'
         uses: jurplel/install-qt-action@v4.3.1
         with:
           cache: true
-          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-webengine-v1
-          modules: qtimageformats qtcharts qtwebengine qtwebchannel qtpositioning
+          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-webengine-v2
+          modules: qtimageformats qtcharts qtwebengine qtwebchannel qtpositioning qtserialport
+          version: ${{ matrix.qt-version }}
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@bbfb1f7c0590b9eb3fa91356e75bb64fb15d3643
+
+      - name: Install Qt6
+        if: startsWith(matrix.qt-version, '6.') && matrix.os != 'windows-11-arm'
+        uses: jurplel/install-qt-action@v4.3.1
+        with:
+          cache: true
+          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-webengine-v2
+          modules: qtimageformats qtcharts qtwebengine qtwebchannel qtpositioning qtserialport
           version: ${{ matrix.qt-version }}
 
       # WINDOWS
