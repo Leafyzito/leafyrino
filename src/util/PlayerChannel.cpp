@@ -28,11 +28,11 @@ PlayerChannel::PlayerChannel(const QString &name, Platform platform)
     , displayName_(name)
     , playerUrl_(buildPlayerUrl(this->getName(), platform))
 {
-    const auto *platformLabel =
+    const QStringView platformLabel =
         platform == Platform::Kick ? u"Kick" : u"Twitch";
     if (this->displayName_.isEmpty())
     {
-        this->localizedName_ = QString(platformLabel) % u" Player";
+        this->localizedName_ = platformLabel % u" Player";
     }
     else
     {
@@ -132,9 +132,9 @@ QString PlayerChannel::buildPlayerUrl(const QString &name, Platform platform)
     switch (platform)
     {
         case Platform::Twitch:
-            return QString(TWITCH_PLAYER_URL).arg(name.toLower());
+            return TWITCH_PLAYER_URL.arg(name.toLower());
         case Platform::Kick:
-            return QString(KICK_PLAYER_URL).arg(KickApi::slugify(name));
+            return KICK_PLAYER_URL.arg(KickApi::slugify(name));
     }
     return {};
 }
