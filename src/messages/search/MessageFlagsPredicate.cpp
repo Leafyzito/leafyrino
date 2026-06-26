@@ -72,6 +72,14 @@ MessageFlagsPredicate::MessageFlagsPredicate(const QString &flags, bool negate)
         {
             this->flags_.set(MessageFlag::RepeatedMessage);
         }
+        else if (flag == "watch-streak")
+        {
+            this->flags_.set(MessageFlag::WatchStreak);
+        }
+        else if (flag == "announcement")
+        {
+            this->flags_.set(MessageFlag::Announcement);
+        }
     }
 }
 

@@ -57,6 +57,14 @@ jobs:
             build-appimage: false
             build-deb: true
             plugins: true
+          - os: ubuntu-26.04
+            qt-version: 6.9.3
+            force-lto: false
+            skip-artifact: false
+            skip-crashpad: false
+            build-appimage: false
+            build-deb: true
+            plugins: true
     env:
       C2_ENABLE_LTO: ${{ matrix.force-lto }}
       C2_ENABLE_CRASHPAD: ${{ matrix.skip-crashpad == false }}
@@ -71,7 +79,7 @@ jobs:
         run: |
           sudo apt-get update
           PACKAGES="cmake g++ git pkg-config libboost-dev libnotify-dev libssl-dev libsecret-1-dev hunspell libhunspell-dev file fuse libfuse2 patchelf"
-          if [ "${{ matrix.os }}" = "ubuntu-24.04" ]; then
+          if [ "${{ matrix.os }}" = "ubuntu-24.04" ] || [ "${{ matrix.os }}" = "ubuntu-26.04" ]; then
             PACKAGES="$PACKAGES libboost-json-dev"
           fi
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $PACKAGES
@@ -172,7 +180,7 @@ jobs:
         if: matrix.build-deb
         uses: actions/upload-artifact@v7
         with:
-          name: Chatterino-${{ matrix.os }}-Qt-${{ matrix.qt-version }}.deb
+          name: Chatterino-${{ matrix.os }}.deb
           path: build/Chatterino-${{ matrix.os }}-x86_64.deb
 
   build-flatpak:

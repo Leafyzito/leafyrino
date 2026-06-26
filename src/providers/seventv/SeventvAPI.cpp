@@ -109,7 +109,26 @@ void SeventvAPI::getEmoteSet(const QString &emoteSet,
         .execute();
 }
 
-void SeventvAPI::updatePresence(const QString &twitchChannelID,
+void SeventvAPI::updateTwitchPresence(const QString &twitchChannelID,
+                                      const QString &seventvUserID,
+                                      SuccessCallback<> &&onSuccess,
+                                      ErrorCallback &&onError)
+{
+    this->updatePresence(u"TWITCH"_s, twitchChannelID, seventvUserID,
+                         std::move(onSuccess), std::move(onError));
+}
+
+void SeventvAPI::updateKickPresence(uint64_t kickUserID,
+                                    const QString &seventvUserID,
+                                    SuccessCallback<> &&onSuccess,
+                                    ErrorCallback &&onError)
+{
+    this->updatePresence(u"KICK"_s, QString::number(kickUserID), seventvUserID,
+                         std::move(onSuccess), std::move(onError));
+}
+
+void SeventvAPI::updatePresence(const QString &platform,
+                                const QString &platformID,
                                 const QString &seventvUserID,
                                 SuccessCallback<> &&onSuccess,
                                 ErrorCallback &&onError)
@@ -118,35 +137,8 @@ void SeventvAPI::updatePresence(const QString &twitchChannelID,
         {u"kind"_s, 1},
         {u"data"_s,
          QJsonObject{
-             {u"id"_s, twitchChannelID},
-             {u"platform"_s, u"TWITCH"_s},
-         }},
-    };
-
-    tuneSeventvRequest(NetworkRequest(API_URL_PRESENCES.arg(seventvUserID),
-                                      NetworkRequestType::Post))
-        .json(payload)
-        .timeout(10000)
-        .onSuccess([callback = std::move(onSuccess)](const auto &) {
-            callback();
-        })
-        .onError([callback = std::move(onError)](const NetworkResult &result) {
-            callback(result);
-        })
-        .execute();
-}
-
-void SeventvAPI::updateKickPresence(uint64_t kickUserID,
-                                    const QString &seventvUserID,
-                                    SuccessCallback<> &&onSuccess,
-                                    ErrorCallback &&onError)
-{
-    QJsonObject payload{
-        {u"kind"_s, 1},
-        {u"data"_s,
-         QJsonObject{
-             {u"id"_s, QString::number(kickUserID)},
-             {u"platform"_s, u"KICK"_s},
+             {u"id"_s, platformID},
+             {u"platform"_s, platform},
          }},
     };
 

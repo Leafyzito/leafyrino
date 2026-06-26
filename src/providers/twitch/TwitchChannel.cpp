@@ -6,10 +6,8 @@
 
 #include "Application.hpp"
 #include "common/Common.hpp"
-#include "common/Env.hpp"
-#include "common/Literals.hpp"
 #include "common/network/NetworkRequest.hpp"
-#include "common/network/NetworkResult.hpp"
+#include "common/network/NetworkResult.hpp"  // IWYU pragma: keep
 #include "common/QLogging.hpp"
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/channelpoints/ChannelPointsChartStore.hpp"
@@ -46,17 +44,13 @@
 #include "providers/twitch/IrcMessageHandler.hpp"
 #include "providers/twitch/PubSubManager.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
-#include "providers/twitch/TwitchCommon.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "providers/twitch/TwitchUsers.hpp"
 #include "singletons/Settings.hpp"
-#include "singletons/StreamerMode.hpp"
-#include "singletons/Toasts.hpp"
 #include "singletons/WindowManager.hpp"
 #include "util/FormatTime.hpp"
 #include "util/Helpers.hpp"
 #include "util/PostToThread.hpp"
-#include "util/QStringHash.hpp"
 #include "util/VectorMessageSink.hpp"
 #include "widgets/Window.hpp"
 
@@ -75,9 +69,10 @@
 #include <algorithm>
 #include <memory>
 
+using namespace Qt::StringLiterals;
+
 namespace chatterino {
 
-using namespace literals;
 using namespace std::chrono_literals;
 
 namespace detail {
@@ -1266,9 +1261,9 @@ void TwitchChannel::addChannelPointReward(const ChannelPointReward &reward)
                 {
                     VectorMessageSink sink(
                         MessageSinkTrait::AddMentionsToGlobalChannel);
-                    IrcMessageHandler::instance().addMessage(
-                        msg.message.get(), sink, this, msg.originalContent,
-                        *server, false, false);
+                    IrcMessageHandler::addMessage(msg.message.get(), sink, this,
+                                                  msg.originalContent, *server,
+                                                  AddMessageArgs{});
                     if (sink.messages().empty())
                     {
                         return true;
@@ -4236,7 +4231,7 @@ void TwitchChannel::updateSevenTVActivity()
 
     qCDebug(chatterinoSeventv) << "Sending activity in" << this->getName();
 
-    getApp()->getSeventvAPI()->updatePresence(
+    getApp()->getSeventvAPI()->updateTwitchPresence(
         this->roomId(), currentSeventvUserID,
         [chan = weakOf<Channel>(this)]() {
             const auto self =

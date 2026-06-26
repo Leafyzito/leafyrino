@@ -916,4 +916,18 @@ MessagePtr makeUserMessageUpdateMessage(
     return builder.release();
 }
 
+MessagePtrMut makeFollowMessage(
+    TwitchChannel *channel, const QDateTime &time,
+    const lib::payload::channel_follow::v2::Event &event)
+{
+    EventSubMessageBuilder builder(channel, time);
+    QString text;
+    builder.appendUser(event.userName, event.userLogin, text);
+    builder.emplaceSystemTextAndUpdate("followed the channel.", text);
+    builder.setMessageAndSearchText(text);
+    auto msg = builder.release();
+    msg->flags.set(MessageFlag::Follow);
+    return msg;
+}
+
 }  // namespace chatterino::eventsub

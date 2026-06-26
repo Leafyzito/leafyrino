@@ -36,4 +36,14 @@ QString eventsub(const CommandContext &ctx);
 
 QString debugTest(const CommandContext &ctx);
 
+#ifdef Q_OS_WIN
+QString relaunchWithConsole(const CommandContext &ctx);
+#endif
+
+QString disableLogfile(const CommandContext &ctx);
+QString enableLogfile(const CommandContext &ctx);
+QString relaunchWithLogfile(const CommandContext &ctx);
+
+QString seventvPresence(const CommandContext &ctx);
+
 }  // namespace chatterino::commands

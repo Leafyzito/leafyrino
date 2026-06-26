@@ -218,6 +218,29 @@ void OverlayWindow::applyTheme()
     this->update();
 }
 
+void OverlayWindow::wheelEvent(QWheelEvent *event)
+{
+    // ignore horizontal mouse wheels
+    if (event->angleDelta().x() != 0)
+    {
+        return;
+    }
+
+    if (event->modifiers().testFlag(Qt::ControlModifier))
+    {
+        if (event->angleDelta().y() > 0)
+        {
+            getSettings()->setClampedOverlayScale(
+                getSettings()->getClampedOverlayScale() + 0.1F);
+        }
+        else
+        {
+            getSettings()->setClampedOverlayScale(
+                getSettings()->getClampedOverlayScale() - 0.1F);
+        }
+    }
+}
+
 float OverlayWindow::desiredScale() const
 {
     return getSettings()->getClampedUiScale() *
@@ -498,7 +521,7 @@ void OverlayWindow::addShortcuts()
              const auto &direction = arguments.at(0);
              if (direction == "reset")
              {
-                 getSettings()->uiScale.setValue(1);
+                 getSettings()->setClampedOverlayScale(1);
                  return "";
              }
 
