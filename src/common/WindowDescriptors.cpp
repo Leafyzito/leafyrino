@@ -13,6 +13,9 @@
 #include "util/Expected.hpp"
 #include "util/MultiChannel.hpp"
 #include "util/QMagicEnum.hpp"
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+#    include "util/PlayerChannel.hpp"
+#endif
 #include "widgets/Window.hpp"
 
 #include <QFile>
@@ -157,6 +160,14 @@ void SplitDescriptor::loadFromJSON(SplitDescriptor &descriptor,
                 MultiChannelIndicatorMode::PlatformBadgeIfUnselected);
         descriptor.mcIndex = static_cast<uint32_t>(data["activeIndex"].toInt());
     }
+    else if (descriptor.type_ == u"player")
+    {
+        descriptor.playerPlatform_ = data.value("platform").toString();
+        if (descriptor.playerPlatform_.isEmpty())
+        {
+            descriptor.playerPlatform_ = QStringLiteral("twitch");
+        }
+    }
 }
 
 IndirectChannel SplitDescriptor::decodeChannel() const
@@ -221,6 +232,15 @@ IndirectChannel SplitDescriptor::decodeChannel() const
         ptr->setActiveChannelIndex(this->mcIndex);
         return {std::move(ptr)};
     }
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+    else if (this->type_ == u"player")
+    {
+        const auto platform =
+            PlayerChannel::platformFromSlug(this->playerPlatform_)
+                .value_or(PlayerChannel::Platform::Twitch);
+        return PlayerChannel::getOrCreate(this->channelName_, platform);
+    }
+#endif
 
     return Channel::getEmpty();
 }

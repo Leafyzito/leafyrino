@@ -12,6 +12,9 @@
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
 #include "util/MultiChannel.hpp"
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+#    include "util/PlayerChannel.hpp"
+#endif
 #include "widgets/BasePopup.hpp"
 #include "widgets/helper/MicroNotebook.hpp"
 
@@ -391,6 +394,45 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
         ui.notebook->addPage(ui.multiPage, "Multi");
     }
 
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+    {
+        ui.playerPage = new QWidget;
+        auto *layout = new QVBoxLayout(ui.playerPage);
+
+        auto *playerLabel = new QLabel(
+            "Watch a channel stream in this split. Chat is not shown.");
+        playerLabel->setWordWrap(true);
+        layout->addWidget(playerLabel);
+
+        ui.playerPlatform = new QComboBox;
+        ui.playerPlatform->addItem(
+            "Twitch", QVariant::fromValue(PlayerChannel::Platform::Twitch));
+        ui.playerPlatform->addItem(
+            "Kick", QVariant::fromValue(PlayerChannel::Platform::Kick));
+        layout->addWidget(ui.playerPlatform);
+
+        ui.playerName = new QLineEdit();
+        ui.playerName->setPlaceholderText("Channel name");
+        layout->addWidget(ui.playerName);
+
+        auto *playerAccountLabel =
+            new QLabel("The player is not connected to your account. You "
+                       "may still see ads even if you are subscribed, and "
+                       "subscriber-only streams will not play.");
+        playerAccountLabel->setWordWrap(true);
+        layout->addWidget(playerAccountLabel);
+
+        auto *playerBetaLabel =
+            new QLabel("This is in beta and can be kinda buggy.");
+        playerBetaLabel->setWordWrap(true);
+        layout->addWidget(playerBetaLabel);
+
+        layout->addStretch(1);
+
+        ui.notebook->addPage(ui.playerPage, "Player");
+    }
+#endif
+
     auto *buttonBox =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     buttonBox->setContentsMargins({10, 10, 10, 10});
@@ -503,6 +545,25 @@ void SelectChannelDialog::setSelectedChannel(
             this->ui_.notebook->select(this->ui_.multiPage);
         }
         break;
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+        case Channel::Type::Player: {
+            this->ui_.channelAnonymous->setChecked(false);
+            if (auto *playerChannel =
+                    dynamic_cast<const PlayerChannel *>(channel.get()))
+            {
+                const int platformIdx = this->ui_.playerPlatform->findData(
+                    QVariant::fromValue(playerChannel->platform()));
+                if (platformIdx >= 0)
+                {
+                    this->ui_.playerPlatform->setCurrentIndex(platformIdx);
+                }
+            }
+            this->ui_.playerName->setText(channel->getName());
+            this->ui_.playerName->selectAll();
+            this->ui_.notebook->select(this->ui_.playerPage);
+        }
+        break;
+#endif
         default: {
             this->ui_.channelAnonymous->setChecked(false);
             this->ui_.channel->setChecked(true);
@@ -524,6 +585,16 @@ IndirectChannel SelectChannelDialog::getSelectedChannel() const
         return getApp()->getKickChatServer()->getOrCreate(
             this->ui_.kickName->text().trimmed());
     }
+
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+    if (this->ui_.notebook->isSelected(this->ui_.playerPage))
+    {
+        const auto platform = this->ui_.playerPlatform->currentData()
+                                  .value<PlayerChannel::Platform>();
+        return PlayerChannel::getOrCreate(this->ui_.playerName->text(),
+                                          platform);
+    }
+#endif
 
     if (this->ui_.notebook->isSelected(this->ui_.multiPage))
     {

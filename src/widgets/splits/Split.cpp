@@ -48,6 +48,10 @@
 #include "widgets/splits/SplitInput.hpp"
 #include "widgets/splits/SplitMpsOverlay.hpp"
 #include "widgets/splits/SplitOverlay.hpp"
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+#    include "util/PlayerChannel.hpp"
+#    include "widgets/splits/StreamPlayerView.hpp"
+#endif
 #include "widgets/Window.hpp"
 
 #include <QApplication>
@@ -156,6 +160,12 @@ Split::Split(QWidget *parent)
     this->vbox_->addWidget(this->pollBanner_);
     this->vbox_->addWidget(this->view_, 1);
     this->vbox_->addWidget(this->input_);
+
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+    this->playerView_ = new StreamPlayerView(this);
+    this->vbox_->addWidget(this->playerView_, 1);
+    this->playerView_->hide();
+#endif
 
     this->input_->ui_.textEdit->installEventFilter(parent);
 
@@ -292,7 +302,8 @@ Split::Split(QWidget *parent)
                 }
             }
 
-            if (this->mpsOverlay_)
+            if (this->mpsOverlay_ &&
+                this->channel_.getType() != Channel::Type::Player)
             {
                 this->mpsOverlay_->onMessageAdded();
             }
@@ -1669,9 +1680,91 @@ ChannelPtr Split::getSelectedChannel() const
     return chan;
 }
 
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+void Split::applyPlayerMode(bool enabled)
+{
+    if (!this->playerView_)
+    {
+        return;
+    }
+
+    this->view_->setVisible(!enabled);
+    this->input_->setVisible(!enabled);
+    this->pinnedBanner_->setVisible(!enabled);
+    this->predictionBanner_->setVisible(!enabled);
+    this->pollBanner_->setVisible(!enabled);
+    this->playerView_->setVisible(enabled);
+
+    if (enabled)
+    {
+        if (this->mpsOverlay_)
+        {
+            this->mpsOverlay_->hide();
+        }
+        this->setFocusProxy(this->playerView_);
+    }
+    else
+    {
+        if (this->mpsOverlay_)
+        {
+            this->mpsOverlay_->show();
+            this->updateMpsOverlayAnchor();
+        }
+        this->playerView_->clear();
+        this->setFocusProxy(this->input_->ui_.textEdit);
+        this->view_->setFocusProxy(this->input_->ui_.textEdit);
+    }
+}
+#endif
+
 void Split::setChannel(IndirectChannel newChannel)
 {
     this->channel_ = newChannel;
+
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+    if (newChannel.getType() == Channel::Type::Player)
+    {
+        this->channelSignalHolder_.clear();
+        this->bannerToggleOverride_ = -1;
+        this->clearBannerAttention();
+        this->lastPinBannerKey_.clear();
+        this->lastPredictionBannerKey_.clear();
+        this->lastPollBannerKey_.clear();
+        this->primingBannerState_ = true;
+        this->pinnedBanner_->setPinnedMessage(std::nullopt, nullptr);
+        this->predictionBanner_->setPrediction(std::nullopt, nullptr);
+        this->pollBanner_->setPoll(std::nullopt, nullptr);
+
+        this->usermodeChangedConnection_.disconnect();
+        this->roomModeChangedConnection_.disconnect();
+        this->indirectChannelChangedConnection_.disconnect();
+        this->channelSignalHolder_.clear();
+
+        this->applyPlayerMode(true);
+        if (auto *playerChannel =
+                dynamic_cast<PlayerChannel *>(newChannel.get().get()))
+        {
+            this->playerView_->loadPlayerUrl(playerChannel->playerUrl());
+        }
+        else
+        {
+            this->playerView_->clear();
+        }
+
+        this->primingBannerState_ = false;
+
+        this->header_->updateIcons();
+        this->header_->updateChannelText();
+        this->header_->updateRoomModes();
+
+        this->channelChanged.invoke();
+        this->actionRequested.invoke(Action::RefreshTab);
+        getApp()->getWindows()->queueSave();
+        return;
+    }
+
+    this->applyPlayerMode(false);
+#endif
 
     this->view_->setChannel(newChannel.get());
     this->channelSignalHolder_.clear();
@@ -2270,6 +2363,14 @@ void Split::updateMpsOverlayAnchor()
     {
         return;
     }
+
+    if (this->channel_.getType() == Channel::Type::Player)
+    {
+        this->mpsOverlay_->hide();
+        return;
+    }
+
+    this->mpsOverlay_->show();
     this->mpsOverlay_->setViewRect(this->view_->geometry());
 }
 

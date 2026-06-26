@@ -23,6 +23,7 @@ inline constexpr QStringView LINK_SEVENTV_DISCORD = u"https://discord.gg/7TV";
 
 inline constexpr QStringView TWITCH_PLAYER_URL =
     u"https://player.twitch.tv/?channel=%1&parent=twitch.tv";
+inline constexpr QStringView KICK_PLAYER_URL = u"https://player.kick.com/%1";
 
 enum class HighlightState {
     None,

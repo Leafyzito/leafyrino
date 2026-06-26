@@ -38,6 +38,7 @@ jobs:
     name: "Build Ubuntu ${{ matrix.os }}, Qt ${{ matrix.qt-version }}"
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-22.04
@@ -108,8 +109,8 @@ jobs:
         uses: jurplel/install-qt-action@v4.3.1
         with:
           cache: true
-          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-v2
-          modules: qtimageformats qtcharts
+          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-webengine-v2
+          modules: qtimageformats qtcharts qtwebengine qtwebchannel qtpositioning qtserialport
           version: ${{ matrix.qt-version }}
 
       - name: Determine build type
@@ -152,6 +153,7 @@ jobs:
             -DCHATTERINO_NIGHTLY_BUILD=${{ steps.build-type.outputs.NIGHTLY_BUILD }} \
             -DFORCE_JSON_GENERATION=Off \
             -DCHATTERINO_PLUGINS=${{ case(matrix.plugins, 'On', 'Off') }} \
+            -DCHATTERINO_WITH_STREAM_PLAYER=On \
             ..
           cmake --build . -j"$(nproc)"
 
@@ -209,9 +211,9 @@ jobs:
             force-lto: true
             skip-artifact: false
             skip-crashpad: false
-          # Windows on ARM
+          # Windows on ARM (Qt WebEngine requires 6.10+ on windows_arm64)
           - os: windows-11-arm
-            qt-version: 6.9.3
+            qt-version: 6.10.3
             force-lto: true
             skip-artifact: false
             skip-crashpad: false
@@ -257,13 +259,23 @@ jobs:
             exit 1
           fi
 
-      - name: Install Qt6
-        if: startsWith(matrix.qt-version, '6.')
+      - name: Install Qt6 (Windows ARM)
+        if: startsWith(matrix.qt-version, '6.') && matrix.os == 'windows-11-arm'
         uses: jurplel/install-qt-action@v4.3.1
         with:
           cache: true
-          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-v2
-          modules: qtimageformats qtcharts
+          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-webengine-v2
+          modules: qtimageformats qtcharts qtwebengine qtwebchannel qtpositioning qtserialport
+          version: ${{ matrix.qt-version }}
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@bbfb1f7c0590b9eb3fa91356e75bb64fb15d3643
+
+      - name: Install Qt6
+        if: startsWith(matrix.qt-version, '6.') && matrix.os != 'windows-11-arm'
+        uses: jurplel/install-qt-action@v4.3.1
+        with:
+          cache: true
+          cache-key-prefix: ${{ runner.os }}-QtCache-${{ matrix.qt-version }}-webengine-v2
+          modules: qtimageformats qtcharts qtwebengine qtwebchannel qtpositioning qtserialport
           version: ${{ matrix.qt-version }}
 
       # WINDOWS
@@ -337,6 +349,7 @@ jobs:
               -DCHATTERINO_NIGHTLY_BUILD="${{ steps.build-type.outputs.NIGHTLY_BUILD }}" `
               -DFORCE_JSON_GENERATION=Off `
               -DCHATTERINO_SPELLCHECK=On `
+              -DCHATTERINO_WITH_STREAM_PLAYER=On `
               ..
           ninja
 
@@ -354,7 +367,7 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         working-directory: build
         run: |
-          windeployqt bin/${{ env.C2_APP_EXECUTABLE }}.exe --release --no-compiler-runtime --no-translations --no-opengl-sw --dir Chatterino2/ --force-openssl
+          windeployqt bin/${{ env.C2_APP_EXECUTABLE }}.exe --release --no-compiler-runtime --no-translations --no-opengl-sw --webenginewidgets --dir Chatterino2/ --force-openssl
           cp bin/${{ env.C2_APP_EXECUTABLE }}.exe Chatterino2/
           ..\.CI\deploy-crt.ps1 Chatterino2
 
@@ -403,6 +416,7 @@ jobs:
               -DFORCE_JSON_GENERATION=Off \
               -DCHATTERINO_NIGHTLY_BUILD=${{ steps.build-type.outputs.NIGHTLY_BUILD }} \
               -DCHATTERINO_SPELLCHECK=On \
+              -DCHATTERINO_WITH_STREAM_PLAYER=On \
               ..
           make -j"$(sysctl -n hw.logicalcpu)"
         shell: bash
@@ -494,7 +508,7 @@ jobs:
           # Rename the macos build to indicate that it's for macOS 13.0 users
           mv chatterino-macos-Qt-6.9.3-universal.dmg Chatterino-macOS-13.0-universal.dmg
           # Rename Windows ARM64 to indicate that it's not well tested
-          mv chatterino-windows-arm-Qt-6.9.3.zip Experimental-ARM64-chatterino-windows-Qt-6.9.3.zip
+          mv chatterino-windows-arm-Qt-6.10.3.zip Experimental-ARM64-chatterino-windows-Qt-6.10.3.zip
         working-directory: release-artifacts
         shell: bash
 

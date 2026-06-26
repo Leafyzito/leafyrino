@@ -17,6 +17,9 @@
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+#    include "util/PlayerChannel.hpp"
+#endif
 #include "singletons/Paths.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/Theme.hpp"
@@ -1179,6 +1182,20 @@ void WindowManager::encodeChannel(IndirectChannel channel, QJsonObject &obj)
             }
         }
         break;
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+        case Channel::Type::Player: {
+            obj.insert("type", "player");
+            obj.insert("name", channel.get()->getName());
+            if (auto *playerChannel =
+                    dynamic_cast<PlayerChannel *>(channel.get().get()))
+            {
+                obj.insert("platform", PlayerChannel::platformSlug(
+                                           playerChannel->platform())
+                                           .toString());
+            }
+        }
+        break;
+#endif
 
         default:
             break;

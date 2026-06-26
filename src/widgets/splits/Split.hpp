@@ -34,6 +34,9 @@ class SplitContainer;
 class SplitOverlay;
 class SplitMpsOverlay;
 class SelectChannelDialog;
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+class StreamPlayerView;
+#endif
 class OverlayWindow;
 class TwitchChannel;
 
@@ -189,6 +192,9 @@ private:
     void noteBannerStateChanged(TwitchChannel *channel, int bannerId);
     void clearBannerAttention();
     void runDeferredTwitchRefresh();
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+    void applyPlayerMode(bool enabled);
+#endif
 
     IndirectChannel channel_;
 
@@ -216,6 +222,9 @@ private:
     PollBanner *const pollBanner_;
     ChannelView *const view_;
     SplitInput *const input_;
+#ifdef CHATTERINO_WITH_STREAM_PLAYER
+    StreamPlayerView *playerView_ = nullptr;
+#endif
     SplitOverlay *const overlay_;
     SplitMpsOverlay *mpsOverlay_{};
 

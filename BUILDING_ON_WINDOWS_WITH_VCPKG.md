@@ -51,4 +51,5 @@ This will require more than 30 GB of free space on your hard drive.
    ```
    When using CMD, use `-DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake` to specify the toolchain.
    To build with plugins add `-DCHATTERINO_PLUGINS=ON` to `cmake -B build` command.
+   To enable the embedded Twitch/Kick stream player, add `-DCHATTERINO_WITH_STREAM_PLAYER=ON` to the `cmake -B build` command (requires Qt WebEngine).
 1. Run `.\bin\chatterino2.exe`
