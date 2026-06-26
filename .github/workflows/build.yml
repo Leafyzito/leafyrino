@@ -170,7 +170,7 @@ jobs:
         if: matrix.build-deb
         uses: actions/upload-artifact@v7
         with:
-          name: Chatterino-${{ matrix.os }}-Qt-${{ matrix.qt-version }}.deb
+          name: Chatterino-${{ matrix.os }}.deb
           path: build/Chatterino-${{ matrix.os }}-x86_64.deb
 
   build-flatpak:

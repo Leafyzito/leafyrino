@@ -140,6 +140,8 @@ std::shared_ptr<Message> Message::clone() const
     cloned->translatedFrom = this->translatedFrom;
     cloned->count = this->count;
     cloned->reward = this->reward;
+    cloned->bits = this->bits;
+    cloned->announcementColor = this->announcementColor;
     cloned->platform = this->platform;
     cloned->clientDetection = this->clientDetection;
     std::ranges::transform(this->elements, std::back_inserter(cloned->elements),

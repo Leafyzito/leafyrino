@@ -20,7 +20,6 @@
 #include "providers/twitch/TwitchBadge.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
-#include "providers/twitch/UserColor.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
 #include "singletons/WindowManager.hpp"
@@ -595,29 +594,14 @@ void Connection::onChannelFollow(
     }
 
     const auto login = payload.event.userLogin.qt();
-    const auto displayName = payload.event.userName.qt();
     const auto time = chronoToQDateTime(metadata.messageTimestamp);
+    auto message = makeFollowMessage(channel, time, payload.event);
 
-    const auto userColor =
-        twitch::getUserColor({
-                                 .userLogin = login,
-                                 .userID = payload.event.userID.qt(),
-                                 .userDataController = getApp()->getUserData(),
-                                 .channelChatters = channel,
-                             })
-            .value_or(MessageColor::System);
-
-    const auto messageText =
-        QString("%1 followed the channel.").arg(displayName);
-
-    runInGuiThread([channel, login, displayName, userColor, messageText, time] {
-        auto msg = MessageBuilder::makeSystemMessageWithUser(
-            messageText, login, displayName, userColor, time.time());
-        msg->flags.set(MessageFlag::System, MessageFlag::EventSub,
-                       MessageFlag::Follow);
+    runInGuiThread([channel, login, message = std::move(message)] {
+        auto msg = message;
 
         auto [highlighted, highlightResult] = getApp()->getHighlights()->check(
-            {}, {}, login, messageText, msg->flags);
+            {}, {}, login, msg->messageText, msg->flags);
         if (highlighted)
         {
             msg->flags.set(MessageFlag::Highlighted);

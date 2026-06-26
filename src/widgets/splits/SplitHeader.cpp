@@ -1038,48 +1038,43 @@ void SplitHeader::handleChannelChanged()
 
     this->channelConnections_.clear();
 
-    auto connectSelectedChannel = [this] {
-        auto selected = this->split_->getSelectedChannel();
-        if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(selected.get()))
-        {
-            this->channelConnections_.managedConnect(
-                twitchChannel->streamStatusChanged, [this]() {
-                    this->updateChannelText();
-                });
-            this->channelConnections_.managedConnect(
-                twitchChannel->followingStatusChanged, [this]() {
-                    this->updateIcons();
-                });
-            if (getSettings()->showFollowButtonInSplitHeader &&
-                canUseFollowButtonForChannel(*twitchChannel))
-            {
-                twitchChannel->refreshFollowingStatus(false);
-            }
-        }
-        else if (auto *kickChannel =
-                     dynamic_cast<KickChannel *>(selected.get()))
-        {
-            this->channelConnections_.managedConnect(
-                kickChannel->streamDataChanged, [this]() {
-                    this->updateChannelText();
-                });
-        }
-    };
-
     auto channel = this->split_->getChannel();
     if (auto *multiChannel = dynamic_cast<MultiChannel *>(channel.get()))
     {
-        connectSelectedChannel();
         this->channelConnections_.managedConnect(
             multiChannel->activeChannelChanged, [this] {
                 this->handleChannelChanged();
                 this->updateIcons();
                 this->updateRoomModes();
             });
+        if (const auto *active = multiChannel->activeChannel())
+        {
+            channel = active->channel;
+        }
     }
-    else
+
+    if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get()))
     {
-        connectSelectedChannel();
+        this->channelConnections_.managedConnect(
+            twitchChannel->streamStatusChanged, [this]() {
+                this->updateChannelText();
+            });
+        this->channelConnections_.managedConnect(
+            twitchChannel->followingStatusChanged, [this]() {
+                this->updateIcons();
+            });
+        if (getSettings()->showFollowButtonInSplitHeader &&
+            canUseFollowButtonForChannel(*twitchChannel))
+        {
+            twitchChannel->refreshFollowingStatus(false);
+        }
+    }
+    else if (auto *kickChannel = dynamic_cast<KickChannel *>(channel.get()))
+    {
+        this->channelConnections_.managedConnect(kickChannel->streamDataChanged,
+                                                 [this]() {
+                                                     this->updateChannelText();
+                                                 });
     }
 }
 
@@ -1161,13 +1156,12 @@ void SplitHeader::toggleFollow()
 void SplitHeader::updateChannelText()
 {
     auto indirectChannel = this->split_->getIndirectChannel();
-    auto channel = this->split_->getChannel();
     this->isLive_ = false;
     this->tooltipText_ = QString();
 
     auto selectedChannel = this->split_->getSelectedChannel();
 
-    auto title = channel->getLocalizedName();
+    auto title = selectedChannel->getLocalizedName();
 
     if (indirectChannel.getType() == Channel::Type::TwitchWatching)
     {
