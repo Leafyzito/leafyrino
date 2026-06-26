@@ -1199,9 +1199,7 @@ void SplitHeader::updateChannelText()
 
     if (indirectChannel.getType() == Channel::Type::Player)
     {
-        this->titleLabel_->setText(channel->getLocalizedName().isEmpty()
-                                       ? "<empty>"
-                                       : channel->getLocalizedName());
+        this->titleLabel_->setText(title.isEmpty() ? "<empty>" : title);
         return;
     }
 
