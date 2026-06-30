@@ -189,6 +189,7 @@ private:
     void noteBannerStateChanged(TwitchChannel *channel, int bannerId);
     void clearBannerAttention();
     void runDeferredTwitchRefresh();
+    void refreshInputState(const QString &inputText);
 
     IndirectChannel channel_;
 

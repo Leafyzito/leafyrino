@@ -142,6 +142,8 @@ public:
         struct {
             QColor background;
             QColor backgroundPulse;
+            QColor searchHighlightBackground;
+            QColor searchFailText;
             QColor text;
 
             QString styleSheet;

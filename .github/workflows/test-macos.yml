@@ -32,7 +32,7 @@ jobs:
       QT_MODULES: qtimageformats qtcharts
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0 # allows for tags access

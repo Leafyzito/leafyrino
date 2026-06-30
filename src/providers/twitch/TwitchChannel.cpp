@@ -1016,9 +1016,9 @@ void TwitchChannel::refreshTwitchChannelEmotes(bool manualRefresh)
 
     getHelix()->getFollowedChannel(
         requestUserId, requestRoomId, nullptr,
-        [weak{this->weak_from_this()}, makeEmotes, requestUserId,
+        [weak{this->weakFromThis()}, makeEmotes, requestUserId,
          requestRoomId](const auto &chan) {
-            auto self = std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+            auto self = weak.lock();
             if (!self)
             {
                 return;
@@ -1045,8 +1045,7 @@ void TwitchChannel::refreshTwitchChannelEmotes(bool manualRefresh)
             getHelix()->getChannelEmotes(
                 self->roomId(),
                 [weak, makeEmotes](const auto &emotes) {
-                    auto self =
-                        std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+                    auto self = weak.lock();
                     if (!self)
                     {
                         return;
@@ -1080,21 +1079,23 @@ void TwitchChannel::refreshBTTVChannelEmotes(bool manualRefresh)
 
     bool cacheHit = readProviderEmotesCache(
         this->roomId(), "betterttv",
-        [this, weak = weakOf<Channel>(this)](auto jsonDoc) {
+        [weak = this->weakFromThis()](const auto &jsonDoc) {
             if (auto shared = weak.lock())
             {
                 auto emoteMap = bttv::detail::parseChannelEmotes(
-                    jsonDoc.object(), this->getLocalizedName());
-                this->setBttvEmotes(std::make_shared<const EmoteMap>(emoteMap));
+                    jsonDoc.object(), shared->getLocalizedName());
+                shared->setBttvEmotes(
+                    std::make_shared<const EmoteMap>(emoteMap));
             }
         });
 
     BttvEmotes::loadChannel(
-        weakOf<Channel>(this), this->roomId(), this->getLocalizedName(),
-        [this, weak = weakOf<Channel>(this)](auto &&emoteMap) {
+        this->weak_from_this(), this->roomId(), this->getLocalizedName(),
+        [weak = this->weakFromThis()](auto &&emoteMap) {
             if (auto shared = weak.lock())
             {
-                this->setBttvEmotes(std::make_shared<const EmoteMap>(emoteMap));
+                shared->setBttvEmotes(
+                    std::make_shared<const EmoteMap>(emoteMap));
             }
         },
         manualRefresh, cacheHit);
@@ -1115,32 +1116,33 @@ void TwitchChannel::refreshFFZChannelEmotes(bool manualRefresh)
         });
 
     FfzEmotes::loadChannel(
-        weakOf<Channel>(this), this->roomId(),
-        [this, weak = weakOf<Channel>(this)](auto &&emoteMap) {
+        this->weak_from_this(), this->roomId(),
+        [weak = this->weakFromThis()](auto &&emoteMap) {
             if (auto shared = weak.lock())
             {
-                this->setFfzEmotes(std::make_shared<const EmoteMap>(emoteMap));
+                shared->setFfzEmotes(
+                    std::make_shared<const EmoteMap>(emoteMap));
             }
         },
-        [this, weak = weakOf<Channel>(this)](auto &&modBadge) {
+        [weak = this->weakFromThis()](auto &&modBadge) {
             if (auto shared = weak.lock())
             {
-                this->ffzCustomModBadge_.set(
+                shared->ffzCustomModBadge_.set(
                     std::forward<decltype(modBadge)>(modBadge));
             }
         },
-        [this, weak = weakOf<Channel>(this)](auto &&vipBadge) {
+        [weak = this->weakFromThis()](auto &&vipBadge) {
             if (auto shared = weak.lock())
             {
-                this->ffzCustomVipBadge_.set(
+                shared->ffzCustomVipBadge_.set(
                     std::forward<decltype(vipBadge)>(vipBadge));
             }
         },
-        [this, weak = weakOf<Channel>(this)](auto &&channelBadges) {
+        [weak = this->weakFromThis()](auto &&channelBadges) {
             if (auto shared = weak.lock())
             {
-                this->tgFfzChannelBadges_.guard();
-                this->ffzChannelBadges_ =
+                shared->tgFfzChannelBadges_.guard();
+                shared->ffzChannelBadges_ =
                     std::forward<decltype(channelBadges)>(channelBadges);
             }
         },
@@ -1179,16 +1181,16 @@ void TwitchChannel::refreshSevenTVChannelEmotes(bool manualRefresh)
         });
 
     SeventvEmotes::loadChannelEmotes(
-        weakOf<Channel>(this), this->roomId(),
-        [this, weak = weakOf<Channel>(this)](auto &&emoteMap,
-                                             auto channelInfo) {
+        this->weak_from_this(), this->roomId(),
+        [weak = this->weakFromThis()](auto &&emoteMap,
+                                      const auto &channelInfo) {
             if (auto shared = weak.lock())
             {
-                this->setSeventvEmotes(
+                shared->setSeventvEmotes(
                     std::make_shared<const EmoteMap>(emoteMap));
-                this->updateSeventvData(channelInfo.userID,
-                                        channelInfo.emoteSetID);
-                this->seventvUserTwitchConnectionIndex_ =
+                shared->updateSeventvData(channelInfo.userID,
+                                          channelInfo.emoteSetID);
+                shared->seventvUserTwitchConnectionIndex_ =
                     channelInfo.twitchConnectionIndex;
             }
         },
@@ -1511,8 +1513,7 @@ void TwitchChannel::roomIdChanged()
     this->refreshTwitchChannelEmotes(false);
     this->joinBttvChannel();
     this->listenSevenTVCosmetics();
-    getApp()->getTwitchLiveController()->add(
-        std::dynamic_pointer_cast<TwitchChannel>(shared_from_this()));
+    getApp()->getTwitchLiveController()->add(this->sharedFromThis());
 
     this->refreshFFZChannelEmotes(false);
     this->refreshBTTVChannelEmotes(false);
@@ -2973,27 +2974,27 @@ void TwitchChannel::updateSeventvUser(
     this->updateSeventvData(this->seventvUserID_, dispatch.emoteSetID);
     SeventvEmotes::getEmoteSet(
         dispatch.emoteSetID,
-        [this, weak = weakOf<Channel>(this), dispatch](auto &&emotes,
-                                                       const auto &name) {
-            postToThread([this, weak, dispatch, emotes, name]() {
+        [weak = this->weakFromThis(), dispatch](auto &&emotes,
+                                                const auto &name) {
+            postToThread([weak, dispatch, emotes, name]() {
                 if (auto shared = weak.lock())
                 {
-                    this->seventvEmotes_.set(
+                    shared->seventvEmotes_.set(
                         std::make_shared<EmoteMap>(emotes));
                     auto builder =
                         MessageBuilder(liveUpdatesUpdateEmoteSetMessage, "7TV",
                                        dispatch.actorName, name);
-                    this->addMessage(builder.release(),
-                                     MessageContext::Original);
+                    shared->addMessage(builder.release(),
+                                       MessageContext::Original);
                 }
             });
         },
-        [this, weak = weakOf<Channel>(this)](const auto &reason) {
-            postToThread([this, weak, reason]() {
+        [weak = this->weakFromThis()](const auto &reason) {
+            postToThread([weak, reason]() {
                 if (auto shared = weak.lock())
                 {
-                    this->seventvEmotes_.set(EMPTY_EMOTE_MAP);
-                    this->addSystemMessage(
+                    shared->seventvEmotes_.set(EMPTY_EMOTE_MAP);
+                    shared->addSystemMessage(
                         QString("Failed updating 7TV emote set (%1).")
                             .arg(reason));
                 }
@@ -3205,18 +3206,12 @@ void TwitchChannel::loadRecentMessages()
         return;  // already loading
     }
 
-    auto weak = weakOf<Channel>(this);
+    auto weak = this->weakFromThis();
     recentmessages::load(
         this->getName(), weak,
         [weak](const auto &messages) {
             assert(!isAppAboutToQuit());
-            auto shared = weak.lock();
-            if (!shared)
-            {
-                return;
-            }
-
-            auto *tc = dynamic_cast<TwitchChannel *>(shared.get());
+            auto tc = weak.lock();
             if (!tc)
             {
                 return;
@@ -3248,13 +3243,7 @@ void TwitchChannel::loadRecentMessages()
                 return;
             }
 
-            auto *tc = dynamic_cast<TwitchChannel *>(shared.get());
-            if (!tc)
-            {
-                return;
-            }
-
-            tc->loadingRecentMessages_.clear();
+            shared->loadingRecentMessages_.clear();
         },
         getSettings()->twitchMessageHistoryLimit.getValue(), std::nullopt,
         std::nullopt, false);
@@ -3287,7 +3276,7 @@ void TwitchChannel::loadRecentMessagesReconnect()
             std::min(static_cast<int>(secondsSinceDisconnect + 1) * 10, limit);
     }
 
-    auto weak = weakOf<Channel>(this);
+    auto weak = this->weakFromThis();
     recentmessages::load(
         this->getName(), weak,
         [weak](const auto &messages) {
@@ -3297,14 +3286,8 @@ void TwitchChannel::loadRecentMessagesReconnect()
                 return;
             }
 
-            auto *tc = dynamic_cast<TwitchChannel *>(shared.get());
-            if (!tc)
-            {
-                return;
-            }
-
-            tc->fillInMissingMessages(messages);
-            tc->loadingRecentMessages_.clear();
+            shared->fillInMissingMessages(messages);
+            shared->loadingRecentMessages_.clear();
         },
         [weak]() {
             auto shared = weak.lock();
@@ -3313,13 +3296,7 @@ void TwitchChannel::loadRecentMessagesReconnect()
                 return;
             }
 
-            auto *tc = dynamic_cast<TwitchChannel *>(shared.get());
-            if (!tc)
-            {
-                return;
-            }
-
-            tc->loadingRecentMessages_.clear();
+            shared->loadingRecentMessages_.clear();
         },
         limit, this->lastConnectedAt_, now, true);
 }
@@ -3651,13 +3628,13 @@ void TwitchChannel::refreshChatters()
         this->roomId(),
         getApp()->getAccounts()->twitch.getCurrent()->getUserId(),
         MAX_CHATTERS_TO_FETCH,
-        [this, weak = weakOf<Channel>(this)](auto result) {
+        [weak = this->weakFromThis()](const auto &result) {
             if (auto shared = weak.lock())
             {
-                this->updateOnlineChatters(result.chatters);
-                this->chatterCount_ = result.total;
-                this->lastChatterRefreshAt_ = QDateTime::currentDateTimeUtc();
-                this->chatterFetchInFlight_.store(false);
+                shared->updateOnlineChatters(result.chatters);
+                shared->chatterCount_ = result.total;
+                shared->lastChatterRefreshAt_ = QDateTime::currentDateTimeUtc();
+                shared->chatterFetchInFlight_.store(false);
             }
         },
         [this, weak = weakOf<Channel>(this)](auto error, auto message) {
@@ -3729,7 +3706,7 @@ void TwitchChannel::refreshBadges()
     getHelix()->getChannelBadges(
         this->roomId(),
         // successCallback
-        [this, weak = weakOf<Channel>(this)](const auto &channelBadges) {
+        [weak = this->weakFromThis()](const auto &channelBadges) {
             auto shared = weak.lock();
             if (!shared)
             {
@@ -3737,10 +3714,10 @@ void TwitchChannel::refreshBadges()
                 return;
             }
 
-            this->addTwitchBadgeSets(channelBadges);
+            shared->addTwitchBadgeSets(channelBadges);
         },
         // failureCallback
-        [this, weak = weakOf<Channel>(this)](auto error, auto message) {
+        [weak = this->weakFromThis()](auto error, const auto &message) {
             auto shared = weak.lock();
             if (!shared)
             {
@@ -3764,7 +3741,7 @@ void TwitchChannel::refreshBadges()
                 break;
             }
 
-            this->addSystemMessage(errorMessage);
+            shared->addSystemMessage(errorMessage);
         });
 }
 
@@ -3799,7 +3776,7 @@ void TwitchChannel::refreshCheerEmotes()
 {
     getHelix()->getCheermotes(
         this->roomId(),
-        [this, weak = weakOf<Channel>(this)](
+        [weak = this->weakFromThis()](
             const std::vector<HelixCheermoteSet> &cheermoteSets) {
             auto shared = weak.lock();
             if (!shared)
@@ -3807,7 +3784,7 @@ void TwitchChannel::refreshCheerEmotes()
                 return;
             }
 
-            this->setCheerEmoteSets(cheermoteSets);
+            shared->setCheerEmoteSets(cheermoteSets);
         },
         [] {
             // Failure
@@ -4024,10 +4001,9 @@ void TwitchChannel::deleteMessagesAs(const QString &messageID,
             // Success handling, we do nothing: IRC/pubsub will dispatch the correct
             // events to update state for us.
         },
-        [lifetime{this->weak_from_this()}, messageID](auto error,
-                                                      const auto &message) {
-            auto self =
-                std::dynamic_pointer_cast<TwitchChannel>(lifetime.lock());
+        [lifetime{this->weakFromThis()}, messageID](auto error,
+                                                    const auto &message) {
+            auto self = lifetime.lock();
             if (!self)
             {
                 return;
@@ -4233,9 +4209,8 @@ void TwitchChannel::updateSevenTVActivity()
 
     getApp()->getSeventvAPI()->updateTwitchPresence(
         this->roomId(), currentSeventvUserID,
-        [chan = weakOf<Channel>(this)]() {
-            const auto self =
-                std::dynamic_pointer_cast<TwitchChannel>(chan.lock());
+        [chan = this->weakFromThis()]() {
+            const auto self = chan.lock();
             if (!self)
             {
                 return;
