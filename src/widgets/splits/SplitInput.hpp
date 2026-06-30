@@ -10,6 +10,7 @@
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
 #include <QPaintEvent>
 #include <QPointer>
 #include <QProgressBar>

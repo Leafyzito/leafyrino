@@ -1058,6 +1058,13 @@ void SplitInput::themeChangedEvent()
         palette.setColor(QPalette::WindowText, this->theme->splits.input.text);
         this->ui_.textEditLength->setPalette(palette);
         this->ui_.sendWaitStatus->setPalette(palette);
+
+        QPalette pointsPalette = palette;
+        auto channelPointsColor = this->theme->splits.input.text;
+        channelPointsColor.setAlphaF(0.72F);
+        pointsPalette.setColor(QPalette::WindowText, channelPointsColor);
+        this->ui_.channelPointsLabel->setPalette(pointsPalette);
+        this->ui_.sendWaitStatus->setPalette(pointsPalette);
     }
 
     {
@@ -1071,13 +1078,6 @@ void SplitInput::themeChangedEvent()
         }
         this->ui_.historySearchWrap->setPalette(palette);
     }
-
-    QPalette pointsPalette = palette;
-    auto channelPointsColor = this->theme->splits.input.text;
-    channelPointsColor.setAlphaF(0.72F);
-    pointsPalette.setColor(QPalette::WindowText, channelPointsColor);
-    this->ui_.channelPointsLabel->setPalette(pointsPalette);
-    this->ui_.sendWaitStatus->setPalette(pointsPalette);
 
     // Theme changed, reset current background color
     this->setBackgroundColor(this->theme->splits.input.background);

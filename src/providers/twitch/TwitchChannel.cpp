@@ -927,6 +927,16 @@ TwitchChannel::~TwitchChannel()
     this->destroyed.invoke();
 }
 
+std::shared_ptr<TwitchChannel> TwitchChannel::sharedFromThis()
+{
+    return std::static_pointer_cast<TwitchChannel>(this->shared_from_this());
+}
+
+std::weak_ptr<TwitchChannel> TwitchChannel::weakFromThis()
+{
+    return this->sharedFromThis();
+}
+
 void TwitchChannel::initialize()
 {
     this->refreshBadges();
