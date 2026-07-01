@@ -59,6 +59,9 @@
       },
       "input": {
         "background": "#ff352041",
+        "backgroundPulse": "#ff6520",
+        "searchFailText": "#ff0000",
+        "searchHighlightBackground": "#506e6eff",
         "text": "#ffffff"
       },
       "messageSeperator": "#513a5a",
