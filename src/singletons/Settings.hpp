@@ -318,6 +318,8 @@ public:
     BoolSetting channelLinks = {"/appearance/messages/channelLinks", false};
     BoolSetting wrapLinksAtBreaks = {"/appearance/messages/wrapLinksAtBreaks",
                                      false};
+    BoolSetting showTimestampDateTooltip = {
+        "/appearance/messages/showTimestampDateTooltip", false};
     FloatSetting boldScale = {"/appearance/boldScale", 63};
     BoolSetting showTabCloseButton = {"/appearance/showTabCloseButton", true};
     BoolSetting showTabLive = {"/appearance/showTabLiveButton", true};

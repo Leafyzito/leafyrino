@@ -210,6 +210,8 @@ WindowManager::WindowManager(const Args &appArgs_, const Paths &paths,
         settings.removeSpacesBetweenEmotes);
     this->forceLayoutChannelViewsListener.add(settings.emoteScale);
     this->forceLayoutChannelViewsListener.add(settings.timestampFormat);
+    this->forceLayoutChannelViewsListener.add(
+        settings.showTimestampDateTooltip);
     this->forceLayoutChannelViewsListener.add(settings.collpseMessagesMinLines);
     this->forceLayoutChannelViewsListener.add(settings.enableRedeemedHighlight);
     this->forceLayoutChannelViewsListener.add(

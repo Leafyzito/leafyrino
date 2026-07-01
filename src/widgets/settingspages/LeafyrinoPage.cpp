@@ -162,6 +162,13 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
                      "on one line.")
         ->addKeywords({"url", "link", "wrap", "break"})
         ->addTo(layout);
+    SettingWidget::checkbox("Show full date when hovering timestamps",
+                            s.showTimestampDateTooltip)
+        ->setTooltip("Show the full message date and time when hovering a "
+                     "timestamp. Uses your message timestamp format for the "
+                     "time portion.")
+        ->addKeywords({"timestamp", "date", "tooltip", "hover"})
+        ->addTo(layout);
 
     layout.addTitle("Follow events");
     layout.addDescription(

@@ -26,6 +26,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QLocale>
 #include <QTextLayout>
 
 #include <algorithm>
@@ -55,6 +56,32 @@ QSizeF getBoundingBoxSize(const std::vector<ImagePtr> &images)
     }
 
     return {width, height};
+}
+
+bool timestampFormatIncludesDate(const QString &format)
+{
+    for (const QChar c : format)
+    {
+        if (c == u'd' || c == u'M' || c == u'y')
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+QString timestampTooltip(const QDateTime &localTime,
+                         const QString &timestampFormat)
+{
+    static QLocale enUsLocale("en_US");
+
+    if (timestampFormatIncludesDate(timestampFormat))
+    {
+        return enUsLocale.toString(localTime, timestampFormat);
+    }
+
+    return enUsLocale.toString(localTime,
+                               QStringLiteral("dd/MM/yyyy ") + timestampFormat);
 }
 
 QSizeF textElementSize(const QString &text, const QFontMetricsF &metrics,
@@ -1643,11 +1670,36 @@ void TimestampElement::addToContainer(MessageLayoutContainer &container,
 {
     if (ctx.flags.hasAny(this->getFlags()))
     {
-        this->setTooltip(this->getTooltip());
+        static QLocale enUsLocale("en_US");
+        const auto &timestampFormat = getSettings()->timestampFormat.getValue();
+
+        if (getSettings()->showTimestampDateTooltip)
+        {
+            if (ctx.message.serverReceivedTime.isValid())
+            {
+                const auto localTime =
+                    ctx.message.serverReceivedTime.toLocalTime();
+                this->setTooltip(timestampTooltip(localTime, timestampFormat));
+            }
+            else
+            {
+                this->setTooltip(
+                    enUsLocale.toString(this->time_, timestampFormat));
+            }
+        }
+        else
+        {
+            this->setTooltip({});
+        }
+
         if (getSettings()->timestampFormat != this->format_)
         {
             this->format_ = getSettings()->timestampFormat.getValue();
             this->element_.reset(this->formatTime(this->time_));
+        }
+        else
+        {
+            this->element_->setTooltip(this->getTooltip());
         }
 
         this->element_->addToContainer(container, ctx);
