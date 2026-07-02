@@ -29,6 +29,10 @@ public:
 
     bool hasPinnedMessage() const;
 
+    /// Clears the "dismissed" state so a previously dismissed pin can be shown
+    /// again on the next setPinnedMessage() call.
+    void clearDismissState();
+
     void setToggleButtonVisible(bool visible);
 
     pajlada::Signals::NoArgSignal toggleBannerRequested;

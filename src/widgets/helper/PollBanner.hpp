@@ -26,6 +26,11 @@ public:
     void setPoll(const std::optional<TwitchChannel::PollEvent> &poll,
                  TwitchChannel *channel);
     bool hasPoll() const;
+
+    /// Clears the "dismissed" state so a previously dismissed poll can be shown
+    /// again.
+    void clearDismissState();
+
     void setToggleButtonVisible(bool visible);
 
     pajlada::Signals::NoArgSignal toggleBannerRequested;

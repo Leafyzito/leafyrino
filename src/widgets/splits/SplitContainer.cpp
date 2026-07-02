@@ -924,9 +924,9 @@ void SplitContainer::applyFromDescriptorRecursively(
         split->setModerationMode(splitNode.moderationMode_);
         split->setFilters(splitNode.filters_);
         split->setCheckSpellingOverride(splitNode.spellCheckOverride);
-        split->loadPerSplitPanelHides(splitNode.perSplitHidePinnedMessage_,
-                                      splitNode.perSplitHidePrediction_,
-                                      splitNode.perSplitHidePoll_);
+        split->loadPerSplitBannerHides(splitNode.perSplitHidePinnedMessage_,
+                                       splitNode.perSplitHidePrediction_,
+                                       splitNode.perSplitHidePoll_);
 
         this->insertSplit(split);
 
@@ -963,7 +963,7 @@ void SplitContainer::applyFromDescriptorRecursively(
                 split->setChannel(splitNode.decodeChannel());
                 split->setModerationMode(splitNode.moderationMode_);
                 split->setCheckSpellingOverride(splitNode.spellCheckOverride);
-                split->loadPerSplitPanelHides(
+                split->loadPerSplitBannerHides(
                     splitNode.perSplitHidePinnedMessage_,
                     splitNode.perSplitHidePrediction_,
                     splitNode.perSplitHidePoll_);

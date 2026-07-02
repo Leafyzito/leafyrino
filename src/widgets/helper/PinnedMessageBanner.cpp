@@ -400,6 +400,11 @@ bool PinnedMessageBanner::hasPinnedMessage() const
     return this->hasPin_;
 }
 
+void PinnedMessageBanner::clearDismissState()
+{
+    this->dismissedPinId_.clear();
+}
+
 void PinnedMessageBanner::setToggleButtonVisible(bool visible)
 {
     this->toggleButton_->setVisible(visible);

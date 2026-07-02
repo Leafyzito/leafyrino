@@ -556,40 +556,40 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
     {
         menu->addSeparator();
 
-        auto *panelsMenu =
-            menu->addMenu(QStringLiteral("Panels in this split"));
+        auto *bannersMenu =
+            menu->addMenu(QStringLiteral("Banners in this split"));
         const bool hideAll = this->split_->perSplitHidePinnedMessage() &&
                              this->split_->perSplitHidePrediction() &&
                              this->split_->perSplitHidePoll();
-        auto *hideAllPanelsAction =
-            panelsMenu->addAction(QStringLiteral("Hide all"));
-        hideAllPanelsAction->setCheckable(true);
-        hideAllPanelsAction->setChecked(hideAll);
-        QObject::connect(hideAllPanelsAction, &QAction::toggled, this->split_,
-                         &Split::setPerSplitHideAllPanels);
-        panelsMenu->addSeparator();
+        auto *hideAllBannersAction =
+            bannersMenu->addAction(QStringLiteral("Hide all"));
+        hideAllBannersAction->setCheckable(true);
+        hideAllBannersAction->setChecked(hideAll);
+        QObject::connect(hideAllBannersAction, &QAction::toggled, this->split_,
+                         &Split::setPerSplitHideAllBanners);
+        bannersMenu->addSeparator();
         auto *hidePinnedAction =
-            panelsMenu->addAction(QStringLiteral("Hide pinned message"));
+            bannersMenu->addAction(QStringLiteral("Hide pinned message"));
         hidePinnedAction->setCheckable(true);
         hidePinnedAction->setChecked(this->split_->perSplitHidePinnedMessage());
         QObject::connect(hidePinnedAction, &QAction::toggled, this->split_,
                          &Split::setPerSplitHidePinnedMessage);
         auto *hidePredictionAction =
-            panelsMenu->addAction(QStringLiteral("Hide prediction"));
+            bannersMenu->addAction(QStringLiteral("Hide prediction"));
         hidePredictionAction->setCheckable(true);
         hidePredictionAction->setChecked(
             this->split_->perSplitHidePrediction());
         QObject::connect(hidePredictionAction, &QAction::toggled, this->split_,
                          &Split::setPerSplitHidePrediction);
         auto *hidePollAction =
-            panelsMenu->addAction(QStringLiteral("Hide poll"));
+            bannersMenu->addAction(QStringLiteral("Hide poll"));
         hidePollAction->setCheckable(true);
         hidePollAction->setChecked(this->split_->perSplitHidePoll());
         QObject::connect(hidePollAction, &QAction::toggled, this->split_,
                          &Split::setPerSplitHidePoll);
 
-        menu->addAction(QStringLiteral("Restore dismissed panels"),
-                        this->split_, &Split::recoverDismissedPanels);
+        menu->addAction(QStringLiteral("Restore dismissed banners"),
+                        this->split_, &Split::recoverDismissedBanners);
         menu->addSeparator();
     }
     else if (kickChannel)

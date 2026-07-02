@@ -30,6 +30,10 @@ public:
 
     bool hasPrediction() const;
 
+    /// Clears the "dismissed" state so a previously dismissed prediction can be
+    /// shown again.
+    void clearDismissState();
+
     void setToggleButtonVisible(bool visible);
 
     pajlada::Signals::NoArgSignal toggleBannerRequested;

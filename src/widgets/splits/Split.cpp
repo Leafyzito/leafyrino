@@ -2055,7 +2055,7 @@ void Split::setCheckSpellingOverride(std::optional<bool> override)
     this->input_->setCheckSpellingOverride(override);
 }
 
-void Split::syncPerSplitPanelHidesToPanels()
+void Split::syncPerSplitBannerHidesToBanners()
 {
     this->updateBannerVisibility();
 }
@@ -2108,7 +2108,7 @@ void Split::setPerSplitHidePoll(bool hide)
     getApp()->getWindows()->queueSave();
 }
 
-void Split::setPerSplitHideAllPanels(bool hide)
+void Split::setPerSplitHideAllBanners(bool hide)
 {
     if (this->perSplitHidePinnedMessage_ == hide &&
         this->perSplitHidePrediction_ == hide &&
@@ -2119,12 +2119,12 @@ void Split::setPerSplitHideAllPanels(bool hide)
     this->perSplitHidePinnedMessage_ = hide;
     this->perSplitHidePrediction_ = hide;
     this->perSplitHidePoll_ = hide;
-    this->syncPerSplitPanelHidesToPanels();
+    this->syncPerSplitBannerHidesToBanners();
     getApp()->getWindows()->queueSave();
 }
 
-void Split::loadPerSplitPanelHides(bool hidePinned, bool hidePrediction,
-                                   bool hidePoll)
+void Split::loadPerSplitBannerHides(bool hidePinned, bool hidePrediction,
+                                    bool hidePoll)
 {
     if (this->perSplitHidePinnedMessage_ == hidePinned &&
         this->perSplitHidePrediction_ == hidePrediction &&
@@ -2135,7 +2135,7 @@ void Split::loadPerSplitPanelHides(bool hidePinned, bool hidePrediction,
     this->perSplitHidePinnedMessage_ = hidePinned;
     this->perSplitHidePrediction_ = hidePrediction;
     this->perSplitHidePoll_ = hidePoll;
-    this->syncPerSplitPanelHidesToPanels();
+    this->syncPerSplitBannerHidesToBanners();
 }
 
 void Split::insertTextToInput(const QString &text)
@@ -2183,10 +2183,23 @@ void Split::updateGifEmotes()
     this->view_->queueUpdate();
 }
 
-void Split::recoverDismissedPanels()
+void Split::recoverDismissedBanners()
 {
     this->bannerToggleOverride_ = -1;
     this->clearBannerAttention();
+
+    this->pinnedBanner_->clearDismissState();
+    this->predictionBanner_->clearDismissState();
+    this->pollBanner_->clearDismissState();
+
+    auto *tc = dynamic_cast<TwitchChannel *>(this->getSelectedChannel().get());
+    if (tc != nullptr)
+    {
+        this->pinnedBanner_->setPinnedMessage(*tc->accessPinnedMessage(), tc);
+        this->predictionBanner_->setPrediction(*tc->accessPrediction(), tc);
+        this->pollBanner_->setPoll(*tc->accessPoll(), tc);
+    }
+
     this->scheduleDeferredTwitchRefresh(true);
     this->updateBannerVisibility();
 }

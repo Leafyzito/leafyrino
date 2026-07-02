@@ -89,17 +89,18 @@ public:
     void setPerSplitHidePrediction(bool hide);
     bool perSplitHidePoll() const;
     void setPerSplitHidePoll(bool hide);
-    void setPerSplitHideAllPanels(bool hide);
-    void loadPerSplitPanelHides(bool hidePinned, bool hidePrediction,
-                                bool hidePoll);
+    void setPerSplitHideAllBanners(bool hide);
+    void loadPerSplitBannerHides(bool hidePinned, bool hidePrediction,
+                                 bool hidePoll);
 
     void insertTextToInput(const QString &text);
 
     void showChangeChannelPopup(const char *dialogTitle, bool empty,
                                 std::function<void(bool)> callback);
     void updateGifEmotes();
-    /// Clears dismiss state for pinned-message and prediction strips, then refreshes.
-    void recoverDismissedPanels();
+    /// Clears dismiss state for the pinned-message, prediction, and poll banners,
+    /// re-applies the channel's current data, then refreshes visibility.
+    void recoverDismissedBanners();
     void updateLastReadMessage();
     void setIsTopRightSplit(bool value);
     void scheduleDeferredTwitchRefresh(bool interactive = false);
@@ -157,7 +158,7 @@ private:
     void handleModifiers(Qt::KeyboardModifiers modifiers);
     void updateInputPlaceholder();
     void addShortcuts() override;
-    void syncPerSplitPanelHidesToPanels();
+    void syncPerSplitBannerHidesToBanners();
 
     /**
      * @brief Opens a Twitch channel's stream in your default browser's player (opens a formatted link)

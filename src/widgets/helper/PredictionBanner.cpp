@@ -383,6 +383,11 @@ bool PredictionBanner::hasPrediction() const
            this->dismissalKey(*this->prediction_);
 }
 
+void PredictionBanner::clearDismissState()
+{
+    this->dismissedPredictionKey_.clear();
+}
+
 void PredictionBanner::setToggleButtonVisible(bool visible)
 {
     this->toggleButton_->setVisible(visible);

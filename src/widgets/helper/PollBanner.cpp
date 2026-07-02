@@ -453,6 +453,11 @@ bool PollBanner::hasPoll() const
     return this->dismissedPollKey_ != this->dismissalKey(*this->poll_);
 }
 
+void PollBanner::clearDismissState()
+{
+    this->dismissedPollKey_.clear();
+}
+
 void PollBanner::setToggleButtonVisible(bool visible)
 {
     this->toggleButton_->setVisible(visible);
