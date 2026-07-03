@@ -8,7 +8,6 @@
 #    include "widgets/dialogs/ChannelPointsChartView.hpp"
 
 #    include <QAreaSeries>
-#    include <QCategoryAxis>
 #    include <QChart>
 #    include <QChartView>
 #    include <QComboBox>
@@ -30,7 +29,6 @@
 #    include <QVBoxLayout>
 
 #    include <algorithm>
-#    include <cmath>
 #    include <limits>
 #    include <optional>
 
@@ -122,111 +120,26 @@ QString fullBalanceText(qint64 balance)
     return QLocale().toString(balance) + QStringLiteral(" points");
 }
 
-// Formats a channel-point value into a short, human-readable axis label such as
-// "2.5M", "700K" or "1.2B", falling back to a locale-grouped integer for small
-// values. This avoids the scientific notation ("2.7e+06") that QValueAxis emits
-// for large balances.
-QString abbreviateChannelPoints(double value)
+// Picks a magnitude to divide the Y axis values by, plus the printf-style label
+// format used to render them. Large balances are shown as "2.5M" / "700.0K"
+// instead of the scientific notation ("2.7e+06") that QValueAxis emits by
+// default; smaller balances are shown as plain integers.
+struct AxisScale {
+    double factor;
+    QString labelFormat;
+};
+
+AxisScale axisScaleFor(double maxValue)
 {
-    struct Unit {
-        double factor;
-        QLatin1String suffix;
-    };
-    static const Unit units[] = {
-        {1e9, QLatin1String("B")},
-        {1e6, QLatin1String("M")},
-        {1e3, QLatin1String("K")},
-    };
-
-    const double absValue = std::fabs(value);
-    for (const auto &unit : units)
+    if (maxValue >= 1e6)
     {
-        if (absValue >= unit.factor)
-        {
-            const double scaled = value / unit.factor;
-            const double rounded = std::round(scaled * 10.0) / 10.0;
-            const int decimals =
-                std::fabs(rounded - std::round(rounded)) < 1e-9 ? 0 : 1;
-            return QLocale().toString(scaled, 'f', decimals) + unit.suffix;
-        }
+        return {1e6, QStringLiteral("%.1fM")};
     }
-
-    return QLocale().toString(static_cast<qint64>(std::llround(value)));
-}
-
-// Rounds a range to a "nice" number (1, 2, 5 * 10^n) so axis ticks land on
-// visually pleasing values.
-double niceNumber(double range, bool round)
-{
-    if (range <= 0.0)
+    if (maxValue >= 1e4)
     {
-        return 1.0;
+        return {1e3, QStringLiteral("%.1fK")};
     }
-
-    const double exponent = std::floor(std::log10(range));
-    const double fraction = range / std::pow(10.0, exponent);
-    double niceFraction = 10.0;
-
-    if (round)
-    {
-        if (fraction < 1.5)
-        {
-            niceFraction = 1.0;
-        }
-        else if (fraction < 3.0)
-        {
-            niceFraction = 2.0;
-        }
-        else if (fraction < 7.0)
-        {
-            niceFraction = 5.0;
-        }
-    }
-    else
-    {
-        if (fraction <= 1.0)
-        {
-            niceFraction = 1.0;
-        }
-        else if (fraction <= 2.0)
-        {
-            niceFraction = 2.0;
-        }
-        else if (fraction <= 5.0)
-        {
-            niceFraction = 5.0;
-        }
-    }
-
-    return niceFraction * std::pow(10.0, exponent);
-}
-
-// Produces up to maxTicks evenly spaced, rounded tick values within [min, max].
-QVector<double> niceTickValues(double min, double max, int maxTicks)
-{
-    QVector<double> ticks;
-    if (maxTicks < 2 || !(max > min))
-    {
-        return ticks;
-    }
-
-    const double step = niceNumber(
-        niceNumber(max - min, false) / static_cast<double>(maxTicks - 1), true);
-    if (step <= 0.0)
-    {
-        return ticks;
-    }
-
-    const double first = std::ceil(min / step) * step;
-    for (double value = first; value <= max + step * 0.5; value += step)
-    {
-        if (value >= min - step * 0.5 && value <= max + step * 0.5)
-        {
-            ticks.append(value);
-        }
-    }
-
-    return ticks;
+    return {1.0, QStringLiteral("%.0f")};
 }
 
 QString hoverTimeText(const QDateTime &time)
@@ -350,6 +263,7 @@ public:
     QGraphicsEllipseItem *highlightDot = nullptr;
     int hoveredIndex = -1;
     QColor accentColor = ACCENT_COLOR;
+    double yScale = 1.0;
     std::optional<QColor> axisLabelColor;
     std::optional<QColor> axisGridColor;
 
@@ -461,17 +375,6 @@ public:
             return;
         }
 
-        auto *fillLine = new QLineSeries(this->chart);
-        this->lineSeries = new QLineSeries(this->chart);
-        for (const auto &sample : this->samples)
-        {
-            const auto x = sample.time.toMSecsSinceEpoch();
-            const auto y = static_cast<double>(sample.balance);
-            fillLine->append(x, y);
-            this->lineSeries->append(x, y);
-        }
-
-        auto *baseline = new QLineSeries(this->chart);
         const auto minTime = this->samples.first().time.toMSecsSinceEpoch();
         const auto maxTime = this->samples.last().time.toMSecsSinceEpoch();
         const auto minBalance =
@@ -480,8 +383,33 @@ public:
                                  return left.balance < right.balance;
                              })
                 ->balance;
-        baseline->append(minTime, minBalance);
-        baseline->append(maxTime, minBalance);
+        const auto maxBalance =
+            std::max_element(this->samples.begin(), this->samples.end(),
+                             [](const auto &left, const auto &right) {
+                                 return left.balance < right.balance;
+                             })
+                ->balance;
+
+        // Divide the plotted values by a magnitude so the axis can show short
+        // labels (e.g. "2.5M") instead of scientific notation. The raw balance
+        // is still used for the hover callout.
+        const auto scale = axisScaleFor(static_cast<double>(maxBalance));
+        this->yScale = scale.factor;
+
+        auto *fillLine = new QLineSeries(this->chart);
+        this->lineSeries = new QLineSeries(this->chart);
+        for (const auto &sample : this->samples)
+        {
+            const auto x = sample.time.toMSecsSinceEpoch();
+            const auto y = static_cast<double>(sample.balance) / scale.factor;
+            fillLine->append(x, y);
+            this->lineSeries->append(x, y);
+        }
+
+        auto *baseline = new QLineSeries(this->chart);
+        const auto baselineY = static_cast<double>(minBalance) / scale.factor;
+        baseline->append(minTime, baselineY);
+        baseline->append(maxTime, baselineY);
 
         this->areaSeries = new QAreaSeries(fillLine, baseline);
 
@@ -505,6 +433,7 @@ public:
         if (this->axisX == nullptr)
         {
             this->axisX = new QDateTimeAxis(this->chart);
+            this->axisX->setTruncateLabels(false);
             this->chart->addAxis(this->axisX, Qt::AlignBottom);
             this->styleAxis(this->axisX);
         }
@@ -516,39 +445,24 @@ public:
                               QDateTime::fromMSecsSinceEpoch(maxTime));
 
         auto minY = static_cast<double>(minBalance);
-        auto maxY = static_cast<double>(
-            std::max_element(this->samples.begin(), this->samples.end(),
-                             [](const auto &left, const auto &right) {
-                                 return left.balance < right.balance;
-                             })
-                ->balance);
+        auto maxY = static_cast<double>(maxBalance);
         const auto padding = qMax(1.0, (maxY - minY) * 0.08);
         minY = qMax(0.0, minY - padding);
         maxY += padding;
 
-        // Rebuild the Y axis as a category axis so we can supply abbreviated
-        // labels (e.g. "2.5M") instead of QValueAxis' scientific notation.
-        if (this->axisY != nullptr)
+        if (this->axisY == nullptr)
         {
-            this->chart->removeAxis(this->axisY);
-            delete this->axisY;
-            this->axisY = nullptr;
+            this->axisY = new QValueAxis(this->chart);
+            this->axisY->setTruncateLabels(false);
+            this->chart->addAxis(this->axisY, Qt::AlignLeft);
+            this->styleAxis(this->axisY);
         }
 
-        auto *categoryAxis = new QCategoryAxis(this->chart);
-        categoryAxis->setLabelsPosition(
-            QCategoryAxis::AxisLabelsPositionOnValue);
-        categoryAxis->setStartValue(minY);
-        categoryAxis->setRange(minY, maxY);
-        for (const auto tick : niceTickValues(minY, maxY, 8))
-        {
-            categoryAxis->append(abbreviateChannelPoints(tick), tick);
-        }
-        categoryAxis->setTitleText(QStringLiteral("Channel points"));
-
-        this->axisY = categoryAxis;
-        this->chart->addAxis(this->axisY, Qt::AlignLeft);
-        this->styleAxis(this->axisY);
+        this->axisY->setRange(minY / scale.factor, maxY / scale.factor);
+        this->axisY->setLabelFormat(scale.labelFormat);
+        this->axisY->setTitleText(QStringLiteral("Channel points"));
+        this->axisY->setTickCount(8);
+        this->axisY->applyNiceNumbers();
 
         this->areaSeries->attachAxis(this->axisX);
         this->areaSeries->attachAxis(this->axisY);
@@ -587,7 +501,7 @@ public:
         const auto &sample = this->samples[index];
         const auto point = this->chart->mapToPosition(
             QPointF(sample.time.toMSecsSinceEpoch(),
-                    static_cast<double>(sample.balance)),
+                    static_cast<double>(sample.balance) / this->yScale),
             this->lineSeries);
 
         if (this->crosshair == nullptr)
