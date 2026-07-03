@@ -8,6 +8,7 @@
 #    include "widgets/dialogs/ChannelPointsChartView.hpp"
 
 #    include <QAreaSeries>
+#    include <QCategoryAxis>
 #    include <QChart>
 #    include <QChartView>
 #    include <QComboBox>
@@ -29,6 +30,7 @@
 #    include <QVBoxLayout>
 
 #    include <algorithm>
+#    include <cmath>
 #    include <limits>
 #    include <optional>
 
@@ -118,6 +120,113 @@ QString utcAxisFormat(qint64 spanSeconds)
 QString fullBalanceText(qint64 balance)
 {
     return QLocale().toString(balance) + QStringLiteral(" points");
+}
+
+// Formats a channel-point value into a short, human-readable axis label such as
+// "2.5M", "700K" or "1.2B", falling back to a locale-grouped integer for small
+// values. This avoids the scientific notation ("2.7e+06") that QValueAxis emits
+// for large balances.
+QString abbreviateChannelPoints(double value)
+{
+    struct Unit {
+        double factor;
+        QLatin1String suffix;
+    };
+    static const Unit units[] = {
+        {1e9, QLatin1String("B")},
+        {1e6, QLatin1String("M")},
+        {1e3, QLatin1String("K")},
+    };
+
+    const double absValue = std::fabs(value);
+    for (const auto &unit : units)
+    {
+        if (absValue >= unit.factor)
+        {
+            const double scaled = value / unit.factor;
+            const double rounded = std::round(scaled * 10.0) / 10.0;
+            const int decimals =
+                std::fabs(rounded - std::round(rounded)) < 1e-9 ? 0 : 1;
+            return QLocale().toString(scaled, 'f', decimals) + unit.suffix;
+        }
+    }
+
+    return QLocale().toString(static_cast<qint64>(std::llround(value)));
+}
+
+// Rounds a range to a "nice" number (1, 2, 5 * 10^n) so axis ticks land on
+// visually pleasing values.
+double niceNumber(double range, bool round)
+{
+    if (range <= 0.0)
+    {
+        return 1.0;
+    }
+
+    const double exponent = std::floor(std::log10(range));
+    const double fraction = range / std::pow(10.0, exponent);
+    double niceFraction = 10.0;
+
+    if (round)
+    {
+        if (fraction < 1.5)
+        {
+            niceFraction = 1.0;
+        }
+        else if (fraction < 3.0)
+        {
+            niceFraction = 2.0;
+        }
+        else if (fraction < 7.0)
+        {
+            niceFraction = 5.0;
+        }
+    }
+    else
+    {
+        if (fraction <= 1.0)
+        {
+            niceFraction = 1.0;
+        }
+        else if (fraction <= 2.0)
+        {
+            niceFraction = 2.0;
+        }
+        else if (fraction <= 5.0)
+        {
+            niceFraction = 5.0;
+        }
+    }
+
+    return niceFraction * std::pow(10.0, exponent);
+}
+
+// Produces up to maxTicks evenly spaced, rounded tick values within [min, max].
+QVector<double> niceTickValues(double min, double max, int maxTicks)
+{
+    QVector<double> ticks;
+    if (maxTicks < 2 || !(max > min))
+    {
+        return ticks;
+    }
+
+    const double step = niceNumber(
+        niceNumber(max - min, false) / static_cast<double>(maxTicks - 1), true);
+    if (step <= 0.0)
+    {
+        return ticks;
+    }
+
+    const double first = std::ceil(min / step) * step;
+    for (double value = first; value <= max + step * 0.5; value += step)
+    {
+        if (value >= min - step * 0.5 && value <= max + step * 0.5)
+        {
+            ticks.append(value);
+        }
+    }
+
+    return ticks;
 }
 
 QString hoverTimeText(const QDateTime &time)
@@ -241,6 +350,27 @@ public:
     QGraphicsEllipseItem *highlightDot = nullptr;
     int hoveredIndex = -1;
     QColor accentColor = ACCENT_COLOR;
+    std::optional<QColor> axisLabelColor;
+    std::optional<QColor> axisGridColor;
+
+    void styleAxis(QAbstractAxis *axis)
+    {
+        if (axis == nullptr)
+        {
+            return;
+        }
+
+        if (this->axisLabelColor.has_value())
+        {
+            axis->setLabelsColor(*this->axisLabelColor);
+            axis->setTitleBrush(*this->axisLabelColor);
+        }
+        if (this->axisGridColor.has_value())
+        {
+            axis->setGridLineColor(*this->axisGridColor);
+            axis->setMinorGridLineColor(*this->axisGridColor);
+        }
+    }
 
     void clearHover()
     {
@@ -376,11 +506,7 @@ public:
         {
             this->axisX = new QDateTimeAxis(this->chart);
             this->chart->addAxis(this->axisX, Qt::AlignBottom);
-        }
-        if (this->axisY == nullptr)
-        {
-            this->axisY = new QValueAxis(this->chart);
-            this->chart->addAxis(this->axisY, Qt::AlignLeft);
+            this->styleAxis(this->axisX);
         }
 
         const auto spanSeconds = qMax<qint64>(1, (maxTime - minTime) / 1000);
@@ -400,11 +526,29 @@ public:
         minY = qMax(0.0, minY - padding);
         maxY += padding;
 
-        this->axisY->setRange(minY, maxY);
-        this->axisY->setLabelFormat(maxY >= 1'000'000 ? QStringLiteral("%.1e")
-                                                      : QStringLiteral("%.0f"));
-        this->axisY->setTitleText(QStringLiteral("Channel points"));
-        this->axisY->setTickCount(8);
+        // Rebuild the Y axis as a category axis so we can supply abbreviated
+        // labels (e.g. "2.5M") instead of QValueAxis' scientific notation.
+        if (this->axisY != nullptr)
+        {
+            this->chart->removeAxis(this->axisY);
+            delete this->axisY;
+            this->axisY = nullptr;
+        }
+
+        auto *categoryAxis = new QCategoryAxis(this->chart);
+        categoryAxis->setLabelsPosition(
+            QCategoryAxis::AxisLabelsPositionOnValue);
+        categoryAxis->setStartValue(minY);
+        categoryAxis->setRange(minY, maxY);
+        for (const auto tick : niceTickValues(minY, maxY, 8))
+        {
+            categoryAxis->append(abbreviateChannelPoints(tick), tick);
+        }
+        categoryAxis->setTitleText(QStringLiteral("Channel points"));
+
+        this->axisY = categoryAxis;
+        this->chart->addAxis(this->axisY, Qt::AlignLeft);
+        this->styleAxis(this->axisY);
 
         this->areaSeries->attachAxis(this->axisX);
         this->areaSeries->attachAxis(this->axisY);
@@ -635,20 +779,10 @@ void ChannelPointsChartView::applyTheme(const Theme &theme)
     this->d_->chart->setPlotAreaBackgroundBrush(background);
     this->d_->chart->setTitleBrush(text);
 
-    if (this->d_->axisX != nullptr)
-    {
-        this->d_->axisX->setLabelsColor(muted);
-        this->d_->axisX->setTitleBrush(muted);
-        this->d_->axisX->setGridLineColor(grid);
-        this->d_->axisX->setMinorGridLineColor(grid);
-    }
-    if (this->d_->axisY != nullptr)
-    {
-        this->d_->axisY->setLabelsColor(muted);
-        this->d_->axisY->setTitleBrush(muted);
-        this->d_->axisY->setGridLineColor(grid);
-        this->d_->axisY->setMinorGridLineColor(grid);
-    }
+    this->d_->axisLabelColor = muted;
+    this->d_->axisGridColor = grid;
+    this->d_->styleAxis(this->d_->axisX);
+    this->d_->styleAxis(this->d_->axisY);
 
     this->d_->emptyLabel->setStyleSheet(
         QStringLiteral("color: %1;").arg(muted.name(QColor::HexArgb)));
