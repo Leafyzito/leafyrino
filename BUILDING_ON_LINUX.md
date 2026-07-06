@@ -98,7 +98,7 @@ The WSL scripts assume Qt is installed at `/home/<user>/Qt/6.10.2/gcc_64`. Set `
    ```
 1. Generate build files. To enable Lua plugins in your build add `-DCHATTERINO_PLUGINS=ON` to this command.
    ```sh
-   cmake -DBUILD_WITH_QTKEYCHAIN=OFF -DCHATTERINO_SPELLCHECK=On ..
+   cmake -DCHATTERINO_SPELLCHECK=On ..
    ```
 1. Build the project
    ```sh

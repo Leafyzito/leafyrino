@@ -7,6 +7,7 @@
 #include <pajlada/signals/signal.hpp>
 
 #include <chrono>
+#include <map>
 #include <queue>
 #include <unordered_map>
 
@@ -29,6 +30,7 @@ struct LiveUpdateEmote;
 struct EmoteName;
 
 struct KickChannelInfo;
+struct KickPrivateChannelSubBadge;
 
 class KickChannel : public Channel, public ChannelChatters
 {
@@ -140,6 +142,8 @@ public:
     pajlada::Signals::Signal<const QString &> sendWaitUpdate;
     void setSendWait(std::chrono::seconds waitTime);
 
+    EmotePtr getSubBadge(unsigned months);
+
     friend QDebug operator<<(QDebug dbg, const KickChannel &chan);
 
 protected:
@@ -173,6 +177,11 @@ private:
 
     void emitSendWait();
 
+    void initSubBadges(std::span<const KickPrivateChannelSubBadge> infos);
+
+    void loadChannelHistory();
+
+    // Kick usually calls this username
     QString displayName_;
 
     QString slug_;
@@ -204,6 +213,9 @@ private:
     bool isVip_ = false;
 
     StreamData streamData_;
+
+    std::map<unsigned, ImagePtr> subBadgeImages_;
+    std::unordered_map<unsigned, EmotePtr> subBadges_;
 };
 
 }  // namespace chatterino

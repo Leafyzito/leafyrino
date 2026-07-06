@@ -167,6 +167,7 @@ int main(int argc, char **argv)
         Version::instance().appUserModelID().c_str());
 #endif
 
+    const Modes modes;
     std::unique_ptr<Paths> paths;
 
     // Optional logger override that logs to a file
@@ -174,12 +175,12 @@ int main(int argc, char **argv)
 
     try
     {
-        paths = std::make_unique<Paths>();
+        paths = std::make_unique<Paths>(modes);
     }
     catch (std::runtime_error &error)
     {
         QMessageBox box;
-        if (Modes::instance().isPortable)
+        if (modes.isPortable)
         {
             auto errorMessage =
                 error.what() +
@@ -252,7 +253,7 @@ int main(int argc, char **argv)
                               << QSslSocket::supportedProtocols();
 #endif
 
-        Settings settings(args, paths->settingsDirectory);
+        Settings settings(modes, args, paths->settingsDirectory);
 #ifndef Q_OS_MACOS
         if (!args.remoteRestart && !args.isFramelessEmbed &&
             settings.trayHideOnClose.getValue() &&
@@ -262,14 +263,14 @@ int main(int argc, char **argv)
         }
 #endif
 
-        Updates updates(*paths, settings);
+        Updates updates(modes, *paths, settings);
 
         NetworkConfigurationProvider::applyFromEnv(Env::get());
 
         IvrApi::initialize();
         Helix::initialize();
 
-        runGui(a, *paths, settings, args, updates);
+        runGui(a, modes, *paths, settings, args, updates);
     }
     return 0;
 }

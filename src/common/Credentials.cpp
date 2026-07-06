@@ -47,7 +47,8 @@ bool useKeyring()
 #ifdef NO_QTKEYCHAIN
     return false;
 #endif
-    if (Modes::instance().isPortable)
+    Modes modes;
+    if (modes.isPortable)
     {
         return false;
     }

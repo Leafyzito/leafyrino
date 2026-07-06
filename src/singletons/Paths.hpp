@@ -10,10 +10,12 @@
 
 namespace chatterino {
 
+class Modes;
+
 class Paths
 {
 public:
-    Paths();
+    Paths(const Modes &modes);
 
     QString rootAppDataDirectory;
 
@@ -38,8 +40,6 @@ public:
     QString ipcDirectory;
 
     bool createFolder(const QString &folderPath);
-    [[deprecated("use Modes::instance().portable instead")]] bool isPortable()
-        const;
 
     QString cacheDirectory() const;
 
@@ -48,7 +48,7 @@ public:
 private:
     void initAppFilePathHash();
     void initCheckPortable();
-    void initRootDirectory();
+    void initRootDirectory(const Modes &modes);
     void initSubDirectories();
 
     std::optional<bool> portable_;

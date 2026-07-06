@@ -192,6 +192,8 @@ private:
     void runDeferredTwitchRefresh();
     void refreshInputState(const QString &inputText);
 
+    void updateChannelConnections();
+
     IndirectChannel channel_;
 
     bool moderationMode_{};
@@ -228,6 +230,7 @@ private:
     pajlada::Signals::Connection channelIDChangedConnection_;
     pajlada::Signals::Connection usermodeChangedConnection_;
     pajlada::Signals::Connection roomModeChangedConnection_;
+    pajlada::Signals::ScopedConnection sendWaitConnection_;
 
     pajlada::Signals::Connection indirectChannelChangedConnection_;
 

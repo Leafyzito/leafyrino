@@ -281,6 +281,7 @@ void PluginController::load(const QFileInfo &index, const QDir &pluginDir,
     auto plugin = std::make_unique<Plugin>(pluginName, l, meta, pluginDir);
     auto *temp = plugin.get();
     this->plugins_.insert({pluginName, std::move(plugin)});
+    this->queueChangeNotification();
 
     if (getApp()->getArgs().safeMode)
     {
@@ -328,6 +329,7 @@ bool PluginController::reload(const QString &id)
     QDir loadDir = it->second->loadDirectory_;
 
     this->plugins_.erase(id);
+    this->queueChangeNotification();
     this->tryLoadFromDir(loadDir);
     return true;
 }
@@ -452,6 +454,22 @@ std::pair<bool, QStringList> PluginController::updateCustomCompletions(
 WebSocketPool &PluginController::webSocketPool()
 {
     return this->webSocketPool_;
+}
+
+void PluginController::queueChangeNotification()
+{
+    if (this->changeNotificationQueued)
+    {
+        return;
+    }
+    this->changeNotificationQueued = true;
+    QMetaObject::invokeMethod(
+        qApp,
+        [this] {
+            this->changeNotificationQueued = false;
+            this->onPluginsUpdated.invoke();
+        },
+        Qt::QueuedConnection);
 }
 
 }  // namespace chatterino

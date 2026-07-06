@@ -114,23 +114,18 @@ void tryMigrateLinuxSettingsInto(const QString &destinationPath)
 
 }  // namespace
 
-Paths::Paths()
+Paths::Paths(const Modes &modes)
 {
     this->initAppFilePathHash();
 
     this->initCheckPortable();
-    this->initRootDirectory();
+    this->initRootDirectory(modes);
     this->initSubDirectories();
 }
 
 bool Paths::createFolder(const QString &folderPath)
 {
     return QDir().mkpath(folderPath);
-}
-
-bool Paths::isPortable() const
-{
-    return Modes::instance().isPortable;
 }
 
 QString Paths::cacheDirectory() const
@@ -181,12 +176,12 @@ void Paths::initCheckPortable()
         combinePath(QCoreApplication::applicationDirPath(), "portable"));
 }
 
-void Paths::initRootDirectory()
+void Paths::initRootDirectory(const Modes &modes)
 {
     assert(this->portable_.has_value());
 
     this->rootAppDataDirectory = [&]() -> QString {
-        if (Modes::instance().isPortable)
+        if (modes.isPortable)
         {
             return QCoreApplication::applicationDirPath();
         }
