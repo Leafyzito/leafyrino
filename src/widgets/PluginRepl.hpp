@@ -8,8 +8,8 @@
 #    include "buttons/SvgButton.hpp"
 #    include "widgets/BaseWindow.hpp"
 
-#    include <pajlada/signals/scoped-connection.hpp>
 #    include <boost/signals2/connection.hpp>
+#    include <pajlada/signals/scoped-connection.hpp>
 #    include <QString>
 #    include <QTextBlockFormat>
 #    include <QTextCharFormat>

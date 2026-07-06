@@ -173,8 +173,7 @@ void autoSlugifyImpl(const QString &baseUrl, auto &&cb, bool shouldSlug,
 }
 
 template <typename T>
-void autoSlugify(const QString &baseUrl,
-                 std::function<void(ExpectedStr<T>)> cb,
+void autoSlugify(const QString &baseUrl, std::function<void(ExpectedStr<T>)> cb,
                  auto &&...segments)
 {
     autoSlugifyImpl<T>(
