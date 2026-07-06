@@ -399,6 +399,11 @@ Window *WindowManager::getLastSelectedWindow() const
     return this->selectedWindow_;
 }
 
+std::span<Window *const> WindowManager::windows() const
+{
+    return this->windows_;
+}
+
 Window &WindowManager::createWindow(WindowType type, bool show, QWidget *parent)
 {
     assertInGuiThread();

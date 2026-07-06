@@ -16,6 +16,7 @@
 
 #include <memory>
 #include <set>
+#include <span>
 
 namespace chatterino {
 
@@ -85,6 +86,8 @@ public:
     Window &getMainWindow();
 
     Window *getLastSelectedWindow() const;
+
+    std::span<Window *const> windows() const;
 
     Window &createWindow(WindowType type, bool show = true,
                          QWidget *parent = nullptr);
