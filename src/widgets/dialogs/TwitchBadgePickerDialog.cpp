@@ -1557,7 +1557,7 @@ void TwitchBadgePickerDialog::rebuildEventBadges()
         auto *label = new QLabel("Coming Soon", this->contentWidget_);
         label->setObjectName("TwitchBadgePickerSectionLabel");
         this->contentLayout_->addWidget(label);
-        makeGrid(comingSoon, false);
+        makeGrid(comingSoon, true);
     }
 
     if (missing.isEmpty() && comingSoon.isEmpty())
