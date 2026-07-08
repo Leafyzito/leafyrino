@@ -1457,13 +1457,13 @@ void TwitchBadgePickerDialog::rebuildEventBadges()
             missing.push_back(b);
     }
 
-    auto makeTile = [&](const EventBadge &badge,
-                        QWidget *parent) -> BadgeTileButton * {
+    auto makeTile = [&](const EventBadge &badge, bool showPriceLabel,
+                        QWidget *parent) -> QWidget * {
         GqlBadge gql;
         gql.setID = badge.id;
         gql.title = badge.name;
         gql.image2x = badge.imageUrl;
-        auto *tile = new BadgeTileButton(gql, parent);
+        BadgeTileButton *tile = nullptr;
 
         // tooltip com info da badge
         QString tip = badge.name;
@@ -1477,8 +1477,27 @@ void TwitchBadgePickerDialog::rebuildEventBadges()
                            "MMM d, yyyy hh:mm"));
         if (badge.free.has_value())
             tip += badge.free.value() ? "\nFree" : "\nPaid";
-        tile->setToolTip(tip);
+        if (!showPriceLabel)
+        {
+            tile = new BadgeTileButton(gql, parent);
+            tile->setToolTip(tip);
+            if (!badge.streamDatabaseUrl.isEmpty())
+            {
+                const auto url = badge.streamDatabaseUrl;
+                QObject::connect(tile, &QPushButton::clicked, this, [url] {
+                    QDesktopServices::openUrl(QUrl(url));
+                });
+            }
+            return tile;
+        }
 
+        auto *cell = new QWidget(parent);
+        auto *layout = new QVBoxLayout(cell);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(2);
+
+        tile = new BadgeTileButton(gql, cell);
+        tile->setToolTip(tip);
         if (!badge.streamDatabaseUrl.isEmpty())
         {
             const auto url = badge.streamDatabaseUrl;
@@ -1486,12 +1505,25 @@ void TwitchBadgePickerDialog::rebuildEventBadges()
                 QDesktopServices::openUrl(QUrl(url));
             });
         }
-        return tile;
+        layout->addWidget(tile, 0, Qt::AlignHCenter);
+
+        auto *priceLabel = new QLabel(cell);
+        priceLabel->setObjectName("TwitchBadgePickerEventBadgePrice");
+        priceLabel->setAlignment(Qt::AlignHCenter);
+        priceLabel->setText(badge.free.has_value()
+                                ? (badge.free.value() ? "Free" : "Paid")
+                                : QString());
+        priceLabel->setFixedHeight(
+            scaledMetric(this->scale(), /*base*/ 14, /*minimum*/ 10));
+        layout->addWidget(priceLabel);
+
+        return cell;
     };
 
     const int gridColumns = this->badgeGridColumns();
 
-    auto makeGrid = [&](const QVector<EventBadge> &badges) {
+    auto makeGrid = [&](const QVector<EventBadge> &badges,
+                        bool showPriceLabel) {
         auto *gridWidget = new QWidget(this->contentWidget_);
         auto *grid = new QGridLayout(gridWidget);
         grid->setContentsMargins(0, 0, 0, 0);
@@ -1500,7 +1532,7 @@ void TwitchBadgePickerDialog::rebuildEventBadges()
         int col = 0;
         for (const auto &badge : badges)
         {
-            auto *tile = makeTile(badge, gridWidget);
+            auto *tile = makeTile(badge, showPriceLabel, gridWidget);
             grid->addWidget(tile, row, col);
             if (++col >= gridColumns)
             {
@@ -1517,7 +1549,7 @@ void TwitchBadgePickerDialog::rebuildEventBadges()
             new QLabel("Missing (Available Now)", this->contentWidget_);
         label->setObjectName("TwitchBadgePickerSectionLabel");
         this->contentLayout_->addWidget(label);
-        makeGrid(missing);
+        makeGrid(missing, true);
     }
 
     if (!comingSoon.isEmpty())
@@ -1525,7 +1557,7 @@ void TwitchBadgePickerDialog::rebuildEventBadges()
         auto *label = new QLabel("Coming Soon", this->contentWidget_);
         label->setObjectName("TwitchBadgePickerSectionLabel");
         this->contentLayout_->addWidget(label);
-        makeGrid(comingSoon);
+        makeGrid(comingSoon, false);
     }
 
     if (missing.isEmpty() && comingSoon.isEmpty())
@@ -2267,6 +2299,11 @@ void TwitchBadgePickerDialog::refreshStyle()
             color: %2;
             font-weight: 600;
             padding-top: 4px;
+        }
+        QLabel#TwitchBadgePickerEventBadgePrice {
+            color: %4;
+            font-size: 10px;
+            font-weight: 600;
         }
         QLabel#TwitchBadgePickerStatus,
         QLabel#TwitchBadgePickerEmpty {
