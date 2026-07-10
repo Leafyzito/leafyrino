@@ -1,6 +1,6 @@
 # Building on macOS
 
-Moltorino is built in CI as a universal macOS 13+ app.
+Chatterino2 is built in CI on Intel on macOS 13.
 Local dev machines for testing are available on Apple Silicon on macOS 13.
 
 ## Installing dependencies
@@ -25,7 +25,7 @@ Local dev machines for testing are available on Apple Silicon on macOS 13.
 1. Build:  
    `make`
 
-Your binary can now be found under `bin/Moltorino7.app/Contents/MacOS/Moltorino7`.
+Your binary can now be found under bin/chatterino.app/Contents/MacOS/chatterino directory
 
 ### Other building methods
 

@@ -68,7 +68,7 @@ nix-shell -p openssl boost qt6.full pkg-config cmake libnotify hunspell
 
 ### Windows + WSL (Ubuntu 22.04)
 
-Moltorino ships helper scripts for Linux packaging from Windows through WSL:
+Chatterino ships helper scripts for Linux packaging from Windows through WSL:
 
 ```bat
 build_linux_appimage.bat
