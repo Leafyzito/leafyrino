@@ -112,6 +112,16 @@ ScrollbarHighlight Message::getScrollBarHighlight() const
         };
     }
 
+    if (this->flags.has(MessageFlag::Announcement) &&
+        getSettings()->enableAnnouncementHighlight)
+    {
+        return {
+            ColorProvider::instance().color(colorTypeFromHelixAnnouncementColor(
+                this->announcementColor,
+                getSettings()->enableColoredAnnouncementHighlight)),
+        };
+    }
+
     if (this->flags.has(MessageFlag::UncategorizedNotification))
     {
         // TODO: Give this a better/its own color :-)
@@ -213,6 +223,12 @@ QJsonObject Message::toJson() const
     if (this->reward)
     {
         msg["reward"_L1] = this->reward->toJson();
+    }
+
+    if (this->flags.has(MessageFlag::Announcement))
+    {
+        msg["announcementColor"_L1] =
+            qmagicenum::enumNameString(this->announcementColor);
     }
 
     if (!getApp()->isTest())

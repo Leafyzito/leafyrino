@@ -732,6 +732,19 @@ public:
     QStringSetting watchStreakHighlightColor = {
         "/highlighting/watchStreak/color", ""};
 
+    BoolSetting enableAnnouncementHighlight = {
+        "/highlighting/announcement/enabled",
+        true,
+    };
+    QStringSetting announcementHighlightColor = {
+        "/highlighting/announcement/color",
+        "",
+    };
+    BoolSetting enableColoredAnnouncementHighlight = {
+        "/highlighting/announcement/coloredAnnouncement/enabled",
+        true,
+    };
+
     BoolSetting enableFollowHighlight = {"/highlighting/follow/enabled", true};
     BoolSetting enableFollowHighlightSound = {
         "/highlighting/follow/enableSound", false};

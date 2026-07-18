@@ -451,6 +451,12 @@ declare namespace c2 {
         EventSub = 0,
         ModerationAction = 0,
         InvalidReplyTarget = 0,
+        WatchStreak = 0,
+        Announcement = 0,
+        UncategorizedNotification = 0,
+        ChatWarning = 0,
+        RepeatedMessage = 0,
+        Follow = 0,
     }
 
     enum MessageElementFlag {

@@ -615,6 +615,7 @@ set(SOURCE_FILES
 
         providers/twitch/api/Helix.cpp
         providers/twitch/api/Helix.hpp
+        providers/twitch/api/HelixEnums.hpp
         providers/twitch/api/TwitchGql.cpp
         providers/twitch/api/TwitchGql.hpp
 
