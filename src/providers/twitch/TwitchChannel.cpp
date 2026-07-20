@@ -2638,105 +2638,63 @@ void TwitchChannel::setPinnedMessage(std::optional<PinnedMessage> pin)
 
 void TwitchChannel::refreshPinnedMessage()
 {
-    if (this->roomId().isEmpty())
+    if (!getSettings()->enablePinnedMessages || this->roomId().isEmpty())
     {
         return;
     }
-
     auto account = getApp()->getAccounts()->twitch.getCurrent();
-
-    // leafyrino GQL-backed pin state (used by PinnedMessageBanner)
-    if (getSettings()->enablePinnedMessages)
-    {
-        const auto weak = this->weak_from_this();
-        TwitchGql::getCurrentPin(
-            this->roomId(), account,
-            [weak](std::optional<PinnedMessage> pin) {
-                auto shared =
-                    std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
-                if (!shared)
-                {
-                    return;
-                }
-                if (pin)
-                {
-                    qCDebug(chatterinoTwitch)
-                        << "Found pinned message for" << shared->getName()
-                        << ":" << pin->text;
-                }
-                else
-                {
-                    qCDebug(chatterinoTwitch)
-                        << "No pinned message for" << shared->getName();
-                }
-                shared->pinnedMessageRefreshFailures_ = 0;
-                shared->setPinnedMessage(std::move(pin));
-            },
-            [weak](const QString &error) {
-                auto shared =
-                    std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
-                if (!shared)
-                {
-                    return;
-                }
-                qCDebug(chatterinoTwitch)
-                    << "Failed to fetch pinned message for"
-                    << shared->getName() << ":" << error;
-                const auto failureCount =
-                    shared->pinnedMessageRefreshFailures_.fetch_add(1);
-                if (failureCount >= 2)
-                {
-                    return;
-                }
-
-                const auto delayMs = failureCount == 0 ? 1500 : 5000;
-                QTimer::singleShot(delayMs, [weak] {
-                    if (isAppAboutToQuit())
-                    {
-                        return;
-                    }
-
-                    auto retry =
-                        std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
-                    if (retry)
-                    {
-                        retry->refreshPinnedMessage();
-                    }
-                });
-            });
-    }
-
-    // Upstream Helix-backed pin state (used by PinnedMessageWidget)
-    if (!account || account->isAnon())
-    {
-        return;
-    }
-
-    const auto requestId = ++this->pinnedMessageRequestId_;
-    getHelix()->getPinnedChatMessage(
-        this->roomId(), account->getUserId(),
-        [weak = this->weakFromThis(),
-         requestId](std::optional<HelixPinnedChatMessage> msg) {
-            auto self = weak.lock();
-            if (!self || self->pinnedMessageRequestId_ != requestId)
+    const auto weak = this->weak_from_this();
+    TwitchGql::getCurrentPin(
+        this->roomId(), account,
+        [weak](std::optional<PinnedMessage> pin) {
+            auto shared = std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+            if (!shared)
             {
                 return;
             }
-            if (msg)
+            if (pin)
             {
-                self->pinnedMessage_ =
-                    std::make_unique<const HelixPinnedChatMessage>(
-                        std::move(*msg));
+                qCDebug(chatterinoTwitch)
+                    << "Found pinned message for" << shared->getName() << ":"
+                    << pin->text;
             }
             else
             {
-                self->pinnedMessage_ = nullptr;
+                qCDebug(chatterinoTwitch)
+                    << "No pinned message for" << shared->getName();
             }
-            self->pinnedMessageChanged.invoke();
+            shared->pinnedMessageRefreshFailures_ = 0;
+            shared->setPinnedMessage(std::move(pin));
         },
-        [](const QString &error) {
-            qCWarning(chatterinoTwitch)
-                << "Failed to fetch pinned message:" << error;
+        [weak](const QString &error) {
+            auto shared = std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+            if (!shared)
+            {
+                return;
+            }
+            qCDebug(chatterinoTwitch) << "Failed to fetch pinned message for"
+                                      << shared->getName() << ":" << error;
+            const auto failureCount =
+                shared->pinnedMessageRefreshFailures_.fetch_add(1);
+            if (failureCount >= 2)
+            {
+                return;
+            }
+
+            const auto delayMs = failureCount == 0 ? 1500 : 5000;
+            QTimer::singleShot(delayMs, [weak] {
+                if (isAppAboutToQuit())
+                {
+                    return;
+                }
+
+                auto retry =
+                    std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+                if (retry)
+                {
+                    retry->refreshPinnedMessage();
+                }
+            });
         });
 }
 
@@ -4448,7 +4406,6 @@ void TwitchChannel::handlePinnedChatUpdate(const QJsonObject &data)
         }
         this->lastPinSystemMessageKey_.clear();
         this->setPinnedMessage(std::nullopt);
-        this->clearPinnedMessage();
     }
 }
 
@@ -6106,52 +6063,6 @@ void TwitchChannel::refreshSharedChatSessionState()
             }
 
             qCWarning(chatterinoTwitch) << errorMessage;
-        });
-}
-
-const HelixPinnedChatMessage *TwitchChannel::getPinnedMessage() const
-{
-    return this->pinnedMessage_.get();
-}
-
-void TwitchChannel::clearPinnedMessage()
-{
-    if (!this->pinnedMessage_)
-    {
-        return;
-    }
-    this->pinnedMessage_.reset();
-    this->pinnedMessageChanged.invoke();
-}
-
-void TwitchChannel::unpinCurrentMessage()
-{
-    if (!this->pinnedMessage_)
-    {
-        return;
-    }
-
-    auto currentAccount = getApp()->getAccounts()->twitch.getCurrent();
-    if (!currentAccount || currentAccount->isAnon())
-    {
-        return;
-    }
-
-    const auto msgId = this->pinnedMessage_->messageID;
-    getHelix()->unpinChatMessage(
-        this->roomId(), currentAccount->getUserId(), msgId,
-        [weak = this->weakFromThis()] {
-            auto self = weak.lock();
-            if (!self)
-            {
-                return;
-            }
-            self->pinnedMessage_.reset();
-            self->pinnedMessageChanged.invoke();
-        },
-        [](HelixUnpinMessageError /*error*/, const QString &message) {
-            qCWarning(chatterinoTwitch)
-                << "Failed to unpin message:" << message;
         });
 }
 

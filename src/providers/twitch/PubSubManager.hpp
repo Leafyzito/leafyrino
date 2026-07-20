@@ -49,15 +49,6 @@ public:
     } pinnedChat;
 
     struct {
-        /// Emitted when a message is pinned or its pin is updated.
-        /// The argument is the channel ID.
-        Signal<const QString &> pinned;
-        /// Emitted when the pinned message is removed.
-        /// The argument is the channel ID.
-        Signal<const QString &> unpinned;
-    } pinnedChatUpdates;
-
-    struct {
         Signal<const QJsonObject &> updated;
         Signal<const QJsonObject &> userResult;
     } prediction;

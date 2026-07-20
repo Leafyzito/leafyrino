@@ -438,8 +438,6 @@ public:
     };
 
     /// Behaviour
-    BoolSetting alwaysShowPinnedMessage = {"/behaviour/alwaysShowPinnedMessage",
-                                           false};
     BoolSetting allowDuplicateMessages = {"/behaviour/allowDuplicateMessages",
                                           true};
     BoolSetting showJoins = {"/behaviour/showJoins", false};

@@ -1633,18 +1633,19 @@ void SplitNotebook::addCustomButtons()
             }
         });
 
-    this->signalHolder_.managedConnect(
-        getApp()->getAccounts()->twitch.currentUserChanged,
-        [this, userBtn, normalAccountSrc] {
-            userBtn->setSource(normalAccountSrc);
-            auto oldVisibility = userBtn->isVisible();
-            auto newVisibility = !getSettings()->hideUserButton.getValue();
-            userBtn->setVisible(newVisibility);
-            if (oldVisibility != newVisibility)
-            {
-                this->performLayout();
-            }
-        });
+    // currentUserChanged is boost::signals2 (leafyrino), not pajlada
+    this->currentUserChangedConnection_ =
+        getApp()->getAccounts()->twitch.currentUserChanged.connect(
+            [this, userBtn, normalAccountSrc] {
+                userBtn->setSource(normalAccountSrc);
+                auto oldVisibility = userBtn->isVisible();
+                auto newVisibility = !getSettings()->hideUserButton.getValue();
+                userBtn->setVisible(newVisibility);
+                if (oldVisibility != newVisibility)
+                {
+                    this->performLayout();
+                }
+            });
 
     QObject::connect(userBtn, &Button::leftClicked, [this, userBtn] {
         getApp()->getWindows()->showAccountSelectPopup(

@@ -1411,13 +1411,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         s.autoCloseThreadPopup)
         ->addTo(layout);
 
-    SettingWidget::checkbox("Always show pinned channel message",
-                            s.alwaysShowPinnedMessage)
-        ->setTooltip(
-            "When enabled, pinned messages will stay visible instead of "
-            "automatically hiding after a few seconds.")
-        ->addTo(layout);
-
     SettingWidget::checkbox("Display 7TV Paints", s.displaySevenTVPaints)
         ->addTo(layout);
     SettingWidget::checkbox("Display 7TV Paint Shadows",

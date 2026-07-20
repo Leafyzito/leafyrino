@@ -416,18 +416,6 @@ void SplitHeader::initializeLayout()
     this->followButton_ =
         new SvgButton(followButtonSource(false), this, {4, 4});
 
-    this->pinButton_ = new SvgButton(
-        {
-            .dark = ":/buttons/pinnedMessage-chat.svg",
-            .light = ":/buttons/pinnedMessage-chat.svg",
-        },
-        this, {4, 4});
-    this->pinButton_->setToolTip(QStringLiteral("Toggle pinned message"));
-    this->pinButton_->setColor(this->theme->isLightTheme()
-                                   ? QColor(0x42, 0x42, 0x42)
-                                   : QColor(0xc0, 0xc0, 0xc0));
-    this->pinButton_->hide();
-
     this->addButton_ = new DrawnButton(DrawnButton::Symbol::Plus,
                                        {
                                            .padding = 3,
@@ -468,8 +456,6 @@ void SplitHeader::initializeLayout()
             w->hide();
             w->setMenu(this->createChatModeMenu());
         }),
-        // pin indicator
-        this->pinButton_,
         // moderator
         this->moderationButton_,
         // chatter list
@@ -520,11 +506,6 @@ void SplitHeader::initializeLayout()
 
     QObject::connect(this->followButton_, &Button::leftClicked, this, [this]() {
         this->toggleFollow();
-    });
-
-    QObject::connect(this->pinButton_, &Button::leftClicked, this, [this]() {
-        this->split_->togglePinnedBanner();
-        this->updatePinButton();
     });
 
     QObject::connect(this->addButton_, &Button::leftClicked, this, [this]() {
@@ -1113,17 +1094,6 @@ void SplitHeader::handleChannelChanged()
         {
             twitchChannel->refreshFollowingStatus(false);
         }
-
-        this->channelConnections_.managedConnect(
-            twitchChannel->pinnedMessageChanged, [this]() {
-                this->updatePinButton();
-            });
-
-        this->updatePinButton();
-    }
-    else
-    {
-        this->updatePinButton();
     }
 }
 
@@ -1137,7 +1107,6 @@ void SplitHeader::scaleChangedEvent(float scale)
     this->followButton_->setFixedWidth(w);
     this->moderationButton_->setFixedWidth(w);
     this->chattersButton_->setFixedWidth(w);
-    this->pinButton_->setFixedWidth(w);
 
     this->addButton_->setFixedWidth(addSplitWidth);
 }
@@ -1200,29 +1169,6 @@ void SplitHeader::toggleFollow()
     if (!text.isEmpty())
     {
         channel->sendMessage(text);
-    }
-}
-
-void SplitHeader::updatePinButton()
-{
-    auto channel = this->split_->getSelectedChannel();
-    auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get());
-    bool hasPinnedMessage = false;
-    if (twitchChannel != nullptr)
-    {
-        hasPinnedMessage = twitchChannel->accessPinnedMessage()->has_value();
-    }
-
-    this->pinButton_->setVisible(hasPinnedMessage);
-    if (hasPinnedMessage && !this->split_->perSplitHidePinnedMessage())
-    {
-        this->pinButton_->setColor(this->theme->accent);
-    }
-    else
-    {
-        this->pinButton_->setColor(this->theme->isLightTheme()
-                                       ? QColor(0x42, 0x42, 0x42)
-                                       : QColor(0xc0, 0xc0, 0xc0));
     }
 }
 
@@ -1563,9 +1509,6 @@ void SplitHeader::themeChangedEvent()
         palette.setColor(QPalette::WindowText, this->theme->splits.header.text);
     }
     this->titleLabel_->setPalette(palette);
-
-    // Re-apply pin button color to respect updated theme
-    this->updatePinButton();
 
     auto bg = this->theme->splits.header.background;
     this->addButton_->setOptions({

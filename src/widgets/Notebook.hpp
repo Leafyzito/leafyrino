@@ -8,6 +8,7 @@
 #include "widgets/BaseWidget.hpp"
 #include "widgets/NotebookEnums.hpp"
 
+#include <boost/signals2.hpp>
 #include <pajlada/signals/signal.hpp>
 #include <pajlada/signals/signalholder.hpp>
 #include <QList>
@@ -236,6 +237,7 @@ private:
     void addCustomButtons();
 
     pajlada::Signals::SignalHolder signalHolder_;
+    boost::signals2::scoped_connection currentUserChangedConnection_;
 
     PixmapButton *streamerModeIcon_{};
     void updateStreamerModeIcon();

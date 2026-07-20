@@ -29,7 +29,6 @@
 
 #include <atomic>
 #include <functional>
-#include <memory>
 #include <mutex>
 #include <optional>
 #include <unordered_map>
@@ -69,7 +68,6 @@ struct HelixStream;
 struct HelixCheermoteSet;
 struct HelixGlobalBadges;
 using HelixChannelBadges = HelixGlobalBadges;
-struct HelixPinnedChatMessage;
 
 class TwitchIrcServer;
 class TwitchAccount;
@@ -328,17 +326,6 @@ public:
     void pinMessage(const QString &messageId, int durationSeconds = 1200);
     void unpinMessage();
     void keepPinned();
-    /**
-     * Clears the Helix-backed pinned message for this channel immediately
-     * (e.g. on unpin PubSub event).
-     */
-    void clearPinnedMessage();
-    /// Returns the currently pinned Helix message, or null if none is pinned.
-    const HelixPinnedChatMessage *getPinnedMessage() const;
-    /**
-     * Unpin the currently pinned message via Helix. Only valid for moderators.
-     */
-    void unpinCurrentMessage();
     void refreshFollowingStatus(bool force = false);
     void setFollowingStatus(bool following,
                             std::optional<QDateTime> followedAt = std::nullopt);
@@ -864,12 +851,6 @@ private:
     eventsub::SubscriptionHandle eventSubChannelChatUserMessageHoldHandle;
     eventsub::SubscriptionHandle eventSubChannelChatUserMessageUpdateHandle;
     eventsub::SubscriptionHandle eventSubChannelFollowHandle;
-
-    /// May be null if no message is currently pinned.
-    std::unique_ptr<const HelixPinnedChatMessage> pinnedMessage_;
-    /// Incremented before each getPinnedChatMessage request so that stale
-    /// responses from earlier requests are discarded.
-    uint64_t pinnedMessageRequestId_ = 0;
 
     friend class TwitchIrcServer;
     friend class MessageBuilder;

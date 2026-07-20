@@ -2611,11 +2611,6 @@ void Split::reconnect()
     this->getChannel()->reconnect();
 }
 
-void Split::togglePinnedBanner()
-{
-    this->setPerSplitHidePinnedMessage(!this->perSplitHidePinnedMessage());
-}
-
 void Split::dragEnterEvent(QDragEnterEvent *event)
 {
     if (getSettings()->imageUploaderEnabled &&

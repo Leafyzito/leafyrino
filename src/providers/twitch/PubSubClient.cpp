@@ -177,43 +177,31 @@ void PubSubClient::handleMessageResponse(const PubSubMessageMessage &message)
         }
 
         const auto &innerMessage = *oInnerMessage;
-        // strip the "pinned-chat-updates-v1." prefix
-        const auto channelId = message.topic.sliced(
-            static_cast<qsizetype>(sizeof("pinned-chat-updates-v1.") - 1));
 
-        // Upstream Helix pinned-message banner signals
         switch (innerMessage.type)
         {
-            case PubSubPinnedChatUpdatesV1Message::Type::PinMessage:
-            case PubSubPinnedChatUpdatesV1Message::Type::UpdateMessage: {
-                this->manager_.pinnedChatUpdates.pinned.invoke(channelId);
-            }
-            break;
+            case PubSubPinnedChatUpdatesV1Message::Type::Pin:
+            case PubSubPinnedChatUpdatesV1Message::Type::Update:
+            case PubSubPinnedChatUpdatesV1Message::Type::Unpin: {
+                QJsonObject payload;
+                payload["type"] = innerMessage.typeString;
+                payload["topic"] = message.topic;
 
-            case PubSubPinnedChatUpdatesV1Message::Type::UnpinMessage: {
-                this->manager_.pinnedChatUpdates.unpinned.invoke(channelId);
+                payload["data"] = innerMessage.data;
+
+                this->manager_.pinnedChat.updated.invoke(payload);
             }
             break;
 
             case PubSubPinnedChatUpdatesV1Message::Type::INVALID:
             default: {
-                qCDebug(chatterinoPubSub) << "Invalid pinned-chat-updates-v1 "
-                                             "event type:"
+                qCDebug(chatterinoPubSub) << "Invalid pinned chat event type:"
                                           << innerMessage.typeString;
             }
             break;
         }
-
-        // leafyrino payload signal (system messages / GQL pin state)
-        QJsonObject payload;
-        payload["type"] = innerMessage.typeString;
-        payload["topic"] = message.topic;
-        payload["data"] = innerMessage.data;
-        this->manager_.pinnedChat.updated.invoke(payload);
-        return;
     }
-
-    if (message.topic.startsWith("community-points-channel-v1."))
+    else if (message.topic.startsWith("community-points-channel-v1."))
     {
         auto oInnerMessage =
             message.toInner<PubSubCommunityPointsChannelV1Message>();
