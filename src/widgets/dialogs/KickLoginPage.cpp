@@ -27,6 +27,9 @@
 #include <QVBoxLayout>
 #include <util/Variant.hpp>
 
+#include <array>
+#include <cstring>
+#include <span>
 #include <utility>
 #include <variant>
 
