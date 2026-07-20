@@ -5918,7 +5918,6 @@ void TwitchChannel::setChannelPointBalance(qint64 balance)
     }
 }
 
-
 const std::vector<HelixMinimalUser> &
     TwitchChannel::getSharedChatSessionParticipants() const
 {
