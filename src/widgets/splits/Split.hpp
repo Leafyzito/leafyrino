@@ -231,6 +231,7 @@ private:
     pajlada::Signals::Connection usermodeChangedConnection_;
     pajlada::Signals::Connection roomModeChangedConnection_;
     pajlada::Signals::ScopedConnection sendWaitConnection_;
+    pajlada::Signals::ScopedConnection sharedChatConnection_;
 
     pajlada::Signals::Connection indirectChannelChangedConnection_;
 
@@ -265,6 +266,7 @@ public Q_SLOTS:
     void openChatterList();
     void openSubPage();
     void reconnect();
+    void togglePinnedBanner();
 };
 
 }  // namespace chatterino

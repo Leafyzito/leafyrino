@@ -1,4 +1,8 @@
-#include "providers/twitch/pubsubmessages/PinnedChat.hpp"
+// SPDX-FileCopyrightText: 2026 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
+#include "providers/twitch/pubsubmessages/PinnedChatUpdates.hpp"
 
 #include "util/QMagicEnum.hpp"
 

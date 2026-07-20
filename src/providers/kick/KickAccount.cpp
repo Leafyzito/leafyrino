@@ -27,6 +27,8 @@ std::optional<KickAccountData> KickAccountData::loadRaw(const std::string &key)
     auto clientID = QStringSetting::get("/kickAccounts/" + key + "/clientID");
     auto clientSecret =
         QStringSetting::get("/kickAccounts/" + key + "/clientSecret");
+    auto publicProxy =
+        QStringSetting::get("/kickAccounts/" + key + "/publicProxy");
     auto authToken = QStringSetting::get("/kickAccounts/" + key + "/authToken");
     auto refreshToken =
         QStringSetting::get("/kickAccounts/" + key + "/refreshToken");
@@ -34,8 +36,11 @@ std::optional<KickAccountData> KickAccountData::loadRaw(const std::string &key)
         QStringSetting::get("/kickAccounts/" + key + "/expiresAt");
 
     if (username.isEmpty() || userID == 0 || clientID.isEmpty() ||
-        clientSecret.isEmpty() || authToken.isEmpty() ||
-        refreshToken.isEmpty() || expiresAtStr.isEmpty())
+        authToken.isEmpty() || refreshToken.isEmpty() || expiresAtStr.isEmpty())
+    {
+        return std::nullopt;
+    }
+    if (publicProxy.isEmpty() && clientSecret.isEmpty())
     {
         return std::nullopt;
     }
@@ -47,6 +52,7 @@ std::optional<KickAccountData> KickAccountData::loadRaw(const std::string &key)
         .userID = userID,
         .clientID = clientID.trimmed(),
         .clientSecret = clientSecret.trimmed(),
+        .publicProxy = publicProxy.trimmed(),
         .authToken = authToken.trimmed(),
         .refreshToken = refreshToken.trimmed(),
         .expiresAt = expiresAt,
@@ -60,6 +66,7 @@ void KickAccountData::save() const
     UInt64Setting::set(basePath + "/userID", this->userID);
     QStringSetting::set(basePath + "/clientID", this->clientID);
     QStringSetting::set(basePath + "/clientSecret", this->clientSecret);
+    QStringSetting::set(basePath + "/publicProxy", this->publicProxy);
     QStringSetting::set(basePath + "/authToken", this->authToken);
     QStringSetting::set(basePath + "/refreshToken", this->refreshToken);
     QStringSetting::set(basePath + "/expiresAt",
@@ -73,6 +80,7 @@ KickAccount::KickAccount(const KickAccountData &args)
     , userID_(args.userID)
     , clientID_(args.clientID)
     , clientSecret_(args.clientSecret)
+    , publicProxy_(args.publicProxy)
     , authToken_(args.authToken)
     , refreshToken_(args.refreshToken)
     , expiresAt_(args.expiresAt)
@@ -88,6 +96,7 @@ void KickAccount::save() const
         .userID = this->userID_,
         .clientID = this->clientID_,
         .clientSecret = this->clientSecret_,
+        .publicProxy = this->publicProxy_,
         .authToken = this->authToken_,
         .refreshToken = this->refreshToken_,
         .expiresAt = this->expiresAt_,
@@ -119,6 +128,11 @@ bool KickAccount::update(const KickAccountData &data)
     {
         changed = true;
         this->clientSecret_ = data.clientSecret;
+    }
+    if (this->publicProxy_ != data.publicProxy)
+    {
+        changed = true;
+        this->publicProxy_ = data.publicProxy;
     }
     if (this->authToken_ != data.authToken)
     {
@@ -156,54 +170,26 @@ void KickAccount::refreshIfNeeded()
     }
 
     auto now = QDateTime::currentDateTimeUtc() + CHECK_REFRESH_INTERVAL +
-               std::chrono::seconds{30};
+               std::chrono::seconds{60};
     if (now < this->expiresAt_)
     {
         return;
     }
+    qCDebug(chatterinoKick) << "Attempting to refresh" << this->username()
+                            << "expires:" << this->expiresAt_;
 
-    QUrlQuery payload{
-        {"refresh_token"_L1, this->refreshToken_},
-        {"client_id"_L1, this->clientID_},
-        {"client_secret"_L1, this->clientSecret_},
-        {"grant_type"_L1, "refresh_token"_L1},
-    };
-
-    auto weak = this->weak_from_this();
-    NetworkRequest(u"https://id.kick.com/oauth/token"_s,
-                   NetworkRequestType::Post)
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .hideRequestBody()
-        .payload(payload.toString(QUrl::FullyEncoded).toUtf8())
-        .timeout(20'000)
-        .onSuccess([weak](const NetworkResult &res) {
-            auto self = weak.lock();
-            if (!self)
-            {
-                return;
-            }
-
-            const auto json = res.parseJson();
-            self->authToken_ = json["access_token"_L1].toString();
-            self->refreshToken_ = json["refresh_token"_L1].toString();
-            auto expiresInSec =
-                std::clamp<qint64>(json["expires_in"_L1].toInteger(), 0,
-                                   std::numeric_limits<qint32>::max());
-            self->expiresAt_ =
-                QDateTime::currentDateTimeUtc().addSecs(expiresInSec);
-            self->save();
-            self->authUpdated.invoke();
-        })
-        .onError([weak](const NetworkResult &res) {
-            auto self = weak.lock();
-            if (!self)
-            {
-                return;
-            }
-            qCWarning(chatterinoKick) << "Failed to refresh" << self->username()
-                                      << "error:" << res.formatError();
-        })
-        .execute();
+    // Hack: check the current token first to ensure we're connected. Otherwise,
+    // we might miss the response.
+    // FIXME: queue re-check earlier
+    this->check([this](CheckResult res) {
+        if (res == CheckResult::NetworkError)
+        {
+            qCWarning(chatterinoKick)
+                << "Skipping refresh, because of network error";
+            return;
+        }
+        this->doRefresh();
+    });
 }
 
 void KickAccount::loadSeventvUser()
@@ -271,6 +257,105 @@ void KickAccount::loadSeventvUser()
             qCDebug(chatterinoSeventv)
                 << "Failed to load your 7TV user-id:" << result.formatError();
         });
+}
+
+void KickAccount::check(const std::function<void(CheckResult)> &cb)
+{
+    auto weak = this->weak_from_this();
+    NetworkRequest(u"https://id.kick.com/oauth/token/introspect"_s,
+                   NetworkRequestType::Post)
+        .timeout(10'000)
+        .hideRequestBody()
+        .onSuccess([cb, weak](const NetworkResult & /*res*/) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            qCDebug(chatterinoKick)
+                << "[Refresh]: Successfully checked previous token";
+            cb(CheckResult::Valid);
+        })
+        .onError([weak, cb](const NetworkResult &res) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            qCDebug(chatterinoKick)
+                << "[Refresh; Error] Network response:" << res.formatError();
+            auto status = res.status();
+            if (!status || *status < 100)
+            {
+                cb(CheckResult::NetworkError);
+                return;
+            }
+            if (*status == 401)
+            {
+                cb(CheckResult::Expired);
+                return;
+            }
+            cb(CheckResult::OtherHttp);
+        })
+        .execute();
+}
+
+void KickAccount::doRefresh()
+{
+    QUrlQuery payload{
+        {"refresh_token"_L1, this->refreshToken_},
+        {"client_id"_L1, this->clientID_},
+        {"grant_type"_L1, "refresh_token"_L1},
+    };
+
+    if (!this->clientSecret_.isEmpty())
+    {
+        payload.addQueryItem("client_secret"_L1, this->clientSecret_);
+    }
+    auto url = [&]() -> QUrl {
+        if (!this->publicProxy_.isEmpty())
+        {
+            return {this->publicProxy_ % u"/oauth/token"};
+        }
+        return u"https://id.kick.com/oauth/token"_s;
+    }();
+
+    auto weak = this->weak_from_this();
+    NetworkRequest(url, NetworkRequestType::Post)
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .hideRequestBody()
+        .payload(payload.toString(QUrl::FullyEncoded).toUtf8())
+        .timeout(20'000)
+        .onSuccess([weak](const NetworkResult &res) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+
+            const auto json = res.parseJson();
+            self->authToken_ = json["access_token"_L1].toString();
+            self->refreshToken_ = json["refresh_token"_L1].toString();
+            auto expiresInSec =
+                std::clamp<qint64>(json["expires_in"_L1].toInteger(), 0,
+                                   std::numeric_limits<qint32>::max());
+            self->expiresAt_ =
+                QDateTime::currentDateTimeUtc().addSecs(expiresInSec);
+            self->save();
+            self->authUpdated.invoke();
+            qCDebug(chatterinoKick)
+                << "[Refresh] Successful, next expiry:" << self->expiresAt_;
+        })
+        .onError([weak](const NetworkResult &res) {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            qCWarning(chatterinoKick) << "Failed to refresh" << self->username()
+                                      << "error:" << res.formatError();
+        })
+        .execute();
 }
 
 }  // namespace chatterino

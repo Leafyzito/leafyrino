@@ -1002,6 +1002,11 @@ void IrcMessageHandler::handleNoticeMessage(Communi::IrcNoticeMessage *message)
         isRaidCanceledNotice(message) ||
         (msg && isRaidCanceledNoticeText(msg->messageText));
 
+    if (message->content().startsWith("Login auth", Qt::CaseInsensitive))
+    {
+        getApp()->getAccounts()->twitch.loginExpired.invoke();
+    }
+
     QString channelName;
     if (!trimChannelName(message->target(), channelName) ||
         channelName == "jtv")
@@ -1414,6 +1419,11 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
         {
             twitch.getMentionsChannel()->addMessage(msg,
                                                     MessageContext::Original);
+        }
+
+        if (msg->flags.has(MessageFlag::SharedMessage))
+        {
+            chan->probeSharedChatSession();
         }
 
         sink.addMessage(msg, MessageContext::Original);

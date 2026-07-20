@@ -5,6 +5,7 @@
 #pragma once
 
 #include "common/Aliases.hpp"
+#include "common/enums/UsernameDisplayMode.hpp"
 #include "common/network/NetworkRequest.hpp"
 #include "providers/twitch/api/HelixEnums.hpp"
 #include "providers/twitch/eventsub/SubscriptionRequest.hpp"
@@ -52,6 +53,37 @@ struct HelixUser {
         , description(jsonObject.value("description").toString())
         , profileImageUrl(jsonObject.value("profile_image_url").toString())
     {
+    }
+};
+
+struct HelixMinimalUser {
+    QString id;
+    QString login;
+    QString displayName;
+
+    /// Returns the display name formatted according to @a mode.
+    [[nodiscard]] QString formatted(UsernameDisplayMode mode) const
+    {
+        const bool hasLocalizedName =
+            this->displayName.compare(this->login, Qt::CaseInsensitive) != 0;
+
+        switch (mode)
+        {
+            case UsernameDisplayMode::Username:
+                return this->login;
+
+            case UsernameDisplayMode::LocalizedName:
+                return hasLocalizedName ? this->displayName : this->login;
+
+            default:
+            case UsernameDisplayMode::UsernameAndLocalizedName:
+                if (hasLocalizedName)
+                {
+                    return this->login + QStringLiteral(" (") +
+                           this->displayName + QStringLiteral(")");
+                }
+                return this->login;
+        }
     }
 };
 
@@ -620,215 +652,19 @@ struct HelixPredictions {
     }
 };
 
-enum class HelixClipError {
-    Unknown,
-    ClipsUnavailable,
-    ClipsDisabled,
-    ClipsRestricted,
-    ClipsRestrictedCategory,
-    UserNotAuthenticated,
-};
+struct HelixSharedChatSession {
+    QStringList participantIds;
 
-enum class HelixStreamMarkerError {
-    Unknown,
-    UserNotAuthorized,
-    UserNotAuthenticated,
-};
-
-enum class HelixAutoModMessageError {
-    Unknown,
-    MessageAlreadyProcessed,
-    UserNotAuthenticated,
-    UserNotAuthorized,
-    MessageNotFound,
-};
-
-enum class HelixUpdateUserChatColorError {
-    Unknown,
-    UserMissingScope,
-    InvalidColor,
-
-    Forwarded,
-};
-
-enum class HelixDeleteChatMessagesError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthenticated,
-    UserNotAuthorized,
-    MessageUnavailable,
-
-    Forwarded,
-};
-
-enum class HelixSendChatAnnouncementError {
-    Unknown,
-    UserMissingScope,
-
-    Forwarded,
-};
-
-enum class HelixAddChannelModeratorError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    Ratelimited,
-    TargetAlreadyModded,
-    TargetIsVIP,
-
-    Forwarded,
-};
-
-enum class HelixRemoveChannelModeratorError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    TargetNotModded,
-    Ratelimited,
-
-    Forwarded,
-};
-
-enum class HelixAddChannelVIPError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    Ratelimited,
-
-    Forwarded,
-};
-
-enum class HelixRemoveChannelVIPError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    Ratelimited,
-
-    Forwarded,
-};
-
-enum class HelixUnbanUserError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    Ratelimited,
-    ConflictingOperation,
-    TargetNotBanned,
-
-    Forwarded,
-};
-
-enum class HelixStartRaidError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    CantRaidYourself,
-    Ratelimited,
-
-    Forwarded,
-};
-
-enum class HelixCancelRaidError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    NoRaidPending,
-    Ratelimited,
-
-    Forwarded,
-};
-
-enum class HelixUpdateChatSettingsError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    Ratelimited,
-    Forbidden,
-    OutOfRange,
-
-    Forwarded,
-};
-
-enum class HelixUpdateChannelError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    Ratelimited,
-
-    Forwarded,
-};
-
-enum class HelixBanUserError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    Ratelimited,
-    ConflictingOperation,
-    TargetBanned,
-    CannotBanUser,
-
-    Forwarded,
-};
-
-enum class HelixWarnUserError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    Ratelimited,
-    ConflictingOperation,
-    CannotWarnUser,
-
-    Forwarded,
-};
-
-enum class HelixWhisperError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    Ratelimited,
-    NoVerifiedPhone,
-    RecipientBlockedUser,
-    WhisperSelf,
-
-    Forwarded,
-};
-
-enum class HelixGetChattersError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-
-    Forwarded,
-};
-
-enum class HelixGetModeratorsError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-
-    Forwarded,
-};
-
-enum class HelixListVIPsError {
-    Unknown,
-    UserMissingScope,
-    UserNotAuthorized,
-    UserNotBroadcaster,
-    Ratelimited,
-
-    Forwarded,
-};
-
-enum class HelixSendShoutoutError {
-    Unknown,
-
-    UserIsBroadcaster,
-    BroadcasterNotLive,
-
-    UserNotAuthorized,
-    UserMissingScope,
-
-    Ratelimited,
+    explicit HelixSharedChatSession(const QJsonObject &jsonObject)
+    {
+        const auto &participants = jsonObject.value("participants").toArray();
+        for (const auto p : participants)
+        {
+            const auto broadcasterId =
+                p.toObject().value("broadcaster_id").toString();
+            this->participantIds.push_back(broadcasterId);
+        }
+    }
 };
 
 struct HelixStartCommercialResponse {
@@ -868,43 +704,6 @@ struct HelixShieldModeStatus {
     {
         this->lastActivatedAt.setTimeZone(QTimeZone::utc());
     }
-};
-
-enum class HelixUpdateShieldModeError {
-    Unknown,
-    UserMissingScope,
-    MissingPermission,
-
-    Forwarded,
-};
-
-enum class HelixStartCommercialError {
-    Unknown,
-    TokenMustMatchBroadcaster,
-    UserMissingScope,
-    BroadcasterNotStreaming,
-    MissingLengthParameter,
-    Ratelimited,
-
-    Forwarded,
-};
-
-enum class HelixGetGlobalBadgesError {
-    Unknown,
-
-    Forwarded,
-};
-
-enum class HelixSendMessageError {
-    Unknown,
-
-    MissingText,
-    BadRequest,
-    Forbidden,
-    MessageTooLarge,
-    UserMissingScope,
-
-    Forwarded,
 };
 
 struct HelixError {
@@ -976,15 +775,36 @@ struct HelixCreateEventSubSubscriptionResponse {
         QDebug &dbg, const HelixCreateEventSubSubscriptionResponse &data);
 };
 
-enum class HelixCreateEventSubSubscriptionError : std::uint8_t {
-    BadRequest,
-    Unauthorized,
-    Forbidden,
-    Conflict,
-    Ratelimited,
-    NoSession,
+struct HelixPinnedChatMessage {
+    HelixMinimalUser sender;
+    HelixMinimalUser pinnedBy;
+    QString messageID;
+    QString messageText;
+    QDateTime startsAt;
+    std::optional<QDateTime> endsAt;
 
-    Forwarded,
+    explicit HelixPinnedChatMessage(const QJsonObject &data)
+        : sender({
+              .id = data["sender_user_id"].toString(),
+              .login = data["sender_user_login"].toString(),
+              .displayName = data["sender_user_name"].toString(),
+          })
+        , pinnedBy({
+              .id = data["pinned_by_user_id"].toString(),
+              .login = data["pinned_by_user_login"].toString(),
+              .displayName = data["pinned_by_user_name"].toString(),
+          })
+        , messageID(data["message_id"].toString())
+        , messageText(data["message"].toObject().value("text").toString())
+        , startsAt(
+              QDateTime::fromString(data["starts_at"].toString(), Qt::ISODate))
+    {
+        auto endsAt = data["ends_at"].toString();
+        if (!endsAt.isEmpty())
+        {
+            this->endsAt = QDateTime::fromString(endsAt, Qt::ISODate);
+        }
+    }
 };
 
 class IHelix
@@ -1314,6 +1134,39 @@ public:
         const QString &subscriptionID, ResultCallback<> successCallback,
         FailureCallback<QString> failureCallback) = 0;
 
+    // https://dev.twitch.tv/docs/api/reference#pin-chat-message
+    virtual void pinChatMessage(
+        const QString &broadcasterID, const QString &moderatorID,
+        const QString &messageID, std::optional<std::chrono::seconds> duration,
+        ResultCallback<> successCallback,
+        FailureCallback<HelixPinMessageError, QString> failureCallback) = 0;
+
+    // https://dev.twitch.tv/docs/api/reference/#update-pinned-chat-message
+    virtual void updatePinnedChatMessage(
+        const QString &broadcasterID, const QString &moderatorID,
+        const QString &messageID, std::optional<std::chrono::seconds> duration,
+        ResultCallback<> successCallback,
+        FailureCallback<HelixPinMessageError, QString> failureCallback) = 0;
+
+    // https://dev.twitch.tv/docs/api/reference/#get-pinned-chat-message
+    virtual void getPinnedChatMessage(
+        const QString &broadcasterID, const QString &moderatorID,
+        ResultCallback<std::optional<HelixPinnedChatMessage>> successCallback,
+        FailureCallback<QString> failureCallback) = 0;
+
+    // https://dev.twitch.tv/docs/api/reference/#unpin-chat-message
+    virtual void unpinChatMessage(
+        const QString &broadcasterID, const QString &moderatorID,
+        const QString &messageID, ResultCallback<> successCallback,
+        FailureCallback<HelixUnpinMessageError, QString> failureCallback) = 0;
+
+    // https://dev.twitch.tv/docs/api/reference/#get-shared-chat-session
+    virtual void getSharedChatSession(
+        QString broadcasterID,
+        ResultCallback<HelixSharedChatSession> successCallback,
+        FailureCallback<HelixGetSharedChatSessionError, QString>
+            failureCallback) = 0;
+
     virtual void update(QString clientId, QString oauthToken) = 0;
 
 protected:
@@ -1637,6 +1490,39 @@ public:
     void deleteEventSubSubscription(
         const QString &subscriptionID, ResultCallback<> successCallback,
         FailureCallback<QString> failureCallback) final;
+
+    // https://dev.twitch.tv/docs/api/reference/#pin-chat-message
+    void pinChatMessage(
+        const QString &broadcasterID, const QString &moderatorID,
+        const QString &messageID, std::optional<std::chrono::seconds> duration,
+        ResultCallback<> successCallback,
+        FailureCallback<HelixPinMessageError, QString> failureCallback) final;
+
+    // https://dev.twitch.tv/docs/api/reference/#update-pinned-chat-message
+    void updatePinnedChatMessage(
+        const QString &broadcasterID, const QString &moderatorID,
+        const QString &messageID, std::optional<std::chrono::seconds> duration,
+        ResultCallback<> successCallback,
+        FailureCallback<HelixPinMessageError, QString> failureCallback) final;
+
+    // https://dev.twitch.tv/docs/api/reference/#get-pinned-chat-message
+    void getPinnedChatMessage(
+        const QString &broadcasterID, const QString &moderatorID,
+        ResultCallback<std::optional<HelixPinnedChatMessage>> successCallback,
+        FailureCallback<QString> failureCallback) final;
+
+    // https://dev.twitch.tv/docs/api/reference/#unpin-chat-message
+    void unpinChatMessage(
+        const QString &broadcasterID, const QString &moderatorID,
+        const QString &messageID, ResultCallback<> successCallback,
+        FailureCallback<HelixUnpinMessageError, QString> failureCallback) final;
+
+    // https://dev.twitch.tv/docs/api/reference/#get-shared-chat-session
+    void getSharedChatSession(
+        QString broadcasterID,
+        ResultCallback<HelixSharedChatSession> successCallback,
+        FailureCallback<HelixGetSharedChatSessionError, QString>
+            failureCallback) final;
 
     void update(QString clientId, QString oauthToken) final;
 

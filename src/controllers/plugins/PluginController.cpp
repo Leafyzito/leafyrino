@@ -14,6 +14,7 @@
 #    include "controllers/plugins/api/Accounts.hpp"
 #    include "controllers/plugins/api/ChannelRef.hpp"
 #    include "controllers/plugins/api/ConnectionHandle.hpp"
+#    include "controllers/plugins/api/DateTime.hpp"
 #    include "controllers/plugins/api/DebugLibrary.hpp"
 #    include "controllers/plugins/api/HTTPRequest.hpp"
 #    include "controllers/plugins/api/HTTPResponse.hpp"
@@ -229,6 +230,7 @@ void PluginController::initSol(sol::state_view &lua, Plugin *plugin)
     lua::api::ConnectionHandle::createUserType(c2);
     lua::api::message::createUserType(c2);
     lua::api::createAccounts(c2);
+    lua::api::datetime::createUserTypes(c2);
     c2["ChannelType"] = lua::createEnumTable<Channel::Type>(lua);
     c2["HTTPMethod"] = lua::createEnumTable<NetworkRequestType>(lua);
     c2["EventType"] = lua::createEnumTable<lua::api::EventType>(lua);

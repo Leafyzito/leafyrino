@@ -48,7 +48,7 @@ public:
     void installUpdates();
     Status getStatus() const;
 
-    static QString portableUpdaterPath();
+    static QString portableUpdaterPath(const Paths &paths);
 
     bool shouldShowUpdateButton() const;
     bool isError() const;

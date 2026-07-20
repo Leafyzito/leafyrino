@@ -22,6 +22,7 @@ public:
     explicit QuickSwitcherPopup(Window *parent);
 
 protected:
+    void showEvent(QShowEvent *event) override;
     void themeChangedEvent() override;
 
 public Q_SLOTS:

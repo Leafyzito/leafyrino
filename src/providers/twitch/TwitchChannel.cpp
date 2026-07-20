@@ -660,6 +660,7 @@ TwitchChannel::TwitchChannel(const QString &name, bool anonymous)
     , bttvEmotes_(std::make_shared<EmoteMap>())
     , ffzEmotes_(std::make_shared<EmoteMap>())
     , seventvEmotes_(std::make_shared<EmoteMap>())
+    , nextSharedChatSessionProbe_(QDateTime::currentDateTime())
 {
     qCDebug(chatterinoTwitch) << "[TwitchChannel" << name << "] Opened";
 
@@ -791,6 +792,11 @@ TwitchChannel::TwitchChannel(const QString &name, bool anonymous)
         this->cleanUpReplyThreads();
     });
     this->threadClearTimer_.start(5 * 60 * 1000);
+
+    QObject::connect(&this->nextSharedChatSessionUpdateTimer_, &QTimer::timeout,
+                     &this->lifetimeGuard_, [this] {
+                         this->refreshSharedChatSessionState();
+                     });
 
     this->signalHolder_.managedConnect(
         getApp()->getAccounts()->twitch.emotesReloaded,
@@ -1528,6 +1534,7 @@ void TwitchChannel::roomIdChanged()
     this->refreshFFZChannelEmotes(false);
     this->refreshBTTVChannelEmotes(false);
     this->refreshSevenTVChannelEmotes(false);
+    this->refreshPinnedMessage();
 }
 
 QString TwitchChannel::prepareMessage(const QString &message,
@@ -2365,6 +2372,12 @@ void TwitchChannel::setMod(bool value)
         this->mod_ = value;
 
         this->userStateChanged.invoke();
+
+        if (value)
+        {
+            // Gained mod privileges - fetch the current pin
+            this->refreshPinnedMessage();
+        }
     }
 }
 
@@ -2625,63 +2638,105 @@ void TwitchChannel::setPinnedMessage(std::optional<PinnedMessage> pin)
 
 void TwitchChannel::refreshPinnedMessage()
 {
-    if (!getSettings()->enablePinnedMessages || this->roomId().isEmpty())
+    if (this->roomId().isEmpty())
     {
         return;
     }
-    auto account = getApp()->getAccounts()->twitch.getCurrent();
-    const auto weak = this->weak_from_this();
-    TwitchGql::getCurrentPin(
-        this->roomId(), account,
-        [weak](std::optional<PinnedMessage> pin) {
-            auto shared = std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
-            if (!shared)
-            {
-                return;
-            }
-            if (pin)
-            {
-                qCDebug(chatterinoTwitch)
-                    << "Found pinned message for" << shared->getName() << ":"
-                    << pin->text;
-            }
-            else
-            {
-                qCDebug(chatterinoTwitch)
-                    << "No pinned message for" << shared->getName();
-            }
-            shared->pinnedMessageRefreshFailures_ = 0;
-            shared->setPinnedMessage(std::move(pin));
-        },
-        [weak](const QString &error) {
-            auto shared = std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
-            if (!shared)
-            {
-                return;
-            }
-            qCDebug(chatterinoTwitch) << "Failed to fetch pinned message for"
-                                      << shared->getName() << ":" << error;
-            const auto failureCount =
-                shared->pinnedMessageRefreshFailures_.fetch_add(1);
-            if (failureCount >= 2)
-            {
-                return;
-            }
 
-            const auto delayMs = failureCount == 0 ? 1500 : 5000;
-            QTimer::singleShot(delayMs, [weak] {
-                if (isAppAboutToQuit())
+    auto account = getApp()->getAccounts()->twitch.getCurrent();
+
+    // leafyrino GQL-backed pin state (used by PinnedMessageBanner)
+    if (getSettings()->enablePinnedMessages)
+    {
+        const auto weak = this->weak_from_this();
+        TwitchGql::getCurrentPin(
+            this->roomId(), account,
+            [weak](std::optional<PinnedMessage> pin) {
+                auto shared =
+                    std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+                if (!shared)
+                {
+                    return;
+                }
+                if (pin)
+                {
+                    qCDebug(chatterinoTwitch)
+                        << "Found pinned message for" << shared->getName()
+                        << ":" << pin->text;
+                }
+                else
+                {
+                    qCDebug(chatterinoTwitch)
+                        << "No pinned message for" << shared->getName();
+                }
+                shared->pinnedMessageRefreshFailures_ = 0;
+                shared->setPinnedMessage(std::move(pin));
+            },
+            [weak](const QString &error) {
+                auto shared =
+                    std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+                if (!shared)
+                {
+                    return;
+                }
+                qCDebug(chatterinoTwitch)
+                    << "Failed to fetch pinned message for"
+                    << shared->getName() << ":" << error;
+                const auto failureCount =
+                    shared->pinnedMessageRefreshFailures_.fetch_add(1);
+                if (failureCount >= 2)
                 {
                     return;
                 }
 
-                auto retry =
-                    std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
-                if (retry)
-                {
-                    retry->refreshPinnedMessage();
-                }
+                const auto delayMs = failureCount == 0 ? 1500 : 5000;
+                QTimer::singleShot(delayMs, [weak] {
+                    if (isAppAboutToQuit())
+                    {
+                        return;
+                    }
+
+                    auto retry =
+                        std::dynamic_pointer_cast<TwitchChannel>(weak.lock());
+                    if (retry)
+                    {
+                        retry->refreshPinnedMessage();
+                    }
+                });
             });
+    }
+
+    // Upstream Helix-backed pin state (used by PinnedMessageWidget)
+    if (!account || account->isAnon())
+    {
+        return;
+    }
+
+    const auto requestId = ++this->pinnedMessageRequestId_;
+    getHelix()->getPinnedChatMessage(
+        this->roomId(), account->getUserId(),
+        [weak = this->weakFromThis(),
+         requestId](std::optional<HelixPinnedChatMessage> msg) {
+            auto self = weak.lock();
+            if (!self || self->pinnedMessageRequestId_ != requestId)
+            {
+                return;
+            }
+            if (msg)
+            {
+                self->pinnedMessage_ =
+                    std::make_unique<const HelixPinnedChatMessage>(
+                        std::move(*msg));
+            }
+            else
+            {
+                self->pinnedMessage_ = nullptr;
+            }
+            self->pinnedMessageChanged.invoke();
+        },
+        [](const QString &error) {
+            qCWarning(chatterinoTwitch)
+                << "Failed to fetch pinned message:" << error;
         });
 }
 
@@ -3344,6 +3399,7 @@ void TwitchChannel::refreshPubSub()
     auto currentAccount = getApp()->getAccounts()->twitch.getCurrent();
 
     getApp()->getTwitchPubSub()->listenToChannelPointRewards(roomId);
+    getApp()->getTwitchPubSub()->listenToPinnedChatUpdates(roomId);
 
     if (getSettings()->enablePinnedMessages)
     {
@@ -4392,6 +4448,7 @@ void TwitchChannel::handlePinnedChatUpdate(const QJsonObject &data)
         }
         this->lastPinSystemMessageKey_.clear();
         this->setPinnedMessage(std::nullopt);
+        this->clearPinnedMessage();
     }
 }
 
@@ -5902,6 +5959,200 @@ void TwitchChannel::setChannelPointBalance(qint64 balance)
     {
         this->channelPointsChanged.invoke();
     }
+}
+
+
+const std::vector<HelixMinimalUser> &
+    TwitchChannel::getSharedChatSessionParticipants() const
+{
+    return this->sharedChatSessionParticipants_;
+}
+
+void TwitchChannel::probeSharedChatSession()
+{
+    auto now = QDateTime::currentDateTime();
+
+    if (!this->nextSharedChatSessionUpdateTimer_.isActive() &&
+        now >= this->nextSharedChatSessionProbe_)
+    {
+        this->nextSharedChatSessionProbe_ = now.addSecs(30);
+        this->refreshSharedChatSessionState();
+    }
+}
+
+void TwitchChannel::refreshSharedChatSessionState()
+{
+    getHelix()->getSharedChatSession(
+        this->roomId(),
+        [this,
+         weak = this->weakFromThis()](const HelixSharedChatSession &session) {
+            const auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+
+            auto intervalSecs = std::clamp(
+                getSettings()->sharedChatSessionRefreshInterval.getValue(), 5,
+                999);
+            this->nextSharedChatSessionUpdateTimer_.setInterval(intervalSecs *
+                                                                1000);
+
+            if (session.participantIds.empty())
+            {
+                // Allow immediate re-probe
+                this->nextSharedChatSessionProbe_ =
+                    QDateTime::currentDateTime();
+                this->nextSharedChatSessionUpdateTimer_.stop();
+
+                this->sharedChatSessionParticipants_.clear();
+                this->sharedChatSessionParticipantIds_.clear();
+
+                this->sharedChatStatusChanged.invoke({});
+
+                return;
+            }
+
+            bool participantsDiffer =
+                session.participantIds.size() - 1 !=
+                this->sharedChatSessionParticipantIds_.size();
+            if (!participantsDiffer)
+            {
+                for (const auto &broadcasterID : session.participantIds)
+                {
+                    if (this->roomId() == broadcasterID)
+                    {
+                        continue;
+                    }
+
+                    if (!this->sharedChatSessionParticipantIds_.contains(
+                            broadcasterID))
+                    {
+                        participantsDiffer = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!participantsDiffer)
+            {
+                return;
+            }
+
+            getHelix()->fetchUsers(
+                session.participantIds, {},
+                [this, weak = this->weakFromThis()](const auto &users) {
+                    const auto self = weak.lock();
+                    if (!self)
+                    {
+                        return;
+                    }
+
+                    this->sharedChatSessionParticipants_.clear();
+                    this->sharedChatSessionParticipantIds_.clear();
+
+                    for (const auto &user : users)
+                    {
+                        if (user.id != this->roomId())
+                        {
+                            this->sharedChatSessionParticipantIds_.insert(
+                                user.id);
+                            this->sharedChatSessionParticipants_.push_back(
+                                {user.id, user.login, user.displayName});
+                        }
+                    }
+
+                    this->nextSharedChatSessionUpdateTimer_.start();
+
+                    this->sharedChatStatusChanged.invoke(
+                        this->sharedChatSessionParticipants_);
+                },
+                [] {
+                    qCWarning(chatterinoTwitch) << "Failed to get user info";
+                });
+        },
+        [](HelixGetSharedChatSessionError error, const QString &message) {
+            QString errorMessage = "Failed to get shared chat session state: ";
+
+            switch (error)
+            {
+                case HelixGetSharedChatSessionError::InvalidBroadcasterId: {
+                    errorMessage += "Invalid broadcaster ID";
+                }
+                break;
+
+                case HelixGetSharedChatSessionError::UserMissingScope: {
+                    errorMessage +=
+                        "Missing required scope. Re-login with your "
+                        "account and try again.";
+                }
+                break;
+
+                case HelixGetSharedChatSessionError::UserNotAuthorized: {
+                    errorMessage +=
+                        "you don't have permission to perform that action.";
+                }
+                break;
+
+                case HelixGetSharedChatSessionError::Unknown: {
+                    errorMessage += "Unknown error";
+                }
+                break;
+
+                case HelixGetSharedChatSessionError::Forwarded: {
+                    errorMessage += message;
+                }
+                break;
+            }
+
+            qCWarning(chatterinoTwitch) << errorMessage;
+        });
+}
+
+const HelixPinnedChatMessage *TwitchChannel::getPinnedMessage() const
+{
+    return this->pinnedMessage_.get();
+}
+
+void TwitchChannel::clearPinnedMessage()
+{
+    if (!this->pinnedMessage_)
+    {
+        return;
+    }
+    this->pinnedMessage_.reset();
+    this->pinnedMessageChanged.invoke();
+}
+
+void TwitchChannel::unpinCurrentMessage()
+{
+    if (!this->pinnedMessage_)
+    {
+        return;
+    }
+
+    auto currentAccount = getApp()->getAccounts()->twitch.getCurrent();
+    if (!currentAccount || currentAccount->isAnon())
+    {
+        return;
+    }
+
+    const auto msgId = this->pinnedMessage_->messageID;
+    getHelix()->unpinChatMessage(
+        this->roomId(), currentAccount->getUserId(), msgId,
+        [weak = this->weakFromThis()] {
+            auto self = weak.lock();
+            if (!self)
+            {
+                return;
+            }
+            self->pinnedMessage_.reset();
+            self->pinnedMessageChanged.invoke();
+        },
+        [](HelixUnpinMessageError /*error*/, const QString &message) {
+            qCWarning(chatterinoTwitch)
+                << "Failed to unpin message:" << message;
+        });
 }
 
 }  // namespace chatterino

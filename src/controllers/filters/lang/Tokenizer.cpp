@@ -51,7 +51,7 @@ const QMap<QString, QString> VALID_IDENTIFIERS_MAP{
     {"flags.restricted", "restricted message?"},
     {"flags.monitored", "monitored message?"},
     {"flags.shared", "shared message?"},
-    {"flags.similar", "r9k filtered message?"},
+    {"flags.similar", "unique chat (r9k) filtered message?"},
     {"flags.repeated_message", "repeated message?"},
     {"flags.repeated_messages", "repeated messages?"},
     {"flags.watch_streak", "watch streak message?"},

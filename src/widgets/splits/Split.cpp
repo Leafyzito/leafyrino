@@ -2009,6 +2009,7 @@ void Split::updateChannelConnections()
     this->usermodeChangedConnection_.disconnect();
     this->roomModeChangedConnection_.disconnect();
     this->sendWaitConnection_ = pajlada::Signals::ScopedConnection{};
+    this->sharedChatConnection_ = pajlada::Signals::ScopedConnection{};
     this->getInput().setSendWaitStatus({});
 
     auto *channel = this->channel_.get().get();
@@ -2034,6 +2035,11 @@ void Split::updateChannelConnections()
         this->sendWaitConnection_ =
             tc->sendWaitUpdate.connect([this](const QString &text) {
                 this->getInput().setSendWaitStatus(text);
+            });
+
+        this->sharedChatConnection_ = tc->sharedChatStatusChanged.connect(
+            [this](const std::vector<HelixMinimalUser> &) {
+                this->header_->updateChannelText();
             });
     }
     else if (kc != nullptr)
@@ -2603,6 +2609,11 @@ void Split::showSearch(bool singleChannel)
 void Split::reconnect()
 {
     this->getChannel()->reconnect();
+}
+
+void Split::togglePinnedBanner()
+{
+    this->setPerSplitHidePinnedMessage(!this->perSplitHidePinnedMessage());
 }
 
 void Split::dragEnterEvent(QDragEnterEvent *event)

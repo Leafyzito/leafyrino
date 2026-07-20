@@ -91,11 +91,48 @@ std::optional<Args::Channel> parseActivateOption(QString input)
     };
 }
 
+std::vector<Args::Channel> parseCustomChannels(const QString &argValue)
+{
+    std::vector<Args::Channel> list;
+
+    QStringList channelArgList = argValue.split(";");
+    for (const QString &channelArg : channelArgList)
+    {
+        if (channelArg.isEmpty())
+        {
+            continue;
+        }
+
+        // Twitch is default platform
+        QString platform = "t";
+        QString channelName = channelArg;
+
+        const QRegularExpression regExp("(.):(.*)");
+        if (auto match = regExp.match(channelArg); match.hasMatch())
+        {
+            platform = match.captured(1);
+            channelName = match.captured(2);
+        }
+
+        // Twitch (default)
+        if (platform == "t")
+        {
+            list.push_back(Args::Channel{
+                .provider = ProviderId::Twitch,
+                .name = channelName,
+            });
+        }
+    }
+
+    list.shrink_to_fit();
+    return list;
+}
+
 }  // namespace
 
 namespace chatterino {
 
-Args::Args(const QApplication &app, const Paths &paths)
+Args::Args(const QApplication &app)
 {
     QCommandLineParser parser;
     parser.setApplicationDescription("Leafyrino Client for Twitch Chat");
@@ -146,6 +183,12 @@ Args::Args(const QApplication &app, const Paths &paths)
         "Starts Chatterino with legacy scaling (96 DPI) for this run only. "
         "To persist it, enable \"Use legacy scaling\" in Settings → General.");
 
+    QCommandLineOption portableEnable("portable", "Enable portable mode.");
+
+    QCommandLineOption portableDirectory(
+        "portable-dir", "Directory to use when portable mode is enabled.",
+        "directory");
+
 #ifndef NDEBUG
     QCommandLineOption useLocalEventsubOption(
         "use-local-eventsub",
@@ -166,6 +209,8 @@ Args::Args(const QApplication &app, const Paths &paths)
         channelLayout,
         activateOption,
         useOldScalingOption,
+        portableEnable,
+        portableDirectory,
 #ifndef NDEBUG
         useLocalEventsubOption,
 #endif
@@ -191,7 +236,11 @@ Args::Args(const QApplication &app, const Paths &paths)
 
     if (parser.isSet(channelLayout))
     {
-        this->applyCustomChannelLayout(parser.value(channelLayout), paths);
+        this->customChannels = parseCustomChannels(parser.value(channelLayout));
+        if (!this->customChannels.empty())
+        {
+            this->dontSaveSettings = true;
+        }
     }
 
     this->verbose = parser.isSet(verboseOption);
@@ -239,6 +288,17 @@ Args::Args(const QApplication &app, const Paths &paths)
         this->useOldScaling = true;
     }
 
+    if (parser.isSet(portableEnable))
+    {
+        this->portableEnable = true;
+    }
+
+    if (parser.isSet(portableDirectory))
+    {
+        this->portableDirectory =
+            QDir(parser.value(portableDirectory)).absolutePath();
+    }
+
 #ifndef NDEBUG
     if (parser.isSet(useLocalEventsubOption))
     {
@@ -260,17 +320,21 @@ QStringList Args::currentArguments() const
     return this->currentArguments_;
 }
 
-void Args::applyCustomChannelLayout(const QString &argValue, const Paths &paths)
+std::optional<WindowLayout> Args::makeCustomChannelLayout(
+    const QString &windowLayoutFile) const
 {
+    if (this->customChannels.empty())
+    {
+        return {};
+    }
+
     WindowLayout layout;
     WindowDescriptor window;
 
     window.type_ = WindowType::Main;
 
-    const QRect configMainLayout = [paths] {
-        const QString windowLayoutFile = combinePath(
-            paths.settingsDirectory, WindowManager::WINDOW_LAYOUT_FILENAME);
-
+    // Load main window layout from config file so we can use the same geometry
+    const QRect configMainLayout = [windowLayoutFile] {
         const WindowLayout configLayout =
             WindowLayout::loadFromFile(windowLayoutFile);
 
@@ -289,45 +353,24 @@ void Args::applyCustomChannelLayout(const QString &argValue, const Paths &paths)
 
     window.geometry_ = configMainLayout;
 
-    QStringList channelArgList = argValue.split(";");
-    for (const QString &channelArg : channelArgList)
+    for (const Channel &channel : this->customChannels)
     {
-        if (channelArg.isEmpty())
-        {
-            continue;
-        }
+        assert(channel.provider == ProviderId::Twitch);
 
-        QString platform = "t";
-        QString channelName = channelArg;
-
-        const QRegularExpression regExp("(.):(.*)");
-        if (auto match = regExp.match(channelArg); match.hasMatch())
-        {
-            platform = match.captured(1);
-            channelName = match.captured(2);
-        }
-
-        if (platform == "t")
-        {
-            TabDescriptor tab;
-
-            tab.selected_ = window.tabs_.empty();
-            tab.rootNode_ = SplitNodeDescriptor{{
+        TabDescriptor tab = {
+            .selected_ = window.tabs_.empty(),
+            .rootNode_ = SplitNodeDescriptor{{
                 .type_ = "twitch",
-                .channelName_ = channelName,
-            }};
+                .channelName_ = channel.name,
+            }},
+        };
 
-            window.tabs_.emplace_back(std::move(tab));
-        }
+        window.tabs_.emplace_back(std::move(tab));
     }
 
-    if (!window.tabs_.empty())
-    {
-        this->dontSaveSettings = true;
+    layout.windows_.emplace_back(std::move(window));
 
-        layout.windows_.emplace_back(std::move(window));
-        this->customChannelLayout = std::move(layout);
-    }
+    return layout;
 }
 
 }  // namespace chatterino

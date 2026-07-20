@@ -17,6 +17,7 @@ struct KickAccountData {
     uint64_t userID = 0;
     QString clientID;
     QString clientSecret;
+    QString publicProxy;
     QString authToken;
     QString refreshToken;
     QDateTime expiresAt;
@@ -63,6 +64,10 @@ public:
     {
         return this->clientSecret_;
     }
+    QString publicProxy() const
+    {
+        return this->publicProxy_;
+    }
     QString authToken() const
     {
         return this->authToken_;
@@ -83,10 +88,28 @@ public:
     pajlada::Signals::NoArgSignal authUpdated;
 
 private:
+    enum class CheckResult : uint8_t {
+        /// Returned 2xx
+        Valid,
+        /// 401 Unauthorized
+        ///
+        /// Expected if Chatterino just started. The tokens have an expiry of
+        /// 2h.
+        Expired,
+        /// Error code >=100, but not 401
+        OtherHttp,
+        /// A Qt error code <100
+        NetworkError,
+    };
+
+    void check(const std::function<void(CheckResult)> &cb);
+    void doRefresh();
+
     QString username_;
     uint64_t userID_ = 0;
     QString clientID_;
     QString clientSecret_;
+    QString publicProxy_;
     QString authToken_;
     QString refreshToken_;
     QDateTime expiresAt_;

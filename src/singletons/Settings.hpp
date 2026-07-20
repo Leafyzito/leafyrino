@@ -6,6 +6,7 @@
 
 #include "common/ChatterinoSetting.hpp"
 #include "common/enums/MessageOverflow.hpp"
+#include "common/enums/UsernameDisplayMode.hpp"
 #include "common/LastMessageLineStyle.hpp"
 #include "common/SignalVector.hpp"
 #include "common/StreamerModeSetting.hpp"
@@ -56,12 +57,6 @@ class Modes;
 
 void _actuallyRegisterSetting(
     std::weak_ptr<pajlada::Settings::SettingData> setting);
-
-enum UsernameDisplayMode : int {
-    Username = 1,                  // Username
-    LocalizedName = 2,             // Localized name
-    UsernameAndLocalizedName = 3,  // Username (Localized name)
-};
 
 enum UsernameRightClickBehavior : int {
     Reply = 0,
@@ -443,6 +438,8 @@ public:
     };
 
     /// Behaviour
+    BoolSetting alwaysShowPinnedMessage = {"/behaviour/alwaysShowPinnedMessage",
+                                           false};
     BoolSetting allowDuplicateMessages = {"/behaviour/allowDuplicateMessages",
                                           true};
     BoolSetting showJoins = {"/behaviour/showJoins", false};
@@ -543,6 +540,14 @@ public:
     BoolSetting disableTabRenamingOnClick = {
         "/behaviour/disableTabRenamingOnClick",
         false,
+    };
+
+    IntSetting sharedChatSessionRefreshInterval = {
+        "/behaviour/sharedChatSessionRefreshInterval", 60};
+
+    BoolSetting sharedChatAlwaysShowBadge = {
+        "/behaviour/sharedChatAlwaysShowBadge",
+        true,
     };
 
     /// Emotes
