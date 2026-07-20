@@ -544,7 +544,7 @@ jobs:
         shell: bash
 
   collect:
-    needs: [build, build-ubuntu-docker]
+    needs: [build, build-ubuntu, build-flatpak]
     runs-on: ubuntu-latest
     if: always()
     steps:
