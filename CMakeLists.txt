@@ -119,7 +119,11 @@ if(USE_ALTERNATE_LINKER)
 endif()
 
 if(_compiler_launcher)
-    set(CMAKE_CXX_COMPILER_LAUNCHER "${_compiler_launcher}" CACHE STRING "CXX compiler launcher")
+    # FORCE so env CMAKE_CXX_COMPILER_LAUNCHER=ccache (e.g. chocolatey) cannot win over sccache
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${_compiler_launcher}" CACHE STRING "CXX compiler launcher" FORCE)
+    set(CMAKE_C_COMPILER_LAUNCHER "${_compiler_launcher}" CACHE STRING "C compiler launcher" FORCE)
+    # llvm-rc goes through cmake -E cmake_llvm_rc; launchers break that with @response files
+    set(CMAKE_RC_COMPILER_LAUNCHER "" CACHE STRING "RC compiler launcher" FORCE)
     message(STATUS "Using ${_compiler_launcher} for speeding up build")
 
     if(MSVC)
