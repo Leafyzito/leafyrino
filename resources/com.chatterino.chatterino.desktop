@@ -8,4 +8,4 @@ Exec=Leafyrino
 Icon=com.leafyzito.leafyrino
 Terminal=false
 Categories=Network;InstantMessaging;
-StartupWMClass=Leafyrino
+StartupWMClass=chatterino

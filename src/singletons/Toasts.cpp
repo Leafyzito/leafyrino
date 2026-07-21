@@ -581,7 +581,7 @@ bool Toasts::sendLibnotifyHighlightNotification(const QString &channelName,
 
     notify_notification_set_hint(
         notif, "desktop-entry",
-        g_variant_new_string("com.chatterino.chatterino"));
+        g_variant_new_string("com.leafyzito.leafyrino"));
     notify_notification_set_timeout(notif, 10000);
     notify_notification_set_urgency(notif, NOTIFY_URGENCY_NORMAL);
 
@@ -623,7 +623,7 @@ void Toasts::sendLibnotify(const QString &channelName,
 
     notify_notification_set_hint(
         notif, "desktop-entry",
-        g_variant_new_string("com.chatterino.chatterino"));
+        g_variant_new_string("com.leafyzito.leafyrino"));
 
     auto *channelNameHeap = new QString(channelName);
 

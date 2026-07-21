@@ -159,14 +159,14 @@ int main(int argc, char **argv)
 
     QApplication a(argc, argv);
 
+    // Keep "chatterino" so config/data stay under the existing chatterino paths
+    // (Flatpak also mounts xdg-data/chatterino).
     QCoreApplication::setApplicationName("chatterino");
     QCoreApplication::setApplicationVersion(CHATTERINO_VERSION);
     QCoreApplication::setOrganizationDomain("chatterino.com");
-    // On some Linux distros such as NixOS, Qt's automatic setting of the desktop file name
-    // leads to a wrong desktop file name ("com.chatterino." instead of "com.chatterino.chatterino"),
-    // which further leads to GNOME not being able to match the window to the desktop file,
-    // so it shows up without any name or icon.
-    QGuiApplication::setDesktopFileName("com.chatterino.chatterino");
+    // Must match the installed .desktop / Flatpak app-id so the shell
+    // associates this window with Leafyrino's icon (not Chatterino's).
+    QGuiApplication::setDesktopFileName("com.leafyzito.leafyrino");
 #ifdef Q_OS_WIN
     SetCurrentProcessExplicitAppUserModelID(
         Version::instance().appUserModelID().c_str());
