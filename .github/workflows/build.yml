@@ -331,22 +331,22 @@ jobs:
         shell: pwsh
         run: |
           cd build
-          # Chocolatey ships `ccache`, which CMake still attaches to the RC rule and breaks
-          # windows.rc (llvm-rc response files / cmcldeps + `ccache rc`). Drop it from PATH.
+          # GitHub windows runners ship Chocolatey `ccache`, which CMake picks up as
+          # CMAKE_RC_COMPILER_LAUNCHER. That wraps `cmake -E cmake_llvm_rc` and breaks
+          # windows.rc via ccache @response files. Upstream uses llvm-rc + sccache for
+          # CXX only; strip ccache and clear launcher env so RC stays unwrapped.
           $env:Path = (
             $env:Path -split ';' |
             Where-Object { $_ -and -not (Test-Path (Join-Path $_ 'ccache.exe')) }
           ) -join ';'
-          $rc = (Get-Command rc.exe -ErrorAction Stop).Source
-          $sccache = (Get-Command sccache.exe -ErrorAction Stop).Source
+          Remove-Item Env:CMAKE_RC_COMPILER_LAUNCHER -ErrorAction SilentlyContinue
+          Remove-Item Env:CMAKE_CXX_COMPILER_LAUNCHER -ErrorAction SilentlyContinue
+          Remove-Item Env:CMAKE_C_COMPILER_LAUNCHER -ErrorAction SilentlyContinue
           cmake `
               -G Ninja `
               -DCMAKE_CXX_COMPILER=clang-cl `
               -DCMAKE_C_COMPILER=clang-cl `
-              -DCMAKE_RC_COMPILER="$rc" `
-              -DCMAKE_RC_COMPILER_LAUNCHER= `
-              -DCMAKE_CXX_COMPILER_LAUNCHER="$sccache" `
-              -DCMAKE_C_COMPILER_LAUNCHER="$sccache" `
+              -DCMAKE_RC_COMPILER=llvm-rc `
               -DCMAKE_LINKER_TYPE=LLD `
               -DCMAKE_BUILD_TYPE=RelWithDebInfo `
               -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" `

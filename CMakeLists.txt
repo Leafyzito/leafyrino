@@ -62,6 +62,13 @@ if(BUILD_BENCHMARKS)
     list(APPEND VCPKG_MANIFEST_FEATURES "benchmarks")
 endif()
 
+# Chocolatey ccache on Windows may export CMAKE_RC_COMPILER_LAUNCHER. Launchers break
+# llvm-rc (`cmake -E cmake_llvm_rc` + @response files). Clear before project() enables RC.
+if(WIN32)
+    unset(ENV{CMAKE_RC_COMPILER_LAUNCHER})
+    set(CMAKE_RC_COMPILER_LAUNCHER "" CACHE STRING "RC compiler launcher" FORCE)
+endif()
+
 project(chatterino
     VERSION 2.5.5
     DESCRIPTION "Chat client for twitch.tv"
@@ -119,16 +126,9 @@ if(USE_ALTERNATE_LINKER)
 endif()
 
 if(_compiler_launcher)
-    # FORCE so env CMAKE_CXX_COMPILER_LAUNCHER=ccache (e.g. chocolatey) cannot win over sccache
+    # FORCE so env CMAKE_*_COMPILER_LAUNCHER=ccache (e.g. chocolatey) cannot win over sccache
     set(CMAKE_CXX_COMPILER_LAUNCHER "${_compiler_launcher}" CACHE STRING "CXX compiler launcher" FORCE)
     set(CMAKE_C_COMPILER_LAUNCHER "${_compiler_launcher}" CACHE STRING "C compiler launcher" FORCE)
-    # RC must not use a compiler launcher: ccache breaks llvm-rc (response files) and
-    # `ccache rc` breaks cmcldeps/clang-cl dep scanning on Windows.
-    unset(CMAKE_RC_COMPILER_LAUNCHER)
-    unset(CMAKE_RC_COMPILER_LAUNCHER CACHE)
-    # Global launch rules wrap RC too — keep them empty; use per-language CXX/C launchers only.
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "")
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "")
     message(STATUS "Using ${_compiler_launcher} for speeding up build")
 
     if(MSVC)
