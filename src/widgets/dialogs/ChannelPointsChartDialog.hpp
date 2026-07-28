@@ -38,6 +38,7 @@ private:
     void refreshStyle();
     void reloadChart();
     void applySizeConstraints();
+    void scheduleUnpinParentOnClose(QWidget *parent);
 
     TwitchChannel *channel_{};
     QVBoxLayout *mainLayout_{};
@@ -47,6 +48,7 @@ private:
     Button *pinButton_{};
     SvgButton *closeButton_{};
     ChannelPointsChartView *chartView_{};
+    bool parentUnpinScheduled_ = false;
 
     pajlada::Signals::ScopedConnection channelPointsConnection_;
 

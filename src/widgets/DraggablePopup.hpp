@@ -31,7 +31,13 @@ protected:
 
     /// Pins \a parent when it is an auto-closing DraggablePopup so it stays
     /// open while a child popup takes focus.
-    static void pinParentIfNeeded(QWidget *parent);
+    ///
+    /// Returns true when this call newly pinned the parent.
+    static bool pinParentIfNeeded(QWidget *parent);
+
+    /// Unpins \a parent when it is a DraggablePopup. Call only when
+    /// pinParentIfNeeded previously returned true for that parent.
+    static void unpinParentIfNeeded(QWidget *parent);
 
     std::shared_ptr<bool> lifetimeHack_;
 

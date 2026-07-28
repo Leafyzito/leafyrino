@@ -140,11 +140,20 @@ bool DraggablePopup::ensurePinned()
     return false;
 }
 
-void DraggablePopup::pinParentIfNeeded(QWidget *parent)
+bool DraggablePopup::pinParentIfNeeded(QWidget *parent)
 {
     if (auto *popup = qobject_cast<DraggablePopup *>(parent))
     {
-        popup->ensurePinned();
+        return popup->ensurePinned();
+    }
+    return false;
+}
+
+void DraggablePopup::unpinParentIfNeeded(QWidget *parent)
+{
+    if (auto *popup = qobject_cast<DraggablePopup *>(parent))
+    {
+        popup->togglePinned();
     }
 }
 
