@@ -187,6 +187,11 @@ void Client::handleDispatch(const Dispatch &dispatch)
 
 void Client::onEmoteSetUpdate(const Dispatch &dispatch)
 {
+    // dispatchBody: {
+    //   pushed:  Array<{ key, value            }>,
+    //   pulled:  Array<{ key,        old_value }>,
+    //   updated: Array<{ key, value, old_value }>,
+    // }
     auto pushedArray = dispatch.body["pushed"].toArray();
     auto pulledArray = dispatch.body["pulled"].toArray();
     auto updatedArray = dispatch.body["updated"].toArray();
@@ -319,6 +324,7 @@ void Client::onUserUpdate(const Dispatch &dispatch)
     }
 }
 
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void Client::onCosmeticCreate(const CosmeticCreateDispatch &cosmetic)
 {
     auto *app = tryGetApp();
@@ -486,5 +492,6 @@ void Client::onEmoteSetCreate(const Dispatch &dispatch)
             << "because it doesn't have the expected flags";
     }
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 }  // namespace chatterino::seventv::eventapi

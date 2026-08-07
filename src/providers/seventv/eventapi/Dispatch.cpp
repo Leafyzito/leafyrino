@@ -11,7 +11,7 @@
 
 #include <utility>
 
-using namespace Qt::Literals::StringLiterals;
+using namespace Qt::Literals;
 
 namespace chatterino::seventv::eventapi {
 

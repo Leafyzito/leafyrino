@@ -51,6 +51,8 @@
 
 #include <cmath>
 
+using namespace Qt::StringLiterals;
+
 namespace {
 
 using namespace chatterino;
@@ -555,7 +557,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
         "Popup overlay",
         h->getDisplaySequence(HotkeyCategory::Split, "popupOverlay"),
         this->split_, &Split::showOverlayWindow);
-    menu->addAction("Search",
+    menu->addAction(u"Search…"_s,
                     h->getDisplaySequence(HotkeyCategory::Split, "showSearch"),
                     this->split_, [this] {
                         this->split_->showSearch(true);
@@ -566,7 +568,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
         this->split_, [this] {
             this->split_->showSearch(false);
         });
-    menu->addAction("Set filters",
+    menu->addAction(u"Set filters…"_s,
                     h->getDisplaySequence(HotkeyCategory::Split, "pickFilters"),
                     this->split_, &Split::setFiltersDialog);
 
@@ -1056,7 +1058,6 @@ void SplitHeader::handleChannelChanged()
     this->updateChannelText();
 
     this->channelConnections_.clear();
-
     auto channel = this->split_->getChannel();
     if (auto *multiChannel = dynamic_cast<MultiChannel *>(channel.get()))
     {

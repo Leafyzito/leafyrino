@@ -105,6 +105,11 @@ enum class EmoteTooltipScale : std::uint8_t {
     Huge,
 };
 
+enum class BrowserManifestFormat {
+    Chrome,
+    Firefox,
+};
+
 enum class SplitMpsCorner : std::uint8_t {
     TopLeft,
     TopRight,
@@ -203,6 +208,7 @@ constexpr int splitMpsWindowSeconds(SplitMpsWindow window) noexcept
 
 struct SettingsArgs {
     bool isTest = false;
+    bool runMigrations = true;
 };
 
 /// Settings which are available for reading and writing on the gui thread.
@@ -1055,6 +1061,18 @@ public:
 
     QStringSetting additionalExtensionIDs{"/misc/additionalExtensionIDs", ""};
 
+#ifndef Q_OS_WIN
+    QStringSetting customNativeMessagingManifestPath{
+        "/misc/extension/customManifestPath",
+        "",
+    };
+    EnumStringSetting<BrowserManifestFormat>
+        customNativeMessagingManifestFormat = {
+            "/misc/extension/customManifestFormat",
+            BrowserManifestFormat::Chrome,
+    };
+#endif
+
     BoolSetting xChatterino7NoHttp2{"/x-chatterino7/no-http2", false};
 
     /// Moltorino Settings
@@ -1276,6 +1294,13 @@ private:
         "/logging/channels"};
     SignalVector<QString> mutedChannels;
     SignalVector<QString> autoTranslateChannels;
+
+    IntSetting settingsVersion = {
+        "/misc/settingsVersion",
+        0,
+    };
+
+    void migrate(bool isTest);
 
 public:
     SignalVector<HighlightPhrase> highlightedMessages;

@@ -547,6 +547,11 @@ void Channel::messageRemovedFromStart(const MessagePtr &msg)
 {
 }
 
+bool Channel::canRecurse() const noexcept
+{
+    return this->recursionCount_ < MAX_RECURSION;
+}
+
 void Channel::upsertPersonalSeventvEmotes(
     const QString &userLogin, const std::shared_ptr<const EmoteMap> &emoteMap)
 {

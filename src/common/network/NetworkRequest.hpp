@@ -45,6 +45,7 @@ public:
     NetworkRequest onSuccess(NetworkSuccessCallback cb) &&;
     NetworkRequest finally(NetworkFinallyCallback cb) &&;
 
+    /// Hide the request body in logs
     NetworkRequest hideRequestBody() &&;
 
     NetworkRequest payload(const QByteArray &payload) &&;

@@ -68,6 +68,14 @@ protected:
         return this->subscriptions_.contains(subscription);
     }
 
+    /**
+     * @return true if this client subscribed to this subscription
+     *         and the current subscriptions don't exceed the maximum
+     *         amount.
+     *         It won't subscribe twice to the same subscription.
+     *         Don't use this in place of subscription management
+     *         in the BasicPubSubManager.
+     */
     bool subscribe(const Subscription &subscription)
     {
         if (this->subscriptions_.size() >= this->maxSubscriptions)

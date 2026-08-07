@@ -19,6 +19,7 @@
 #include "messages/MessageElement.hpp"
 #include "providers/IvrApi.hpp"
 #include "providers/kick/KickChannel.hpp"
+#include "providers/kick/KickChatServer.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/translation/Translator.hpp"
 #include "providers/twitch/api/Helix.hpp"
@@ -2193,8 +2194,13 @@ QString openUsercard(const CommandContext &ctx)
         QString channelName = ctx.words[2];
         stripChannelName(channelName);
 
-        ChannelPtr channelTemp =
-            getApp()->getTwitch()->getChannelOrEmpty(channelName);
+        auto channelTemp = [&]() -> ChannelPtr {
+            if (channel->isKickChannel())
+            {
+                return getApp()->getKickChatServer()->findBySlug(channelName);
+            }
+            return getApp()->getTwitch()->getChannelOrEmpty(channelName);
+        }();
 
         if (channelTemp->isEmpty())
         {

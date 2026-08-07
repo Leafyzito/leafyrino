@@ -9,6 +9,7 @@
 #include "providers/seventv/eventapi/Client.hpp"
 
 #include <QJsonArray>
+#include <QRandomGenerator>
 
 #include <utility>
 
@@ -206,6 +207,29 @@ void SeventvEventAPI::unsubscribePlatformChannel(const QString &userID,
 void SeventvEventAPI::stop()
 {
     this->private_->stop();
+}
+
+void SeventvEventAPI::reconnect()
+{
+    for (const auto &[id, c] : this->private_->clients())
+    {
+        c->close();
+    }
+}
+
+void SeventvEventAPI::reconnectRandom()
+{
+    size_t i = QRandomGenerator::global()->bounded(
+        static_cast<quint32>(this->private_->clients().size()));
+    for (const auto &[id, c] : this->private_->clients())
+    {
+        if (i == 0)
+        {
+            c->close();
+            break;
+        }
+        --i;
+    }
 }
 
 const liveupdates::Diag &SeventvEventAPI::diag() const

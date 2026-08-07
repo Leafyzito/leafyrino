@@ -98,6 +98,7 @@ struct KickChannelInfo {
     KickCategoryInfo category;
     KickStreamInfo stream;
     QString streamTitle;
+    QString slug;
 };
 
 class KickApi

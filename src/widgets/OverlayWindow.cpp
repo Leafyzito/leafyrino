@@ -106,6 +106,7 @@ OverlayWindow::OverlayWindow(IndirectChannel channel,
 {
     this->setAttribute(Qt::WA_DeleteOnClose);
     this->setWindowTitle(u"Leafyrino - Overlay"_s);
+    this->setWindowRole(u"chatterino.overlay"_s);
 
     auto *grid = new QGridLayout(this);
     grid->addWidget(&this->channelView_, 0, 0);

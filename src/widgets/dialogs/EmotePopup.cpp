@@ -44,6 +44,8 @@
 #include <algorithm>
 #include <utility>
 
+using namespace Qt::Literals;
+
 namespace {
 
 using namespace chatterino;
@@ -394,6 +396,8 @@ EmotePopup::EmotePopup(QWidget *parent)
     , search_(new QLineEdit())
     , notebook_(new Notebook(this))
 {
+    // this->setStayInScreenRect(true);
+    this->setWindowRole(u"chatterino.emote-popup"_s);
     auto bounds = getApp()->getWindows()->emotePopupBounds();
     if (bounds.size().isEmpty())
     {

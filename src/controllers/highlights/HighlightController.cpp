@@ -15,7 +15,7 @@
 #include "messages/MessageBuilder.hpp"
 #include "providers/colors/ColorProvider.hpp"
 #include "providers/kick/KickAccount.hpp"
-#include "providers/twitch/TwitchAccount.hpp"
+#include "providers/twitch/TwitchAccount.hpp"  // IWYU pragma: keep
 #include "providers/twitch/TwitchBadge.hpp"
 #include "singletons/Settings.hpp"
 

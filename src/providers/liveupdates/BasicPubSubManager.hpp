@@ -187,7 +187,7 @@ private:
         DebugCount::decrease(DebugObject::LiveUpdatesConnection);
         qCDebug(chatterinoLiveupdates) << "Connection" << id << "closed";
 
-        auto subs = std::move(it->second->subscriptions_);
+        auto subs = std::exchange(it->second->subscriptions_, {});
         bool wasOpen = it->second->isOpen();
 
         if (wasOpen)

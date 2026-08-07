@@ -125,13 +125,24 @@ private:
 
     const Url url_{};
     qreal scale_{1};
-
+    /// @brief The expected size of this image once its loaded.
+    ///
+    /// This doesn't represent the actual size (it can be different) - it's
+    /// just an estimation and provided to avoid (large) layout shifts when
+    /// loading images.
     const QSize expectedSize_{16, 16};
     bool useExpectedSizeForRead_{false};
     std::atomic_bool empty_{false};
 
     bool shouldLoad_{false};
 
+    /// Size this image should take when loaded (in both dimensions).
+    ///
+    /// This is used for images that have an unknown scale when they're created
+    /// (i.e. the scale is only known after the image is loaded).
+    ///
+    /// Upon creation, only `expectedSize_` is set to `(autoScale, autoScale)`.
+    /// When the image is loaded, `scale_` is set to `autoScale / actualSize`.
     std::optional<uint16_t> autoScale_;
     std::atomic<int64_t> frameCacheLifetimeMs_{0};
 

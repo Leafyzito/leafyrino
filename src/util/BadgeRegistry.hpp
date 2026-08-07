@@ -38,6 +38,9 @@ public:
     void clearBadgeFromUsers(const QString &badgeID,
                              std::span<const seventv::eventapi::User> users);
 
+    /// Register a new known badge
+    /// The json object will contain all information about the badge, like its ID & its images
+    /// @returns The badge's ID
     QString registerBadge(const QJsonObject &badgeJson);
 
 protected:
@@ -51,9 +54,9 @@ private:
     mutable std::shared_mutex mutex_;
 
     std::unordered_map<QString, EmotePtr> badgeMap_;
-
+    /// user-id => badge
     std::unordered_map<uint64_t, EmotePtr> kickBadgeMap_;
-
+    /// badge-id => badge
     std::unordered_map<QString, EmotePtr> knownBadges_;
 };
 

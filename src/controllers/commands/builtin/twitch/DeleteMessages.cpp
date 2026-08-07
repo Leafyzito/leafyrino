@@ -72,6 +72,8 @@ QString deleteOneMessage(const CommandContext &ctx)
         return doKickDelete(ctx);
     }
 
+    // This is a wrapper over the Helix delete messages endpoint
+    // We use this to ensure the user gets better error messages for missing or malformed arguments
     if (ctx.twitchChannel == nullptr)
     {
         ctx.channel->addSystemMessage(

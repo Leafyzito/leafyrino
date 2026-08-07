@@ -5,7 +5,9 @@
 #pragma once
 
 #include "providers/liveupdates/BasicPubSubClient.hpp"
-#include "providers/seventv/eventapi/Dispatch.hpp"
+// this needs to be included for the specialization
+// of std::hash for Subscription
+#include "providers/seventv/eventapi/Dispatch.hpp"  // for Twitch/KickUser
 #include "providers/seventv/eventapi/Subscription.hpp"
 
 #include <QPointer>

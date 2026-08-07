@@ -120,6 +120,7 @@ void EmoteSource::initializeFromChannel(const Channel *channel)
                 addEmotes(emotes, *map, "Personal 7TV");
             }
 
+            // TODO extract "Channel {BetterTTV,7TV,FrankerFaceZ}" text into a #define.
             if (auto bttv = tc->bttvEmotes())
             {
                 addEmotes(emotes, *bttv, "Channel BetterTTV");

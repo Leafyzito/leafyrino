@@ -135,9 +135,4 @@ bool ChannelCondition::operator==(const ChannelCondition &rhs) const
     return this->userID == rhs.userID && this->platform == rhs.platform;
 }
 
-bool ChannelCondition::operator!=(const ChannelCondition &rhs) const
-{
-    return !(*this == rhs);
-}
-
 }  // namespace chatterino::seventv::eventapi

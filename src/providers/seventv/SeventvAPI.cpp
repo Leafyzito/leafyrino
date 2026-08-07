@@ -8,6 +8,7 @@
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
 
+#include <QByteArray>
 #include <QJsonObject>
 
 #include <functional>
@@ -29,7 +30,8 @@ chatterino::NetworkRequest tuneSeventvRequest(
 {
     return std::move(request).timeout(30000);
 }
-using SeventvJsonCallback = std::function<void(const QJsonObject &)>;
+using SeventvJsonCallback =
+    std::function<void(const QJsonObject &, const QByteArray &)>;
 using SeventvErrorCallback =
     std::function<void(const chatterino::NetworkResult &)>;
 
@@ -52,7 +54,7 @@ auto makeJsonSuccessCallback(SeventvJsonCallback &&onSuccess,
             return;
         }
 
-        callback(json);
+        callback(json, result.getData());
     };
 }
 
@@ -71,7 +73,8 @@ auto makeNetworkErrorCallback(std::shared_ptr<SeventvErrorCallback> onError)
 namespace chatterino {
 
 void SeventvAPI::getUserByTwitchID(
-    const QString &twitchID, SuccessCallback<const QJsonObject &> &&onSuccess,
+    const QString &twitchID,
+    SuccessCallback<const QJsonObject &, const QByteArray &> &&onSuccess,
     ErrorCallback &&onError)
 {
     auto sharedOnError = makeSharedErrorCallback(std::move(onError));
@@ -84,7 +87,8 @@ void SeventvAPI::getUserByTwitchID(
 }
 
 void SeventvAPI::getUserByKickID(
-    uint64_t userID, SuccessCallback<const QJsonObject &> &&onSuccess,
+    uint64_t userID,
+    SuccessCallback<const QJsonObject &, const QByteArray &> &&onSuccess,
     ErrorCallback &&onError)
 {
     auto sharedOnError = makeSharedErrorCallback(std::move(onError));
@@ -96,9 +100,10 @@ void SeventvAPI::getUserByKickID(
         .execute();
 }
 
-void SeventvAPI::getEmoteSet(const QString &emoteSet,
-                             SuccessCallback<const QJsonObject &> &&onSuccess,
-                             ErrorCallback &&onError)
+void SeventvAPI::getEmoteSet(
+    const QString &emoteSet,
+    SuccessCallback<const QJsonObject &, const QByteArray &> &&onSuccess,
+    ErrorCallback &&onError)
 {
     auto sharedOnError = makeSharedErrorCallback(std::move(onError));
     tuneSeventvRequest(NetworkRequest(API_URL_EMOTE_SET.arg(emoteSet),

@@ -8,7 +8,7 @@
 
 namespace chatterino {
 
-using namespace Qt::Literals::StringLiterals;
+using namespace Qt::Literals;
 
 Account::Account(ProviderId providerId)
     : providerId_(providerId)

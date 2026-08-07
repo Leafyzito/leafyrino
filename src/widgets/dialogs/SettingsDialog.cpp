@@ -35,6 +35,8 @@
 #include <QDialogButtonBox>
 #include <QLineEdit>
 
+using namespace Qt::Literals;
+
 namespace chatterino {
 
 SettingsDialog::SettingsDialog(QWidget *parent)
@@ -50,6 +52,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 {
     this->setObjectName("SettingsDialog");
     this->setWindowTitle("Leafyrino Settings");
+    this->setWindowRole(u"chatterino.settings"_s);
     // Disable the ? button in the titlebar until we decide to use it
     this->setWindowFlags(this->windowFlags() &
                          ~Qt::WindowContextHelpButtonHint);

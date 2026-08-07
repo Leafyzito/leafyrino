@@ -3302,6 +3302,8 @@ void UserInfoPopup::loadAvatar(const QString &userID, const QString &pictureURL,
     QFile cacheFile(filename);
     if (cacheFile.exists() && cacheFile.open(QIODevice::ReadOnly))
     {
+        // In this case, readAll will just return empty data.
+        std::ignore = cacheFile.open(QIODevice::ReadOnly);
         QPixmap avatar{};
 
         avatar.loadFromData(cacheFile.readAll());
@@ -3687,85 +3689,115 @@ void UserInfoPopup::updateKickUserData()
         self->ui_.notesAdd->setEnabled(true);
     };
 
-    // FIXME: this doesn't support opening by user ID
-
-    KickApi::privateChannelInfo(
-        this->userName_, [self = QPointer(this), onChannelFetched,
-                          onChannelFetchFailed](const auto &res) {
-            if (!self)
-            {
-                return;
-            }
-            if (res)
-            {
-                onChannelFetched(self.get(), *res);
-            }
-            else
-            {
-                qCDebug(chatterinoKick)
-                    << "Channel fetch failed" << res.error();
-                onChannelFetchFailed(self.get());
-            }
-        });
-    KickApi::privateUserInChannelInfo(
-        this->userName_, this->underlyingChannel_->getName(),
-        [self = QPointer(this)](const auto &res) {
-            if (!self || !res)
-            {
-                return;
-            }
-
-            if (getSettings()->showUsercardFollowage && res->followingSince)
-            {
-                const auto followedDate = res->followingSince->date();
-                auto relativeTime = QString();
-                if (getSettings()->showUsercardFollowageRelativeTime)
+    auto fetchChannelInfo = [self = QPointer(this), onChannelFetched,
+                             onChannelFetchFailed](const QString &userName) {
+        KickApi::privateChannelInfo(
+            userName,
+            [self, onChannelFetched, onChannelFetchFailed](const auto &res) {
+                if (!self)
                 {
-                    relativeTime =
-                        formatUsercardFollowRelativeTime(followedDate);
+                    return;
                 }
-                QString followingSince = followedDate.toString(Qt::ISODate);
-                self->ui_.followageLabel->setText(
-                    "Following since " + followingSince + relativeTime);
-                self->ui_.followageLabel->setToolTip(
-                    formatLongFriendlyDuration(
-                        *res->followingSince, QDateTime::currentDateTimeUtc()) +
-                    u" ago"_s);
-                self->ui_.followageLabel->setMouseTracking(true);
-                self->updateUsercardStatusIcons();
-                self->ui_.followageRow->setVisible(true);
-                self->ui_.followageIcon->setVisible(true);
-            }
-            else if (getSettings()->showUsercardFollowage)
-            {
-                self->ui_.followageLabel->setText({});
-                self->ui_.followageRow->setVisible(true);
-                self->ui_.followageIcon->setVisible(false);
-            }
-
-            if (getSettings()->showUsercardSubage && res->subscriptionMonths)
-            {
-                auto subageText = QString("Subscribed for %1 months")
-                                      .arg(*res->subscriptionMonths);
-                if (getSettings()->showUsercardSubageRelativeTime)
+                if (res)
                 {
-                    subageText +=
-                        formatUsercardYearsMonths(*res->subscriptionMonths);
+                    onChannelFetched(self.get(), *res);
                 }
-                self->ui_.subageLabel->setText(subageText);
-                self->updateUsercardStatusIcons();
-                self->ui_.subageRow->setVisible(true);
-                self->ui_.subageIcon->setVisible(true);
-            }
-            else if (getSettings()->showUsercardSubage)
-            {
-                self->ui_.subageLabel->setText({});
-                self->ui_.subageRow->setVisible(true);
-                self->ui_.subageIcon->setVisible(false);
-            }
+                else
+                {
+                    qCDebug(chatterinoKick)
+                        << "Channel fetch failed" << res.error();
+                    onChannelFetchFailed(self.get());
+                }
+            });
+    };
+    auto fetchUserInChannelInfo =
+        [self = QPointer(this),
+         channelName =
+             this->underlyingChannel_->getName()](const QString &userName) {
+            KickApi::privateUserInChannelInfo(
+                userName, channelName, [self](const auto &res) {
+                    if (!self || !res)
+                    {
+                        return;
+                    }
 
-            self->hideUsercardSubGiftRow();
-        });
+                    if (getSettings()->showUsercardFollowage && res->followingSince)
+                    {
+                        const auto followedDate = res->followingSince->date();
+                        auto relativeTime = QString();
+                        if (getSettings()->showUsercardFollowageRelativeTime)
+                        {
+                            relativeTime =
+                                formatUsercardFollowRelativeTime(followedDate);
+                        }
+                        QString followingSince = followedDate.toString(Qt::ISODate);
+                        self->ui_.followageLabel->setText(
+                            "Following since " + followingSince + relativeTime);
+                        self->ui_.followageLabel->setToolTip(
+                            formatLongFriendlyDuration(
+                                *res->followingSince, QDateTime::currentDateTimeUtc()) +
+                            u" ago"_s);
+                        self->ui_.followageLabel->setMouseTracking(true);
+                        self->updateUsercardStatusIcons();
+                        self->ui_.followageRow->setVisible(true);
+                        self->ui_.followageIcon->setVisible(true);
+                    }
+                    else if (getSettings()->showUsercardFollowage)
+                    {
+                        self->ui_.followageLabel->setText({});
+                        self->ui_.followageRow->setVisible(true);
+                        self->ui_.followageIcon->setVisible(false);
+                    }
+
+                    if (getSettings()->showUsercardSubage && res->subscriptionMonths)
+                    {
+                        auto subageText = QString("Subscribed for %1 months")
+                                              .arg(*res->subscriptionMonths);
+                        if (getSettings()->showUsercardSubageRelativeTime)
+                        {
+                            subageText +=
+                                formatUsercardYearsMonths(*res->subscriptionMonths);
+                        }
+                        self->ui_.subageLabel->setText(subageText);
+                        self->updateUsercardStatusIcons();
+                        self->ui_.subageRow->setVisible(true);
+                        self->ui_.subageIcon->setVisible(true);
+                    }
+                    else if (getSettings()->showUsercardSubage)
+                    {
+                        self->ui_.subageLabel->setText({});
+                        self->ui_.subageRow->setVisible(true);
+                        self->ui_.subageIcon->setVisible(false);
+                    }
+
+                    self->hideUsercardSubGiftRow();
+                });
+        };
+
+    if (!this->userId_.isEmpty() && this->userName_.isEmpty())
+    {
+        std::array ids{static_cast<uint64_t>(this->userId_.toULongLong())};
+        getKickApi()->getChannels(
+            ids, [self = QPointer(this), onChannelFetchFailed, fetchChannelInfo,
+                  fetchUserInChannelInfo](const auto &res) {
+                if (!self)
+                {
+                    return;
+                }
+                if (!res || res->size() != 1)
+                {
+                    onChannelFetchFailed(self);
+                    return;
+                }
+                fetchChannelInfo((*res)[0].slug);
+                fetchUserInChannelInfo((*res)[0].slug);
+            });
+    }
+    else
+    {
+        fetchChannelInfo(this->userName_);
+        fetchUserInChannelInfo(this->userName_);
+    }
 
     this->ui_.block->setEnabled(false);
     this->ui_.ignoreHighlights->setEnabled(false);
@@ -3814,11 +3846,12 @@ void UserInfoPopup::onKickProfilePictureClick(Qt::MouseButton button)
             menu->addAction(
                 "Open channel in a new &popup window", this, [username] {
                     auto *app = getApp();
-                    auto *split = app->getWindows()
-                                      ->createWindow(WindowType::Popup, true)
-                                      .getNotebook()
-                                      .getOrAddSelectedPage()
-                                      ->appendNewSplit(false);
+                    auto *split =
+                        app->getWindows()
+                            ->createWindow(WindowType::Popup, {.show = true})
+                            .getNotebook()
+                            .getOrAddSelectedPage()
+                            ->appendNewSplit(false);
                     split->setChannel(
                         app->getKickChatServer()->getOrCreate(username));
                 });

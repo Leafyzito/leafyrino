@@ -47,6 +47,7 @@ enum class DebugObject : size_t {
     MessageThread,
     Message,
 
+    // Chatterino7
     SeventvPersonalEmoteSets,
     SeventvPersonalEmoteAssignments,
     SeventvPaints,

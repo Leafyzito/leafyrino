@@ -37,6 +37,8 @@ class SelectChannelDialog;
 class OverlayWindow;
 class TwitchChannel;
 
+struct SplitDescriptor;
+
 // Each ChatWidget consists of three sub-elements that handle their own part of
 // the chat widget: ChatWidgetHeader
 //   - Responsible for rendering which channel the ChatWidget is in, and the
@@ -112,6 +114,8 @@ public:
     void setContainer(SplitContainer *container);
 
     void setInputReply(const MessagePtr &reply, std::weak_ptr<Channel> channel);
+
+    SplitDescriptor buildDescriptor() const;
 
     // This is called on window focus lost
     void unpause();

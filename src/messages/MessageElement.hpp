@@ -140,6 +140,8 @@ enum class MessageElementFlag : int64_t {
     // for the reply button element
     ReplyButton = (1LL << 33),
 
+    // (1LL << 36) is occupied by BadgeSevenTV
+
     /// `Username` but the username comes from Kick
     KickUsername = (1LL << 50),
 
@@ -256,13 +258,22 @@ private:
 // contains a text, it will split it into words
 class TextElement : public MessageElement
 {
+protected:
+    struct CloneTag {
+    };
+
 public:
     static constexpr std::string_view TYPE = "text";
+
+    static constexpr CloneTag CLONE{};
 
     TextElement(const QString &text, MessageElementFlags flags,
                 const MessageColor &color = MessageColor::Text,
                 FontStyle style = FontStyle::ChatMedium);
-    TextElement(QStringList &&words, MessageElementFlags flags,
+
+    /// This is intended only for cloning the element.
+    TextElement(TextElement::CloneTag, QStringList words,
+                MessageElementFlags flags,
                 const MessageColor &color = MessageColor::Text,
                 FontStyle style = FontStyle::ChatMedium);
     ~TextElement() override = default;
@@ -348,6 +359,14 @@ public:
                 MessageElementFlags flags,
                 const MessageColor &color = MessageColor::Text,
                 FontStyle style = FontStyle::ChatMedium);
+
+    /// This is intended only for cloning the element.
+    LinkElement(TextElement::CloneTag, QStringList lowercase,
+                QStringList original, const QString &fullUrl,
+                MessageElementFlags flags,
+                const MessageColor &color = MessageColor::Text,
+                FontStyle style = FontStyle::ChatMedium);
+
     ~LinkElement() override = default;
     LinkElement(const LinkElement &) = delete;
     LinkElement(LinkElement &&) = delete;
@@ -401,14 +420,21 @@ public:
     static constexpr std::string_view TYPE = "mention";
 
     explicit MentionElement(const QString &displayName, QString loginName_,
-                            MessageColor fallbackColor_,
-                            MessageColor userColor_);
+                            const MessageColor &fallbackColor_,
+                            const MessageColor &userColor_);
+
+    /// This is intended only for cloning the element.
+    explicit MentionElement(TextElement::CloneTag, QStringList words,
+                            QString loginName_,
+                            const MessageColor &fallbackColor_,
+                            const MessageColor &userColor_);
     /// Deprioritized ctor allowing us to pass through a potentially invalid userColor_
     ///
     /// If the userColor_ is invalid, we fall back to the fallbackColor_
     template <typename = void>
     explicit MentionElement(const QString &displayName, QString loginName_,
-                            MessageColor fallbackColor_, QColor userColor_);
+                            const MessageColor &fallbackColor_,
+                            QColor userColor_);
     ~MentionElement() override = default;
     MentionElement(const MentionElement &) = delete;
     MentionElement(MentionElement &&) = delete;
@@ -440,9 +466,6 @@ public:
     std::string_view type() const override;
 
 private:
-    MentionElement(QStringList &&words, MessageColor fallbackColor,
-                   MessageColor userColor);
-
     /**
      * The color of the element in case the "Colorize @usernames" is disabled
      **/
@@ -540,10 +563,9 @@ public:
     const std::vector<QString> &getEmoteTooltips() const;
     const MessageColor &textElementColor() const;
 
-    std::unique_ptr<MessageElement> clone() const override;
-
     QJsonObject toJson() const override;
     std::string_view type() const override;
+    std::unique_ptr<MessageElement> clone() const override;
 
 private:
     MessageLayoutElement *makeImageLayoutElement(

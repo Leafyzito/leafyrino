@@ -312,6 +312,14 @@ QString debugTest(const CommandContext &ctx)
     {
         getApp()->getTwitchPubSub()->reconnect();
     }
+    else if (command == "7tv-reconnect")
+    {
+        getApp()->getSeventvEventAPI()->reconnect();
+    }
+    else if (command == "7tv-reconnect-random")
+    {
+        getApp()->getSeventvEventAPI()->reconnectRandom();
+    }
     else
     {
         ctx.channel->addSystemMessage(
@@ -493,7 +501,7 @@ QString seventvPresence(const CommandContext &ctx)
                 [run, reply](const auto &user) {
                     getApp()->getSeventvAPI()->getUserByTwitchID(
                         user.id,
-                        [run](const auto &obj) {
+                        [run](const auto &obj, const auto & /*raw*/) {
                             run(u"TWITCH"_s,
                                 obj["user"_L1]["id"_L1].toString());
                         },
@@ -517,7 +525,7 @@ QString seventvPresence(const CommandContext &ctx)
                 }
                 getApp()->getSeventvAPI()->getUserByKickID(
                     res->userID,
-                    [run](const auto &obj) {
+                    [run](const auto &obj, const auto & /*raw*/) {
                         run(u"KICK"_s, obj["user"_L1]["id"_L1].toString());
                     },
                     [reply](const NetworkResult &err) {

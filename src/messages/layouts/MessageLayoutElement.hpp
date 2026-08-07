@@ -171,10 +171,11 @@ protected:
 
     QColor color_;
     FontStyle style_;
-
+    // 7tv: this is used to check for system messages - it doesn't take extra
+    // space (fits in the padding of `style_`)
     MessageColor::Type messageColor_;
     float scale_;
-    float dpr_ = 1.0F;
+    float dpr_ = 1.0F;  // for 7tv paints
 };
 
 class TextIconLayoutElement : public MessageLayoutElement

@@ -42,6 +42,38 @@ struct CompletionEvent {
 
 sol::table toTable(lua_State *L, const CompletionEvent &ev);
 
+/* @lua-fragment
+*/
+
+/**
+ * @includefile common/Channel.hpp
+ * @includefile controllers/plugins/api/Accounts.hpp
+ * @includefile controllers/plugins/api/ChannelRef.hpp
+ * @includefile controllers/plugins/api/ConnectionHandle.hpp
+ * @includefile controllers/plugins/api/DateTime.hpp
+ * @includefile controllers/plugins/api/HTTPResponse.hpp
+ * @includefile controllers/plugins/api/HTTPRequest.hpp
+ * @includefile controllers/plugins/api/Message.hpp
+ * @includefile controllers/plugins/api/WebSocket.hpp
+ * @includefile common/network/NetworkCommon.hpp
+ */
+
+/**
+ * Registers a new command called `name` which when executed will call `handler`.
+ *
+ * @lua@param name string The name of the command.
+ * @lua@param handler fun(ctx: CommandContext) The handler to be invoked when the command gets executed.
+ * @lua@return boolean ok  Returns `true` if everything went ok, `false` if a command with this name exists.
+ * @exposed c2.register_command
+ */
+
+/**
+ * Registers a callback to be invoked when completions for a term are requested.
+ *
+ * @lua@param type c2.EventType.CompletionRequested
+ * @lua@param func fun(event: CompletionEvent): CompletionList The callback to be invoked.
+ * @exposed c2.register_callback
+ */
 void c2_register_callback(ThisPluginState L, EventType evtType,
                           sol::protected_function callback);
 

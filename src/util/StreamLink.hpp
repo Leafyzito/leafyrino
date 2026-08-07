@@ -27,6 +27,8 @@ constexpr inline QStringView STREAMLINK_BINARY_NAME = u"streamlink";
 void openStreamlink(const QString &channelURL, const QString &quality,
                     QStringList extraArguments = QStringList());
 
+// Start opening streamlink for the given channel, reading settings like quality
+// from settings and opening a quality dialog if the quality is "Choose"
 void openStreamlinkForChannel(const QString &channel,
                               QStringView prefixURL = u"twitch.tv/");
 

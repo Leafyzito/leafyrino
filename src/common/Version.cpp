@@ -13,8 +13,7 @@
 
 namespace chatterino {
 
-using namespace Qt::Literals::StringLiterals;
-
+using namespace Qt::Literals;
 Version::Version()
     : version_(CHATTERINO_VERSION)
     , commitHash_(QStringLiteral(CHATTERINO_GIT_HASH))
@@ -22,8 +21,7 @@ Version::Version()
     , dateOfBuild_(QStringLiteral(CHATTERINO_CMAKE_GEN_DATE))
     , isNightly_(CHATTERINO_NIGHTLY_BUILD == 1)
 {
-    this->fullVersion_ = "Leafyrino ";
-    if (this->isNightly())
+    this->fullVersion_ = "Leafyrino ";    if (this->isNightly())
     {
         this->fullVersion_ += "Nightly ";
     }
@@ -46,8 +44,7 @@ Version::Version()
 
 #ifdef Q_OS_WIN
     // keep in sync with .CI/chatterino-installer.iss
-    this->appUserModelID_ = L"leafyzito.Leafyrino";
-#endif
+    this->appUserModelID_ = L"leafyzito.Leafyrino";#endif
 }
 
 const Version &Version::instance()
@@ -142,8 +139,7 @@ void Version::generateBuildString()
 
     s +=
         QString(
-            R"( (commit <a href="https://github.com/leafyzito/leafyrino/commit/%1">%1</a>)")
-            .arg(this->commitHash());
+            R"( (commit <a href="https://github.com/leafyzito/leafyrino/commit/%1">%1</a>)")            .arg(this->commitHash());
     if (this->isModified())
     {
         s += " modified)";

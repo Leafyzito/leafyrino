@@ -817,7 +817,8 @@ void SplitContainer::applyFromDescriptor(const NodeDescriptor &rootNode)
 
 void SplitContainer::popup()
 {
-    Window &window = getApp()->getWindows()->createWindow(WindowType::Popup);
+    Window &window =
+        getApp()->getWindows()->createWindow(WindowType::Popup, {});
     auto *popupContainer = window.getNotebook().getOrAddSelectedPage();
 
     QJsonObject encodedTab;
@@ -842,54 +843,14 @@ void SplitContainer::popup()
     window.show();
 }
 
-QString channelTypeToString(Channel::Type value) noexcept
-{
-    using Type = chatterino::Channel::Type;
-    switch (value)
-    {
-        default:
-            assert(false && "value cannot be serialized");
-            return "never";
-
-        case Type::Twitch:
-            return "twitch";
-        case Type::TwitchWhispers:
-            return "whispers";
-        case Type::TwitchWatching:
-            return "watching";
-        case Type::TwitchMentions:
-            return "mentions";
-        case Type::TwitchLive:
-            return "live";
-        case Type::TwitchAutomod:
-            return "automod";
-        case Type::Misc:
-            return "misc";
-    }
-}
-
 NodeDescriptor SplitContainer::buildDescriptorRecursively(
     const Node *currentNode) const
 {
-    if (currentNode->children_.empty())
+    if (currentNode->children_.empty() && currentNode->split_)
     {
-        const auto channelType =
-            currentNode->split_->getIndirectChannel().getType();
-
-        SplitNodeDescriptor result;
-        result.type_ = channelTypeToString(channelType);
-        result.channelName_ = currentNode->split_->getChannel()->getName();
-        if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(
-                currentNode->split_->getChannel().get()))
-        {
-            result.anonymous_ = twitchChannel->isAnonymous();
-        }
-        result.filters_ = currentNode->split_->getFilters();
-        result.perSplitHidePinnedMessage_ =
-            currentNode->split_->perSplitHidePinnedMessage();
-        result.perSplitHidePrediction_ =
-            currentNode->split_->perSplitHidePrediction();
-        result.perSplitHidePoll_ = currentNode->split_->perSplitHidePoll();
+        SplitNodeDescriptor result(currentNode->split_->buildDescriptor());
+        result.flexH_ = currentNode->flexH_;
+        result.flexV_ = currentNode->flexV_;
         return result;
     }
 
@@ -901,6 +862,8 @@ NodeDescriptor SplitContainer::buildDescriptorRecursively(
         descriptor.items_.push_back(
             this->buildDescriptorRecursively(child.get()));
     }
+    descriptor.flexH_ = currentNode->flexH_;
+    descriptor.flexV_ = currentNode->flexV_;
 
     return descriptor;
 }

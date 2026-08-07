@@ -15,7 +15,6 @@
 #include "messages/MessageElement.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/kick/KickChatServer.hpp"
-#include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Paths.hpp"
 #include "singletons/Settings.hpp"
@@ -24,6 +23,7 @@
 #include "util/FilesystemHelpers.hpp"
 #include "util/MultiChannel.hpp"
 #include "util/SignalListener.hpp"
+#include "util/Variant.hpp"
 #include "widgets/AccountSwitchPopup.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
 #include "widgets/FramelessEmbedWindow.hpp"
@@ -50,6 +50,8 @@
 #include <algorithm>
 #include <chrono>
 #include <optional>
+
+using namespace Qt::Literals;
 
 namespace {
 
@@ -404,18 +406,16 @@ std::span<Window *const> WindowManager::windows() const
     return this->windows_;
 }
 
-Window &WindowManager::createWindow(WindowType type, bool show, QWidget *parent)
+Window &WindowManager::createWindow(WindowType type,
+                                    const CreateWindowArgs &args)
 {
     assertInGuiThread();
 
-    auto *const realParent = [this, type, parent]() -> QWidget * {
-        (void)this;
-        (void)type;
-
-        if (parent)
+    auto *const realParent = [&]() -> QWidget * {
+        if (args.parent)
         {
             // If a parent is explicitly specified, we use that immediately.
-            return parent;
+            return args.parent;
         }
 
         // FIXME: On Windows, parenting popup windows causes unwanted behavior (see
@@ -437,9 +437,28 @@ Window &WindowManager::createWindow(WindowType type, bool show, QWidget *parent)
     }();
 
     auto *window = new Window(type, realParent);
+    assert(!window->testAttribute(Qt::WA_WState_Created));
+    switch (type)
+    {
+        case WindowType::Main: {
+            window->setWindowRole(u"chatterino.main"_s);
+        }
+        break;
+        case WindowType::Popup: {
+            size_t popupID = this->takePopupID(args.popupID);
+            window->setWindowRole(u"chatterino.popup." %
+                                  QString::number(popupID));
+            window->setPopupID(popupID);
+            qCDebug(chatterinoWindowmanager)
+                << "Creating popup with ID" << popupID;
+        }
+        break;
+        case WindowType::Attached:
+            break;  // No window role for you.
+    }
 
     this->windows_.push_back(window);
-    if (show)
+    if (args.parent)
     {
         window->show();
     }
@@ -448,17 +467,15 @@ Window &WindowManager::createWindow(WindowType type, bool show, QWidget *parent)
     {
         window->setAttribute(Qt::WA_DeleteOnClose);
 
-        QObject::connect(window, &QWidget::destroyed, this, [this, window] {
-            for (auto it = this->windows_.begin(); it != this->windows_.end();
-                 it++)
-            {
-                if (*it == window)
-                {
-                    this->windows_.erase(it);
-                    break;
-                }
-            }
-        });
+        auto popupID = window->popupID();
+        QObject::connect(window, &QWidget::destroyed, this,
+                         [this, window, popupID] {
+                             std::erase(this->windows_, window);
+                             if (popupID)
+                             {
+                                 this->closePopup(*popupID);
+                             }
+                         });
     }
 
     return *window;
@@ -466,7 +483,9 @@ Window &WindowManager::createWindow(WindowType type, bool show, QWidget *parent)
 
 Window &WindowManager::openInPopup(ChannelPtr channel)
 {
-    auto &popup = this->createWindow(WindowType::Popup, true);
+    auto &popup = this->createWindow(WindowType::Popup, {
+                                                            .show = true,
+                                                        });
     auto *split =
         popup.getNotebook().getOrAddSelectedPage()->appendNewSplit(false);
     split->setChannel(channel);
@@ -756,7 +775,7 @@ void WindowManager::initialize()
     // No main window has been created from loading, create an empty one
     if (this->mainWindow_ == nullptr)
     {
-        this->mainWindow_ = &this->createWindow(WindowType::Main);
+        this->mainWindow_ = &this->createWindow(WindowType::Main, {});
         this->mainWindow_->getNotebook().addPage(true);
 
         // TODO: don't create main window if it's a frameless embed
@@ -828,6 +847,12 @@ void WindowManager::save()
         windowObj.insert("y", rect.y());
         windowObj.insert("width", rect.width());
         windowObj.insert("height", rect.height());
+
+        auto popupID = window->popupID();
+        if (popupID)
+        {
+            windowObj.insert("popupID", static_cast<qsizetype>(*popupID));
+        }
 
         windowObj["emotePopup"] = QJsonObject{
             {"x", this->emotePopupBounds_.x()},
@@ -1044,149 +1069,11 @@ void WindowManager::encodeTab(SplitContainer *tab, bool isSelected,
     obj.insert("highlightsEnabled", tab->getTab()->hasHighlightsEnabled());
 
     // splits
-    QJsonObject splits;
-
-    WindowManager::encodeNodeRecursively(tab->getBaseNode(), splits);
-
-    obj.insert("splits2", splits);
-}
-
-void WindowManager::encodeNodeRecursively(SplitNode *node, QJsonObject &obj)
-{
-    switch (node->getType())
-    {
-        case SplitNode::Type::Split: {
-            obj.insert("type", "split");
-            obj.insert("moderationMode", node->getSplit()->getModerationMode());
-
-            QJsonObject split;
-            WindowManager::encodeChannel(node->getSplit()->getIndirectChannel(),
-                                         split);
-            obj.insert("data", split);
-
-            QJsonArray filters;
-            WindowManager::encodeFilters(node->getSplit(), filters);
-            obj.insert("filters", filters);
-
-            auto spellOverride = node->getSplit()->checkSpellingOverride();
-            if (spellOverride)
-            {
-                obj["checkSpelling"] = *spellOverride;
-            }
-
-            if (node->getSplit()->perSplitHidePinnedMessage())
-            {
-                obj.insert(QStringLiteral("splitHidePinnedMessage"), true);
-            }
-            if (node->getSplit()->perSplitHidePrediction())
-            {
-                obj.insert(QStringLiteral("splitHidePrediction"), true);
-            }
-            if (node->getSplit()->perSplitHidePoll())
-            {
-                obj.insert(QStringLiteral("splitHidePoll"), true);
-            }
-        }
-        break;
-        case SplitNode::Type::HorizontalContainer:
-        case SplitNode::Type::VerticalContainer: {
-            obj.insert("type",
-                       node->getType() == SplitNode::Type::HorizontalContainer
-                           ? "horizontal"
-                           : "vertical");
-
-            QJsonArray itemsArr;
-            for (const auto &n : node->getChildren())
-            {
-                QJsonObject subObj;
-                WindowManager::encodeNodeRecursively(n.get(), subObj);
-                itemsArr.append(subObj);
-            }
-            obj.insert("items", itemsArr);
-        }
-        break;
-
-        default:
-            break;
-    }
-
-    obj.insert("flexh", node->getHorizontalFlex());
-    obj.insert("flexv", node->getVerticalFlex());
-}
-
-void WindowManager::encodeChannel(IndirectChannel channel, QJsonObject &obj)
-{
-    assertInGuiThread();
-
-    obj.insert("type", qmagicenum::enumNameString(channel.getType()));
-    switch (channel.getType())
-    {
-        case Channel::Type::Twitch:
-        case Channel::Type::Misc:
-            obj.insert("name", channel.get()->getName());
-            if (auto *twitchChannel =
-                    dynamic_cast<TwitchChannel *>(channel.get().get()))
-            {
-                if (twitchChannel->isAnonymous())
-                {
-                    obj.insert("anonymous", true);
-                }
-            }
-            break;
-
-        case Channel::Type::TwitchWhispers:
-        case Channel::Type::TwitchWatching:
-        case Channel::Type::TwitchMentions:
-        case Channel::Type::TwitchLive:
-        case Channel::Type::TwitchAutomod:
-            break;
-
-        case Channel::Type::Kick: {
-            obj.insert("name", channel.get()->getName());
-            auto *kc = dynamic_cast<KickChannel *>(channel.get().get());
-            if (kc)
-            {
-                obj.insert("roomID", static_cast<qint64>(kc->roomID()));
-                obj.insert("userID", static_cast<qint64>(kc->userID()));
-                obj.insert("channelID", static_cast<qint64>(kc->channelID()));
-            }
-        }
-        break;
-        case Channel::Type::Multi: {
-            auto *mc = dynamic_cast<MultiChannel *>(channel.get().get());
-            if (mc)
-            {
-                QJsonArray children;
-                for (const auto &child : mc->channels())
-                {
-                    children.append(child.descriptor().toJson());
-                }
-                obj.insert("children", children);
-                obj.insert("indicatorMode",
-                           qmagicenum::enumNameString(mc->indicatorMode()));
-                obj.insert("activeIndex",
-                           static_cast<int32_t>(mc->activeChannelIndex()));
-            }
-        }
-        break;
-
-        // FIXME: Remove these (#5703)
-        case Channel::Type::None:
-        case Channel::Type::Direct:
-        case Channel::Type::TwitchEnd:
-            break;
-    }
-}
-
-void WindowManager::encodeFilters(Split *split, QJsonArray &arr)
-{
-    assertInGuiThread();
-
-    auto filters = split->getFilters();
-    for (const auto &f : filters)
-    {
-        arr.append(f.toString(QUuid::WithoutBraces));
-    }
+    obj.insert("splits2", std::visit(
+                              [](auto &&it) {
+                                  return it.toJson();
+                              },
+                              tab->buildDescriptor()));
 }
 
 void WindowManager::closeAll()
@@ -1231,7 +1118,9 @@ void WindowManager::applyWindowLayout(const WindowLayout &layout)
     {
         auto type = windowData.type_;
 
-        Window &window = this->createWindow(type, false);
+        Window &window = this->createWindow(type, {
+                                                      .show = false,
+                                                  });
 
         if (type == WindowType::Main)
         {
@@ -1339,6 +1228,39 @@ void WindowManager::applyWindowLayout(const WindowLayout &layout)
                 break;
         }
     }
+
+    // We might've opened a few popups, so make sure the next ID is unused.
+    this->refreshNextPopupID();
+}
+
+size_t WindowManager::takePopupID(std::optional<size_t> preferred)
+{
+    size_t id = this->nextPopupID;
+    if (preferred && !this->usedPopupIDs.contains(*preferred))
+    {
+        id = *preferred;
+    }
+    assert(!this->usedPopupIDs.contains(id));
+    this->usedPopupIDs.insert(id);
+    this->refreshNextPopupID();
+    return id;
+}
+
+void WindowManager::closePopup(size_t id)
+{
+    // The user closed a popup. Remember this ID, so the popup will get this ID.
+    this->nextPopupID = id;
+    this->usedPopupIDs.remove(id);
+}
+
+void WindowManager::refreshNextPopupID()
+{
+    size_t selected = 1;
+    while (this->usedPopupIDs.contains(selected))
+    {
+        selected += 1;
+    }
+    this->nextPopupID = selected;
 }
 
 }  // namespace chatterino

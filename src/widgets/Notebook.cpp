@@ -213,9 +213,9 @@ void Notebook::removePage(QWidget *page)
 
 void Notebook::duplicatePage(QWidget *page)
 {
-    auto *item = this->findItem(page);
-    assert(item != nullptr);
-    if (item == nullptr)
+    auto item = this->findItem(page);
+    assert(item.has_value());
+    if (!item.has_value())
     {
         return;
     }
@@ -336,8 +336,8 @@ void Notebook::select(QWidget *page, bool focusPage, bool recordInHistory)
     if (page)
     {
         // A new page has been selected, mark it as selected & focus one of its splits
-        auto *item = this->findItem(page);
-        if (!item)
+        auto item = this->findItem(page);
+        if (!item.has_value())
         {
             return;
         }
@@ -373,8 +373,11 @@ void Notebook::select(QWidget *page, bool focusPage, bool recordInHistory)
         // Hide the previously selected page
         this->selectedPage_->hide();
 
-        auto *item = this->findItem(this->selectedPage_);
-        if (!item)
+        auto item =
+            std::ranges::find_if(this->items_, [this](const auto &item) {
+                return this->selectedPage_ == item.page;
+            });
+        if (item == this->items_.end())
         {
             return;
         }
@@ -481,7 +484,7 @@ bool Notebook::containsPage(QWidget *page) const
                        });
 }
 
-Notebook::Item *Notebook::findItem(QWidget *page)
+std::optional<Notebook::Item> Notebook::findItem(QWidget *page)
 {
     auto it = std::find_if(this->items_.begin(), this->items_.end(),
                            [page](const auto &item) {
@@ -489,9 +492,9 @@ Notebook::Item *Notebook::findItem(QWidget *page)
                            });
     if (it != this->items_.end())
     {
-        return &(*it);
+        return *it;
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 bool Notebook::containsChild(const QObject *obj, const QObject *child)

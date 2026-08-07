@@ -4309,7 +4309,8 @@ void ChannelView::hideEvent(QHideEvent * /*event*/)
 }
 
 void ChannelView::showUserInfoPopup(const QString &userName,
-                                    QString alternativePopoutChannel)
+                                    MessagePlatform platform,
+                                    const QString &alternativePopoutChannel)
 {
     if (!this->split_)
     {
@@ -4324,7 +4325,7 @@ void ChannelView::showUserInfoPopup(const QString &userName,
 
     auto openingChannel = this->effectiveSourceChannel();
     ChannelPtr contextChannel;
-    if (openingChannel && openingChannel->isKickChannel())
+    if (openingChannel && platform == MessagePlatform::Kick)
     {
         contextChannel =
             getApp()->getKickChatServer()->findBySlug(alternativePopoutChannel);
@@ -4387,7 +4388,8 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
         case Link::UserWhisper:
         case Link::UserInfo: {
             auto user = link.value;
-            this->showUserInfoPopup(user, layout->getMessage()->channelName);
+            this->showUserInfoPopup(user, layout->getMessage()->platform,
+                                    layout->getMessage()->channelName);
         }
         break;
 
@@ -4508,6 +4510,12 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
                 openPages.push_back(
                     static_cast<SplitContainer *>(nb.getPageAt(i)));
             }
+            QStringView searchName = link.value;
+            bool searchKickChannel = link.value.startsWith(u":kick:");
+            if (searchKickChannel)
+            {
+                searchName = searchName.sliced(sizeof(":kick:") - 1);
+            }
 
             for (auto *page : openPages)
             {
@@ -4515,9 +4523,11 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
 
                 // Search for channel matching link in page/split container
                 // TODO(zneix): Consider opening a channel if it's closed (?)
-                auto it = std::find_if(
-                    splits.begin(), splits.end(), [link](Split *split) {
-                        return split->getChannel()->getName() == link.value;
+                auto it = std::ranges::find_if(
+                    splits, [searchName, searchKickChannel](Split *split) {
+                        return split->getChannel()->getName() == searchName &&
+                               split->getChannel()->isKickChannel() ==
+                                   searchKickChannel;
                     });
 
                 if (it != splits.end())

@@ -204,6 +204,7 @@ void HighlightModel::afterInit()
     this->insertCustomRow(elevatedMessageRow,
                           HighlightRowIndexes::ElevatedMessageRow);
 
+    // Highlight settings for reply threads
     std::vector<QStandardItem *> threadMessageRow = this->createRow();
     setBoolItem(threadMessageRow[Column::Pattern],
                 getSettings()->enableThreadHighlight.getValue(), true, false);
@@ -353,11 +354,6 @@ void HighlightModel::customRowSetData(const std::vector<QStandardItem *> &row,
                 else if (rowIndex == HighlightRowIndexes::FirstMessageRow)
                 {
                     getSettings()->enableFirstMessageHighlight.setValue(
-                        value.toBool());
-                }
-                else if (rowIndex == HighlightRowIndexes::ElevatedMessageRow)
-                {
-                    getSettings()->enableElevatedMessageHighlight.setValue(
                         value.toBool());
                 }
                 else if (rowIndex == HighlightRowIndexes::ThreadMessageRow)
@@ -579,11 +575,6 @@ void HighlightModel::customRowSetData(const std::vector<QStandardItem *> &row,
                 {
                     setColor(getSettings()->firstMessageHighlightColor,
                              ColorType::FirstMessageHighlight);
-                }
-                else if (rowIndex == HighlightRowIndexes::ElevatedMessageRow)
-                {
-                    setColor(getSettings()->elevatedMessageHighlightColor,
-                             ColorType::ElevatedMessageHighlight);
                 }
                 else if (rowIndex == HighlightRowIndexes::ThreadMessageRow)
                 {

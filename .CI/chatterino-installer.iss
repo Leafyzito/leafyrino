@@ -19,7 +19,6 @@
 #ifndef STAGING_DIR_NAME
 #define STAGING_DIR_NAME "Leafyrino"
 #endif
-
 #ifndef VCRT_ARCH
 #define VCRT_ARCH "x64"
 #endif

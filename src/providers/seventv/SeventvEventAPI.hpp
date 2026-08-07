@@ -47,7 +47,7 @@ public:
             userUpdated;
         Signal<const seventv::eventapi::PersonalEmoteSetAdded &>
             personalEmoteSetAdded;
-    } signals_;
+    } signals_;  // NOLINT(readability-identifier-naming)
 
     void subscribeUser(const QString &userID, const QString &emoteSetID);
 
@@ -69,6 +69,12 @@ public:
 
     void stop();
 
+    void reconnect();
+    void reconnectRandom();
+
+    /// Statistics about the opened/closed connections and received messages
+    ///
+    /// Used in tests.
     const liveupdates::Diag &diag() const;
 
 private:

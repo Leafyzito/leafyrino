@@ -364,6 +364,8 @@ void Updates::checkForUpdates()
         return;
     }
 
+    // See https://github.com/SevenTV/SevenTV/issues/48#issue-2193272289
+    // for the proposed structure of the response.
     auto onSuccess = [this](const NetworkResult &result) {
         const auto object = result.parseJson();
         if (object.empty())

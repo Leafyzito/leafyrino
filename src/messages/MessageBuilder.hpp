@@ -8,6 +8,7 @@
 #include "singletons/Fonts.hpp"
 
 #include <IrcMessage>
+#include <IrcTagsRef>
 #include <QColor>
 #include <QRegularExpression>
 #include <QString>
@@ -35,13 +36,13 @@ using EmotePtr = std::shared_ptr<const Emote>;
 class Channel;
 class TwitchChannel;
 class TwitchBadge;
+class ChannelChatters;
 class MessageThread;
 class IgnorePhrase;
 struct HelixVip;
 using HelixModerator = HelixVip;
 struct ChannelPointReward;
 struct TwitchEmoteOccurrence;
-class ChannelChatters;
 
 namespace linkparser {
 struct Parsed;
@@ -217,6 +218,39 @@ public:
 
     static MessagePtr buildHypeChatMessage(Communi::IrcPrivateMessage *message);
 
+    /// @brief Builds a message out of an `ircMessage`.
+    ///
+    /// Building a message won't cause highlights to be triggered. They will
+    /// only be parsed. To trigger highlights (play sound etc.), use
+    /// triggerHighlights().
+    ///
+    /// @param channel The channel this message was sent to. Must not be
+    ///                `nullptr`.
+    /// @param ircMessage The original message. This can be any message
+    ///                   (PRIVMSG, USERNOTICE, etc.). Its content is not
+    ///                   accessed through this parameter but through `content`,
+    ///                   as the content might be inside a tag (e.g. gifts in a
+    ///                   USERNOTICE).
+    /// @param args Arguments from parsing a chat message.
+    /// @param content The message text. This isn't always the entire text. In
+    ///                replies, the leading mention can be cut off.
+    ///                See `messageOffset`.
+    /// @param messageOffset Starting offset to be used on index-based
+    ///                      operations on `content` such as parsing emotes.
+    ///                      For example:
+    ///                         ircMessage = "@hi there"
+    ///                         content = "there"
+    ///                         messageOffset_ = 4
+    ///                      The index 6 would resolve to 6 - 4 = 2 => 'e'
+    /// @param thread The reply thread this message is part of. If there's no
+    ///               thread, this is an empty `shared_ptr`.
+    /// @param parent The direct parent this message is replying to. This does
+    ///               not need to be the `thread`s root. If this message isn't
+    ///               replying to anything, this is an empty `shared_ptr`.
+    ///
+    /// @returns The built message and a highlight result. If the message is
+    ///          ignored (e.g. from a blocked user), then the returned pointer
+    ///          will be en empty `shared_ptr`.
     static std::pair<MessagePtrMut, HighlightAlert> makeIrcMessage(
         Channel *channel, const Communi::IrcMessage *ircMessage,
         const MessageParseArgs &args, QString content,
@@ -229,7 +263,7 @@ public:
         const QString &displayName, const MessageColor &userColor,
         const QTime &time, const Communi::IrcMessage &ircMessage);
 
-    static MessagePtrMut makeSubgiftMessage(const QVariantMap &tags,
+    static MessagePtrMut makeSubgiftMessage(Communi::TagsRef tags,
                                             const QTime &time,
                                             TwitchChannel *channel);
 
@@ -248,7 +282,7 @@ public:
 private:
     struct TextState {
         TwitchChannel *twitchChannel = nullptr;
-        QString userID;
+        QString userID;  // 7TV: used for personal emotes
         bool hasBits = false;
         bool bitsStacked = false;
         int bitsLeft = 0;
@@ -266,31 +300,43 @@ private:
     std::unique_ptr<MessageElement> releaseBack();
 
     void parse();
-    void parseUsernameColor(const QVariantMap &tags, const QString &userID);
+    void parseUsernameColor(Communi::TagsRef tags, const QString &userID);
     void parseUsername(const Communi::IrcMessage *ircMessage,
                        TwitchChannel *twitchChannel,
                        bool trimSubscriberUsername);
-    void parseMessageID(const QVariantMap &tags);
+    void parseMessageID(Communi::TagsRef tags);
     /// Parses most of them message flags based on the given tags
-    void parseMessageTags(const QVariantMap &tags);
+    void parseMessageTags(Communi::TagsRef tags);
 
-    static QString parseRoomID(const QVariantMap &tags,
+    /// Parses the room-ID this message was received in
+    ///
+    /// @returns The room-ID
+    static QString parseRoomID(Communi::TagsRef tags,
                                TwitchChannel *twitchChannel);
 
-    TwitchChannel *parseSharedChatInfo(const QVariantMap &tags,
+    /// Parses the shared-chat information from this message.
+    ///
+    /// @param tags The tags of the received message
+    /// @param twitchChannel The channel this message was received in
+    /// @returns The source channel - the channel this message originated from.
+    ///          If there's no channel currently open, @a twitchChannel is
+    ///          returned.
+    TwitchChannel *parseSharedChatInfo(Communi::TagsRef tags,
                                        TwitchChannel *twitchChannel);
 
-    void parseThread(const QString &messageContent, const QVariantMap &tags,
+    // Parse & build thread information into the message
+    // Will read information from thread_ or from IRC tags
+    void parseThread(const QString &messageContent, Communi::TagsRef tags,
                      const Channel *channel,
                      const std::shared_ptr<MessageThread> &thread,
                      const MessagePtr &parent);
-
-    HighlightAlert parseHighlights(const QVariantMap &tags,
+    // parseHighlights only updates the visual state of the message, but leaves the playing of alerts and sounds to the triggerHighlights function
+    HighlightAlert parseHighlights(Communi::TagsRef tags,
                                    const QString &originalMessage,
                                    const MessageParseArgs &args);
 
     void appendChannelName(const Channel *channel);
-    void appendUsername(const QVariantMap &tags, const MessageParseArgs &args);
+    void appendUsername(Communi::TagsRef tags, const MessageParseArgs &args);
 
     void addWordsFromAstNodes(
         const QVector<ast::ASTNode> &nodes,
@@ -300,7 +346,7 @@ private:
                   const std::vector<TwitchEmoteOccurrence> &twitchEmotes,
                   TextState &state, FontStyle style = FontStyle::ChatMedium);
 
-    void appendTwitchBadges(const QVariantMap &tags,
+    void appendTwitchBadges(Communi::TagsRef tags,
                             TwitchChannel *twitchChannel);
     void appendChatterinoBadges(const QString &userID);
     void appendFfzBadges(TwitchChannel *twitchChannel, const QString &userID);

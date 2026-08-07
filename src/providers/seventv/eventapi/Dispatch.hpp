@@ -101,7 +101,7 @@ using User = std::variant<TwitchUser, KickUser>;
 struct EntitlementCreateDeleteDispatch {
     QString seventvUsername;
     QVarLengthArray<User, 1> connections;
-
+    /** id of the entitlement */
     QString refID;
     CosmeticKind kind;
 
