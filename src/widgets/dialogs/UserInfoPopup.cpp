@@ -3915,7 +3915,8 @@ QString UserInfoPopup::showProfilePictureContextMenu()
     auto loginName = this->userName_.toLower();
     menu->addAction("Open channel in a new &popup window", this, [loginName] {
         auto *app = getApp();
-        auto &window = app->getWindows()->createWindow(WindowType::Popup, true);
+        auto &window =
+            app->getWindows()->createWindow(WindowType::Popup, {.show = true});
         auto *split =
             window.getNotebook().getOrAddSelectedPage()->appendNewSplit(false);
         split->setChannel(app->getTwitch()->getOrAddChannel(loginName));

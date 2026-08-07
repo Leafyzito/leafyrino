@@ -1292,10 +1292,10 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
         sink.sinkTraits().has(
             MessageSinkTrait::RequiresKnownChannelPointReward))
     {
-        const auto messageId = tags.value("id").toString();
+        const auto messageId = tags.getOrEmpty("id");
         if (!messageId.isEmpty())
         {
-            auto roomId = tags.value("room-id").toString();
+            auto roomId = tags.getOrEmpty("room-id");
             if (roomId.isEmpty())
             {
                 roomId = chan->roomId();

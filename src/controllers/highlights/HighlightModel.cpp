@@ -183,27 +183,6 @@ void HighlightModel::afterInit()
     this->insertCustomRow(firstMessageRow,
                           HighlightRowIndexes::FirstMessageRow);
 
-    std::vector<QStandardItem *> elevatedMessageRow = this->createRow();
-    setBoolItem(elevatedMessageRow[Column::Pattern],
-                getSettings()->enableElevatedMessageHighlight.getValue(), true,
-                false);
-    elevatedMessageRow[Column::Pattern]->setData("Hype Chats", Qt::DisplayRole);
-    elevatedMessageRow[Column::ShowInMentions]->setFlags({});
-
-    elevatedMessageRow[Column::FlashTaskbar]->setFlags({});
-    elevatedMessageRow[Column::PlaySound]->setFlags({});
-    elevatedMessageRow[Column::UseRegex]->setFlags({});
-    elevatedMessageRow[Column::CaseSensitive]->setFlags({});
-    elevatedMessageRow[Column::SoundPath]->setFlags(Qt::NoItemFlags);
-
-    auto elevatedMessageColor =
-        ColorProvider::instance().color(ColorType::ElevatedMessageHighlight);
-    setColorItem(elevatedMessageRow[Column::Color], *elevatedMessageColor,
-                 false);
-
-    this->insertCustomRow(elevatedMessageRow,
-                          HighlightRowIndexes::ElevatedMessageRow);
-
     // Highlight settings for reply threads
     std::vector<QStandardItem *> threadMessageRow = this->createRow();
     setBoolItem(threadMessageRow[Column::Pattern],
@@ -430,9 +409,6 @@ void HighlightModel::customRowSetData(const std::vector<QStandardItem *> &row,
                 else if (rowIndex == HighlightRowIndexes::FirstMessageRow)
                 {
                 }
-                else if (rowIndex == HighlightRowIndexes::ElevatedMessageRow)
-                {
-                }
                 else if (rowIndex == HighlightRowIndexes::ThreadMessageRow)
                 {
                     getSettings()->enableThreadHighlightTaskbar.setValue(
@@ -473,9 +449,6 @@ void HighlightModel::customRowSetData(const std::vector<QStandardItem *> &row,
                 {
                 }
                 else if (rowIndex == HighlightRowIndexes::FirstMessageRow)
-                {
-                }
-                else if (rowIndex == HighlightRowIndexes::ElevatedMessageRow)
                 {
                 }
                 else if (rowIndex == HighlightRowIndexes::ThreadMessageRow)

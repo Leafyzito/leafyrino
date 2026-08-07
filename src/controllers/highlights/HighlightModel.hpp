@@ -36,12 +36,11 @@ public:
         FollowRow = 3,
         RedeemedRow = 4,
         FirstMessageRow = 5,
-        ElevatedMessageRow = 6,
-        ThreadMessageRow = 7,
-        AutomodRow = 8,
-        WatchStreakRow = 9,
-        AnnouncementRow = 10,
-        ColoredAnnouncementRow = 11,
+        ThreadMessageRow = 6,
+        AutomodRow = 7,
+        WatchStreakRow = 8,
+        AnnouncementRow = 9,
+        ColoredAnnouncementRow = 10,
     };
 
     enum UserHighlightRowIndexes {

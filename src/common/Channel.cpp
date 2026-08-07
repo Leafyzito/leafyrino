@@ -607,8 +607,8 @@ void Channel::upsertPersonalSeventvEmotes(
         /// @pre @a words must not be empty
         const auto flush = [&]() {
             elements.emplace_back(std::make_unique<TextElement>(
-                std::move(words), textElement->getFlags(), textElement->color(),
-                textElement->fontStyle()));
+                TextElement::CLONE, std::move(words), textElement->getFlags(),
+                textElement->color(), textElement->fontStyle()));
             words.clear();
         };
 

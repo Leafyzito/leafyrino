@@ -182,19 +182,6 @@ Message::ClientDetectionStatus performClientDetection(const QString &nonce)
 }
 constexpr QStringView ANONYMOUS_GIFTER_ID = u"274598607";
 
-struct HypeChatPaidLevel {
-    std::chrono::seconds duration;
-    uint8_t numeric;
-};
-
-const std::unordered_map<QString, HypeChatPaidLevel> HYPE_CHAT_PAID_LEVEL{
-    {u"ONE"_s, {30s, 1}},    {u"TWO"_s, {2min + 30s, 2}},
-    {u"THREE"_s, {5min, 3}}, {u"FOUR"_s, {10min, 4}},
-    {u"FIVE"_s, {30min, 5}}, {u"SIX"_s, {1h, 6}},
-    {u"SEVEN"_s, {2h, 7}},   {u"EIGHT"_s, {3h, 8}},
-    {u"NINE"_s, {4h, 9}},    {u"TEN"_s, {5h, 10}},
-};
-
 /// MessageFlag::Subscription message types
 const QSet<QString> SUB_MESSAGE_TYPES{
     "sub",      //
@@ -1976,11 +1963,6 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
     if (tags.getOrEmpty("first-msg") == "1")
     {
         builder->flags.set(MessageFlag::FirstMessage);
-    }
-
-    if (tags.has("pinned-chat-paid-amount"))
-    {
-        builder->flags.set(MessageFlag::ElevatedMessage);
     }
 
     if (auto bits = tags.get("bits"))

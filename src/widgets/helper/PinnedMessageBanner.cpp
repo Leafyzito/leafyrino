@@ -519,7 +519,6 @@ void PinnedMessageBanner::setPinnedMessage(
         message->flags.unset(MessageFlag::Highlighted);
         message->flags.unset(MessageFlag::RedeemedHighlight);
         message->flags.unset(MessageFlag::FirstMessage);
-        message->flags.unset(MessageFlag::ElevatedMessage);
 
         auto it =
             std::remove_if(message->elements.begin(), message->elements.end(),

@@ -91,7 +91,8 @@ AboutPage::AboutPage()
             l.emplace<QLabel>("All about Chatterino's <a href=\"" % LINK_CHATTERINO_FEATURES % "\">features</a>")->setOpenExternalLinks(true);
             l.emplace<QLabel>("Join the official Chatterino <a href=\"" % LINK_CHATTERINO_DISCORD % "\">Discord</a>")->setOpenExternalLinks(true);
             l.emplace<QLabel>("Join the official 7TV <a href=\"" % LINK_SEVENTV_DISCORD % "\">Discord</a>")->setOpenExternalLinks(true);
-            // clang-format on        }
+            // clang-format on
+        }
 
         auto licenses =
             layout.emplace<QGroupBox>("Open source software used...");
