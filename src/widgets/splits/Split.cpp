@@ -2007,6 +2007,7 @@ void Split::setChannel(IndirectChannel newChannel)
 
     this->channelSignalHolder_.managedConnect(
         this->channel_.get()->displayNameChanged, [this] {
+            this->header_->updateChannelText();
             this->actionRequested.invoke(Action::RefreshTab);
         });
 

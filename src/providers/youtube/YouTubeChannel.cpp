@@ -141,6 +141,11 @@ const QString &YouTubeChannel::getDisplayName() const
     return this->displayName_;
 }
 
+const QString &YouTubeChannel::getLocalizedName() const
+{
+    return this->displayName_;
+}
+
 bool YouTubeChannel::isLive() const
 {
     return this->live_;
@@ -154,6 +159,16 @@ void YouTubeChannel::setLive(bool live)
     }
     this->live_ = live;
     this->liveStatusChanged.invoke();
+}
+
+void YouTubeChannel::applyResolvedName(const QString &channelName)
+{
+    if (channelName.isEmpty() || channelName == this->displayName_)
+    {
+        return;
+    }
+    this->displayName_ = channelName;
+    this->displayNameChanged.invoke();
 }
 
 bool YouTubeChannel::isWritable() const
@@ -191,6 +206,7 @@ void YouTubeChannel::refreshLiveStream()
                 self->addSystemMessage(u"Could not refresh YouTube chat."_s);
                 return;
             }
+            self->applyResolvedName(res->channelName);
             if (res->continuation.isEmpty())
             {
                 self->setLive(false);
@@ -216,11 +232,7 @@ void YouTubeChannel::startPolling(const YouTubeLiveStream &stream)
     this->clientVersion_ = stream.clientVersion;
     this->continuation_ = stream.continuation;
     this->channelId_ = stream.channelId;
-    if (!stream.channelName.isEmpty())
-    {
-        this->displayName_ = stream.channelName;
-        this->displayNameChanged.invoke();
-    }
+    this->applyResolvedName(stream.channelName);
     this->setLive(true);
     this->poll();
 }

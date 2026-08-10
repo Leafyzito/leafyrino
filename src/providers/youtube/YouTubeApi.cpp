@@ -65,6 +65,10 @@ YouTubeLiveStream scrapeLiveStream(const QString &html)
         uR"re("channelId":"(UC[\w-]+)")re"_s);
     static const QRegularExpression channelNameRe(
         uR"re("channelName":"([^"]+)")re"_s);
+    static const QRegularExpression ownerChannelNameRe(
+        uR"re("ownerChannelName":"([^"]+)")re"_s);
+    static const QRegularExpression videoAuthorRe(
+        uR"re("videoDetails"\s*:\s*\{[^}]*"author"\s*:\s*"([^"]+)")re"_s);
     static const QRegularExpression continuationRe(
         uR"re("continuation":"([^"]+)")re"_s);
 
@@ -82,6 +86,14 @@ YouTubeLiveStream scrapeLiveStream(const QString &html)
     }
     stream.channelId = firstCapture(channelIdRe, html);
     stream.channelName = firstCapture(channelNameRe, html);
+    if (stream.channelName.isEmpty())
+    {
+        stream.channelName = firstCapture(ownerChannelNameRe, html);
+    }
+    if (stream.channelName.isEmpty())
+    {
+        stream.channelName = firstCapture(videoAuthorRe, html);
+    }
 
     auto chatIndex = html.indexOf(u"liveChatRenderer");
     if (chatIndex < 0)

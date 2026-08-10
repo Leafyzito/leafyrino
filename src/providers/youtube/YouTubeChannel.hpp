@@ -27,6 +27,7 @@ public:
     std::weak_ptr<YouTubeChannel> weakFromThis();
 
     const QString &getDisplayName() const override;
+    const QString &getLocalizedName() const override;
     bool isLive() const override;
     bool isWritable() const override;
 
@@ -54,6 +55,7 @@ private:
     void applyDeletions(const YouTubeLiveChatPage &page);
 
     void setLive(bool live);
+    void applyResolvedName(const QString &channelName);
 
     bool markSeen(const QString &id);
 
