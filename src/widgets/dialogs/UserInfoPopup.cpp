@@ -2502,6 +2502,19 @@ void UserInfoPopup::updateYouTubeUserData()
 
     this->ui_.nameLabel->setText(this->userName_);
 
+    if (this->youtubeChannelId_.isEmpty())
+    {
+        this->ui_.userIDLabel->setText(u"ID " % TEXT_UNAVAILABLE);
+        this->ui_.userIDLabel->setProperty("copy-text",
+                                           TEXT_UNAVAILABLE.toString());
+    }
+    else
+    {
+        this->ui_.userIDLabel->setText(TEXT_USER_ID % this->youtubeChannelId_);
+        this->ui_.userIDLabel->setProperty("copy-text",
+                                           this->youtubeChannelId_);
+    }
+
     if (this->ui_.pronounsLabel)
     {
         this->ui_.pronounsLabel->hide();
@@ -4536,7 +4549,8 @@ void UserInfoPopup::resetNameHistory()
 
 bool UserInfoPopup::applyCachedNameHistory()
 {
-    if (this->userName_.isEmpty() || this->userId_.isEmpty() || this->isKick_)
+    if (this->userName_.isEmpty() || this->userId_.isEmpty() || this->isKick_ ||
+        this->isYouTube_)
     {
         return false;
     }
@@ -4568,7 +4582,8 @@ void UserInfoPopup::updateNameHistoryButton()
     }
 
     const bool canShow = getSettings()->showUsercardNameHistoryButton &&
-                         !this->isKick_ && !this->userName_.isEmpty();
+                         !this->isKick_ && !this->isYouTube_ &&
+                         !this->userName_.isEmpty();
     this->ui_.nameHistoryButton->setVisible(canShow);
     this->ui_.nameHistoryButton->setEnabled(canShow &&
                                             !this->userId_.isEmpty());
@@ -4610,7 +4625,7 @@ void UserInfoPopup::updateNameHistoryButton()
 void UserInfoPopup::showNameHistoryMenu()
 {
     if (this->ui_.nameHistoryButton == nullptr || this->userName_.isEmpty() ||
-        this->userId_.isEmpty() || this->isKick_)
+        this->userId_.isEmpty() || this->isKick_ || this->isYouTube_)
     {
         return;
     }
@@ -4690,7 +4705,8 @@ void UserInfoPopup::openNameHistoryMenu(const QString &statusText)
 
 void UserInfoPopup::requestNameHistory()
 {
-    if (this->userName_.isEmpty() || this->userId_.isEmpty() || this->isKick_)
+    if (this->userName_.isEmpty() || this->userId_.isEmpty() || this->isKick_ ||
+        this->isYouTube_)
     {
         return;
     }
