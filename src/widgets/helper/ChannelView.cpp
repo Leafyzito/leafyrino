@@ -34,6 +34,8 @@
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "providers/youtube/YouTubeChannel.hpp"
+#include "providers/youtube/YouTubeChatServer.hpp"
 #include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
@@ -2700,6 +2702,12 @@ void ChannelView::drawMessages(QPainter &painter, const QRect &area)
         messagePreferences.separateMessages = *this->overrideSeparateMessages_;
     }
 
+    bool tintByPlatform = false;
+    if (auto *mc = dynamic_cast<MultiChannel *>(this->underlyingChannel_.get()))
+    {
+        tintByPlatform = mc->tintByPlatform();
+    }
+
     MessagePaintContext ctx = {
         .painter = painter,
         .selection = this->selection_,
@@ -2719,6 +2727,7 @@ void ChannelView::drawMessages(QPainter &painter, const QRect &area)
         .messageIndex = start,
         .isLastReadMessage = false,
         .isCollapsed = this->collapseMessages_,
+        .tintByPlatform = tintByPlatform,
     };
     bool showLastMessageIndicator = getSettings()->showLastMessageIndicator;
 
@@ -3381,8 +3390,9 @@ void ChannelView::mousePressEvent(QMouseEvent *event)
                     this->disableScrolling();
                 }
                 else if (hoverLayoutElement != nullptr &&
-                         hoverLayoutElement->getFlags().has(
-                             MessageElementFlag::Username))
+                         hoverLayoutElement->getFlags().hasAny(
+                             {MessageElementFlag::Username,
+                              MessageElementFlag::Mention}))
                 {
                     break;
                 }
@@ -3508,8 +3518,9 @@ void ChannelView::mouseReleaseEvent(QMouseEvent *event)
             {
                 return;
             }
-            if (hoverLayoutElement->getFlags().has(
-                    MessageElementFlag::Username))
+            if (hoverLayoutElement->getFlags().hasAny(
+                    {MessageElementFlag::Username,
+                     MessageElementFlag::Mention}))
             {
                 const auto userName = hoverLayoutElement->getLink().value;
                 const auto type = this->effectiveSourceChannel()->getType();
@@ -3524,9 +3535,24 @@ void ChannelView::mouseReleaseEvent(QMouseEvent *event)
                         openTwitchUsercard(layout->getMessage()->channelName,
                                            userName);
                         break;
-                    default:
-                        openTwitchUsercard(this->channel_->getName(), userName);
+                    default: {
+                        auto source = this->inferChannel(*layout->getMessage());
+                        MessagePlatform platform = MessagePlatform::AnyOrTwitch;
+                        QString channelId;
+                        if (dynamic_cast<YouTubeChannel *>(source.get()))
+                        {
+                            platform = MessagePlatform::YouTube;
+                            channelId = YouTubeChannel::channelIdForDisplayName(
+                                source, userName);
+                        }
+                        else if (dynamic_cast<KickChannel *>(source.get()))
+                        {
+                            platform = MessagePlatform::Kick;
+                        }
+                        UserInfoPopup::openUserChannelAction(
+                            userName, platform, source->getName(), channelId);
                         break;
+                    }
                 }
 
                 return;
@@ -4325,7 +4351,17 @@ void ChannelView::showUserInfoPopup(const QString &userName,
 
     auto openingChannel = this->effectiveSourceChannel();
     ChannelPtr contextChannel;
-    if (openingChannel && platform == MessagePlatform::Kick)
+    if (platform == MessagePlatform::YouTube)
+    {
+        userPopup->setYouTubeContext();
+        contextChannel = getApp()->getYouTubeChatServer()->findByName(
+            alternativePopoutChannel);
+        if (!contextChannel)
+        {
+            contextChannel = Channel::getEmpty();
+        }
+    }
+    else if (openingChannel && platform == MessagePlatform::Kick)
     {
         contextChannel =
             getApp()->getKickChatServer()->findBySlug(alternativePopoutChannel);
@@ -4388,8 +4424,9 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
         case Link::UserWhisper:
         case Link::UserInfo: {
             auto user = link.value;
-            this->showUserInfoPopup(user, layout->getMessage()->platform,
-                                    layout->getMessage()->channelName);
+            const auto *message = layout->getMessage();
+            this->showUserInfoPopup(user, message->platform,
+                                    message->channelName);
         }
         break;
 

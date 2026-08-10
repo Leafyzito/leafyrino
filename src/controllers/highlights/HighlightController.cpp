@@ -546,6 +546,9 @@ std::pair<bool, HighlightResult> HighlightController::check(
                 !kickUser->isAnonymous() && senderName == kickUser->username();
         }
         break;
+        case MessagePlatform::YouTube: {
+        }
+        break;
     }
 
     for (const auto &check : *checks)

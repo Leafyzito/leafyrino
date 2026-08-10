@@ -355,6 +355,14 @@ public:
         return nullptr;
     }
 
+    YouTubeChatServer *getYouTubeChatServer() override
+    {
+        assert(false &&
+               "EmptyApplication::getYouTubeChatServer was called without "
+               "being initialized");
+        return nullptr;
+    }
+
     QTemporaryDir settingsDir;
     Args args_;
     Modes modes_{args_};

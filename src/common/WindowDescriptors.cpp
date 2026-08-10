@@ -9,6 +9,7 @@
 #include "debug/AssertInGuiThread.hpp"
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "providers/youtube/YouTubeChatServer.hpp"
 #include "util/Backup.hpp"
 #include "util/Expected.hpp"
 #include "util/MultiChannel.hpp"
@@ -169,6 +170,8 @@ SplitDescriptor SplitDescriptor::loadFromJSON(const QJsonObject &root)
             qmagicenum::enumCast<MultiChannelIndicatorMode>(modeStr).value_or(
                 MultiChannelIndicatorMode::PlatformBadgeIfUnselected);
         descriptor.mcIndex = static_cast<uint32_t>(data["activeIndex"].toInt());
+        descriptor.mcTintByPlatform = data["tintByPlatform"].toBool();
+        descriptor.mcShowTwitchOverlays = data["showTwitchOverlays"].toBool();
     }
 
     return descriptor;
@@ -207,6 +210,8 @@ QJsonObject SplitDescriptor::toJson() const
         data.insert("indicatorMode",
                     qmagicenum::enumNameString(this->mcIndicator));
         data.insert("activeIndex", static_cast<int32_t>(this->mcIndex));
+        data.insert("tintByPlatform", this->mcTintByPlatform);
+        data.insert("showTwitchOverlays", this->mcShowTwitchOverlays);
     }
     obj.insert("data", data);
 
@@ -272,6 +277,9 @@ IndirectChannel SplitDescriptor::decodeChannel() const
                                         .userID = this->kickUserID,
                                         .channelID = this->kickChannelID,
                                     });
+        case Channel::Type::YouTube:
+            return getApp()->getYouTubeChatServer()->getOrCreate(
+                this->channelName_);
         case Channel::Type::Multi: {
             QVarLengthArray<MultiChannel::Spec, 4> specs;
             for (const auto &child : this->children)
@@ -282,7 +290,9 @@ IndirectChannel SplitDescriptor::decodeChannel() const
                     specs.emplace_back(*std::move(spec));
                 }
             }
-            auto ptr = std::make_shared<MultiChannel>(specs, this->mcIndicator);
+            auto ptr = std::make_shared<MultiChannel>(
+                specs, this->mcIndicator, this->mcTintByPlatform,
+                this->mcShowTwitchOverlays);
             ptr->setActiveChannelIndex(this->mcIndex);
             return {std::move(ptr)};
         }

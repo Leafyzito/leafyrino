@@ -23,6 +23,7 @@
 #include "providers/seventv/SeventvEmotes.hpp"
 #include "providers/twitch/eventsub/Controller.hpp"
 #include "providers/twitch/TwitchBadges.hpp"
+#include "providers/youtube/YouTubeChatServer.hpp"
 #include "singletons/ImageUploader.hpp"
 #include "singletons/NativeMessaging.hpp"
 #ifdef CHATTERINO_HAVE_PLUGINS
@@ -227,6 +228,7 @@ Application::Application(Settings &_settings, const Paths &paths,
     , pronouns(new pronouns::Pronouns)
     , spellChecker(new SpellChecker)
     , kickChatServer(new KickChatServer)
+    , youTubeChatServer(new YouTubeChatServer)
 #ifdef CHATTERINO_HAVE_PLUGINS
     , plugins(new PluginController(paths))
 #endif
@@ -281,6 +283,7 @@ void Application::initialize(Settings &settings, const Modes &modes,
 
     this->twitch->initialize();
     this->kickChatServer->initialize();
+    this->youTubeChatServer->initialize();
 
     this->notifications->initialize();
 
@@ -782,6 +785,14 @@ KickChatServer *Application::getKickChatServer()
     assert(this->kickChatServer);
 
     return this->kickChatServer.get();
+}
+
+YouTubeChatServer *Application::getYouTubeChatServer()
+{
+    assertInGuiThread();
+    assert(this->youTubeChatServer);
+
+    return this->youTubeChatServer.get();
 }
 
 void Application::aboutToQuit()

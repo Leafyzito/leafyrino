@@ -19,6 +19,7 @@ public:
     enum class Platform : uint8_t {
         Twitch,
         Kick,
+        YouTube,
     };
 
     struct Spec {
@@ -34,7 +35,8 @@ public:
     };
 
     MultiChannel(std::span<const Spec> channels,
-                 MultiChannelIndicatorMode indicatorMode);
+                 MultiChannelIndicatorMode indicatorMode,
+                 bool tintByPlatform = false, bool showTwitchOverlays = false);
 
     struct ChildChannel {
         Platform platform;
@@ -72,6 +74,8 @@ public:
     QString getCurrentStreamID() const override;
 
     MultiChannelIndicatorMode indicatorMode() const;
+    bool tintByPlatform() const;
+    bool showTwitchOverlays() const;
 
 private:
     void refreshDisplayName();
@@ -84,6 +88,8 @@ private:
 
     MultiChannelIndicatorMode indicatorMode_ =
         MultiChannelIndicatorMode::PlatformBadgeIfUnselected;
+    bool tintByPlatform_ = false;
+    bool showTwitchOverlays_ = false;
 };
 
 bool platformMatches(MessagePlatform lhs, MultiChannel::Platform rhs) noexcept;

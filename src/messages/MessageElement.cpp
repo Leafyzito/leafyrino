@@ -153,6 +153,22 @@ EmotePtr getTwitchBadge()
     return ptr;
 }
 
+EmotePtr getYouTubeBadge()
+{
+    static EmotePtr ptr = std::make_shared<const Emote>(Emote{
+        .name = {u"YouTube"_s},
+        .images =
+            ImageSet{
+                Image::fromUrl({u":/badges/platform-youtube-18.webp"_s}, 1.0,
+                               {18, 18}),
+                Image::fromUrl({u":/badges/platform-youtube-36.webp"_s}, .5,
+                               {36, 36}),
+            },
+        .tooltip = Tooltip{},
+    });
+    return ptr;
+}
+
 }  // namespace
 
 MessageElement::MessageElement(MessageElementFlags flags)
@@ -918,6 +934,9 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
                     break;
                 case MessagePlatform::Kick:
                     emote = getKickBadge();
+                    break;
+                case MessagePlatform::YouTube:
+                    emote = getYouTubeBadge();
                     break;
             }
         }

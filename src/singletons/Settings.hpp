@@ -248,6 +248,16 @@ public:
     BoolSetting useLegacyScaling = {"/appearance/useLegacyScaling", false};
     BoolSetting windowTopMost = {"/appearance/windowAlwaysOnTop", false};
 
+    // YouTube
+    BoolSetting highlightYouTubeSuperChats = {
+        "/appearance/youtube/highlightSuperChats", true};
+    BoolSetting youtubeSuperChatWhiteName = {
+        "/appearance/youtube/superChatWhiteName", true};
+    BoolSetting highlightYouTubeMemberships = {
+        "/appearance/youtube/highlightMemberships", true};
+    BoolSetting colorYouTubeUsernamesByRole = {
+        "/appearance/youtube/colorUsernamesByRole", true};
+
     float getClampedUiScale() const;
     void setClampedUiScale(float value);
 

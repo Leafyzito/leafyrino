@@ -69,6 +69,40 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->setTooltip("Show the badge picker button in the chat input bar.")
         ->addTo(layout);
 
+    layout.addTitle("YouTube");
+    SettingWidget::checkbox("Highlight Super Chats",
+                            s.highlightYouTubeSuperChats)
+        ->addKeywords(
+            {"youtube", "superchat", "super chat", "highlight", "donation"})
+        ->setTooltip(
+            "Show Super Chats as a colored highlighted row (per tier).")
+        ->addTo(layout);
+    SettingWidget::checkbox("White username in Super Chats",
+                            s.youtubeSuperChatWhiteName)
+        ->addKeywords(
+            {"youtube", "superchat", "super chat", "username", "white", "name"})
+        ->setTooltip(
+            "Render the author name in white on the colored Super Chat "
+            "row for readability.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Highlight memberships && gifts",
+                            s.highlightYouTubeMemberships)
+        ->addKeywords(
+            {"youtube", "membership", "member", "gift", "highlight", "green"})
+        ->setTooltip(
+            "Give new memberships, milestones and gifted memberships a "
+            "green highlight.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Color YouTube usernames by role only",
+                            s.colorYouTubeUsernamesByRole)
+        ->addKeywords({"youtube", "username", "color", "role", "moderator",
+                       "member", "owner"})
+        ->setTooltip("Color only moderators, members and the owner; regular "
+                     "chatters stay a neutral grey. Off = all names grey.\n"
+                     "Deleted messages follow the global \"hide moderated "
+                     "messages\" setting.")
+        ->addTo(layout);
+
     layout.addTitle("Usercard");
     layout.addDescription("Choose which extra details appear on usercards.");
 

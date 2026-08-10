@@ -22,6 +22,7 @@
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "providers/youtube/YouTubeChannel.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
 #include "singletons/Theme.hpp"
@@ -415,6 +416,21 @@ void SplitHeader::initializeLayout()
         },
         this, {4, 4});
 
+    this->youtubeRefreshButton_ = new SvgButton(
+        {
+            .dark = ":/buttons/reloadLight.svg",
+            .light = ":/buttons/reloadDark.svg",
+        },
+        this, {4, 4});
+    this->youtubeRefreshButton_->setToolTip(
+        "Refresh YouTube live chat (find the channel's latest stream)");
+    this->youtubeRefreshButton_->hide();
+
+    this->sendTargetButton_ = new LabelButton({}, this);
+    this->sendTargetButton_->setSizePolicy(QSizePolicy::Minimum,
+                                           QSizePolicy::Minimum);
+    this->sendTargetButton_->hide();
+
     this->followButton_ =
         new SvgButton(followButtonSource(false), this, {4, 4});
 
@@ -462,6 +478,8 @@ void SplitHeader::initializeLayout()
         this->moderationButton_,
         // chatter list
         this->chattersButton_,
+        this->sendTargetButton_,
+        this->youtubeRefreshButton_,
         // dropdown
         this->dropdownButton_,
         // add split
@@ -504,6 +522,31 @@ void SplitHeader::initializeLayout()
     QObject::connect(this->chattersButton_, &Button::leftClicked, this,
                      [this]() {
                          this->split_->openChatterList();
+                     });
+
+    QObject::connect(
+        this->youtubeRefreshButton_, &Button::leftClicked, this, [this]() {
+            auto channel = this->split_->getChannel();
+            if (auto *yt = dynamic_cast<YouTubeChannel *>(channel.get()))
+            {
+                yt->refreshLiveStream();
+            }
+            else if (auto *mc = dynamic_cast<MultiChannel *>(channel.get()))
+            {
+                for (const auto &child : mc->channels())
+                {
+                    if (auto *ytc =
+                            dynamic_cast<YouTubeChannel *>(child.channel.get()))
+                    {
+                        ytc->refreshLiveStream();
+                    }
+                }
+            }
+        });
+
+    QObject::connect(this->sendTargetButton_, &Button::leftClicked, this,
+                     [this]() {
+                         this->cycleSendTarget();
                      });
 
     QObject::connect(this->followButton_, &Button::leftClicked, this, [this]() {
@@ -1096,6 +1139,122 @@ void SplitHeader::handleChannelChanged()
             twitchChannel->refreshFollowingStatus(false);
         }
     }
+
+    auto splitChannel = this->split_->getChannel();
+    bool hasYouTube =
+        dynamic_cast<YouTubeChannel *>(splitChannel.get()) != nullptr;
+    if (!hasYouTube)
+    {
+        if (auto *mc = dynamic_cast<MultiChannel *>(splitChannel.get()))
+        {
+            for (const auto &child : mc->channels())
+            {
+                if (dynamic_cast<YouTubeChannel *>(child.channel.get()))
+                {
+                    hasYouTube = true;
+                    break;
+                }
+            }
+        }
+    }
+    if (this->youtubeRefreshButton_)
+    {
+        this->youtubeRefreshButton_->setVisible(hasYouTube);
+    }
+
+    this->updateSendTargetButton();
+}
+
+namespace {
+
+QString multiPlatformName(MultiChannel::Platform platform)
+{
+    switch (platform)
+    {
+        case MultiChannel::Platform::Twitch:
+            return u"Twitch"_s;
+        case MultiChannel::Platform::Kick:
+            return u"Kick"_s;
+        case MultiChannel::Platform::YouTube:
+            return u"YouTube"_s;
+    }
+    return {};
+}
+
+}  // namespace
+
+void SplitHeader::updateSendTargetButton()
+{
+    if (!this->sendTargetButton_)
+    {
+        return;
+    }
+
+    auto channel = this->split_->getChannel();
+    auto *mc = dynamic_cast<MultiChannel *>(channel.get());
+    if (!mc)
+    {
+        this->sendTargetButton_->hide();
+        return;
+    }
+
+    auto channels = mc->channels();
+    int writable = 0;
+    for (const auto &child : channels)
+    {
+        if (child.channel->isWritable())
+        {
+            writable++;
+        }
+    }
+    if (writable < 2)
+    {
+        this->sendTargetButton_->hide();
+        return;
+    }
+
+    const auto *active = mc->activeChannel();
+    if (!active)
+    {
+        this->sendTargetButton_->hide();
+        return;
+    }
+
+    const auto name = active->channel->getName();
+    const auto platform = multiPlatformName(active->platform);
+    this->sendTargetButton_->setText(name);
+    this->sendTargetButton_->setToolTip(u"Sending to: " % name % u" (" %
+                                        platform % u"). Click to change.");
+    this->sendTargetButton_->show();
+}
+
+void SplitHeader::cycleSendTarget()
+{
+    auto channel = this->split_->getChannel();
+    auto *mc = dynamic_cast<MultiChannel *>(channel.get());
+    if (!mc)
+    {
+        return;
+    }
+
+    auto channels = mc->channels();
+    const size_t count = channels.size();
+    if (count == 0)
+    {
+        return;
+    }
+
+    const size_t current = mc->activeChannelIndex();
+    for (size_t step = 1; step <= count; step++)
+    {
+        const size_t index = (current + step) % count;
+        if (channels[index].channel->isWritable())
+        {
+            mc->setActiveChannelIndex(index);
+            getApp()->getWindows()->forceLayoutChannelViews();
+            break;
+        }
+    }
 }
 
 void SplitHeader::scaleChangedEvent(float scale)
@@ -1108,6 +1267,7 @@ void SplitHeader::scaleChangedEvent(float scale)
     this->followButton_->setFixedWidth(w);
     this->moderationButton_->setFixedWidth(w);
     this->chattersButton_->setFixedWidth(w);
+    this->youtubeRefreshButton_->setFixedWidth(w);
 
     this->addButton_->setFixedWidth(addSplitWidth);
 }

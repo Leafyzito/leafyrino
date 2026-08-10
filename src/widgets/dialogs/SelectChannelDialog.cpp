@@ -9,6 +9,7 @@
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "providers/youtube/YouTubeChatServer.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
 #include "util/MultiChannel.hpp"
@@ -58,6 +59,8 @@ public:
             "Twitch", QVariant::fromValue(MultiChannel::Platform::Twitch));
         this->platform->addItem(
             "Kick", QVariant::fromValue(MultiChannel::Platform::Kick));
+        this->platform->addItem(
+            "YouTube", QVariant::fromValue(MultiChannel::Platform::YouTube));
         layout->addWidget(this->platform);
 
         this->name->setPlaceholderText("Name");
@@ -129,6 +132,9 @@ QListWidgetItem *makeMultiChannelItem(const MultiChannel::Spec &spec)
             break;
         case MultiChannel::Platform::Kick:
             name += u"[K] ";
+            break;
+        case MultiChannel::Platform::YouTube:
+            name += u"[Y] ";
             break;
     }
     name += spec.name;
@@ -323,11 +329,37 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
 
         ui.notebook->addPage(ui.kickPage, "Kick");
     }
+    // YouTube
+    {
+        ui.youtubePage = new QWidget;
+        auto *layout = new QVBoxLayout(ui.youtubePage);
+
+        auto *youtubeLabel = new QLabel(
+            "Join a YouTube channel by its handle or name (e.g. "
+            "<b>@youtube</b>).<br>Opens the channel's current live chat. "
+            "This is <b>read-only</b> and <b>experimental</b>.");
+        youtubeLabel->setOpenExternalLinks(true);
+        youtubeLabel->setWordWrap(true);
+        layout->addWidget(youtubeLabel);
+
+        ui.youtubeName = new QLineEdit();
+        ui.youtubeName->setPlaceholderText(
+            "Handle, channel ID, or URL (e.g. @youtube)");
+        layout->addWidget(ui.youtubeName);
+
+        layout->addStretch(1);
+
+        ui.notebook->addPage(ui.youtubePage, "YouTube");
+    }
     // Multi
     {
         ui.multiPage = new QWidget;
         ui.multiView = new QListWidget;
         ui.multiIndicatorMode = new QComboBox;
+        ui.multiTintByPlatform =
+            new QCheckBox("Tint message background by platform");
+        ui.multiShowTwitchOverlays =
+            new QCheckBox("Show Twitch pins, polls && predictions");
         auto *layout = new QVBoxLayout(ui.multiPage);
         {
             auto *descriptionLabel = new QLabel(
@@ -387,6 +419,17 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
             ui.multiIndicatorMode->setCurrentIndex(1);
         }
         layout->addWidget(ui.multiIndicatorMode);
+
+        ui.multiTintByPlatform->setToolTip(
+            "Give each message a faint background tint in its platform's color "
+            "(Twitch purple, YouTube red, Kick green) so the chats are easy to "
+            "tell apart.");
+        layout->addWidget(ui.multiTintByPlatform);
+
+        ui.multiShowTwitchOverlays->setToolTip(
+            "Show the Twitch pinned message, poll and prediction banners from "
+            "the Twitch channel in this multi split.");
+        layout->addWidget(ui.multiShowTwitchOverlays);
 
         ui.notebook->addPage(ui.multiPage, "Multi");
     }
@@ -483,6 +526,13 @@ void SelectChannelDialog::setSelectedChannel(
             this->ui_.notebook->select(this->ui_.kickPage);
         }
         break;
+        case Channel::Type::YouTube: {
+            this->ui_.channelAnonymous->setChecked(false);
+            this->ui_.youtubeName->setText(channel->getName());
+            this->ui_.youtubeName->selectAll();
+            this->ui_.notebook->select(this->ui_.youtubePage);
+        }
+        break;
         case Channel::Type::Multi: {
             this->ui_.channelAnonymous->setChecked(false);
             const auto *mc = dynamic_cast<const MultiChannel *>(channel.get());
@@ -498,6 +548,9 @@ void SelectChannelDialog::setSelectedChannel(
                 {
                     this->ui_.multiIndicatorMode->setCurrentIndex(indicatorIdx);
                 }
+                this->ui_.multiTintByPlatform->setChecked(mc->tintByPlatform());
+                this->ui_.multiShowTwitchOverlays->setChecked(
+                    mc->showTwitchOverlays());
                 this->mcChannelIndex = mc->activeChannelIndex();
             }
             this->ui_.notebook->select(this->ui_.multiPage);
@@ -525,6 +578,12 @@ IndirectChannel SelectChannelDialog::getSelectedChannel() const
             this->ui_.kickName->text().trimmed());
     }
 
+    if (this->ui_.notebook->isSelected(this->ui_.youtubePage))
+    {
+        return getApp()->getYouTubeChatServer()->getOrCreate(
+            this->ui_.youtubeName->text().trimmed());
+    }
+
     if (this->ui_.notebook->isSelected(this->ui_.multiPage))
     {
         QVarLengthArray<MultiChannel::Spec, 4> specs;
@@ -543,8 +602,11 @@ IndirectChannel SelectChannelDialog::getSelectedChannel() const
             }
         }
         auto ptr = std::make_shared<MultiChannel>(
-            specs, this->ui_.multiIndicatorMode->currentData()
-                       .value<MultiChannelIndicatorMode>());
+            specs,
+            this->ui_.multiIndicatorMode->currentData()
+                .value<MultiChannelIndicatorMode>(),
+            this->ui_.multiTintByPlatform->isChecked(),
+            this->ui_.multiShowTwitchOverlays->isChecked());
         ptr->setActiveChannelIndex(this->mcChannelIndex);
         return {std::move(ptr)};
     }
