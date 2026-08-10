@@ -2575,24 +2575,6 @@ void UserInfoPopup::loadYouTubeAvatar(const QString &url)
 
 void UserInfoPopup::updateYouTubeLatestMessages()
 {
-    static QHash<QString, std::pair<std::vector<MessagePtr>, QDateTime>> cache;
-
-    const auto now = QDateTime::currentDateTime();
-    constexpr qint64 ttlMs = 5 * 60 * 1000;
-    for (auto it = cache.begin(); it != cache.end();)
-    {
-        if (!it.value().second.isValid() ||
-            it.value().second.msecsTo(now) > ttlMs)
-        {
-            it = cache.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
-
-    const QString channelId = this->youtubeChannelId_;
     const QString needle =
         YouTubeChannel::normalizeDisplayName(this->userName_);
     auto matches = [this, needle](const MessagePtr &message) {
@@ -2611,44 +2593,20 @@ void UserInfoPopup::updateYouTubeLatestMessages()
         return name == needle || name.startsWith(needle);
     };
 
-    std::vector<MessagePtr> matched;
-    bool served = false;
-    if (!channelId.isEmpty())
-    {
-        auto it = cache.find(channelId);
-        if (it != cache.end())
-        {
-            matched = it.value().first;
-            served = true;
-        }
-    }
-
-    if (!served)
-    {
-        if (this->underlyingChannel_)
-        {
-            for (const auto &message :
-                 this->underlyingChannel_->getMessageSnapshot())
-            {
-                if (matches(message))
-                {
-                    matched.push_back(message);
-                }
-            }
-        }
-        if (!channelId.isEmpty())
-        {
-            cache.insert(channelId, {matched, now});
-        }
-    }
-
     auto channelPtr = std::make_shared<Channel>(
         this->underlyingChannel_ ? this->underlyingChannel_->getName()
                                  : QString(),
         Channel::Type::None);
-    for (const auto &message : matched)
+    if (this->underlyingChannel_)
     {
-        channelPtr->addMessage(message, MessageContext::Repost);
+        for (const auto &message :
+             this->underlyingChannel_->getMessageSnapshot())
+        {
+            if (matches(message))
+            {
+                channelPtr->addMessage(message, MessageContext::Repost);
+            }
+        }
     }
 
     this->usercardMessagesChannel_ = channelPtr;
