@@ -260,8 +260,7 @@ QString stripTrailingDuplicateBypassSuffix(const QString &content)
 }
 
 void appendRepeatedMessageCounter(MessageBuilder &builder, Channel *channel,
-                                  Communi::TagsRef tags,
-                                  const QString &content,
+                                  Communi::TagsRef tags, const QString &content,
                                   bool senderIsBroadcaster)
 {
     auto *detector = getApp()->getRepeatedMessageDetector();

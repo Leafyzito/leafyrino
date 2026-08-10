@@ -1271,50 +1271,49 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
         avatar->setScaleIndependentSize(100, 100);
         avatar->setDim(DimButton::Dim::None);
         avatarLayout->addWidget(avatar, 0, 0);
-        QObject::connect(avatar, &Button::clicked,
-                         [this](Qt::MouseButton button) {
-                             if (this->isKick_)
-                             {
-                                 this->onKickProfilePictureClick(button);
-                                 return;
-                             }
+        QObject::connect(
+            avatar, &Button::clicked, [this](Qt::MouseButton button) {
+                if (this->isKick_)
+                {
+                    this->onKickProfilePictureClick(button);
+                    return;
+                }
 
-                             if (this->isYouTube_)
-                             {
-                                 if (button == Qt::LeftButton &&
-                                     !this->youtubeChannelId_.isEmpty())
-                                 {
-                                     QDesktopServices::openUrl(
-                                         QUrl(QStringLiteral(
-                                                  "https://www.youtube.com/"
-                                                  "channel/") +
-                                              this->youtubeChannelId_));
-                                 }
-                                 return;
-                             }
+                if (this->isYouTube_)
+                {
+                    if (button == Qt::LeftButton &&
+                        !this->youtubeChannelId_.isEmpty())
+                    {
+                        QDesktopServices::openUrl(
+                            QUrl(QStringLiteral("https://www.youtube.com/"
+                                                "channel/") +
+                                 this->youtubeChannelId_));
+                    }
+                    return;
+                }
 
-                             QUrl channelURL("https://www.twitch.tv/" +
-                                             this->userName_.toLower());
+                QUrl channelURL("https://www.twitch.tv/" +
+                                this->userName_.toLower());
 
-                             switch (button)
-                             {
-                                 case Qt::LeftButton: {
-                                     QDesktopServices::openUrl(channelURL);
-                                 }
-                                 break;
+                switch (button)
+                {
+                    case Qt::LeftButton: {
+                        QDesktopServices::openUrl(channelURL);
+                    }
+                    break;
 
-                                 case Qt::RightButton: {
-                                     if (this->avatarUrl_.isEmpty())
-                                     {
-                                         return;
-                                     }
-                                     this->showProfilePictureContextMenu();
-                                 }
-                                 break;
+                    case Qt::RightButton: {
+                        if (this->avatarUrl_.isEmpty())
+                        {
+                            return;
+                        }
+                        this->showProfilePictureContextMenu();
+                    }
+                    break;
 
-                                 default:;
-                             }
-                         });
+                    default:;
+                }
+            });
         auto *bannedLabel = new QLabel("BANNED", avatarFrame);
         bannedLabel->setAlignment(Qt::AlignCenter);
         bannedLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -3937,69 +3936,71 @@ void UserInfoPopup::updateKickUserData()
                 }
             });
     };
-    auto fetchUserInChannelInfo =
-        [self = QPointer(this),
-         channelName =
-             this->underlyingChannel_->getName()](const QString &userName) {
-            KickApi::privateUserInChannelInfo(
-                userName, channelName, [self](const auto &res) {
-                    if (!self || !res)
-                    {
-                        return;
-                    }
+    auto fetchUserInChannelInfo = [self = QPointer(this),
+                                   channelName =
+                                       this->underlyingChannel_->getName()](
+                                      const QString &userName) {
+        KickApi::privateUserInChannelInfo(
+            userName, channelName, [self](const auto &res) {
+                if (!self || !res)
+                {
+                    return;
+                }
 
-                    if (getSettings()->showUsercardFollowage && res->followingSince)
+                if (getSettings()->showUsercardFollowage && res->followingSince)
+                {
+                    const auto followedDate = res->followingSince->date();
+                    auto relativeTime = QString();
+                    if (getSettings()->showUsercardFollowageRelativeTime)
                     {
-                        const auto followedDate = res->followingSince->date();
-                        auto relativeTime = QString();
-                        if (getSettings()->showUsercardFollowageRelativeTime)
-                        {
-                            relativeTime =
-                                formatUsercardFollowRelativeTime(followedDate);
-                        }
-                        QString followingSince = followedDate.toString(Qt::ISODate);
-                        self->ui_.followageLabel->setText(
-                            "Following since " + followingSince + relativeTime);
-                        self->ui_.followageLabel->setToolTip(
-                            formatLongFriendlyDuration(
-                                *res->followingSince, QDateTime::currentDateTimeUtc()) +
-                            u" ago"_s);
-                        self->ui_.followageLabel->setMouseTracking(true);
-                        self->updateUsercardStatusIcons();
-                        self->ui_.followageRow->setVisible(true);
-                        self->ui_.followageIcon->setVisible(true);
+                        relativeTime =
+                            formatUsercardFollowRelativeTime(followedDate);
                     }
-                    else if (getSettings()->showUsercardFollowage)
-                    {
-                        self->ui_.followageLabel->setText({});
-                        self->ui_.followageRow->setVisible(true);
-                        self->ui_.followageIcon->setVisible(false);
-                    }
+                    QString followingSince = followedDate.toString(Qt::ISODate);
+                    self->ui_.followageLabel->setText(
+                        "Following since " + followingSince + relativeTime);
+                    self->ui_.followageLabel->setToolTip(
+                        formatLongFriendlyDuration(
+                            *res->followingSince,
+                            QDateTime::currentDateTimeUtc()) +
+                        u" ago"_s);
+                    self->ui_.followageLabel->setMouseTracking(true);
+                    self->updateUsercardStatusIcons();
+                    self->ui_.followageRow->setVisible(true);
+                    self->ui_.followageIcon->setVisible(true);
+                }
+                else if (getSettings()->showUsercardFollowage)
+                {
+                    self->ui_.followageLabel->setText({});
+                    self->ui_.followageRow->setVisible(true);
+                    self->ui_.followageIcon->setVisible(false);
+                }
 
-                    if (getSettings()->showUsercardSubage && res->subscriptionMonths)
+                if (getSettings()->showUsercardSubage &&
+                    res->subscriptionMonths)
+                {
+                    auto subageText = QString("Subscribed for %1 months")
+                                          .arg(*res->subscriptionMonths);
+                    if (getSettings()->showUsercardSubageRelativeTime)
                     {
-                        auto subageText = QString("Subscribed for %1 months")
-                                              .arg(*res->subscriptionMonths);
-                        if (getSettings()->showUsercardSubageRelativeTime)
-                        {
-                            subageText +=
-                                formatUsercardYearsMonths(*res->subscriptionMonths);
-                        }
-                        self->ui_.subageLabel->setText(subageText);
-                        self->updateUsercardStatusIcons();
-                        self->ui_.subageRow->setVisible(true);
-                        self->ui_.subageIcon->setVisible(true);
+                        subageText +=
+                            formatUsercardYearsMonths(*res->subscriptionMonths);
                     }
-                    else if (getSettings()->showUsercardSubage)
-                    {
-                        self->ui_.subageLabel->setText({});
-                        self->ui_.subageRow->setVisible(true);
-                        self->ui_.subageIcon->setVisible(false);
-                    }
+                    self->ui_.subageLabel->setText(subageText);
+                    self->updateUsercardStatusIcons();
+                    self->ui_.subageRow->setVisible(true);
+                    self->ui_.subageIcon->setVisible(true);
+                }
+                else if (getSettings()->showUsercardSubage)
+                {
+                    self->ui_.subageLabel->setText({});
+                    self->ui_.subageRow->setVisible(true);
+                    self->ui_.subageIcon->setVisible(false);
+                }
 
-                    self->hideUsercardSubGiftRow();
-                });
-        };
+                self->hideUsercardSubGiftRow();
+            });
+    };
 
     if (!this->userId_.isEmpty() && this->userName_.isEmpty())
     {

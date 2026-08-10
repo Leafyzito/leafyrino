@@ -358,8 +358,8 @@ void SeventvEmotes::loadChannelEmotes(
 
         getApp()->getSeventvAPI()->getUserByTwitchID(
             channelId,
-            [callback, channel, channelId, manualRefresh,
-             loadAttempt](const auto &json, const auto &raw) {
+            [callback, channel, channelId, manualRefresh, loadAttempt](
+                const auto &json, const auto &raw) {
                 auto cleanup = qScopeGuard([loadAttempt] {
                     *loadAttempt = {};
                 });
@@ -491,8 +491,8 @@ void SeventvEmotes::loadKickChannelEmotes(
 
         getApp()->getSeventvAPI()->getUserByKickID(
             userID,
-            [callback, channel, manualRefresh, userID,
-             loadAttempt](const auto &json, const auto &raw) {
+            [callback, channel, manualRefresh, userID, loadAttempt](
+                const auto &json, const auto &raw) {
                 auto cleanup = qScopeGuard([loadAttempt] {
                     *loadAttempt = {};
                 });
