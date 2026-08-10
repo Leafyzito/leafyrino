@@ -25,7 +25,8 @@ public:
 
 private:
     void appendChannelName();
-    void appendUsername(const QString &username, const MessageColor &color);
+    void appendUsername(const QString &displayName, const QString &linkName,
+                        const MessageColor &color);
 
     void buildSuperChat(const YouTubeChatItem &item, const QDateTime &time,
                         const QColor &userColor);

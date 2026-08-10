@@ -50,8 +50,18 @@ EmotePtr makeStickerEmote(const QString &url)
     });
 }
 
+QString youtubeDisplayName(const QString &authorName)
+{
+    if (getSettings()->youtubeStripAtPrefix && authorName.startsWith(u'@'))
+    {
+        return authorName.mid(1);
+    }
+    return authorName;
+}
+
 MessageColor youtubeUsernameColor(const std::vector<YouTubeAuthorBadge> &badges,
-                                  bool colorByRole, QColor &storedColor)
+                                  bool colorByRole, bool colorize,
+                                  const QString &colorSeed, QColor &storedColor)
 {
     if (colorByRole)
     {
@@ -90,6 +100,11 @@ MessageColor youtubeUsernameColor(const std::vector<YouTubeAuthorBadge> &badges,
             storedColor = QColor(42, 166, 64);  // membership green
             return {storedColor};
         }
+    }
+    if (colorize)
+    {
+        storedColor = getRandomColor(colorSeed);
+        return {storedColor};
     }
     storedColor = QColor(153, 153, 153);
     return {MessageColor::System};
@@ -199,10 +214,12 @@ MessagePtrMut YouTubeMessageBuilder::makeChatMessage(
     builder->loginName = item.authorChannelId;
     YouTubeChannel::rememberAuthorPhoto(item.authorChannelId, item.authorPhoto);
 
+    const auto &colorSeed =
+        item.authorChannelId.isEmpty() ? item.authorName : item.authorChannelId;
     QColor storedColor;
     auto nameColor = youtubeUsernameColor(
         item.authorBadges, getSettings()->colorYouTubeUsernamesByRole,
-        storedColor);
+        getSettings()->youtubeColorizeUsernames, colorSeed, storedColor);
     builder->usernameColor = storedColor;
 
     switch (item.kind)
@@ -227,7 +244,8 @@ MessagePtrMut YouTubeMessageBuilder::makeChatMessage(
     builder.appendChannelName();
     builder.emplace<TimestampElement>(time.time());
     appendBadges(builder, item.authorBadges);
-    builder.appendUsername(item.authorName, nameColor);
+    builder.appendUsername(youtubeDisplayName(item.authorName), item.authorName,
+                           nameColor);
 
     QString messageText;
     appendMessageRuns(builder, item.runs, messageText);
@@ -261,8 +279,9 @@ void YouTubeMessageBuilder::buildSuperChat(const YouTubeChatItem &item,
                            ? QColor::fromRgba(item.authorNameTextColor)
                            : userColor;
     auto *nameElement = this->emplace<TextElement>(
-        item.authorName, MessageElementFlags{MessageElementFlag::Username},
-        nameColor, FontStyle::ChatMediumBold);
+        youtubeDisplayName(item.authorName),
+        MessageElementFlags{MessageElementFlag::Username}, nameColor,
+        FontStyle::ChatMediumBold);
     if (!item.authorName.isEmpty())
     {
         nameElement->setLink({Link::UserInfo, item.authorName});
@@ -309,8 +328,9 @@ void YouTubeMessageBuilder::buildMembership(const YouTubeChatItem &item,
     if (!item.authorName.isEmpty())
     {
         auto *nameElement = this->emplace<TextElement>(
-            item.authorName, MessageElementFlags{MessageElementFlag::Username},
-            userColor, FontStyle::ChatMediumBold);
+            youtubeDisplayName(item.authorName),
+            MessageElementFlags{MessageElementFlag::Username}, userColor,
+            FontStyle::ChatMediumBold);
         nameElement->setLink({Link::UserInfo, item.authorName});
     }
 
@@ -332,13 +352,14 @@ void YouTubeMessageBuilder::appendChannelName()
         ->setLink(link);
 }
 
-void YouTubeMessageBuilder::appendUsername(const QString &username,
+void YouTubeMessageBuilder::appendUsername(const QString &displayName,
+                                           const QString &linkName,
                                            const MessageColor &color)
 {
     auto *element = this->emplace<TextElement>(
-        username % u':', MessageElementFlags{MessageElementFlag::Username},
+        displayName % u':', MessageElementFlags{MessageElementFlag::Username},
         color, FontStyle::ChatMediumBold);
-    element->setLink({Link::UserInfo, username});
+    element->setLink({Link::UserInfo, linkName});
 }
 
 }  // namespace chatterino

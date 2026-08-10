@@ -4,6 +4,7 @@
 #include "util/QStringHash.hpp"
 
 #include <boost/unordered/unordered_flat_set.hpp>
+#include <pajlada/signals/signal.hpp>
 #include <QString>
 #include <QTimer>
 
@@ -33,6 +34,8 @@ public:
 
     void refreshLiveStream();
 
+    pajlada::Signals::NoArgSignal liveStatusChanged;
+
     static void rememberAuthorPhoto(const QString &channelId,
                                     const QString &url);
     static QString authorPhotoFor(const QString &channelId);
@@ -49,6 +52,8 @@ private:
     void flushPending();
 
     void applyDeletions(const YouTubeLiveChatPage &page);
+
+    void setLive(bool live);
 
     bool markSeen(const QString &id);
 

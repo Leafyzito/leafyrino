@@ -93,7 +93,7 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
             "Give new memberships, milestones and gifted memberships a "
             "green highlight.")
         ->addTo(layout);
-    SettingWidget::checkbox("Color YouTube usernames by role only",
+    SettingWidget::checkbox("Color usernames by role",
                             s.colorYouTubeUsernamesByRole)
         ->addKeywords({"youtube", "username", "color", "role", "moderator",
                        "member", "owner"})
@@ -101,6 +101,20 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
                      "chatters stay a neutral grey. Off = all names grey.\n"
                      "Deleted messages follow the global \"hide moderated "
                      "messages\" setting.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Colorize usernames", s.youtubeColorizeUsernames)
+        ->addKeywords(
+            {"youtube", "username", "colorize", "color", "nickname", "random"})
+        ->setTooltip(
+            "Give each YouTube chatter a stable color based on their "
+            "channel, like the Twitch colorize option. Roles still use "
+            "their role color first.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Remove @ from usernames", s.youtubeStripAtPrefix)
+        ->addKeywords({"youtube", "username", "handle", "at", "prefix"})
+        ->setTooltip("Hide the leading @ on YouTube handles in chat. Clicks, "
+                     "mentions and the user popup still work with the full "
+                     "name.")
         ->addTo(layout);
 
     layout.addTitle("Usercard");

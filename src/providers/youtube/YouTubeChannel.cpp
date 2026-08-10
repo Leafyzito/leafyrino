@@ -146,6 +146,16 @@ bool YouTubeChannel::isLive() const
     return this->live_;
 }
 
+void YouTubeChannel::setLive(bool live)
+{
+    if (this->live_ == live)
+    {
+        return;
+    }
+    this->live_ = live;
+    this->liveStatusChanged.invoke();
+}
+
 bool YouTubeChannel::isWritable() const
 {
     return false;
@@ -177,13 +187,13 @@ void YouTubeChannel::refreshLiveStream()
             self->resolving_ = false;
             if (!res)
             {
-                self->live_ = false;
+                self->setLive(false);
                 self->addSystemMessage(u"Could not refresh YouTube chat."_s);
                 return;
             }
             if (res->continuation.isEmpty())
             {
-                self->live_ = false;
+                self->setLive(false);
                 self->addSystemMessage(u"Channel offline."_s);
                 return;
             }
@@ -211,7 +221,7 @@ void YouTubeChannel::startPolling(const YouTubeLiveStream &stream)
         this->displayName_ = stream.channelName;
         this->displayNameChanged.invoke();
     }
-    this->live_ = true;
+    this->setLive(true);
     this->poll();
 }
 
@@ -219,7 +229,7 @@ void YouTubeChannel::poll()
 {
     if (this->apiKey_.isEmpty() || this->continuation_.isEmpty())
     {
-        this->live_ = false;
+        this->setLive(false);
         return;
     }
 
@@ -280,7 +290,7 @@ void YouTubeChannel::poll()
             if (ended)
             {
                 self->flushPending();
-                self->live_ = false;
+                self->setLive(false);
                 self->addSystemMessage(u"The YouTube live chat has ended."_s);
                 return;
             }

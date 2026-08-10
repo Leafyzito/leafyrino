@@ -2117,6 +2117,13 @@ void ChannelView::setChannel(const ChannelPtr &underlyingChannel)
                     this->liveStatusChanged.invoke();
                 });
         }
+        else if (auto *youtubeChannel = dynamic_cast<YouTubeChannel *>(chan))
+        {
+            this->channelConnections_.managedConnect(
+                youtubeChannel->liveStatusChanged, [this] {
+                    this->liveStatusChanged.invoke();
+                });
+        }
     };
 
     if (mc)
