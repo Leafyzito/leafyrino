@@ -486,6 +486,12 @@ void YouTubeApi::resolveLiveStream(const QString &channel,
         .header("User-Agent", USER_AGENT)
         .header("Accept-Language", ACCEPT_LANGUAGE)
         .header("Cookie", CONSENT_COOKIE)
+        // Keep SOCS=CAI authoritative: jar cookies from earlier YouTube replies
+        // otherwise override it and we get the GDPR consent interstitial.
+        .attribute(QNetworkRequest::CookieLoadControlAttribute,
+                   QNetworkRequest::Manual)
+        .attribute(QNetworkRequest::CookieSaveControlAttribute,
+                   QNetworkRequest::Manual)
         .timeout(20000)
         .onError([cb](const NetworkResult &res) {
             cb(makeUnexpected(res.formatError()));
@@ -513,6 +519,10 @@ void YouTubeApi::resolveLiveStream(const QString &channel,
                 .header("User-Agent", USER_AGENT)
                 .header("Accept-Language", ACCEPT_LANGUAGE)
                 .header("Cookie", CONSENT_COOKIE)
+                .attribute(QNetworkRequest::CookieLoadControlAttribute,
+                           QNetworkRequest::Manual)
+                .attribute(QNetworkRequest::CookieSaveControlAttribute,
+                           QNetworkRequest::Manual)
                 .timeout(20000)
                 .onError([cb, stream](const NetworkResult &) {
                     cb(stream);
@@ -564,6 +574,10 @@ void YouTubeApi::fetchLiveChat(const QString &apiKey,
         .header("User-Agent", USER_AGENT)
         .header("Accept-Language", ACCEPT_LANGUAGE)
         .header("Cookie", CONSENT_COOKIE)
+        .attribute(QNetworkRequest::CookieLoadControlAttribute,
+                   QNetworkRequest::Manual)
+        .attribute(QNetworkRequest::CookieSaveControlAttribute,
+                   QNetworkRequest::Manual)
         .timeout(15000)
         .onError([cb](const NetworkResult &res) {
             cb(makeUnexpected(res.formatError()));
