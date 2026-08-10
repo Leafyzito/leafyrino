@@ -16,6 +16,7 @@ namespace chatterino {
 
 struct YouTubeLiveStream;
 struct YouTubeLiveChatPage;
+struct YouTubeMetadata;
 
 class YouTubeChannel : public Channel
 {
@@ -35,7 +36,18 @@ public:
 
     void refreshLiveStream();
 
+    struct StreamData {
+        bool isLive = false;
+        QString title;
+        int viewerCount = -1;
+        QString thumbnailUrl;
+        QString handle;
+        QString displayName;
+    };
+    const StreamData &streamData() const;
+
     pajlada::Signals::NoArgSignal liveStatusChanged;
+    pajlada::Signals::NoArgSignal streamDataChanged;
 
     static void rememberAuthorPhoto(const QString &channelId,
                                     const QString &url);
@@ -56,6 +68,8 @@ private:
 
     void setLive(bool live);
     void applyResolvedName(const QString &channelName);
+    void pollMetadata();
+    void applyMetadata(const YouTubeMetadata &meta);
 
     bool markSeen(const QString &id);
 
@@ -69,6 +83,9 @@ private:
     bool live_ = false;
     bool resolving_ = false;
     bool firstBatch_ = true;
+
+    StreamData streamData_;
+    QTimer metadataTimer_;
 
     QTimer pollTimer_;
 

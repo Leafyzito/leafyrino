@@ -116,6 +116,20 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
                      "mentions and the user popup still work with the full "
                      "name.")
         ->addTo(layout);
+    SettingWidget::checkbox("Show @username in the split header",
+                            s.youtubeSplitHeaderUseHandle)
+        ->addKeywords(
+            {"youtube", "split", "header", "handle", "username", "channel"})
+        ->setTooltip("Show the channel @handle in the split header instead of "
+                     "the display name. Hovering always shows the handle.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Show viewer count in the split header",
+                            s.youtubeHeaderViewerCount)
+        ->addKeywords(
+            {"youtube", "split", "header", "viewer", "count", "watching"})
+        ->setTooltip("Append the live viewer count to the split header title "
+                     "for YouTube channels.")
+        ->addTo(layout);
 
     layout.addTitle("Usercard");
     layout.addDescription("Choose which extra details appear on usercards.");

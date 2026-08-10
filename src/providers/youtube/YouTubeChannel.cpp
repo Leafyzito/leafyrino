@@ -31,6 +31,9 @@ constexpr int DRAIN_PER_FRAME_MAX = 200;
 
 constexpr size_t SEEN_ID_CAP = 8000;
 
+constexpr int METADATA_POLL_MS = 15000;
+constexpr int METADATA_POLL_MIN_MS = 5000;
+
 }  // namespace
 
 namespace {
@@ -122,6 +125,11 @@ YouTubeChannel::YouTubeChannel(const QString &name)
     QObject::connect(&this->drainTimer_, &QTimer::timeout, [this] {
         this->drainChunk();
     });
+
+    this->metadataTimer_.setSingleShot(true);
+    QObject::connect(&this->metadataTimer_, &QTimer::timeout, [this] {
+        this->pollMetadata();
+    });
 }
 
 YouTubeChannel::~YouTubeChannel() = default;
@@ -158,7 +166,18 @@ void YouTubeChannel::setLive(bool live)
         return;
     }
     this->live_ = live;
+    if (!live)
+    {
+        this->metadataTimer_.stop();
+        this->streamData_.isLive = false;
+        this->streamDataChanged.invoke();
+    }
     this->liveStatusChanged.invoke();
+}
+
+const YouTubeChannel::StreamData &YouTubeChannel::streamData() const
+{
+    return this->streamData_;
 }
 
 void YouTubeChannel::applyResolvedName(const QString &channelName)
@@ -233,8 +252,87 @@ void YouTubeChannel::startPolling(const YouTubeLiveStream &stream)
     this->continuation_ = stream.continuation;
     this->channelId_ = stream.channelId;
     this->applyResolvedName(stream.channelName);
+
+    this->streamData_.isLive = true;
+    this->streamData_.title = stream.title;
+    this->streamData_.viewerCount = stream.viewerCount;
+    this->streamData_.thumbnailUrl = stream.thumbnailUrl;
+    this->streamData_.handle = stream.handle;
+    this->streamData_.displayName =
+        stream.author.isEmpty() ? this->displayName_ : stream.author;
+
     this->setLive(true);
+    this->streamDataChanged.invoke();
+    this->metadataTimer_.start(METADATA_POLL_MS);
     this->poll();
+}
+
+void YouTubeChannel::applyMetadata(const YouTubeMetadata &meta)
+{
+    bool changed = false;
+    if (meta.hasViewerCount &&
+        meta.viewerCount != this->streamData_.viewerCount)
+    {
+        this->streamData_.viewerCount = meta.viewerCount;
+        changed = true;
+    }
+    if (meta.hasTitle && meta.title != this->streamData_.title)
+    {
+        this->streamData_.title = meta.title;
+        changed = true;
+    }
+    if (changed)
+    {
+        this->streamDataChanged.invoke();
+    }
+}
+
+void YouTubeChannel::pollMetadata()
+{
+    if (!this->live_ || this->apiKey_.isEmpty() || this->videoId_.isEmpty())
+    {
+        return;
+    }
+
+    YouTubeApi::fetchUpdatedMetadata(
+        this->apiKey_, this->clientVersion_, this->videoId_,
+        [weak = this->weakFromThis()](const ExpectedStr<YouTubeMetadata> &res) {
+            auto self = weak.lock();
+            if (!self || !self->live_)
+            {
+                return;
+            }
+
+            if (res)
+            {
+                self->applyMetadata(*res);
+            }
+
+            const int next =
+                res && res->timeoutMs > 0 ? res->timeoutMs : METADATA_POLL_MS;
+
+            if (!res || !res->hasViewerCount)
+            {
+                YouTubeApi::fetchWatchMetadata(
+                    self->videoId_,
+                    [weak](const ExpectedStr<YouTubeMetadata> &watch) {
+                        auto self = weak.lock();
+                        if (!self || !self->live_)
+                        {
+                            return;
+                        }
+                        if (watch)
+                        {
+                            self->applyMetadata(*watch);
+                        }
+                        self->metadataTimer_.start(
+                            std::max(METADATA_POLL_MS, METADATA_POLL_MIN_MS));
+                    });
+                return;
+            }
+
+            self->metadataTimer_.start(std::max(next, METADATA_POLL_MIN_MS));
+        });
 }
 
 void YouTubeChannel::poll()

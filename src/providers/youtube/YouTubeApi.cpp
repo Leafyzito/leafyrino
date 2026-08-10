@@ -108,6 +108,191 @@ YouTubeLiveStream scrapeLiveStream(const QString &html)
     return stream;
 }
 
+QString extractBalancedObject(const QString &html, int from)
+{
+    int start = html.indexOf(u'{', from);
+    if (start < 0)
+    {
+        return {};
+    }
+    int depth = 0;
+    bool inString = false;
+    bool escaped = false;
+    for (int i = start; i < html.size(); i++)
+    {
+        const QChar c = html[i];
+        if (inString)
+        {
+            if (escaped)
+            {
+                escaped = false;
+            }
+            else if (c == u'\\')
+            {
+                escaped = true;
+            }
+            else if (c == u'"')
+            {
+                inString = false;
+            }
+            continue;
+        }
+        if (c == u'"')
+        {
+            inString = true;
+        }
+        else if (c == u'{')
+        {
+            depth++;
+        }
+        else if (c == u'}')
+        {
+            depth--;
+            if (depth == 0)
+            {
+                return html.mid(start, i - start + 1);
+            }
+        }
+    }
+    return {};
+}
+
+QString extractJsonObject(const QString &html, QStringView marker)
+{
+    int at = html.indexOf(marker);
+    if (at < 0)
+    {
+        return {};
+    }
+    return extractBalancedObject(html, at);
+}
+
+int digitsToInt(const QString &text)
+{
+    QString digits;
+    for (const QChar c : text)
+    {
+        if (c.isDigit())
+        {
+            digits += c;
+        }
+    }
+    bool ok = false;
+    const auto value = digits.toLongLong(&ok);
+    return ok ? static_cast<int>(value) : -1;
+}
+
+int parseViewerCount(BoostJsonValue renderer)
+{
+    if (!renderer["isLive"].toBool())
+    {
+        return -1;
+    }
+    const int original = digitsToInt(renderer["originalViewCount"].toQString());
+    if (original >= 0)
+    {
+        return original;
+    }
+    QString text;
+    for (auto run : renderer["viewCount"]["runs"].toArray())
+    {
+        text += run["text"].toQString();
+    }
+    if (text.isEmpty())
+    {
+        text = renderer["viewCount"]["simpleText"].toQString();
+    }
+    return digitsToInt(text);
+}
+
+int scrapeLiveViewCount(const QString &html)
+{
+    int from = 0;
+    while (true)
+    {
+        const int idx = html.indexOf(u"\"videoViewCountRenderer\"", from);
+        if (idx < 0)
+        {
+            return -1;
+        }
+        from = idx + 1;
+        const auto object = extractBalancedObject(html, idx);
+        if (object.isEmpty())
+        {
+            continue;
+        }
+        const auto utf8 = object.toUtf8();
+        boost::system::error_code ec;
+        auto parsed =
+            boost::json::parse(std::string_view(utf8.data(), utf8.size()), ec);
+        if (ec)
+        {
+            continue;
+        }
+        BoostJsonValue renderer(parsed);
+        const int viewers = parseViewerCount(renderer);
+        if (viewers >= 0)
+        {
+            return viewers;
+        }
+    }
+}
+
+void scrapeStreamMetadata(const QString &html, YouTubeLiveStream &stream)
+{
+    const auto playerBlob = extractJsonObject(html, u"ytInitialPlayerResponse");
+    if (!playerBlob.isEmpty())
+    {
+        const auto utf8 = playerBlob.toUtf8();
+        boost::system::error_code ec;
+        auto parsed =
+            boost::json::parse(std::string_view(utf8.data(), utf8.size()), ec);
+        if (!ec)
+        {
+            BoostJsonValue root(parsed);
+            auto details = root["videoDetails"];
+            auto title = details["title"].toQString();
+            if (!title.isEmpty())
+            {
+                stream.title = title;
+            }
+            auto author = details["author"].toQString();
+            if (!author.isEmpty())
+            {
+                stream.author = author;
+            }
+            if (details["isLiveContent"].toBool() || details["isLive"].toBool())
+            {
+                stream.isLive = true;
+            }
+            auto thumbs = details["thumbnail"]["thumbnails"].toArray();
+            if (!thumbs.empty())
+            {
+                auto url = thumbs[thumbs.size() - 1]["url"].toQString();
+                if (!url.isEmpty())
+                {
+                    stream.thumbnailUrl = url;
+                }
+            }
+            auto ownerUrl = root["microformat"]["playerMicroformatRenderer"]
+                                ["ownerProfileUrl"]
+                                    .toQString();
+            const int atPos = ownerUrl.lastIndexOf(u'@');
+            if (atPos >= 0)
+            {
+                stream.handle = ownerUrl.mid(atPos);
+            }
+        }
+    }
+
+    const int viewers = scrapeLiveViewCount(html);
+    if (viewers >= 0)
+    {
+        stream.viewerCount = viewers;
+        stream.isLive = true;
+    }
+}
+
 QString scrapeLiveChatContinuation(const QString &html)
 {
     static const QRegularExpression liveRe(
@@ -509,7 +694,9 @@ void YouTubeApi::resolveLiveStream(const QString &channel,
             cb(makeUnexpected(res.formatError()));
         })
         .onSuccess([cb = std::move(cb)](const NetworkResult &res) {
-            auto stream = scrapeLiveStream(QString::fromUtf8(res.getData()));
+            const auto html = QString::fromUtf8(res.getData());
+            auto stream = scrapeLiveStream(html);
+            scrapeStreamMetadata(html, stream);
             if (stream.apiKey.isEmpty())
             {
                 cb(makeUnexpected(
@@ -607,6 +794,132 @@ void YouTubeApi::fetchLiveChat(const QString &apiKey,
             }
             BoostJsonValue root(parsed);
             cb(parseLiveChatPage(root));
+        })
+        .execute();
+}
+
+void YouTubeApi::fetchUpdatedMetadata(const QString &apiKey,
+                                      const QString &clientVersion,
+                                      const QString &videoId,
+                                      Callback<YouTubeMetadata> cb)
+{
+    QString url =
+        u"https://www.youtube.com/youtubei/v1/updated_metadata?key=" % apiKey;
+
+    QJsonObject client{
+        {"clientVersion"_L1, clientVersion},
+        {"clientName"_L1, "WEB"_L1},
+    };
+    QJsonObject body{
+        {"context"_L1, QJsonObject{{"client"_L1, client}}},
+        {"videoId"_L1, videoId},
+    };
+
+    NetworkRequest(url, NetworkRequestType::Post)
+        .json(body)
+        .header("User-Agent", USER_AGENT)
+        .header("Accept-Language", ACCEPT_LANGUAGE)
+        .header("Cookie", CONSENT_COOKIE)
+        .attribute(QNetworkRequest::CookieLoadControlAttribute,
+                   QNetworkRequest::Manual)
+        .attribute(QNetworkRequest::CookieSaveControlAttribute,
+                   QNetworkRequest::Manual)
+        .timeout(15000)
+        .onError([cb](const NetworkResult &res) {
+            cb(makeUnexpected(res.formatError()));
+        })
+        .onSuccess([cb = std::move(cb)](const NetworkResult &res) {
+            const auto &data = res.getData();
+            boost::system::error_code ec;
+            auto parsed = boost::json::parse(
+                std::string_view(data.data(), data.size()), ec);
+            if (ec)
+            {
+                cb(makeUnexpected(u"Failed to parse updated metadata: "_s %
+                                  QString::fromStdString(ec.message())));
+                return;
+            }
+            BoostJsonValue root(parsed);
+            YouTubeMetadata meta;
+            for (auto action : root["actions"].toArray())
+            {
+                auto viewRenderer =
+                    action["updateViewershipAction"]["viewCount"]
+                          ["videoViewCountRenderer"];
+                if (viewRenderer.isObject())
+                {
+                    const int viewers = parseViewerCount(viewRenderer);
+                    if (viewers >= 0)
+                    {
+                        meta.viewerCount = viewers;
+                        meta.hasViewerCount = true;
+                    }
+                }
+                auto titleValue = action["updateTitleAction"]["title"];
+                if (titleValue.isObject())
+                {
+                    auto title = extractText(titleValue);
+                    if (!title.isEmpty())
+                    {
+                        meta.title = title;
+                        meta.hasTitle = true;
+                    }
+                }
+            }
+            auto timed = root["continuation"]["timedContinuationData"];
+            meta.timeoutMs = static_cast<int>(timed["timeoutMs"].toInt64());
+            cb(std::move(meta));
+        })
+        .execute();
+}
+
+void YouTubeApi::fetchWatchMetadata(const QString &videoId,
+                                    Callback<YouTubeMetadata> cb)
+{
+    QString url = u"https://www.youtube.com/watch?v=" % videoId;
+
+    NetworkRequest(url)
+        .followRedirects(true)
+        .header("User-Agent", USER_AGENT)
+        .header("Accept-Language", ACCEPT_LANGUAGE)
+        .header("Cookie", CONSENT_COOKIE)
+        .attribute(QNetworkRequest::CookieLoadControlAttribute,
+                   QNetworkRequest::Manual)
+        .attribute(QNetworkRequest::CookieSaveControlAttribute,
+                   QNetworkRequest::Manual)
+        .timeout(20000)
+        .onError([cb](const NetworkResult &res) {
+            cb(makeUnexpected(res.formatError()));
+        })
+        .onSuccess([cb = std::move(cb)](const NetworkResult &res) {
+            const auto html = QString::fromUtf8(res.getData());
+            YouTubeMetadata meta;
+            const int viewers = scrapeLiveViewCount(html);
+            if (viewers >= 0)
+            {
+                meta.viewerCount = viewers;
+                meta.hasViewerCount = true;
+            }
+            const auto playerBlob =
+                extractJsonObject(html, u"ytInitialPlayerResponse");
+            if (!playerBlob.isEmpty())
+            {
+                const auto utf8 = playerBlob.toUtf8();
+                boost::system::error_code ec;
+                auto parsed = boost::json::parse(
+                    std::string_view(utf8.data(), utf8.size()), ec);
+                if (!ec)
+                {
+                    BoostJsonValue root(parsed);
+                    auto title = root["videoDetails"]["title"].toQString();
+                    if (!title.isEmpty())
+                    {
+                        meta.title = title;
+                        meta.hasTitle = true;
+                    }
+                }
+            }
+            cb(std::move(meta));
         })
         .execute();
 }

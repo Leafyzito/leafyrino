@@ -2733,6 +2733,7 @@ SplitDescriptor Split::buildDescriptor() const
                 descriptor.mcIndex = mc->activeChannelIndex();
                 descriptor.mcTintByPlatform = mc->tintByPlatform();
                 descriptor.mcShowTwitchOverlays = mc->showTwitchOverlays();
+                descriptor.mcCombinedViewerCount = mc->combinedViewerCount();
             }
         }
         break;

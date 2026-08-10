@@ -172,6 +172,7 @@ SplitDescriptor SplitDescriptor::loadFromJSON(const QJsonObject &root)
         descriptor.mcIndex = static_cast<uint32_t>(data["activeIndex"].toInt());
         descriptor.mcTintByPlatform = data["tintByPlatform"].toBool();
         descriptor.mcShowTwitchOverlays = data["showTwitchOverlays"].toBool();
+        descriptor.mcCombinedViewerCount = data["combinedViewerCount"].toBool();
     }
 
     return descriptor;
@@ -212,6 +213,7 @@ QJsonObject SplitDescriptor::toJson() const
         data.insert("activeIndex", static_cast<int32_t>(this->mcIndex));
         data.insert("tintByPlatform", this->mcTintByPlatform);
         data.insert("showTwitchOverlays", this->mcShowTwitchOverlays);
+        data.insert("combinedViewerCount", this->mcCombinedViewerCount);
     }
     obj.insert("data", data);
 
@@ -292,7 +294,7 @@ IndirectChannel SplitDescriptor::decodeChannel() const
             }
             auto ptr = std::make_shared<MultiChannel>(
                 specs, this->mcIndicator, this->mcTintByPlatform,
-                this->mcShowTwitchOverlays);
+                this->mcShowTwitchOverlays, this->mcCombinedViewerCount);
             ptr->setActiveChannelIndex(this->mcIndex);
             return {std::move(ptr)};
         }

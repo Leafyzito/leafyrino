@@ -37,6 +37,8 @@ public:
 
     void setShouldElide(bool shouldElide);
 
+    void setElideSuffix(const QString &suffix);
+
 protected:
     void scaleChangedEvent(float scale_) override;
     void paintEvent(QPaintEvent *) override;
@@ -66,6 +68,7 @@ protected:
     bool shouldElide_ = false;
 
     QString elidedText_;
+    QString elideSuffix_;
 
     pajlada::Signals::SignalHolder connections_;
 };

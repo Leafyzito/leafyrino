@@ -139,11 +139,13 @@ ChildChannelDescriptor MultiChannel::ChildChannel::descriptor() const
 
 MultiChannel::MultiChannel(std::span<const Spec> channels,
                            MultiChannelIndicatorMode indicatorMode,
-                           bool tintByPlatform, bool showTwitchOverlays)
+                           bool tintByPlatform, bool showTwitchOverlays,
+                           bool combinedViewerCount)
     : Channel(makeChannelName(channels, false), Type::Multi)
     , indicatorMode_(indicatorMode)
     , tintByPlatform_(tintByPlatform)
     , showTwitchOverlays_(showTwitchOverlays)
+    , combinedViewerCount_(combinedViewerCount)
 {
     for (const auto &spec : channels)
     {
@@ -381,6 +383,11 @@ bool MultiChannel::tintByPlatform() const
 bool MultiChannel::showTwitchOverlays() const
 {
     return this->showTwitchOverlays_;
+}
+
+bool MultiChannel::combinedViewerCount() const
+{
+    return this->combinedViewerCount_;
 }
 
 void MultiChannel::refreshDisplayName()

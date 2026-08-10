@@ -100,6 +100,7 @@ private:
         QComboBox *multiIndicatorMode;
         QCheckBox *multiTintByPlatform;
         QCheckBox *multiShowTwitchOverlays;
+        QCheckBox *multiCombinedViewerCount;
 
         MicroNotebook *notebook;
         QWidget *twitchPage;

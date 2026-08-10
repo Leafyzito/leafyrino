@@ -17,6 +17,21 @@ struct YouTubeLiveStream {
     QString continuation;
     QString channelId;
     QString channelName;
+
+    QString title;
+    QString author;
+    QString handle;
+    QString thumbnailUrl;
+    int viewerCount = -1;
+    bool isLive = false;
+};
+
+struct YouTubeMetadata {
+    QString title;
+    int viewerCount = -1;
+    bool hasTitle = false;
+    bool hasViewerCount = false;
+    int timeoutMs = 0;
 };
 
 enum class YouTubeRunKind : uint8_t {
@@ -93,6 +108,14 @@ public:
                               const QString &clientVersion,
                               const QString &continuation,
                               Callback<YouTubeLiveChatPage> cb);
+
+    static void fetchUpdatedMetadata(const QString &apiKey,
+                                     const QString &clientVersion,
+                                     const QString &videoId,
+                                     Callback<YouTubeMetadata> cb);
+
+    static void fetchWatchMetadata(const QString &videoId,
+                                   Callback<YouTubeMetadata> cb);
 };
 
 }  // namespace chatterino

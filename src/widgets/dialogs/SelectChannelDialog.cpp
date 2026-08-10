@@ -360,6 +360,8 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
             new QCheckBox("Tint message background by platform");
         ui.multiShowTwitchOverlays =
             new QCheckBox("Show Twitch pins, polls && predictions");
+        ui.multiCombinedViewerCount =
+            new QCheckBox("Show combined viewer count in the split header");
         auto *layout = new QVBoxLayout(ui.multiPage);
         {
             auto *descriptionLabel = new QLabel(
@@ -370,6 +372,8 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
                 "a>.");
             descriptionLabel->setWordWrap(true);
             descriptionLabel->setOpenExternalLinks(true);
+            descriptionLabel->setSizePolicy(QSizePolicy::Preferred,
+                                            QSizePolicy::Minimum);
             layout->addWidget(descriptionLabel);
 
             auto *header = new QWidget;
@@ -430,6 +434,11 @@ SelectChannelDialog::SelectChannelDialog(QWidget *parent)
             "Show the Twitch pinned message, poll and prediction banners from "
             "the Twitch channel in this multi split.");
         layout->addWidget(ui.multiShowTwitchOverlays);
+
+        ui.multiCombinedViewerCount->setToolTip(
+            "Show the summed live viewer count of all channels in this multi "
+            "split's header.");
+        layout->addWidget(ui.multiCombinedViewerCount);
 
         ui.notebook->addPage(ui.multiPage, "Multi");
     }
@@ -551,6 +560,8 @@ void SelectChannelDialog::setSelectedChannel(
                 this->ui_.multiTintByPlatform->setChecked(mc->tintByPlatform());
                 this->ui_.multiShowTwitchOverlays->setChecked(
                     mc->showTwitchOverlays());
+                this->ui_.multiCombinedViewerCount->setChecked(
+                    mc->combinedViewerCount());
                 this->mcChannelIndex = mc->activeChannelIndex();
             }
             this->ui_.notebook->select(this->ui_.multiPage);
@@ -606,7 +617,8 @@ IndirectChannel SelectChannelDialog::getSelectedChannel() const
             this->ui_.multiIndicatorMode->currentData()
                 .value<MultiChannelIndicatorMode>(),
             this->ui_.multiTintByPlatform->isChecked(),
-            this->ui_.multiShowTwitchOverlays->isChecked());
+            this->ui_.multiShowTwitchOverlays->isChecked(),
+            this->ui_.multiCombinedViewerCount->isChecked());
         ptr->setActiveChannelIndex(this->mcChannelIndex);
         return {std::move(ptr)};
     }
