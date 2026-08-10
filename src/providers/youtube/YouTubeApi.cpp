@@ -18,6 +18,9 @@ const QString USER_AGENT =
     u"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, "
     u"like Gecko) Chrome/122.0.0.0 Safari/537.36"_s;
 const QString ACCEPT_LANGUAGE = u"en-US,en;q=0.9"_s;
+// YouTube serves a GDPR consent interstitial without this (EU/EEA).
+// "CAI" = accept-all SOCS value used by yt-dlp and similar clients.
+const QString CONSENT_COOKIE = u"SOCS=CAI"_s;
 
 QString buildLiveUrl(const QString &channel)
 {
@@ -482,6 +485,7 @@ void YouTubeApi::resolveLiveStream(const QString &channel,
         .followRedirects(true)
         .header("User-Agent", USER_AGENT)
         .header("Accept-Language", ACCEPT_LANGUAGE)
+        .header("Cookie", CONSENT_COOKIE)
         .timeout(20000)
         .onError([cb](const NetworkResult &res) {
             cb(makeUnexpected(res.formatError()));
@@ -508,6 +512,7 @@ void YouTubeApi::resolveLiveStream(const QString &channel,
                 .followRedirects(true)
                 .header("User-Agent", USER_AGENT)
                 .header("Accept-Language", ACCEPT_LANGUAGE)
+                .header("Cookie", CONSENT_COOKIE)
                 .timeout(20000)
                 .onError([cb, stream](const NetworkResult &) {
                     cb(stream);
@@ -558,6 +563,7 @@ void YouTubeApi::fetchLiveChat(const QString &apiKey,
         .json(body)
         .header("User-Agent", USER_AGENT)
         .header("Accept-Language", ACCEPT_LANGUAGE)
+        .header("Cookie", CONSENT_COOKIE)
         .timeout(15000)
         .onError([cb](const NetworkResult &res) {
             cb(makeUnexpected(res.formatError()));
