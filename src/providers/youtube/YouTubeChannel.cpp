@@ -9,6 +9,7 @@
 
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <QDateTime>
+#include <QStringBuilder>
 
 #include <algorithm>
 #include <utility>
@@ -198,6 +199,30 @@ bool YouTubeChannel::isWritable() const
 const QString &YouTubeChannel::videoId() const
 {
     return this->videoId_;
+}
+
+QString YouTubeChannel::streamUrl() const
+{
+    if (!this->videoId_.isEmpty())
+    {
+        return u"https://www.youtube.com/watch?v=" % this->videoId_;
+    }
+
+    auto name = this->streamData_.handle;
+    if (name.isEmpty())
+    {
+        name = this->getName();
+    }
+    name = name.trimmed();
+    if (name.startsWith(u'@'))
+    {
+        name = name.mid(1);
+    }
+    if (name.startsWith(u"UC") && name.size() == 24)
+    {
+        return u"https://www.youtube.com/channel/" % name % u"/live";
+    }
+    return u"https://www.youtube.com/@" % name % u"/live";
 }
 
 void YouTubeChannel::refreshLiveStream()

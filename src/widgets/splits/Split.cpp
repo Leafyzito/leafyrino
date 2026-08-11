@@ -18,6 +18,7 @@
 #include "providers/twitch/TwitchBadges.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "providers/youtube/YouTubeChannel.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/ImageUploader.hpp"
 #include "singletons/Settings.hpp"
@@ -2462,6 +2463,10 @@ void Split::openInBrowser()
     {
         QDesktopServices::openUrl("https://kick.com/" + kc->slug());
     }
+    else if (auto *yt = dynamic_cast<YouTubeChannel *>(channel.get()))
+    {
+        QDesktopServices::openUrl(yt->streamUrl());
+    }
 }
 
 void Split::openWhispersInBrowser()
@@ -2501,6 +2506,20 @@ void Split::openInStreamlink()
         openStreamlinkForChannel(kc->slug(), u"kick.com/");
         return;
     }
+    if (auto *yt = dynamic_cast<YouTubeChannel *>(chan.get()))
+    {
+        if (!yt->videoId().isEmpty())
+        {
+            openStreamlinkForChannel(yt->videoId(), u"youtube.com/watch?v=");
+        }
+        else
+        {
+            // streamUrl() is https://…; streamlink accepts a full URL as the
+            // "channel" when the prefix is empty.
+            openStreamlinkForChannel(yt->streamUrl(), u"");
+        }
+        return;
+    }
     this->openChannelInStreamlink(chan->getName());
 }
 
@@ -2514,6 +2533,10 @@ void Split::openWithCustomScheme()
     else if (auto *kc = dynamic_cast<KickChannel *>(channel))
     {
         openInCustomPlayer(kc->slug(), u"https://kick.com/");
+    }
+    else if (auto *yt = dynamic_cast<YouTubeChannel *>(channel))
+    {
+        openInCustomPlayer(yt->streamUrl(), u"");
     }
 }
 

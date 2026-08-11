@@ -703,6 +703,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
     auto selected = this->split_->getSelectedChannel();
     auto *twitchChannel = dynamic_cast<TwitchChannel *>(selected.get());
     auto *kickChannel = dynamic_cast<KickChannel *>(selected.get());
+    auto *youtubeChannel = dynamic_cast<YouTubeChannel *>(selected.get());
 
     menu->addAction(
         "Change channel",
@@ -775,12 +776,12 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                         this->split_, &Split::recoverDismissedBanners);
         menu->addSeparator();
     }
-    else if (kickChannel)
+    else if (kickChannel || youtubeChannel)
     {
         menu->addSeparator();
     }
 
-    if (twitchChannel || kickChannel)
+    if (twitchChannel || kickChannel || youtubeChannel)
     {
         menu->addAction(
             OPEN_IN_BROWSER,
@@ -806,7 +807,8 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                             this->split_, &Split::openWithCustomScheme);
         }
 
-        if (this->split_->getChannel()->hasModRights())
+        if ((twitchChannel || kickChannel) &&
+            this->split_->getChannel()->hasModRights())
         {
             menu->addAction(
                 OPEN_MOD_VIEW_IN_BROWSER,

@@ -34,6 +34,9 @@ public:
 
     const QString &videoId() const;
 
+    /** URL for the current stream (watch?v=…) or the channel's /live page. */
+    QString streamUrl() const;
+
     void refreshLiveStream();
 
     struct StreamData {
