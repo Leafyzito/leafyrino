@@ -263,8 +263,6 @@ public:
                                         false};
     BoolSetting youtubeSplitHeaderUseHandle = {
         "/appearance/youtube/splitHeaderUseHandle", false};
-    BoolSetting youtubeHeaderViewerCount = {
-        "/appearance/youtube/headerViewerCount", false};
 
     float getClampedUiScale() const;
     void setClampedUiScale(float value);

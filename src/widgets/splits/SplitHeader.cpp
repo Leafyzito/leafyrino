@@ -1673,8 +1673,7 @@ void SplitHeader::updateChannelText()
             this->tooltipText_ = formatYouTubeTooltip(stream, this->thumbnail_);
 
             title += " (live)";
-            if (getSettings()->youtubeHeaderViewerCount &&
-                stream.viewerCount >= 0)
+            if (getSettings()->headerViewerCount && stream.viewerCount >= 0)
             {
                 title += " - " + localizeNumbers(stream.viewerCount);
             }

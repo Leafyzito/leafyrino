@@ -123,13 +123,6 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->setTooltip("Show the channel @handle in the split header instead of "
                      "the display name. Hovering always shows the handle.")
         ->addTo(layout);
-    SettingWidget::checkbox("Show viewer count in the split header",
-                            s.youtubeHeaderViewerCount)
-        ->addKeywords(
-            {"youtube", "split", "header", "viewer", "count", "watching"})
-        ->setTooltip("Append the live viewer count to the split header title "
-                     "for YouTube channels.")
-        ->addTo(layout);
 
     layout.addTitle("Usercard");
     layout.addDescription("Choose which extra details appear on usercards.");
