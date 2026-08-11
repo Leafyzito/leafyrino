@@ -31,6 +31,7 @@ Q_LOGGING_CATEGORY(chatterinoImage, "chatterino.image", logThreshold);
 Q_LOGGING_CATEGORY(chatterinoIrc, "chatterino.irc", logThreshold);
 Q_LOGGING_CATEGORY(chatterinoIvr, "chatterino.ivr", logThreshold);
 Q_LOGGING_CATEGORY(chatterinoKick, "chatterino.kick", logThreshold);
+Q_LOGGING_CATEGORY(chatterinoYouTube, "chatterino.youtube", logThreshold);
 Q_LOGGING_CATEGORY(chatterinoLiveupdates, "chatterino.liveupdates",
                    logThreshold);
 Q_LOGGING_CATEGORY(chatterinoLua, "chatterino.lua", logThreshold);

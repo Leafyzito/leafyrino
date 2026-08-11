@@ -94,12 +94,18 @@ private:
 
         QLineEdit *kickName;
 
+        QLineEdit *youtubeName;
+
         QListWidget *multiView;
         QComboBox *multiIndicatorMode;
+        QCheckBox *multiTintByPlatform;
+        QCheckBox *multiShowTwitchOverlays;
+        QCheckBox *multiCombinedViewerCount;
 
         MicroNotebook *notebook;
         QWidget *twitchPage;
         QWidget *kickPage;
+        QWidget *youtubePage;
         QWidget *multiPage;
     } ui_{};
 

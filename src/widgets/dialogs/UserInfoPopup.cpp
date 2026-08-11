@@ -36,6 +36,7 @@
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "providers/twitch/TwitchNameHistory.hpp"
+#include "providers/youtube/YouTubeChannel.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
@@ -45,6 +46,7 @@
 #include "util/Clipboard.hpp"
 #include "util/FormatTime.hpp"
 #include "util/Helpers.hpp"
+#include "util/IncognitoBrowser.hpp"
 #include "util/LayoutCreator.hpp"
 #include "util/PostToThread.hpp"
 #include "widgets/buttons/FollowButton.hpp"
@@ -1269,36 +1271,49 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
         avatar->setScaleIndependentSize(100, 100);
         avatar->setDim(DimButton::Dim::None);
         avatarLayout->addWidget(avatar, 0, 0);
-        QObject::connect(avatar, &Button::clicked,
-                         [this](Qt::MouseButton button) {
-                             if (this->isKick_)
-                             {
-                                 this->onKickProfilePictureClick(button);
-                                 return;
-                             }
+        QObject::connect(
+            avatar, &Button::clicked, [this](Qt::MouseButton button) {
+                if (this->isKick_)
+                {
+                    this->onKickProfilePictureClick(button);
+                    return;
+                }
 
-                             QUrl channelURL("https://www.twitch.tv/" +
-                                             this->userName_.toLower());
+                if (this->isYouTube_)
+                {
+                    if (button == Qt::LeftButton &&
+                        !this->youtubeChannelId_.isEmpty())
+                    {
+                        QDesktopServices::openUrl(
+                            QUrl(QStringLiteral("https://www.youtube.com/"
+                                                "channel/") +
+                                 this->youtubeChannelId_));
+                    }
+                    return;
+                }
 
-                             switch (button)
-                             {
-                                 case Qt::LeftButton: {
-                                     QDesktopServices::openUrl(channelURL);
-                                 }
-                                 break;
+                QUrl channelURL("https://www.twitch.tv/" +
+                                this->userName_.toLower());
 
-                                 case Qt::RightButton: {
-                                     if (this->avatarUrl_.isEmpty())
-                                     {
-                                         return;
-                                     }
-                                     this->showProfilePictureContextMenu();
-                                 }
-                                 break;
+                switch (button)
+                {
+                    case Qt::LeftButton: {
+                        QDesktopServices::openUrl(channelURL);
+                    }
+                    break;
 
-                                 default:;
-                             }
-                         });
+                    case Qt::RightButton: {
+                        if (this->avatarUrl_.isEmpty())
+                        {
+                            return;
+                        }
+                        this->showProfilePictureContextMenu();
+                    }
+                    break;
+
+                    default:;
+                }
+            });
         auto *bannedLabel = new QLabel("BANNED", avatarFrame);
         bannedLabel->setAlignment(Qt::AlignCenter);
         bannedLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -1591,14 +1606,16 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
         user->addStretch(1);
 
         auto openUsercard = [this] {
-            if (!this->underlyingChannel_)
-            {
-                return;
-            }
-
-            QDesktopServices::openUrl("https://www.twitch.tv/popout/" +
-                                      this->underlyingChannel_->getName() +
-                                      "/viewercard/" + this->userName_);
+            MessagePlatform platform =
+                this->isYouTube_ ? MessagePlatform::YouTube
+                : this->isKick_  ? MessagePlatform::Kick
+                                 : MessagePlatform::AnyOrTwitch;
+            QString channelName = this->underlyingChannel_
+                                      ? this->underlyingChannel_->getName()
+                                      : QString();
+            UserInfoPopup::openUserChannelAction(this->userName_, platform,
+                                                 channelName,
+                                                 this->youtubeChannelId_);
         };
         QObject::connect(usercard.getElement(), &Button::leftClicked,
                          openUsercard);
@@ -1888,7 +1905,7 @@ void UserInfoPopup::installEvents()
     QObject::connect(
         this->ui_.block, &QCheckBox::stateChanged,
         [this](int newState) mutable {
-            if (this->isKick_)
+            if (this->isKick_ || this->isYouTube_)
             {
                 return;
             }
@@ -2231,6 +2248,10 @@ bool UserInfoPopup::updateTargetModerationStatusFromMessage(
 
 bool UserInfoPopup::shouldShowModerationActions() const
 {
+    if (this->isYouTube_)
+    {
+        return false;
+    }
     if (this->userName_.isEmpty() || !this->underlyingChannel_)
     {
         return false;
@@ -2334,6 +2355,10 @@ void UserInfoPopup::setData(const QString &name,
     this->setWindowTitle(
         TEXT_TITLE.arg(name, this->underlyingChannel_->getName()));
     this->isKick_ = this->underlyingChannel_->getType() == Channel::Type::Kick;
+    this->isYouTube_ =
+        this->forceYouTube_ ||
+        this->underlyingChannel_->getType() == Channel::Type::YouTube;
+    this->forceYouTube_ = false;
     if (this->isKick_)
     {
         this->ui_.timeoutWidget->setMinTimeout(60);
@@ -2374,6 +2399,10 @@ void UserInfoPopup::setData(const QString &name,
             this->ui_.pronounsLabel->hide();
         }
     }
+    else if (this->isYouTube_)
+    {
+        this->updateYouTubeUserData();
+    }
     else
     {
         this->updateUserData();
@@ -2385,16 +2414,26 @@ void UserInfoPopup::setData(const QString &name,
 
     this->userStateChanged_.invoke();
 
-    if (!isId)
+    if (this->isYouTube_)
+    {
+        this->updateYouTubeLatestMessages();
+    }
+    else if (!isId)
     {
         this->updateLatestMessages();
     }
     // If we're opening by ID, this will be called as soon as we get the information from twitch
 
     auto type = this->channel_->getType();
-    if (type == Channel::Type::TwitchLive ||
-        type == Channel::Type::TwitchWhispers || type == Channel::Type::Misc ||
-        type == Channel::Type::Kick)
+    if (this->isYouTube_)
+    {
+        this->ui_.usercardLabel->setText("Open channel on &YouTube");
+        this->ui_.usercardLabel->setVisible(!this->youtubeChannelId_.isEmpty());
+        this->ui_.userlogsLabel->hide();
+    }
+    else if (type == Channel::Type::TwitchLive ||
+             type == Channel::Type::TwitchWhispers ||
+             type == Channel::Type::Misc || type == Channel::Type::Kick)
     {
         // not a normal twitch channel, the url opened by the button will be invalid, so hide the button
         this->ui_.usercardLabel->hide();
@@ -2402,8 +2441,208 @@ void UserInfoPopup::setData(const QString &name,
     }
     else
     {
+        this->ui_.usercardLabel->setText("&Usercard");
         this->ui_.usercardLabel->show();
         this->ui_.userlogsLabel->show();
+    }
+}
+
+void UserInfoPopup::setYouTubeContext()
+{
+    this->forceYouTube_ = true;
+}
+
+void UserInfoPopup::openUserChannelAction(const QString &userName,
+                                          MessagePlatform platform,
+                                          const QString &channelName,
+                                          const QString &channelId)
+{
+    QString url;
+    switch (platform)
+    {
+        case MessagePlatform::YouTube:
+            if (channelId.isEmpty())
+            {
+                return;
+            }
+            url = u"https://www.youtube.com/channel/" % channelId;
+            break;
+        case MessagePlatform::Kick:
+            url = u"https://kick.com/" % KickApi::slugify(userName);
+            break;
+        case MessagePlatform::AnyOrTwitch:
+            if (channelName.isEmpty())
+            {
+                return;
+            }
+            url = u"https://www.twitch.tv/popout/" % channelName %
+                  u"/viewercard/" % userName;
+            break;
+    }
+
+    if (url.isEmpty())
+    {
+        return;
+    }
+
+    if (getSettings()->openLinksIncognito && supportsIncognitoLinks())
+    {
+        openLinkIncognito(url);
+    }
+    else
+    {
+        QDesktopServices::openUrl(QUrl(url));
+    }
+}
+
+void UserInfoPopup::updateYouTubeUserData()
+{
+    this->youtubeChannelId_ = YouTubeChannel::channelIdForDisplayName(
+        this->underlyingChannel_, this->userName_);
+
+    this->ui_.nameLabel->setText(this->userName_);
+
+    if (this->youtubeChannelId_.isEmpty())
+    {
+        this->ui_.userIDLabel->setText(u"ID " % TEXT_UNAVAILABLE);
+        this->ui_.userIDLabel->setProperty("copy-text",
+                                           TEXT_UNAVAILABLE.toString());
+    }
+    else
+    {
+        this->ui_.userIDLabel->setText(TEXT_USER_ID % this->youtubeChannelId_);
+        this->ui_.userIDLabel->setProperty("copy-text",
+                                           this->youtubeChannelId_);
+    }
+
+    if (this->ui_.pronounsLabel)
+    {
+        this->ui_.pronounsLabel->hide();
+    }
+    this->ui_.followerCountLabel->hide();
+    this->ui_.createdDateLabel->hide();
+    this->ui_.followageRow->hide();
+    this->ui_.subageRow->hide();
+    this->hideUsercardSubGiftRow();
+    this->ui_.chatterCountLabel->hide();
+    this->ui_.lastLiveLabel->hide();
+    this->ui_.sevenTVUserLabel->hide();
+    this->ui_.rolesLabel->hide();
+    this->ui_.notesAdd->hide();
+    this->ui_.notesPreview->setVisible(false);
+    this->ui_.block->hide();
+    if (this->ui_.followButton)
+    {
+        this->ui_.followButton->hide();
+    }
+
+    this->loadYouTubeAvatar(
+        YouTubeChannel::authorPhotoFor(this->youtubeChannelId_));
+}
+
+void UserInfoPopup::loadYouTubeAvatar(const QString &url)
+{
+    if (url.isEmpty())
+    {
+        this->ui_.avatarButton->setPixmap(QPixmap());
+        return;
+    }
+
+    this->avatarUrl_ = url;
+
+    auto filename = getApp()->getPaths().cacheDirectory() + "/" + hashUrl(url);
+    QFile cacheFile(filename);
+    if (cacheFile.exists() && cacheFile.open(QIODevice::ReadOnly))
+    {
+        QPixmap avatar;
+        avatar.loadFromData(cacheFile.readAll());
+        this->ui_.avatarButton->setPixmap(avatar);
+        this->avatarPixmap_ = std::move(avatar);
+        return;
+    }
+
+    QNetworkRequest req{QUrl(url)};
+    req.setHeader(QNetworkRequest::UserAgentHeader, "Chatterino");
+    static auto *manager = new QNetworkAccessManager();
+    auto *reply = manager->get(req);
+    QObject::connect(reply, &QNetworkReply::finished, reply,
+                     &QObject::deleteLater);
+    QObject::connect(reply, &QNetworkReply::finished, this,
+                     [this, reply, filename] {
+                         if (reply->error() == QNetworkReply::NoError)
+                         {
+                             const auto data = reply->readAll();
+                             QPixmap avatar;
+                             avatar.loadFromData(data);
+                             this->ui_.avatarButton->setPixmap(avatar);
+                             this->saveCacheAvatar(data, filename);
+                             this->avatarPixmap_ = std::move(avatar);
+                         }
+                         else
+                         {
+                             this->ui_.avatarButton->setPixmap(QPixmap());
+                         }
+                     });
+}
+
+void UserInfoPopup::updateYouTubeLatestMessages()
+{
+    const QString needle =
+        YouTubeChannel::normalizeDisplayName(this->userName_);
+    auto matches = [this, needle](const MessagePtr &message) {
+        if (!this->youtubeChannelId_.isEmpty() &&
+            message->loginName.compare(this->youtubeChannelId_,
+                                       Qt::CaseInsensitive) == 0)
+        {
+            return true;
+        }
+        if (needle.isEmpty())
+        {
+            return false;
+        }
+        const auto name =
+            YouTubeChannel::normalizeDisplayName(message->displayName);
+        return name == needle || name.startsWith(needle);
+    };
+
+    auto channelPtr = std::make_shared<Channel>(
+        this->underlyingChannel_ ? this->underlyingChannel_->getName()
+                                 : QString(),
+        Channel::Type::None);
+    if (this->underlyingChannel_)
+    {
+        for (const auto &message :
+             this->underlyingChannel_->getMessageSnapshot())
+        {
+            if (matches(message))
+            {
+                channelPtr->addMessage(message, MessageContext::Repost);
+            }
+        }
+    }
+
+    this->usercardMessagesChannel_ = channelPtr;
+    this->ui_.latestMessages->setChannel(channelPtr);
+    this->ui_.latestMessages->setSourceChannel(this->underlyingChannel_);
+    this->updateUsercardMessagesVisibility();
+
+    if (this->underlyingChannel_)
+    {
+        this->refreshConnection_ =
+            std::make_unique<pajlada::Signals::ScopedConnection>(
+                this->underlyingChannel_->messageAppended.connect(
+                    [this, matches](auto message, auto) {
+                        if (!matches(message))
+                        {
+                            return;
+                        }
+                        if (this->usercardMessagesChannel_)
+                        {
+                            this->usercardMessagesChannel_->addMessage(
+                                message, MessageContext::Repost);
+                            this->updateUsercardMessagesVisibility();
+                        }
+                    }));
     }
 }
 
@@ -3710,69 +3949,71 @@ void UserInfoPopup::updateKickUserData()
                 }
             });
     };
-    auto fetchUserInChannelInfo =
-        [self = QPointer(this),
-         channelName =
-             this->underlyingChannel_->getName()](const QString &userName) {
-            KickApi::privateUserInChannelInfo(
-                userName, channelName, [self](const auto &res) {
-                    if (!self || !res)
-                    {
-                        return;
-                    }
+    auto fetchUserInChannelInfo = [self = QPointer(this),
+                                   channelName =
+                                       this->underlyingChannel_->getName()](
+                                      const QString &userName) {
+        KickApi::privateUserInChannelInfo(
+            userName, channelName, [self](const auto &res) {
+                if (!self || !res)
+                {
+                    return;
+                }
 
-                    if (getSettings()->showUsercardFollowage && res->followingSince)
+                if (getSettings()->showUsercardFollowage && res->followingSince)
+                {
+                    const auto followedDate = res->followingSince->date();
+                    auto relativeTime = QString();
+                    if (getSettings()->showUsercardFollowageRelativeTime)
                     {
-                        const auto followedDate = res->followingSince->date();
-                        auto relativeTime = QString();
-                        if (getSettings()->showUsercardFollowageRelativeTime)
-                        {
-                            relativeTime =
-                                formatUsercardFollowRelativeTime(followedDate);
-                        }
-                        QString followingSince = followedDate.toString(Qt::ISODate);
-                        self->ui_.followageLabel->setText(
-                            "Following since " + followingSince + relativeTime);
-                        self->ui_.followageLabel->setToolTip(
-                            formatLongFriendlyDuration(
-                                *res->followingSince, QDateTime::currentDateTimeUtc()) +
-                            u" ago"_s);
-                        self->ui_.followageLabel->setMouseTracking(true);
-                        self->updateUsercardStatusIcons();
-                        self->ui_.followageRow->setVisible(true);
-                        self->ui_.followageIcon->setVisible(true);
+                        relativeTime =
+                            formatUsercardFollowRelativeTime(followedDate);
                     }
-                    else if (getSettings()->showUsercardFollowage)
-                    {
-                        self->ui_.followageLabel->setText({});
-                        self->ui_.followageRow->setVisible(true);
-                        self->ui_.followageIcon->setVisible(false);
-                    }
+                    QString followingSince = followedDate.toString(Qt::ISODate);
+                    self->ui_.followageLabel->setText(
+                        "Following since " + followingSince + relativeTime);
+                    self->ui_.followageLabel->setToolTip(
+                        formatLongFriendlyDuration(
+                            *res->followingSince,
+                            QDateTime::currentDateTimeUtc()) +
+                        u" ago"_s);
+                    self->ui_.followageLabel->setMouseTracking(true);
+                    self->updateUsercardStatusIcons();
+                    self->ui_.followageRow->setVisible(true);
+                    self->ui_.followageIcon->setVisible(true);
+                }
+                else if (getSettings()->showUsercardFollowage)
+                {
+                    self->ui_.followageLabel->setText({});
+                    self->ui_.followageRow->setVisible(true);
+                    self->ui_.followageIcon->setVisible(false);
+                }
 
-                    if (getSettings()->showUsercardSubage && res->subscriptionMonths)
+                if (getSettings()->showUsercardSubage &&
+                    res->subscriptionMonths)
+                {
+                    auto subageText = QString("Subscribed for %1 months")
+                                          .arg(*res->subscriptionMonths);
+                    if (getSettings()->showUsercardSubageRelativeTime)
                     {
-                        auto subageText = QString("Subscribed for %1 months")
-                                              .arg(*res->subscriptionMonths);
-                        if (getSettings()->showUsercardSubageRelativeTime)
-                        {
-                            subageText +=
-                                formatUsercardYearsMonths(*res->subscriptionMonths);
-                        }
-                        self->ui_.subageLabel->setText(subageText);
-                        self->updateUsercardStatusIcons();
-                        self->ui_.subageRow->setVisible(true);
-                        self->ui_.subageIcon->setVisible(true);
+                        subageText +=
+                            formatUsercardYearsMonths(*res->subscriptionMonths);
                     }
-                    else if (getSettings()->showUsercardSubage)
-                    {
-                        self->ui_.subageLabel->setText({});
-                        self->ui_.subageRow->setVisible(true);
-                        self->ui_.subageIcon->setVisible(false);
-                    }
+                    self->ui_.subageLabel->setText(subageText);
+                    self->updateUsercardStatusIcons();
+                    self->ui_.subageRow->setVisible(true);
+                    self->ui_.subageIcon->setVisible(true);
+                }
+                else if (getSettings()->showUsercardSubage)
+                {
+                    self->ui_.subageLabel->setText({});
+                    self->ui_.subageRow->setVisible(true);
+                    self->ui_.subageIcon->setVisible(false);
+                }
 
-                    self->hideUsercardSubGiftRow();
-                });
-        };
+                self->hideUsercardSubGiftRow();
+            });
+    };
 
     if (!this->userId_.isEmpty() && this->userName_.isEmpty())
     {
@@ -3945,7 +4186,8 @@ QString UserInfoPopup::showProfilePictureContextMenu()
 bool UserInfoPopup::canShowRoleManagementMenu() const
 {
     if (!getSettings()->showUsercardRoleManagementMenu || this->isKick_ ||
-        this->userName_.isEmpty() || !this->underlyingChannel_)
+        this->isYouTube_ || this->userName_.isEmpty() ||
+        !this->underlyingChannel_)
     {
         return false;
     }
@@ -4131,7 +4373,7 @@ void UserInfoPopup::hideUsercardSubGiftRow()
 void UserInfoPopup::resetUsercardInfoRows()
 {
     auto *settings = getSettings();
-    const bool showTwitchProfileRows = !this->isKick_;
+    const bool showTwitchProfileRows = !this->isKick_ && !this->isYouTube_;
 
     this->ui_.followerCountLabel->setText(TEXT_FOLLOWERS.arg(""));
     this->ui_.followerCountLabel->setVisible(
@@ -4307,7 +4549,8 @@ void UserInfoPopup::resetNameHistory()
 
 bool UserInfoPopup::applyCachedNameHistory()
 {
-    if (this->userName_.isEmpty() || this->userId_.isEmpty() || this->isKick_)
+    if (this->userName_.isEmpty() || this->userId_.isEmpty() || this->isKick_ ||
+        this->isYouTube_)
     {
         return false;
     }
@@ -4339,7 +4582,8 @@ void UserInfoPopup::updateNameHistoryButton()
     }
 
     const bool canShow = getSettings()->showUsercardNameHistoryButton &&
-                         !this->isKick_ && !this->userName_.isEmpty();
+                         !this->isKick_ && !this->isYouTube_ &&
+                         !this->userName_.isEmpty();
     this->ui_.nameHistoryButton->setVisible(canShow);
     this->ui_.nameHistoryButton->setEnabled(canShow &&
                                             !this->userId_.isEmpty());
@@ -4381,7 +4625,7 @@ void UserInfoPopup::updateNameHistoryButton()
 void UserInfoPopup::showNameHistoryMenu()
 {
     if (this->ui_.nameHistoryButton == nullptr || this->userName_.isEmpty() ||
-        this->userId_.isEmpty() || this->isKick_)
+        this->userId_.isEmpty() || this->isKick_ || this->isYouTube_)
     {
         return;
     }
@@ -4461,7 +4705,8 @@ void UserInfoPopup::openNameHistoryMenu(const QString &statusText)
 
 void UserInfoPopup::requestNameHistory()
 {
-    if (this->userName_.isEmpty() || this->userId_.isEmpty() || this->isKick_)
+    if (this->userName_.isEmpty() || this->userId_.isEmpty() || this->isKick_ ||
+        this->isYouTube_)
     {
         return;
     }

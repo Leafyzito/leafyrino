@@ -4301,6 +4301,17 @@ void SplitInput::updateChannel()
             });
     }
 
+    const bool readOnlyInput =
+        channel && channel->getType() == Channel::Type::YouTube;
+    if (this->ui_.emoteButton)
+    {
+        this->ui_.emoteButton->setEnabled(!readOnlyInput);
+    }
+    if (this->ui_.badgeButton)
+    {
+        this->ui_.badgeButton->setEnabled(!readOnlyInput);
+    }
+
     refreshSelectedChannelState();
 }
 

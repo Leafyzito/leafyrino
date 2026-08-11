@@ -22,6 +22,7 @@
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "providers/youtube/YouTubeChannel.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
 #include "singletons/Theme.hpp"
@@ -225,6 +226,81 @@ auto formatOfflineTooltip(const TwitchChannel::StreamStatus &s)
         .arg(s.title.toHtmlEscaped());
 }
 
+QString youtubeHeaderName(const YouTubeChannel::StreamData &s)
+{
+    if (getSettings()->youtubeSplitHeaderUseHandle && !s.handle.isEmpty())
+    {
+        return s.handle;
+    }
+    if (!s.displayName.isEmpty())
+    {
+        return s.displayName;
+    }
+    return s.handle;
+}
+
+QString formatYouTubeTooltip(const YouTubeChannel::StreamData &s,
+                             QString thumbnail)
+{
+    auto preview = [&]() -> QString {
+        if (getSettings()->thumbnailSizeStream.getValue() == 0)
+        {
+            return QStringLiteral("");
+        }
+        if (thumbnail.isEmpty())
+        {
+            return QStringLiteral("Couldn't fetch thumbnail<br>");
+        }
+        auto height =
+            std::min(getSettings()->thumbnailSizeStream.getValue(), 4) * 80;
+        QString sizeStr =
+            QStringLiteral(" height=\"") % QString::number(height) % '"';
+        return u"<img " % sizeStr % u" src=\"data:image/jpg;base64, " %
+               thumbnail % u"\"><br>";
+    }();
+
+    auto username = [&]() -> QString {
+        auto name = s.handle.isEmpty() ? s.displayName : s.handle;
+        if (name.isEmpty())
+        {
+            return QStringLiteral("");
+        }
+        return name.toHtmlEscaped() + "<br>";
+    }();
+
+    auto title = [&]() -> QString {
+        if (s.title.isEmpty())
+        {
+            return QStringLiteral("");
+        }
+        return s.title.toHtmlEscaped() + "<br>";
+    }();
+
+    auto viewers = [&]() -> QString {
+        if (getApp()->getStreamerMode()->isEnabled() &&
+            getSettings()->streamerModeHideViewerCountAndDuration)
+        {
+            return QStringLiteral(
+                "<span style=\"color: #808892;\">&lt;Streamer "
+                "Mode&gt;</span>");
+        }
+        if (s.viewerCount < 0)
+        {
+            return QStringLiteral("");
+        }
+        return QString("%1 viewers").arg(localizeNumbers(s.viewerCount));
+    }();
+
+    return QString("<p style=\"text-align: center;\">" % preview % username %
+                   title % viewers % "</p>");
+}
+
+QString formatYouTubeOfflineTooltip(const YouTubeChannel::StreamData &s)
+{
+    return QString("<p style=\"text-align: center;\">Offline<br>%1</p>")
+        .arg(youtubeHeaderName(s).toHtmlEscaped());
+}
+
 auto formatTitle(const TwitchChannel::StreamStatus &s, Settings &settings,
                  const std::vector<HelixMinimalUser> &sharedChatParticipants)
 {
@@ -291,6 +367,51 @@ TwitchChannel::StreamStatus toTwitchStreamStatus(
         .uptime = data.uptime,
         .streamType = QStringLiteral("live"),
     };
+}
+
+struct MultiViewerSum {
+    qint64 sum = 0;
+    bool anyLive = false;
+};
+
+MultiViewerSum sumMultichannelViewers(const MultiChannel &mc)
+{
+    MultiViewerSum result;
+    for (const auto &child : mc.channels())
+    {
+        auto *chan = child.channel.get();
+        if (auto *tc = dynamic_cast<TwitchChannel *>(chan))
+        {
+            const auto status = tc->accessStreamStatus();
+            if (status->live)
+            {
+                result.anyLive = true;
+                result.sum += status->viewerCount;
+            }
+        }
+        else if (auto *kc = dynamic_cast<KickChannel *>(chan))
+        {
+            const auto &stream = kc->streamData();
+            if (stream.isLive)
+            {
+                result.anyLive = true;
+                result.sum += static_cast<qint64>(stream.viewerCount);
+            }
+        }
+        else if (auto *yt = dynamic_cast<YouTubeChannel *>(chan))
+        {
+            const auto &stream = yt->streamData();
+            if (stream.isLive)
+            {
+                result.anyLive = true;
+                if (stream.viewerCount > 0)
+                {
+                    result.sum += stream.viewerCount;
+                }
+            }
+        }
+    }
+    return result;
 }
 
 auto distance(QPoint a, QPoint b)
@@ -415,6 +536,21 @@ void SplitHeader::initializeLayout()
         },
         this, {4, 4});
 
+    this->youtubeRefreshButton_ = new SvgButton(
+        {
+            .dark = ":/buttons/reloadLight.svg",
+            .light = ":/buttons/reloadDark.svg",
+        },
+        this, {4, 4});
+    this->youtubeRefreshButton_->setToolTip(
+        "Refresh YouTube live chat (find the channel's latest stream)");
+    this->youtubeRefreshButton_->hide();
+
+    this->sendTargetButton_ = new LabelButton({}, this);
+    this->sendTargetButton_->setSizePolicy(QSizePolicy::Minimum,
+                                           QSizePolicy::Minimum);
+    this->sendTargetButton_->hide();
+
     this->followButton_ =
         new SvgButton(followButtonSource(false), this, {4, 4});
 
@@ -462,6 +598,8 @@ void SplitHeader::initializeLayout()
         this->moderationButton_,
         // chatter list
         this->chattersButton_,
+        this->sendTargetButton_,
+        this->youtubeRefreshButton_,
         // dropdown
         this->dropdownButton_,
         // add split
@@ -506,6 +644,31 @@ void SplitHeader::initializeLayout()
                          this->split_->openChatterList();
                      });
 
+    QObject::connect(
+        this->youtubeRefreshButton_, &Button::leftClicked, this, [this]() {
+            auto channel = this->split_->getChannel();
+            if (auto *yt = dynamic_cast<YouTubeChannel *>(channel.get()))
+            {
+                yt->refreshLiveStream();
+            }
+            else if (auto *mc = dynamic_cast<MultiChannel *>(channel.get()))
+            {
+                for (const auto &child : mc->channels())
+                {
+                    if (auto *ytc =
+                            dynamic_cast<YouTubeChannel *>(child.channel.get()))
+                    {
+                        ytc->refreshLiveStream();
+                    }
+                }
+            }
+        });
+
+    QObject::connect(this->sendTargetButton_, &Button::leftClicked, this,
+                     [this]() {
+                         this->cycleSendTarget();
+                     });
+
     QObject::connect(this->followButton_, &Button::leftClicked, this, [this]() {
         this->toggleFollow();
     });
@@ -540,6 +703,7 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
     auto selected = this->split_->getSelectedChannel();
     auto *twitchChannel = dynamic_cast<TwitchChannel *>(selected.get());
     auto *kickChannel = dynamic_cast<KickChannel *>(selected.get());
+    auto *youtubeChannel = dynamic_cast<YouTubeChannel *>(selected.get());
 
     menu->addAction(
         "Change channel",
@@ -612,12 +776,12 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                         this->split_, &Split::recoverDismissedBanners);
         menu->addSeparator();
     }
-    else if (kickChannel)
+    else if (kickChannel || youtubeChannel)
     {
         menu->addSeparator();
     }
 
-    if (twitchChannel || kickChannel)
+    if (twitchChannel || kickChannel || youtubeChannel)
     {
         menu->addAction(
             OPEN_IN_BROWSER,
@@ -643,7 +807,8 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                             this->split_, &Split::openWithCustomScheme);
         }
 
-        if (this->split_->getChannel()->hasModRights())
+        if ((twitchChannel || kickChannel) &&
+            this->split_->getChannel()->hasModRights())
         {
             menu->addAction(
                 OPEN_MOD_VIEW_IN_BROWSER,
@@ -1067,6 +1232,31 @@ void SplitHeader::handleChannelChanged()
                 this->updateIcons();
                 this->updateRoomModes();
             });
+        for (const auto &child : multiChannel->channels())
+        {
+            auto *chan = child.channel.get();
+            if (auto *tc = dynamic_cast<TwitchChannel *>(chan))
+            {
+                this->channelConnections_.managedConnect(
+                    tc->streamStatusChanged, [this]() {
+                        this->updateChannelText();
+                    });
+            }
+            else if (auto *kc = dynamic_cast<KickChannel *>(chan))
+            {
+                this->channelConnections_.managedConnect(
+                    kc->streamDataChanged, [this]() {
+                        this->updateChannelText();
+                    });
+            }
+            else if (auto *yt = dynamic_cast<YouTubeChannel *>(chan))
+            {
+                this->channelConnections_.managedConnect(
+                    yt->streamDataChanged, [this]() {
+                        this->updateChannelText();
+                    });
+            }
+        }
         if (const auto *active = multiChannel->activeChannel())
         {
             channel = active->channel;
@@ -1078,6 +1268,14 @@ void SplitHeader::handleChannelChanged()
                                                  [this]() {
                                                      this->updateChannelText();
                                                  });
+    }
+    else if (auto *youtubeChannel =
+                 dynamic_cast<YouTubeChannel *>(channel.get()))
+    {
+        this->channelConnections_.managedConnect(
+            youtubeChannel->streamDataChanged, [this]() {
+                this->updateChannelText();
+            });
     }
 
     if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get()))
@@ -1096,6 +1294,122 @@ void SplitHeader::handleChannelChanged()
             twitchChannel->refreshFollowingStatus(false);
         }
     }
+
+    auto splitChannel = this->split_->getChannel();
+    bool hasYouTube =
+        dynamic_cast<YouTubeChannel *>(splitChannel.get()) != nullptr;
+    if (!hasYouTube)
+    {
+        if (auto *mc = dynamic_cast<MultiChannel *>(splitChannel.get()))
+        {
+            for (const auto &child : mc->channels())
+            {
+                if (dynamic_cast<YouTubeChannel *>(child.channel.get()))
+                {
+                    hasYouTube = true;
+                    break;
+                }
+            }
+        }
+    }
+    if (this->youtubeRefreshButton_)
+    {
+        this->youtubeRefreshButton_->setVisible(hasYouTube);
+    }
+
+    this->updateSendTargetButton();
+}
+
+namespace {
+
+QString multiPlatformName(MultiChannel::Platform platform)
+{
+    switch (platform)
+    {
+        case MultiChannel::Platform::Twitch:
+            return u"Twitch"_s;
+        case MultiChannel::Platform::Kick:
+            return u"Kick"_s;
+        case MultiChannel::Platform::YouTube:
+            return u"YouTube"_s;
+    }
+    return {};
+}
+
+}  // namespace
+
+void SplitHeader::updateSendTargetButton()
+{
+    if (!this->sendTargetButton_)
+    {
+        return;
+    }
+
+    auto channel = this->split_->getChannel();
+    auto *mc = dynamic_cast<MultiChannel *>(channel.get());
+    if (!mc)
+    {
+        this->sendTargetButton_->hide();
+        return;
+    }
+
+    auto channels = mc->channels();
+    int writable = 0;
+    for (const auto &child : channels)
+    {
+        if (child.channel->isWritable())
+        {
+            writable++;
+        }
+    }
+    if (writable < 2)
+    {
+        this->sendTargetButton_->hide();
+        return;
+    }
+
+    const auto *active = mc->activeChannel();
+    if (!active)
+    {
+        this->sendTargetButton_->hide();
+        return;
+    }
+
+    const auto name = active->channel->getName();
+    const auto platform = multiPlatformName(active->platform);
+    this->sendTargetButton_->setText(name);
+    this->sendTargetButton_->setToolTip(u"Sending to: " % name % u" (" %
+                                        platform % u"). Click to change.");
+    this->sendTargetButton_->show();
+}
+
+void SplitHeader::cycleSendTarget()
+{
+    auto channel = this->split_->getChannel();
+    auto *mc = dynamic_cast<MultiChannel *>(channel.get());
+    if (!mc)
+    {
+        return;
+    }
+
+    auto channels = mc->channels();
+    const size_t count = channels.size();
+    if (count == 0)
+    {
+        return;
+    }
+
+    const size_t current = mc->activeChannelIndex();
+    for (size_t step = 1; step <= count; step++)
+    {
+        const size_t index = (current + step) % count;
+        if (channels[index].channel->isWritable())
+        {
+            mc->setActiveChannelIndex(index);
+            getApp()->getWindows()->forceLayoutChannelViews();
+            break;
+        }
+    }
 }
 
 void SplitHeader::scaleChangedEvent(float scale)
@@ -1108,6 +1422,7 @@ void SplitHeader::scaleChangedEvent(float scale)
     this->followButton_->setFixedWidth(w);
     this->moderationButton_->setFixedWidth(w);
     this->chattersButton_->setFixedWidth(w);
+    this->youtubeRefreshButton_->setFixedWidth(w);
 
     this->addButton_->setFixedWidth(addSplitWidth);
 }
@@ -1178,6 +1493,47 @@ void SplitHeader::updateChannelText()
     auto indirectChannel = this->split_->getIndirectChannel();
     this->isLive_ = false;
     this->tooltipText_ = QString();
+
+    if (auto *mc =
+            dynamic_cast<MultiChannel *>(this->split_->getChannel().get()))
+    {
+        QString mainText;
+        bool first = true;
+        for (const auto &child : mc->channels())
+        {
+            if (!first)
+            {
+                mainText += ", ";
+            }
+            first = false;
+            mainText += child.channel->getLocalizedName();
+        }
+
+        auto viewers = sumMultichannelViewers(*mc);
+        this->isLive_ = viewers.anyLive;
+
+        QString suffix;
+        if (viewers.anyLive)
+        {
+            suffix += " (live)";
+            if (mc->combinedViewerCount())
+            {
+                suffix += " - " + localizeNumbers(viewers.sum);
+            }
+        }
+        if (!mainText.isEmpty() && !this->split_->getFilters().empty())
+        {
+            suffix += " - filtered";
+        }
+
+        this->titleLabel_->setShouldElide(true);
+        this->titleLabel_->setElideSuffix(suffix);
+        this->titleLabel_->setText(mainText.isEmpty() ? "<empty>" : mainText);
+        return;
+    }
+
+    this->titleLabel_->setShouldElide(false);
+    this->titleLabel_->setElideSuffix(QString());
 
     auto selectedChannel = this->split_->getSelectedChannel();
 
@@ -1285,6 +1641,48 @@ void SplitHeader::updateChannelText()
         else
         {
             this->tooltipText_ = formatOfflineTooltip(twitch);
+        }
+    }
+    else if (auto *youtubeChannel =
+                 dynamic_cast<YouTubeChannel *>(selectedChannel.get()))
+    {
+        const auto &stream = youtubeChannel->streamData();
+        auto name = youtubeHeaderName(stream);
+        if (!name.isEmpty())
+        {
+            title = name;
+        }
+        if (stream.isLive)
+        {
+            this->isLive_ = true;
+            if (!stream.thumbnailUrl.isEmpty() &&
+                (!this->lastThumbnail_.isValid() ||
+                 this->lastThumbnail_.elapsed() > THUMBNAIL_MAX_AGE_MS))
+            {
+                NetworkRequest(stream.thumbnailUrl, NetworkRequestType::Get)
+                    .caller(this)
+                    .followRedirects(true)
+                    .onSuccess([this](const auto &result) {
+                        assert(!isAppAboutToQuit());
+
+                        this->thumbnail_ =
+                            QString::fromLatin1(result.getData().toBase64());
+                        this->updateChannelText();
+                    })
+                    .execute();
+                this->lastThumbnail_.restart();
+            }
+            this->tooltipText_ = formatYouTubeTooltip(stream, this->thumbnail_);
+
+            title += " (live)";
+            if (getSettings()->headerViewerCount && stream.viewerCount >= 0)
+            {
+                title += " - " + localizeNumbers(stream.viewerCount);
+            }
+        }
+        else
+        {
+            this->tooltipText_ = formatYouTubeOfflineTooltip(stream);
         }
     }
 

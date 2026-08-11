@@ -11,8 +11,8 @@
 #include <pajlada/settings/settinglistener.hpp>
 #include <QJsonArray>
 #include <QObject>
-#include <QSet>
 #include <QPoint>
+#include <QSet>
 #include <QTimer>
 
 #include <memory>

@@ -469,6 +469,17 @@ set(SOURCE_FILES
         providers/kick/KickMessageBuilder.cpp
         providers/kick/KickMessageBuilder.hpp
 
+        providers/youtube/YouTubeApi.cpp
+        providers/youtube/YouTubeApi.hpp
+        providers/youtube/YouTubeBadges.cpp
+        providers/youtube/YouTubeBadges.hpp
+        providers/youtube/YouTubeChannel.cpp
+        providers/youtube/YouTubeChannel.hpp
+        providers/youtube/YouTubeChatServer.cpp
+        providers/youtube/YouTubeChatServer.hpp
+        providers/youtube/YouTubeMessageBuilder.cpp
+        providers/youtube/YouTubeMessageBuilder.hpp
+
         providers/links/LinkInfo.cpp
         providers/links/LinkInfo.hpp
         providers/links/LinkResolver.cpp

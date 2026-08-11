@@ -59,6 +59,7 @@ public:
         /// TwitchEnd
         TwitchEnd,
         Kick,
+        YouTube,
         /// Misc
         Misc,
         Multi,
@@ -86,6 +87,7 @@ public:
     bool isTwitchChannel() const;
     bool isWatching() const;
     bool isKickChannel() const;
+    bool isYouTubeChannel() const;
     bool isTwitchOrKickChannel() const;
     virtual bool isEmpty() const;
 
@@ -250,6 +252,8 @@ constexpr magic_enum::customize::customize_t
             return "misc";
         case Type::Kick:
             return "kick";
+        case Type::YouTube:
+            return "youtube";
         case Type::Multi:
             return "multi";
 

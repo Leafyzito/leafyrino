@@ -248,6 +248,22 @@ public:
     BoolSetting useLegacyScaling = {"/appearance/useLegacyScaling", false};
     BoolSetting windowTopMost = {"/appearance/windowAlwaysOnTop", false};
 
+    // YouTube
+    BoolSetting highlightYouTubeSuperChats = {
+        "/appearance/youtube/highlightSuperChats", true};
+    BoolSetting youtubeSuperChatWhiteName = {
+        "/appearance/youtube/superChatWhiteName", true};
+    BoolSetting highlightYouTubeMemberships = {
+        "/appearance/youtube/highlightMemberships", true};
+    BoolSetting colorYouTubeUsernamesByRole = {
+        "/appearance/youtube/colorUsernamesByRole", true};
+    BoolSetting youtubeColorizeUsernames = {
+        "/appearance/youtube/colorizeUsernames", false};
+    BoolSetting youtubeStripAtPrefix = {"/appearance/youtube/stripAtPrefix",
+                                        false};
+    BoolSetting youtubeSplitHeaderUseHandle = {
+        "/appearance/youtube/splitHeaderUseHandle", false};
+
     float getClampedUiScale() const;
     void setClampedUiScale(float value);
 

@@ -78,6 +78,9 @@ struct SplitDescriptor {
 
     MultiChannelIndicatorMode mcIndicator = MultiChannelIndicatorMode::None;
     uint32_t mcIndex = 0;
+    bool mcTintByPlatform = false;
+    bool mcShowTwitchOverlays = false;
+    bool mcCombinedViewerCount = false;
 
     static SplitDescriptor loadFromJSON(const QJsonObject &root);
 

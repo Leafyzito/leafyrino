@@ -33,6 +33,8 @@ public:
 
     void updateChannelText();
     void updateIcons();
+    void updateSendTargetButton();
+    void cycleSendTarget();
     // Invoked when SplitHeader should update anything refering to a TwitchChannel's mode
     // has changed (e.g. sub mode toggled)
     void updateRoomModes();
@@ -86,6 +88,8 @@ private:
 
     SvgButton *moderationButton_{};
     SvgButton *chattersButton_{};
+    SvgButton *youtubeRefreshButton_{};
+    LabelButton *sendTargetButton_{};
     DrawnButton *addButton_{};
 
     QPoint dragStart_{};

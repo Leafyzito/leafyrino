@@ -5,6 +5,7 @@
 #include "messages/Message.hpp"
 #include "providers/kick/KickChatServer.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "providers/youtube/YouTubeChatServer.hpp"
 #include "util/QCompareTransparent.hpp"
 #include "util/QMagicEnum.hpp"
 
@@ -77,6 +78,8 @@ ChannelPtr resolveChannel(const MultiChannel::Spec &spec)
             return getApp()->getTwitch()->getOrAddChannel(spec.name);
         case MultiChannel::Platform::Kick:
             return getApp()->getKickChatServer()->getOrCreate(spec.name);
+        case MultiChannel::Platform::YouTube:
+            return getApp()->getYouTubeChatServer()->getOrCreate(spec.name);
     }
     return Channel::getEmpty();
 }
@@ -135,9 +138,14 @@ ChildChannelDescriptor MultiChannel::ChildChannel::descriptor() const
 }
 
 MultiChannel::MultiChannel(std::span<const Spec> channels,
-                           MultiChannelIndicatorMode indicatorMode)
+                           MultiChannelIndicatorMode indicatorMode,
+                           bool tintByPlatform, bool showTwitchOverlays,
+                           bool combinedViewerCount)
     : Channel(makeChannelName(channels, false), Type::Multi)
     , indicatorMode_(indicatorMode)
+    , tintByPlatform_(tintByPlatform)
+    , showTwitchOverlays_(showTwitchOverlays)
+    , combinedViewerCount_(combinedViewerCount)
 {
     for (const auto &spec : channels)
     {
@@ -177,6 +185,15 @@ MultiChannel::MultiChannel(std::span<const Spec> channels,
         });
     }
     this->refreshDisplayName();
+
+    for (size_t i = 0; i < this->channels_.size(); i++)
+    {
+        if (this->channels_[i].channel->isWritable())
+        {
+            this->activeChannel_ = i;
+            break;
+        }
+    }
 
     QVarLengthArray<std::vector<MessagePtr>, 4> snapshots;
     QVarLengthArray<std::span<const MessagePtr>, 4> snapshotViews;
@@ -358,6 +375,21 @@ MultiChannelIndicatorMode MultiChannel::indicatorMode() const
     return this->indicatorMode_;
 }
 
+bool MultiChannel::tintByPlatform() const
+{
+    return this->tintByPlatform_;
+}
+
+bool MultiChannel::showTwitchOverlays() const
+{
+    return this->showTwitchOverlays_;
+}
+
+bool MultiChannel::combinedViewerCount() const
+{
+    return this->combinedViewerCount_;
+}
+
 void MultiChannel::refreshDisplayName()
 {
     if (this->channels_.empty())
@@ -386,6 +418,8 @@ bool platformMatches(MessagePlatform lhs, MultiChannel::Platform rhs) noexcept
             return rhs == MultiChannel::Platform::Twitch;
         case MessagePlatform::Kick:
             return rhs == MultiChannel::Platform::Kick;
+        case MessagePlatform::YouTube:
+            return rhs == MultiChannel::Platform::YouTube;
     }
     return false;
 }

@@ -41,6 +41,7 @@ class Channel;
 using ChannelPtr = std::shared_ptr<Channel>;
 struct Message;
 using MessagePtr = std::shared_ptr<const Message>;
+enum class MessagePlatform : uint8_t;
 class Label;
 class MarkdownLabel;
 class EditUserNotesDialog;
@@ -70,6 +71,13 @@ public:
     void setData(const QString &name, const ChannelPtr &channel);
     void setData(const QString &name, const ChannelPtr &contextChannel,
                  const ChannelPtr &openingChannel);
+
+    void setYouTubeContext();
+
+    static void openUserChannelAction(const QString &userName,
+                                      MessagePlatform platform,
+                                      const QString &channelName,
+                                      const QString &channelId);
 
     static void notifyFollowMutation(const QString &targetId,
                                      const QString &requestUserId,
@@ -137,6 +145,9 @@ private:
     void updateAvatarUrl();
 
     void updateKickUserData();
+    void updateYouTubeUserData();
+    void updateYouTubeLatestMessages();
+    void loadYouTubeAvatar(const QString &url);
     void onKickProfilePictureClick(Qt::MouseButton button);
     bool canShowRoleManagementMenu() const;
     void showRoleManagementMenu();
@@ -293,6 +304,9 @@ private:
     QPointer<EditUserNotesDialog> editUserNotesDialog_;
 
     bool isKick_ = false;
+    bool isYouTube_ = false;
+    bool forceYouTube_ = false;
+    QString youtubeChannelId_;
     uint64_t kickUserID_ = 0;
     bool isUserLive_ = false;
     int liveViewerCount_ = 0;

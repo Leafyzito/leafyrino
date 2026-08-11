@@ -192,6 +192,9 @@ private:
     void updateBannerVisibility();
     void updateMpsOverlayAnchor();
     void noteBannerStateChanged(TwitchChannel *channel, int bannerId);
+
+    TwitchChannel *twitchOverlayChannel() const;
+    void wireTwitchBanners(TwitchChannel *tc);
     void clearBannerAttention();
     void runDeferredTwitchRefresh();
     void refreshInputState(const QString &inputText);
@@ -241,6 +244,7 @@ private:
 
     // This signal-holder is cleared whenever this split changes the underlying channel
     pajlada::Signals::SignalHolder channelSignalHolder_;
+    pajlada::Signals::SignalHolder twitchBannerSignalHolder_;
 
     pajlada::Signals::SignalHolder signalHolder_;
     std::vector<boost::signals2::scoped_connection> bSignals_;

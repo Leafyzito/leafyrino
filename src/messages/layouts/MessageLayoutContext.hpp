@@ -98,6 +98,8 @@ struct MessagePaintContext {
 
     bool isLastReadMessage{};
     bool isCollapsed{};
+
+    bool tintByPlatform{};
 };
 
 struct MessageLayoutContext {

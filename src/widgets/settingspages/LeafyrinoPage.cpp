@@ -69,6 +69,61 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->setTooltip("Show the badge picker button in the chat input bar.")
         ->addTo(layout);
 
+    layout.addTitle("YouTube");
+    SettingWidget::checkbox("Highlight Super Chats",
+                            s.highlightYouTubeSuperChats)
+        ->addKeywords(
+            {"youtube", "superchat", "super chat", "highlight", "donation"})
+        ->setTooltip(
+            "Show Super Chats as a colored highlighted row (per tier).")
+        ->addTo(layout);
+    SettingWidget::checkbox("White username in Super Chats",
+                            s.youtubeSuperChatWhiteName)
+        ->addKeywords(
+            {"youtube", "superchat", "super chat", "username", "white", "name"})
+        ->setTooltip(
+            "Render the author name in white on the colored Super Chat "
+            "row for readability.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Highlight memberships && gifts",
+                            s.highlightYouTubeMemberships)
+        ->addKeywords(
+            {"youtube", "membership", "member", "gift", "highlight", "green"})
+        ->setTooltip(
+            "Give new memberships, milestones and gifted memberships a "
+            "green highlight.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Color usernames by role",
+                            s.colorYouTubeUsernamesByRole)
+        ->addKeywords({"youtube", "username", "color", "role", "moderator",
+                       "member", "owner"})
+        ->setTooltip("Color only moderators, members and the owner; regular "
+                     "chatters stay a neutral grey. Off = all names grey.\n"
+                     "Deleted messages follow the global \"hide moderated "
+                     "messages\" setting.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Colorize usernames", s.youtubeColorizeUsernames)
+        ->addKeywords(
+            {"youtube", "username", "colorize", "color", "nickname", "random"})
+        ->setTooltip(
+            "Give each YouTube chatter a stable color based on their "
+            "channel, like the Twitch colorize option. Roles still use "
+            "their role color first.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Remove @ from usernames", s.youtubeStripAtPrefix)
+        ->addKeywords({"youtube", "username", "handle", "at", "prefix"})
+        ->setTooltip("Hide the leading @ on YouTube handles in chat. Clicks, "
+                     "mentions and the user popup still work with the full "
+                     "name.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Show @username in the split header",
+                            s.youtubeSplitHeaderUseHandle)
+        ->addKeywords(
+            {"youtube", "split", "header", "handle", "username", "channel"})
+        ->setTooltip("Show the channel @handle in the split header instead of "
+                     "the display name. Hovering always shows the handle.")
+        ->addTo(layout);
+
     layout.addTitle("Usercard");
     layout.addDescription("Choose which extra details appear on usercards.");
 
