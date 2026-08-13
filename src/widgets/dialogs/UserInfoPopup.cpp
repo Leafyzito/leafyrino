@@ -54,6 +54,7 @@
 #include "widgets/buttons/PixmapButton.hpp"
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/dialogs/EditUserNotesDialog.hpp"
+#include "widgets/dialogs/UserBadgesDialog.hpp"
 #include "widgets/helper/ChannelView.hpp"
 #include "widgets/helper/InvisibleSizeGrip.hpp"
 #include "widgets/helper/Line.hpp"
@@ -1390,6 +1391,15 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                                  [this] {
                                      this->showNameHistoryMenu();
                                  });
+                auto badges =
+                    box.emplace<LabelButton>("badges", this, QSize{4, 0})
+                        .assign(&this->ui_.badgesLabel);
+                badges->setToolTip("View earned Twitch badges");
+                badges->hide();
+                QObject::connect(badges.getElement(), &Button::leftClicked,
+                                 [this] {
+                                     this->openBadgesDialog();
+                                 });
                 box->addSpacing(5);
                 box->addStretch(1);
 
@@ -2445,6 +2455,8 @@ void UserInfoPopup::setData(const QString &name,
         this->ui_.usercardLabel->show();
         this->ui_.userlogsLabel->show();
     }
+
+    this->updateBadgesButton();
 }
 
 void UserInfoPopup::setYouTubeContext()
@@ -4635,6 +4647,62 @@ void UserInfoPopup::updateNameHistoryButton()
     }
 
     this->ui_.nameHistoryButton->setToolTip("Show name history");
+}
+
+void UserInfoPopup::updateBadgesButton()
+{
+    if (this->ui_.badgesLabel == nullptr)
+    {
+        return;
+    }
+
+    bool canShow = !this->isKick_ && !this->isYouTube_ &&
+                   !this->userName_.isEmpty() && this->underlyingChannel_ &&
+                   !this->underlyingChannel_->getName().isEmpty();
+
+    if (canShow && this->channel_)
+    {
+        const auto type = this->channel_->getType();
+        if (type == Channel::Type::TwitchLive ||
+            type == Channel::Type::TwitchWhispers ||
+            type == Channel::Type::Misc || type == Channel::Type::Kick)
+        {
+            canShow = false;
+        }
+    }
+
+    this->ui_.badgesLabel->setVisible(canShow);
+    this->ui_.badgesLabel->setEnabled(canShow);
+    if (!canShow)
+    {
+        this->ui_.badgesLabel->setToolTip({});
+        return;
+    }
+
+    this->ui_.badgesLabel->setToolTip("View earned Twitch badges");
+}
+
+void UserInfoPopup::openBadgesDialog()
+{
+    if (this->isKick_ || this->isYouTube_ || this->userName_.isEmpty() ||
+        !this->underlyingChannel_)
+    {
+        return;
+    }
+
+    const auto channelName = this->underlyingChannel_->getName();
+    if (channelName.isEmpty())
+    {
+        return;
+    }
+
+    this->ensurePinned();
+
+    const auto displayName = this->ui_.nameLabel != nullptr
+                                 ? this->ui_.nameLabel->getText()
+                                 : this->userName_;
+    UserBadgesDialog::showDialog(this->userName_, channelName, displayName,
+                                 this);
 }
 
 void UserInfoPopup::showNameHistoryMenu()

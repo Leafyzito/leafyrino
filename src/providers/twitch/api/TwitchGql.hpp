@@ -133,6 +133,7 @@ struct GqlBadge {
     QString setID;
     QString version;
     QString title;
+    QString description;
     QString image1x;
     QString image2x;
     QString image4x;
@@ -421,6 +422,11 @@ void getModeratedChannels(
 void getChatSettingsBadges(
     const QString &channelLogin, const QString &oauthToken,
     std::function<void(GqlChatSettingsBadges)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void getChannelViewerEarnedBadges(
+    const QString &userLogin, const QString &channelLogin,
+    const QString &oauthToken,
+    std::function<void(QVector<GqlBadge>)> successCallback,
     std::function<void(const QString &)> failureCallback);
 void selectGlobalBadge(const QString &badgeSetID,
                        const QString &badgeSetVersion,

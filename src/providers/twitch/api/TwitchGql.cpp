@@ -1668,6 +1668,7 @@ GqlBadge badgeFromJson(const QJsonObject &obj)
         .setID = obj["setID"].toString(),
         .version = obj["version"].toString(),
         .title = obj["title"].toString(),
+        .description = obj["description"].toString(),
         .image1x = obj["image1x"].toString(),
         .image2x = obj["image2x"].toString(),
         .image4x = obj["image4x"].toString(),
@@ -5350,6 +5351,67 @@ query ModeratedChannels($cursor: Cursor) {
     };
 
     (*requestForwardPage)({});
+}
+
+void TwitchGql::getChannelViewerEarnedBadges(
+    const QString &userLogin, const QString &channelLogin,
+    const QString &oauthToken,
+    std::function<void(QVector<GqlBadge>)> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    static constexpr char QUERY[] = R"(
+        query ChannelViewerEarnedBadges($userLogin: String!, $channelLogin: String!) {
+            channelViewer(userLogin: $userLogin, channelLogin: $channelLogin) {
+                earnedBadges {
+                    id
+                    setID
+                    version
+                    title
+                    description
+                    image1x: imageURL(size: NORMAL)
+                    image2x: imageURL(size: DOUBLE)
+                    image4x: imageURL(size: QUADRUPLE)
+                }
+            }
+        }
+    )";
+
+    QJsonObject variables;
+    variables.insert("userLogin", userLogin);
+    variables.insert("channelLogin", channelLogin);
+
+    makeGqlRequest(QUERY, variables, oauthToken)
+        .onSuccess(
+            [successCallback, failureCallback](const NetworkResult &result) {
+                const auto root = result.parseJsonValue();
+                if (root.isUndefined() || root.isNull())
+                {
+                    failureCallback("Failed to parse GQL response");
+                    return;
+                }
+
+                const auto gqlError = extractFirstGqlErrorMessage(root);
+                if (!gqlError.isEmpty())
+                {
+                    failureCallback("Twitch API Error: " + gqlError);
+                    return;
+                }
+
+                const auto channelViewer =
+                    payloadDataObject(root).value("channelViewer");
+                if (channelViewer.isNull() || !channelViewer.isObject())
+                {
+                    successCallback({});
+                    return;
+                }
+
+                successCallback(badgesFromArray(
+                    channelViewer.toObject().value("earnedBadges").toArray()));
+            })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
 }
 
 void TwitchGql::getChatSettingsBadges(
