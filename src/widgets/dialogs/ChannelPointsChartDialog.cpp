@@ -176,7 +176,16 @@ void ChannelPointsChartDialog::showDialog(TwitchChannel *channel,
 
     if (dialog == nullptr)
     {
-        dialog = new ChannelPointsChartDialog(channel, parent);
+        // Keep using `parent` for auto-pin and placement, but do not make
+        // another DraggablePopup the QObject owner. Otherwise closing that
+        // popup (e.g. channel rewards) destroys a pinned chart with it.
+        QWidget *ownershipParent = parent;
+        if (qobject_cast<DraggablePopup *>(parent) != nullptr)
+        {
+            ownershipParent = nullptr;
+        }
+
+        dialog = new ChannelPointsChartDialog(channel, ownershipParent);
         activeDialogs_.push_back(dialog);
 
         QPoint center = QCursor::pos();
