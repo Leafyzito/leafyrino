@@ -585,6 +585,10 @@ YouTubeLiveChatPage parseLiveChatPage(BoostJsonValue root)
     for (auto action : liveChat["actions"].toArray())
     {
         auto deleteAction = action["markChatItemAsDeletedAction"];
+        if (!deleteAction.isObject())
+        {
+            deleteAction = action["removeChatItemAction"];
+        }
         if (deleteAction.isObject())
         {
             auto targetId = deleteAction["targetItemId"].toQString();
@@ -595,6 +599,10 @@ YouTubeLiveChatPage parseLiveChatPage(BoostJsonValue root)
             continue;
         }
         auto deleteByAuthor = action["markChatItemsByAuthorAsDeletedAction"];
+        if (!deleteByAuthor.isObject())
+        {
+            deleteByAuthor = action["removeChatItemByAuthorAction"];
+        }
         if (deleteByAuthor.isObject())
         {
             auto channelId = deleteByAuthor["externalChannelId"].toQString();

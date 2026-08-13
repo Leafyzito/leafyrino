@@ -2500,7 +2500,22 @@ void UserInfoPopup::updateYouTubeUserData()
     this->youtubeChannelId_ = YouTubeChannel::channelIdForDisplayName(
         this->underlyingChannel_, this->userName_);
 
-    this->ui_.nameLabel->setText(this->userName_);
+    QString labelName = this->userName_;
+    if (this->userName_.startsWith(u"UC") &&
+        !this->youtubeChannelId_.isEmpty() && this->underlyingChannel_)
+    {
+        for (const auto &message :
+             this->underlyingChannel_->getMessageSnapshot())
+        {
+            if (message->loginName == this->youtubeChannelId_ &&
+                !message->displayName.isEmpty())
+            {
+                labelName = message->displayName;
+                break;
+            }
+        }
+    }
+    this->ui_.nameLabel->setText(labelName);
 
     if (this->youtubeChannelId_.isEmpty())
     {

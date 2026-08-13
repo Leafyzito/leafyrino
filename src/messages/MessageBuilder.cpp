@@ -1640,11 +1640,18 @@ MessagePtr MessageBuilder::makeDeletionMessageFromIRC(
     // add a link to the originalMessage
     builder.emplace<TextElement>("A message from", MessageElementFlag::Text,
                                  MessageColor::System);
+    // YouTube stores channel IDs in loginName; UserInfo links expect the
+    // display name (same as normal YouTube chat messages).
+    const QString userInfoName =
+        originalMessage->platform == MessagePlatform::YouTube &&
+                !originalMessage->displayName.isEmpty()
+            ? originalMessage->displayName
+            : originalMessage->loginName;
     builder
         .emplace<TextElement>(originalMessage->displayName,
                               MessageElementFlag::Username,
                               MessageColor::System, FontStyle::ChatMediumBold)
-        ->setLink({Link::UserInfo, originalMessage->loginName});
+        ->setLink({Link::UserInfo, userInfoName});
     builder.emplace<TextElement>("was deleted:", MessageElementFlag::Text,
                                  MessageColor::System);
 

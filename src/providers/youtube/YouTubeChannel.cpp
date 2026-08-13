@@ -3,11 +3,16 @@
 #include "Application.hpp"
 #include "common/QLogging.hpp"
 #include "messages/Message.hpp"
+#include "messages/MessageBuilder.hpp"
+#include "messages/MessageElement.hpp"
+#include "providers/twitch/TwitchIrcServer.hpp"
 #include "providers/youtube/YouTubeApi.hpp"
 #include "providers/youtube/YouTubeMessageBuilder.hpp"
+#include "singletons/Settings.hpp"
 #include "singletons/WindowManager.hpp"
 
 #include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 #include <QDateTime>
 #include <QStringBuilder>
 
@@ -90,6 +95,20 @@ QString YouTubeChannel::channelIdForDisplayName(const ChannelPtr &channel,
     {
         return {};
     }
+
+    // Already a channel ID (e.g. from older system-message links).
+    if (displayName.startsWith(u"UC") && displayName.size() >= 24)
+    {
+        const auto snapshot = channel->getMessageSnapshot();
+        for (auto it = snapshot.rbegin(); it != snapshot.rend(); ++it)
+        {
+            if ((*it)->loginName == displayName)
+            {
+                return displayName;
+            }
+        }
+    }
+
     const auto snapshot = channel->getMessageSnapshot();
     QString startsWithMatch;
     for (auto it = snapshot.rbegin(); it != snapshot.rend(); ++it)
@@ -393,18 +412,35 @@ void YouTubeChannel::poll()
                 {
                     continue;
                 }
-                auto msg =
+                auto [msg, highlight] =
                     YouTubeMessageBuilder::makeChatMessage(self.get(), item);
-                if (msg)
+                if (!msg)
                 {
-                    messages.push_back(std::move(msg));
+                    continue;
                 }
+
+                // Sounds/alerts only for live messages, not join history.
+                if (!self->firstBatch_)
+                {
+                    MessageBuilder::triggerHighlights(self.get(), msg,
+                                                      highlight);
+
+                    if (msg->flags.has(MessageFlag::Highlighted) &&
+                        msg->flags.has(MessageFlag::ShowInMentions))
+                    {
+                        getApp()->getTwitch()->getMentionsChannel()->addMessage(
+                            msg, MessageContext::Original);
+                    }
+                }
+
+                messages.push_back(std::move(msg));
             }
 
             const int timeoutMs =
                 res->timeoutMs > 0 ? res->timeoutMs : DEFAULT_POLL_INTERVAL_MS;
             const bool ended = res->ended || res->continuation.isEmpty();
 
+            const bool announceActions = !self->firstBatch_;
             if (self->firstBatch_)
             {
                 self->firstBatch_ = false;
@@ -420,7 +456,7 @@ void YouTubeChannel::poll()
             }
             self->lastBatchSize_ = static_cast<int>(messages.size());
 
-            self->applyDeletions(*res);
+            self->applyDeletions(*res, announceActions);
 
             if (ended)
             {
@@ -479,7 +515,8 @@ void YouTubeChannel::enqueueMessages(std::vector<MessagePtr> &messages,
     }
 }
 
-void YouTubeChannel::applyDeletions(const YouTubeLiveChatPage &page)
+void YouTubeChannel::applyDeletions(const YouTubeLiveChatPage &page,
+                                    bool announceActions)
 {
     if (page.deletedItemIds.empty() && page.deletedAuthorChannelIds.empty())
     {
@@ -487,58 +524,113 @@ void YouTubeChannel::applyDeletions(const YouTubeLiveChatPage &page)
     }
 
     bool changed = false;
+    const auto now = QDateTime::currentDateTime();
+    const boost::unordered_flat_set<QString> purgedAuthors(
+        page.deletedAuthorChannelIds.begin(),
+        page.deletedAuthorChannelIds.end());
 
     for (const auto &targetId : page.deletedItemIds)
     {
         const QString fullId = u"yt-"_s % targetId;
+        MessagePtr found;
+
         if (auto msg = this->findMessageByID(fullId))
         {
-            msg->flags.set(MessageFlag::Disabled);
+            msg->flags.set(MessageFlag::Disabled,
+                           MessageFlag::InvalidReplyTarget);
+            found = msg;
             changed = true;
         }
         for (auto &pending : this->pendingMessages_)
         {
             if (pending->id == fullId)
             {
-                pending->flags.set(MessageFlag::Disabled);
+                pending->flags.set(MessageFlag::Disabled,
+                                   MessageFlag::InvalidReplyTarget);
+                if (!found)
+                {
+                    found = pending;
+                }
                 changed = true;
             }
         }
+
+        // Prefer the author timeout/ban notice when both arrive together.
+        if (announceActions && found && !getSettings()->hideDeletionActions &&
+            !purgedAuthors.contains(found->loginName))
+        {
+            this->addMessage(MessageBuilder::makeDeletionMessageFromIRC(found),
+                             MessageContext::Original);
+        }
     }
 
-    if (!page.deletedAuthorChannelIds.empty())
+    for (const auto &channelId : purgedAuthors)
     {
-        auto matchesAuthor = [&](const MessagePtr &msg) {
-            for (const auto &channelId : page.deletedAuthorChannelIds)
-            {
-                if (msg->loginName == channelId)
-                {
-                    return true;
-                }
-            }
-            return false;
-        };
-
         for (const auto &msg : this->getMessageSnapshot())
         {
             if (msg->flags.has(MessageFlag::System))
             {
                 continue;
             }
-            if (matchesAuthor(msg))
+            if (msg->loginName == channelId)
             {
-                msg->flags.set(MessageFlag::Disabled);
+                msg->flags.set(MessageFlag::Disabled,
+                               MessageFlag::InvalidReplyTarget);
                 changed = true;
             }
         }
         for (auto &pending : this->pendingMessages_)
         {
-            if (matchesAuthor(pending))
+            if (pending->loginName == channelId)
             {
-                pending->flags.set(MessageFlag::Disabled);
+                pending->flags.set(MessageFlag::Disabled,
+                                   MessageFlag::InvalidReplyTarget);
                 changed = true;
             }
         }
+
+        if (!announceActions || getSettings()->hideModerationActions)
+        {
+            continue;
+        }
+
+        auto findAuthorDisplayName = [&](const QString &id) -> QString {
+            for (const auto &msg : this->getMessageSnapshot())
+            {
+                if (!msg->flags.has(MessageFlag::System) &&
+                    msg->loginName == id && !msg->displayName.isEmpty())
+                {
+                    return msg->displayName;
+                }
+            }
+            for (const auto &pending : this->pendingMessages_)
+            {
+                if (pending->loginName == id && !pending->displayName.isEmpty())
+                {
+                    return pending->displayName;
+                }
+            }
+            return {};
+        };
+
+        // YouTube does not report timeout duration vs permanent ban here.
+        const QString displayName = findAuthorDisplayName(channelId);
+        const QString name = displayName.isEmpty() ? channelId : displayName;
+
+        MessageBuilder builder;
+        QString text;
+        builder.emplace<TimestampElement>(now.time());
+        builder->flags.set(MessageFlag::System, MessageFlag::Timeout,
+                           MessageFlag::ModerationAction,
+                           MessageFlag::DoNotTriggerNotification);
+        builder->timeoutUser = channelId;
+        builder->serverReceivedTime = now;
+        builder.emplaceSystemTextAndUpdate(name, text)
+            ->setLink({Link::UserInfo, name});
+        builder.emplaceSystemTextAndUpdate(u"was timed out or banned."_s, text);
+        builder->messageText = text;
+        builder->searchText = text;
+        this->addOrReplaceTimeout(builder.release(), now);
     }
 
     if (changed)

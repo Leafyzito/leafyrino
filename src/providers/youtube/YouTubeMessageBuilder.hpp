@@ -5,18 +5,21 @@
 
 #include <QColor>
 
+#include <utility>
+
 namespace chatterino {
 
 class YouTubeChannel;
 struct YouTubeChatItem;
+struct HighlightAlert;
 
 class YouTubeMessageBuilder : public MessageBuilder
 {
 public:
     YouTubeMessageBuilder(YouTubeChannel *channel, const QDateTime &time);
 
-    static MessagePtrMut makeChatMessage(YouTubeChannel *channel,
-                                         const YouTubeChatItem &item);
+    static std::pair<MessagePtrMut, HighlightAlert> makeChatMessage(
+        YouTubeChannel *channel, const YouTubeChatItem &item);
 
     YouTubeChannel *channel() const
     {

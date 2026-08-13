@@ -67,7 +67,7 @@ private:
     void drainChunk();
     void flushPending();
 
-    void applyDeletions(const YouTubeLiveChatPage &page);
+    void applyDeletions(const YouTubeLiveChatPage &page, bool announceActions);
 
     void setLive(bool live);
     void applyResolvedName(const QString &channelName);

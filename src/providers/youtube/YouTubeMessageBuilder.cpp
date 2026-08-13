@@ -2,6 +2,8 @@
 
 #include "Application.hpp"
 #include "controllers/emotes/EmoteController.hpp"
+#include "controllers/highlights/HighlightController.hpp"
+#include "controllers/highlights/HighlightResult.hpp"
 #include "messages/Emote.hpp"
 #include "messages/Image.hpp"
 #include "messages/Link.hpp"
@@ -9,6 +11,7 @@
 #include "messages/MessageColor.hpp"
 #include "messages/MessageElement.hpp"
 #include "providers/emoji/Emojis.hpp"
+#include "providers/twitch/TwitchBadge.hpp"
 #include "providers/youtube/YouTubeApi.hpp"
 #include "providers/youtube/YouTubeBadges.hpp"
 #include "providers/youtube/YouTubeChannel.hpp"
@@ -17,6 +20,9 @@
 #include "util/Variant.hpp"
 
 #include <QDateTime>
+
+#include <utility>
+#include <vector>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -57,6 +63,45 @@ QString youtubeDisplayName(const QString &authorName)
         return authorName.mid(1);
     }
     return authorName;
+}
+
+HighlightAlert processHighlights(YouTubeMessageBuilder &builder)
+{
+    // Prefer display name for user highlights / blacklist (loginName is channel ID).
+    if (getSettings()->isBlacklistedUser(builder->displayName) ||
+        (!builder->loginName.isEmpty() &&
+         getSettings()->isBlacklistedUser(builder->loginName)))
+    {
+        return {};
+    }
+
+    MessageParseArgs args;
+    const std::vector<TwitchBadge> noBadges;
+    auto [highlighted, highlightResult] = getApp()->getHighlights()->check(
+        args, noBadges, builder->displayName, builder->messageText,
+        builder->flags, builder->platform);
+
+    if (!highlighted)
+    {
+        return {};
+    }
+
+    builder->flags.set(MessageFlag::Highlighted);
+    if (!builder->highlightColor)
+    {
+        builder->highlightColor = highlightResult.color;
+    }
+
+    if (highlightResult.showInMentions)
+    {
+        builder->flags.set(MessageFlag::ShowInMentions);
+    }
+
+    return {
+        .customSound = highlightResult.customSoundUrl.value_or(QUrl{}),
+        .playSound = highlightResult.playSound,
+        .windowAlert = highlightResult.alert,
+    };
 }
 
 MessageColor youtubeUsernameColor(const std::vector<YouTubeAuthorBadge> &badges,
@@ -198,7 +243,7 @@ YouTubeMessageBuilder::YouTubeMessageBuilder(YouTubeChannel *channel,
     this->message().serverReceivedTime = time;
 }
 
-MessagePtrMut YouTubeMessageBuilder::makeChatMessage(
+std::pair<MessagePtrMut, HighlightAlert> YouTubeMessageBuilder::makeChatMessage(
     YouTubeChannel *channel, const YouTubeChatItem &item)
 {
     auto time = item.timestampUsec > 0
@@ -227,15 +272,21 @@ MessagePtrMut YouTubeMessageBuilder::makeChatMessage(
         case YouTubeChatItemKind::SuperChat:
         case YouTubeChatItemKind::SuperSticker:
             builder.buildSuperChat(item, time, storedColor);
-            return builder.release();
+            {
+                auto highlightAlert = processHighlights(builder);
+                return {builder.release(), highlightAlert};
+            }
 
         case YouTubeChatItemKind::Gift:
         case YouTubeChatItemKind::Membership:
             builder.buildMembership(item, time, storedColor);
-            return builder.release();
+            {
+                auto highlightAlert = processHighlights(builder);
+                return {builder.release(), highlightAlert};
+            }
 
         case YouTubeChatItemKind::Unsupported:
-            return {};
+            return {{}, {}};
 
         case YouTubeChatItemKind::Text:
             break;
@@ -252,7 +303,8 @@ MessagePtrMut YouTubeMessageBuilder::makeChatMessage(
     builder->messageText = messageText;
     builder->searchText = item.authorName % u": " % messageText;
 
-    return builder.release();
+    auto highlightAlert = processHighlights(builder);
+    return {builder.release(), highlightAlert};
 }
 
 void YouTubeMessageBuilder::buildSuperChat(const YouTubeChatItem &item,
