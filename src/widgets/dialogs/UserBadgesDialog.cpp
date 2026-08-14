@@ -387,6 +387,10 @@ void UserBadgesDialog::showDialog(const QString &userLogin,
         return;
     }
 
+    const bool wasAutoPinned = DraggablePopup::pinParentIfNeeded(parent);
+
+    UserBadgesDialog *dialog = nullptr;
+
     for (auto it = activeDialogs_.begin(); it != activeDialogs_.end();)
     {
         if (it->isNull())
@@ -398,32 +402,69 @@ void UserBadgesDialog::showDialog(const QString &userLogin,
             (*it)->channelLogin_.compare(channelLogin, Qt::CaseInsensitive) ==
                 0)
         {
-            (*it)->channel_ = channel;
-            (*it)->raise();
-            (*it)->activateWindow();
-            (*it)->loadBadges(true);
-            return;
+            dialog = *it;
+            dialog->channel_ = channel;
+            dialog->raise();
+            dialog->activateWindow();
+            dialog->loadBadges(true);
+            break;
         }
         ++it;
     }
 
-    auto *dialog = new UserBadgesDialog(userLogin, channelLogin, displayName,
-                                        channel, parent);
-    activeDialogs_.push_back(dialog);
-
-    QPoint center = QCursor::pos();
-    if (parent && parent->window())
+    if (dialog == nullptr)
     {
-        center = parent->window()->geometry().center();
+        // Keep using `parent` for auto-pin and placement, but do not make
+        // another DraggablePopup the QObject owner. Otherwise closing that
+        // popup destroys this dialog with it.
+        QWidget *ownershipParent = parent;
+        if (qobject_cast<DraggablePopup *>(parent) != nullptr)
+        {
+            ownershipParent = nullptr;
+        }
+
+        dialog = new UserBadgesDialog(userLogin, channelLogin, displayName,
+                                      channel, ownershipParent);
+        activeDialogs_.push_back(dialog);
+
+        QPoint center = QCursor::pos();
+        if (parent != nullptr && parent->window() != nullptr)
+        {
+            center = parent->window()->geometry().center();
+        }
+
+        dialog->show();
+        const auto size = dialog->size();
+        dialog->showAndMoveTo(
+            center - QPoint(size.width() / 2, size.height() / 2),
+            widgets::BoundsChecking::DesiredPosition);
+        dialog->raise();
+        dialog->activateWindow();
+        dialog->loadBadges(false);
     }
 
-    dialog->show();
-    const auto size = dialog->size();
-    dialog->showAndMoveTo(center - QPoint(size.width() / 2, size.height() / 2),
-                          widgets::BoundsChecking::DesiredPosition);
-    dialog->raise();
-    dialog->activateWindow();
-    dialog->loadBadges(false);
+    if (wasAutoPinned)
+    {
+        dialog->scheduleUnpinParentOnClose(parent);
+    }
+}
+
+void UserBadgesDialog::scheduleUnpinParentOnClose(QWidget *parent)
+{
+    if (this->parentUnpinScheduled_ || parent == nullptr)
+    {
+        return;
+    }
+
+    this->parentUnpinScheduled_ = true;
+
+    QPointer<QWidget> parentPtr(parent);
+    QObject::connect(this, &QObject::destroyed, parent, [parentPtr] {
+        if (parentPtr)
+        {
+            DraggablePopup::unpinParentIfNeeded(parentPtr);
+        }
+    });
 }
 
 void UserBadgesDialog::themeChangedEvent()

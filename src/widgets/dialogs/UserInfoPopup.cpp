@@ -4696,8 +4696,6 @@ void UserInfoPopup::openBadgesDialog()
         return;
     }
 
-    this->ensurePinned();
-
     const auto displayName = this->ui_.nameLabel != nullptr
                                  ? this->ui_.nameLabel->getText()
                                  : this->userName_;

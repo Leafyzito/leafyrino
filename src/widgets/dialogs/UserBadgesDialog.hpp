@@ -54,6 +54,7 @@ private:
     void setStatus(const QString &text, bool error = false);
     void applySizeConstraints();
     void openBadgeInChatVault(const GqlBadge &badge);
+    void scheduleUnpinParentOnClose(QWidget *parent);
     [[nodiscard]] int badgeGridColumns() const;
     [[nodiscard]] QString authTokenOrMessage();
 
@@ -81,6 +82,7 @@ private:
     bool statusIsError_ = false;
     QString searchQuery_;
     int lastBadgeGridColumns_ = -1;
+    bool parentUnpinScheduled_ = false;
 
     static std::vector<QPointer<UserBadgesDialog>> activeDialogs_;
 };
