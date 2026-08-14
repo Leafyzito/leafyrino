@@ -4701,8 +4701,10 @@ void UserInfoPopup::openBadgesDialog()
     const auto displayName = this->ui_.nameLabel != nullptr
                                  ? this->ui_.nameLabel->getText()
                                  : this->userName_;
+    auto *twitchChannel =
+        dynamic_cast<TwitchChannel *>(this->underlyingChannel_.get());
     UserBadgesDialog::showDialog(this->userName_, channelName, displayName,
-                                 this);
+                                 twitchChannel, this);
 }
 
 void UserInfoPopup::showNameHistoryMenu()

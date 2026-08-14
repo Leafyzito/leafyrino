@@ -9,28 +9,31 @@
 #include "messages/ImageSet.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/twitch/api/TwitchGql.hpp"
+#include "providers/twitch/TwitchChannel.hpp"
 #include "singletons/Fonts.hpp"
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
+#include "util/Twitch.hpp"
 #include "widgets/buttons/Button.hpp"
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/helper/Line.hpp"
 
 #include <pajlada/signals/signalholder.hpp>
 #include <QCursor>
-#include <QEnterEvent>
-#include <QEvent>
+#include <QDesktopServices>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPainter>
 #include <QPointer>
+#include <QPushButton>
 #include <QResizeEvent>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QShowEvent>
 #include <QTimer>
+#include <QUrl>
 #include <QVBoxLayout>
 
 #include <cmath>
@@ -94,12 +97,13 @@ bool badgeMatchesSearch(const GqlBadge &badge, const QString &needle)
 
 QString badgeTooltip(const GqlBadge &badge)
 {
-    if (badge.description.isEmpty() || badge.description == badge.title)
+    QString tip = badge.title;
+    if (!badge.description.isEmpty() && badge.description != badge.title)
     {
-        return badge.title;
+        tip += QChar('\n') + badge.description;
     }
-
-    return badge.title + QChar('\n') + badge.description;
+    tip += QStringLiteral("\nClick to open in Chat Vault");
+    return tip;
 }
 
 ImageSet badgeImages(const GqlBadge &badge)
@@ -153,7 +157,7 @@ ImageSet badgeImages(const GqlBadge &badge)
 }
 
 void paintBadgeTileBackground(QPainter &painter, const QRect &rect,
-                              bool underMouse)
+                              bool underMouse, bool isDown)
 {
     const auto *theme = getApp()->getThemes();
     auto bg = theme->splits.header.background;
@@ -164,21 +168,37 @@ void paintBadgeTileBackground(QPainter &painter, const QRect &rect,
         bg = theme->isLightTheme() ? bg.darker(105) : bg.lighter(115);
         border = theme->splits.header.focusedBorder;
     }
+    if (isDown)
+    {
+        bg = theme->isLightTheme() ? bg.darker(112) : bg.lighter(125);
+    }
 
     painter.setPen(QPen(border, 1));
     painter.setBrush(bg);
     painter.drawRoundedRect(rect, 3, 3);
 }
 
-class BadgeTileWidget final : public QWidget
+void paintBadgeTileFocusRing(QPainter &painter, const QRect &rect)
+{
+    auto focus = getApp()->getThemes()->window.text;
+    focus.setAlpha(200);
+    painter.setPen(QPen(focus, 1));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(rect.adjusted(1, 1, -1, -1), 3, 3);
+}
+
+class BadgeTileButton final : public QPushButton
 {
 public:
-    BadgeTileWidget(const GqlBadge &badge, QWidget *parent)
-        : QWidget(parent)
+    BadgeTileButton(const GqlBadge &badge, QWidget *parent)
+        : QPushButton(parent)
         , badge_(badge)
         , images_(badgeImages(badge))
     {
+        this->setCursor(Qt::PointingHandCursor);
+        this->setFocusPolicy(Qt::StrongFocus);
         this->setAttribute(Qt::WA_Hover, true);
+        this->setFlat(true);
         this->setFixedSize(BADGE_ICON_SIZE.width() + BADGE_TILE_PADDING * 2,
                            BADGE_ICON_SIZE.height() + BADGE_TILE_PADDING * 2);
         this->setToolTip(badgeTooltip(badge));
@@ -189,6 +209,11 @@ public:
             });
     }
 
+    const GqlBadge &badge() const
+    {
+        return this->badge_;
+    }
+
 protected:
     void paintEvent(QPaintEvent *) override
     {
@@ -197,7 +222,8 @@ protected:
         painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
         const auto rect = this->rect().adjusted(0, 0, -1, -1);
-        paintBadgeTileBackground(painter, rect, this->underMouse());
+        paintBadgeTileBackground(painter, rect, this->underMouse(),
+                                 this->isDown());
 
         const int pad = BADGE_TILE_PADDING;
         const QRect imgRect(pad, pad, rect.width() - pad * 2,
@@ -218,18 +244,11 @@ protected:
             painter.setPen(Qt::NoPen);
             painter.drawRoundedRect(imgRect, 2, 2);
         }
-    }
 
-    void enterEvent(QEnterEvent *event) override
-    {
-        QWidget::enterEvent(event);
-        this->update();
-    }
-
-    void leaveEvent(QEvent *event) override
-    {
-        QWidget::leaveEvent(event);
-        this->update();
+        if (this->hasFocus())
+        {
+            paintBadgeTileFocusRing(painter, rect);
+        }
     }
 
 private:
@@ -260,11 +279,13 @@ std::vector<QPointer<UserBadgesDialog>> UserBadgesDialog::activeDialogs_;
 
 UserBadgesDialog::UserBadgesDialog(const QString &userLogin,
                                    const QString &channelLogin,
-                                   const QString &displayName, QWidget *parent)
+                                   const QString &displayName,
+                                   TwitchChannel *channel, QWidget *parent)
     : DraggablePopup(true, parent)
     , userLogin_(userLogin)
     , channelLogin_(channelLogin)
     , displayName_(displayName.isEmpty() ? userLogin : displayName)
+    , channel_(channel)
 {
     this->setAttribute(Qt::WA_DeleteOnClose);
     this->setObjectName("UserBadgesDialog");
@@ -358,7 +379,8 @@ UserBadgesDialog::UserBadgesDialog(const QString &userLogin,
 
 void UserBadgesDialog::showDialog(const QString &userLogin,
                                   const QString &channelLogin,
-                                  const QString &displayName, QWidget *parent)
+                                  const QString &displayName,
+                                  TwitchChannel *channel, QWidget *parent)
 {
     if (userLogin.isEmpty() || channelLogin.isEmpty())
     {
@@ -376,6 +398,7 @@ void UserBadgesDialog::showDialog(const QString &userLogin,
             (*it)->channelLogin_.compare(channelLogin, Qt::CaseInsensitive) ==
                 0)
         {
+            (*it)->channel_ = channel;
             (*it)->raise();
             (*it)->activateWindow();
             (*it)->loadBadges(true);
@@ -384,8 +407,8 @@ void UserBadgesDialog::showDialog(const QString &userLogin,
         ++it;
     }
 
-    auto *dialog =
-        new UserBadgesDialog(userLogin, channelLogin, displayName, parent);
+    auto *dialog = new UserBadgesDialog(userLogin, channelLogin, displayName,
+                                        channel, parent);
     activeDialogs_.push_back(dialog);
 
     QPoint center = QCursor::pos();
@@ -584,7 +607,10 @@ void UserBadgesDialog::rebuildContent()
             continue;
         }
 
-        auto *tile = new BadgeTileWidget(badge, gridWidget);
+        auto *tile = new BadgeTileButton(badge, gridWidget);
+        QObject::connect(tile, &QPushButton::clicked, this, [this, badge] {
+            this->openBadgeInChatVault(badge);
+        });
         grid->addWidget(tile, row, col);
         if (++col >= gridColumns)
         {
@@ -673,6 +699,15 @@ void UserBadgesDialog::applySizeConstraints()
     {
         this->resize(std::max(this->width(), minW),
                      std::max(this->height(), minH));
+    }
+}
+
+void UserBadgesDialog::openBadgeInChatVault(const GqlBadge &badge)
+{
+    if (auto url =
+            chatVaultBadgeUrl(badge.setID, badge.version, this->channel_))
+    {
+        QDesktopServices::openUrl(QUrl(*url));
     }
 }
 

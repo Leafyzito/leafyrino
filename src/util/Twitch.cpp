@@ -4,9 +4,11 @@
 
 #include "util/Twitch.hpp"
 
+#include "providers/twitch/TwitchChannel.hpp"
 #include "util/QStringHash.hpp"
 
 #include <QDesktopServices>
+#include <QSet>
 #include <QUrl>
 
 #include <unordered_map>
@@ -189,6 +191,52 @@ std::optional<QString> helixColorNameFromDisplayHex(const QString &hex)
     }
 
     return std::nullopt;
+}
+
+std::optional<QString> chatVaultBadgeUrl(const QString &setID,
+                                         const QString &version,
+                                         const TwitchChannel *twitchChannel)
+{
+    const auto trimmedSetID = setID.trimmed();
+    if (trimmedSetID.isEmpty())
+    {
+        return std::nullopt;
+    }
+
+    QString path = trimmedSetID;
+
+    const auto trimmedVersion = version.trimmed();
+    if (!trimmedVersion.isEmpty())
+    {
+        path += QLatin1Char('/') + trimmedVersion;
+    }
+
+    if (twitchChannel != nullptr)
+    {
+        static const QSet<QString> globalBadges = {
+            "lead_moderator", "moderator", "vip", "broadcaster", "founder",
+        };
+        static const QSet<QString> channelBadges = {
+            "subscriber",
+            "bits",
+        };
+
+        if (!globalBadges.contains(trimmedSetID))
+        {
+            const bool needsChannel =
+                channelBadges.contains(trimmedSetID) ||
+                twitchChannel->twitchBadge(trimmedSetID, trimmedVersion)
+                    .has_value();
+
+            const auto roomId = twitchChannel->roomId();
+            if (!roomId.isEmpty() && needsChannel)
+            {
+                path += QLatin1Char('/') + roomId;
+            }
+        }
+    }
+
+    return QStringLiteral("https://chatvau.lt/badge/twitch/%1").arg(path);
 }
 
 }  // namespace chatterino

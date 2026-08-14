@@ -24,17 +24,20 @@ namespace chatterino {
 
 class Button;
 class SvgButton;
+class TwitchChannel;
 
 class UserBadgesDialog : public DraggablePopup
 {
 public:
     UserBadgesDialog(const QString &userLogin, const QString &channelLogin,
                      const QString &displayName = {},
+                     TwitchChannel *channel = nullptr,
                      QWidget *parent = nullptr);
 
     static void showDialog(const QString &userLogin,
                            const QString &channelLogin,
                            const QString &displayName = {},
+                           TwitchChannel *channel = nullptr,
                            QWidget *parent = nullptr);
 
 protected:
@@ -50,12 +53,14 @@ private:
     void refreshStyle();
     void setStatus(const QString &text, bool error = false);
     void applySizeConstraints();
+    void openBadgeInChatVault(const GqlBadge &badge);
     [[nodiscard]] int badgeGridColumns() const;
     [[nodiscard]] QString authTokenOrMessage();
 
     QString userLogin_;
     QString channelLogin_;
     QString displayName_;
+    TwitchChannel *channel_{};
 
     QVBoxLayout *mainLayout_{};
     QWidget *headerWidget_{};
