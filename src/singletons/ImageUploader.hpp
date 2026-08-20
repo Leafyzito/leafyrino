@@ -35,6 +35,7 @@ struct RawImageData {
     QByteArray data;
     QString format;
     QString filePath;
+    QString mimeType;
 };
 
 class ImageUploader final
