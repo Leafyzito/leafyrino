@@ -10,6 +10,8 @@
 #include <QUrlQuery>
 
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <optional>
 
 namespace chatterino {
@@ -17,6 +19,47 @@ namespace chatterino {
 namespace {
 
 constexpr int MAX_TRANSLATION_TEXT_LENGTH = 1200;
+
+const std::array<QString, 3> GOOGLE_TRANSLATE_CLIENTS{
+    QStringLiteral("dict-chrome-ex"),
+    QStringLiteral("gtx"),
+    QStringLiteral("at"),
+};
+
+std::atomic<int> currentGoogleTranslateClientIndex{0};
+
+int nextGoogleTranslateClientIndex(int failedIndex)
+{
+    return (failedIndex + 1) %
+           static_cast<int>(GOOGLE_TRANSLATE_CLIENTS.size());
+}
+
+int rotateStickyGoogleTranslateClient(int failedIndex)
+{
+    const auto next = nextGoogleTranslateClientIndex(failedIndex);
+    auto expected = failedIndex;
+    currentGoogleTranslateClientIndex.compare_exchange_strong(expected, next);
+    return next;
+}
+
+int loadStickyGoogleTranslateClientIndex()
+{
+    const auto size = static_cast<int>(GOOGLE_TRANSLATE_CLIENTS.size());
+    auto index = currentGoogleTranslateClientIndex.load();
+    if (index < 0 || index >= size)
+    {
+        currentGoogleTranslateClientIndex.store(0);
+        return 0;
+    }
+
+    return index;
+}
+
+bool shouldRotateGoogleTranslateClient(const NetworkResult &result)
+{
+    const auto status = result.status().value_or(0);
+    return status == 429 || status == 403;
+}
 
 std::optional<TranslationResult> parseGoogleTranslationResult(
     const NetworkResult &result)
@@ -51,6 +94,97 @@ std::optional<TranslationResult> parseGoogleTranslationResult(
         .translatedText = translated,
         .detectedLanguage = detectedLanguage,
     };
+}
+
+void executeGoogleTranslationRequest(
+    const QString &requestText, const QString &target, QObject *caller,
+    const TranslationSuccessCallback &onSuccess,
+    const TranslationErrorCallback &onError,
+    const TranslationFinishedCallback &onFinished, int clientIndex,
+    bool isRetry)
+{
+    QUrl url(
+        QStringLiteral("https://translate.googleapis.com/translate_a/single"));
+    QUrlQuery query;
+    query.addQueryItem(
+        QStringLiteral("client"),
+        GOOGLE_TRANSLATE_CLIENTS.at(static_cast<size_t>(clientIndex)));
+    query.addQueryItem(QStringLiteral("sl"), QStringLiteral("auto"));
+    query.addQueryItem(QStringLiteral("tl"), target);
+    query.addQueryItem(QStringLiteral("dt"), QStringLiteral("t"));
+    query.addQueryItem(QStringLiteral("q"), requestText);
+    url.setQuery(query);
+
+    auto request =
+        NetworkRequest(url)
+            .timeout(8000)
+            .onSuccess([requestText, target, caller, onSuccess, onError,
+                        onFinished, clientIndex,
+                        isRetry](const NetworkResult &result) {
+                const auto parsed = parseGoogleTranslationResult(result);
+                if (parsed.has_value())
+                {
+                    if (onSuccess)
+                    {
+                        onSuccess(*parsed);
+                    }
+                    if (onFinished)
+                    {
+                        onFinished();
+                    }
+                    return;
+                }
+
+                if (!isRetry)
+                {
+                    executeGoogleTranslationRequest(
+                        requestText, target, caller, onSuccess, onError,
+                        onFinished,
+                        rotateStickyGoogleTranslateClient(clientIndex), true);
+                    return;
+                }
+
+                if (onError)
+                {
+                    onError(QStringLiteral(
+                        "Translation failed: invalid response."));
+                }
+                if (onFinished)
+                {
+                    onFinished();
+                }
+            })
+            .onError([requestText, target, caller, onSuccess, onError,
+                      onFinished, clientIndex,
+                      isRetry](const NetworkResult &result) {
+                if (!isRetry && shouldRotateGoogleTranslateClient(result))
+                {
+                    executeGoogleTranslationRequest(
+                        requestText, target, caller, onSuccess, onError,
+                        onFinished,
+                        rotateStickyGoogleTranslateClient(clientIndex), true);
+                    return;
+                }
+
+                if (onError)
+                {
+                    onError(
+                        QStringLiteral("Translation failed: network error."));
+                }
+                if (onFinished)
+                {
+                    onFinished();
+                }
+            });
+
+    if (caller != nullptr)
+    {
+        std::move(request).caller(caller).execute();
+    }
+    else
+    {
+        std::move(request).execute();
+    }
 }
 
 }  // namespace
@@ -286,59 +420,9 @@ void requestTextTranslation(const QString &text, const QString &targetLanguage,
 
     const auto target = normalizedTranslationTargetLanguage(targetLanguage);
 
-    QUrl url(
-        QStringLiteral("https://translate.googleapis.com/translate_a/single"));
-    QUrlQuery query;
-    query.addQueryItem(QStringLiteral("client"), QStringLiteral("gtx"));
-    query.addQueryItem(QStringLiteral("sl"), QStringLiteral("auto"));
-    query.addQueryItem(QStringLiteral("tl"), target);
-    query.addQueryItem(QStringLiteral("dt"), QStringLiteral("t"));
-    query.addQueryItem(QStringLiteral("q"), requestText);
-    url.setQuery(query);
-
-    auto request =
-        NetworkRequest(url)
-            .timeout(8000)
-            .onSuccess([onSuccess, onError](const NetworkResult &result) {
-                const auto parsed = parseGoogleTranslationResult(result);
-                if (!parsed.has_value())
-                {
-                    if (onError)
-                    {
-                        onError(QStringLiteral(
-                            "Translation failed: invalid response."));
-                    }
-                    return;
-                }
-
-                if (onSuccess)
-                {
-                    onSuccess(*parsed);
-                }
-            })
-            .onError([onError](const NetworkResult &result) {
-                (void)result;
-                if (onError)
-                {
-                    onError(
-                        QStringLiteral("Translation failed: network error."));
-                }
-            })
-            .finally([onFinished] {
-                if (onFinished)
-                {
-                    onFinished();
-                }
-            });
-
-    if (caller != nullptr)
-    {
-        std::move(request).caller(caller).execute();
-    }
-    else
-    {
-        std::move(request).execute();
-    }
+    executeGoogleTranslationRequest(
+        requestText, target, caller, onSuccess, onError, onFinished,
+        loadStickyGoogleTranslateClientIndex(), false);
 }
 
 }  // namespace chatterino
