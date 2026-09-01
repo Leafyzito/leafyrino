@@ -527,6 +527,15 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             "When enabled, messages deleted by moderators will be hidden.")
         ->addTo(layout);
 
+    SettingWidget::checkbox("Hide message timestamps when channel is live",
+                            s.hideMessageTimestampsWhenLive)
+        ->addTo(layout);
+
+    SettingWidget::checkbox("Correct ASCII art wrapping", s.wrapAsciiArt)
+        ->setTooltip("Limit the width of messages containing ASCII art to "
+                     "match the width of Twitch web chat.")
+        ->addTo(layout);
+
     layout.addDropdown<QString>(
         "Message timestamp format",
         {"Disable", "h:mm", "hh:mm", "h:mm a", "hh:mm a", "h:mm:ss", "hh:mm:ss",
@@ -545,6 +554,18 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                                    : args.value;
         },
         true, "a = am/pm, zzz = milliseconds");
+
+    SettingWidget::checkbox("Show header timestamps", s.showHeaderTimestamps)
+        ->addTo(layout);
+
+    SettingWidget::checkbox("Show announcement header",
+                            s.showAnnouncementHeader)
+        ->addTo(layout);
+
+    SettingWidget::checkbox("Show subscription header",
+                            s.showSubscriptionHeader)
+        ->addTo(layout);
+
     layout.addDropdown<int>(
         "Limit message height",
         {"Never", "2 lines", "3 lines", "4 lines", "5 lines"},
@@ -1668,6 +1689,19 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->setTooltip(
             "If turned off, only messages from other participants have a "
             "shared chat badge")
+        ->addTo(layout);
+
+    SettingWidget::dropdown("Twitch read connection mode",
+                            s.twitchReadConnectionMode)
+        ->setTooltip("The read connection is the one where Chatterino joins a "
+                     "channel and listens to the messages.\n"
+                     "- Authenticated: Join as your logged in user.\n"
+                     "- Anonymous: Join as an anonymous user. This causes to "
+                     "you not show up in the viewer list.\n"
+                     "- Anonymous (parallel): Join as an anonymous user on "
+                     "multiple connections at once. This speeds up the "
+                     "connection phase when joining many channels. The other "
+                     "modes will join in delayed batches.")
         ->addTo(layout);
 
     layout.addStretch();

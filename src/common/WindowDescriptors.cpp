@@ -22,6 +22,8 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 
+#include <span>
+
 using namespace Qt::Literals;
 
 namespace chatterino {

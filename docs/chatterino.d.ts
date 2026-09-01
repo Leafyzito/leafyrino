@@ -199,7 +199,8 @@ declare namespace c2 {
         highlight_color: string | null;
         frozen: boolean;
         elements(): MessageElement[];
-        append_element(init: MessageElementInit): void;
+        append_element(init: MessageElementInit | MessageElement): void;
+        clone(): Message;
     }
 
     interface MessageConstructor {
@@ -456,6 +457,7 @@ declare namespace c2 {
         ChatWarning = 0,
         RepeatedMessage = 0,
         Follow = 0,
+        AsciiArt = 0,
     }
 
     enum MessageElementFlag {
@@ -552,6 +554,24 @@ declare namespace c2 {
         static from_unix_seconds(ts: number): DateTime;
         to_unix_milliseconds(): number;
         to_unix_seconds(): number;
+
+        is_local(): boolean;
+        is_utc(): boolean;
+        to_local(): DateTime;
+        to_utc(): DateTime;
+    }
+
+    class Menu {
+        add_action(text: string, cb: () => void): void;
+        insert_action(
+            before: string | number,
+            text: string,
+            cb: () => void
+        ): void;
+        add_menu(text: string): Menu;
+        insert_menu(before: string | number, text: string): Menu;
+        add_separator(): void;
+        insert_separator(before: string | number): void;
     }
 }
 

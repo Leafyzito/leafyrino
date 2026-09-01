@@ -197,7 +197,7 @@ public:
         getApp()->getPlugins()->openLibrariesFor(plugin);
     }
 
-    static std::map<QString, std::unique_ptr<Plugin>> &plugins()
+    static std::map<QString, AnyPlugin> &plugins()
     {
         return getApp()->getPlugins()->plugins_;
     }
@@ -955,6 +955,7 @@ TEST_F(PluginTest, MessageElementFlag)
     )lua");
 
     const char *VALUES = "AlwaysShow=0x2000000,"
+                         "AnnouncementHeader=0x8000000000,"
                          "BadgeBttv=0x40,"
                          "BadgeChannelAuthority=0x8000,"
                          "BadgeChatterino=0x40000,"
@@ -977,6 +978,7 @@ TEST_F(PluginTest, MessageElementFlag)
                          "EmojiText=0x1000000,"
                          "EmoteImage=0x10,"
                          "EmoteText=0x20,"
+                         "HeaderTimestamp=0x4000000000,"
                          "KickUsername=0x4000000000000,"
                          "LowercaseLinks=0x20000000,"
                          "Mention=0x8000000,"
@@ -986,6 +988,7 @@ TEST_F(PluginTest, MessageElementFlag)
                          "PlatformBadgeIfUnselected=0x10000000000000,"
                          "RepliedMessage=0x100000000,"
                          "ReplyButton=0x200000000,"
+                         "SubscriptionHeader=0x10000000000,"
                          "Text=0x2,"
                          "Timestamp=0x8,"
                          "Username=0x4";

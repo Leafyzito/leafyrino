@@ -1,15 +1,20 @@
+// SPDX-FileCopyrightText: 2018 Contributors to Chatterino <https://chatterino.com>
+//
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "common/Atomic.hpp"
 #include "common/Channel.hpp"
 #include "common/Common.hpp"
 #include "providers/irc/IrcConnection2.hpp"
+#include "providers/twitch/TwitchReadConnectionPool.hpp"
+#include "util/CancellationToken.hpp"
 #include "util/RatelimitBucket.hpp"
 
 #include <IrcMessage>
 #include <pajlada/signals/signal.hpp>
 #include <pajlada/signals/signalholder.hpp>
-#include <QRandomGenerator>
 
 #include <chrono>
 #include <functional>
@@ -80,6 +85,10 @@ public:
 
     virtual void initEventAPIs(BttvLiveUpdates *bttvLiveUpdates,
                                SeventvEventAPI *seventvEventAPI) = 0;
+
+    virtual bool isModeratorIn(const QString &broadcasterLogin) const = 0;
+
+    // Update this interface with TwitchIrcServer methods as needed
 };
 
 class TwitchIrcServer final : public ITwitchIrcServer, public QObject
@@ -113,12 +122,19 @@ public:
     void reloadAllFFZChannelEmotes();
     void reloadAllSevenTVChannelEmotes();
 
+    /** Calls `func` with all twitch channels that have `emoteSetId` added. */
     void forEachSeventvEmoteSet(const QString &emoteSetId,
                                 std::function<void(TwitchChannel &)> func);
-
+    /** Calls `func` with all twitch channels where the seventv-user-id is `userId`. */
     void forEachSeventvUser(const QString &userId,
                             std::function<void(TwitchChannel &)> func);
-
+    /**
+     * Checks if any channel still needs this `userID` or `emoteSetID`.
+     * If not, it unsubscribes from the respective messages.
+     *
+     * It's currently not possible to share emote sets among users,
+     * but it's a commonly requested feature.
+     */
     void dropSeventvChannel(const QString &userID,
                             const QString &emoteSetID) override;
 
@@ -126,6 +142,7 @@ public:
 
     void addGlobalSystemMessage(const QString &messageText) override;
 
+    // iteration
     void forEachChannel(std::function<void(ChannelPtr)> func) override;
 
     void connect() override;
@@ -144,7 +161,7 @@ public:
         const QString &dirtyChannelName) override;
     void reconnectAnonymousChannels() override;
 
-    void open(ConnectionType type);
+    bool isModeratorIn(const QString &broadcasterLogin) const override;
 
 private:
     Atomic<QString> lastUserThatWhisperedMe;
@@ -169,23 +186,19 @@ public:
     void initEventAPIs(BttvLiveUpdates *bttvLiveUpdates,
                        SeventvEventAPI *seventvEventAPI) override;
 
+    static void initializeConnection(IrcConnection *connection,
+                                     ConnectionType type);
+
 protected:
-    void initializeConnection(IrcConnection *connection, ConnectionType type);
     std::shared_ptr<Channel> createChannel(const QString &channelName,
                                            bool anonymous = false);
 
-    void privateMessageReceived(Communi::IrcPrivateMessage *message,
-                                bool anonymous = false);
-    void readConnectionMessageReceived(Communi::IrcMessage *message,
-                                       bool anonymous = false);
+    void privateMessageReceived(Communi::IrcPrivateMessage *message);
+    void readConnectionMessageReceived(Communi::IrcMessage *message);
     void writeConnectionMessageReceived(Communi::IrcMessage *message);
 
-    void onReadConnected(IrcConnection *connection);
     void onAnonymousReadConnected(IrcConnection *connection);
-    void onWriteConnected(IrcConnection *connection);
-    void onDisconnected();
     void onAnonymousDisconnected();
-    void markChannelsConnected();
     void markAnonymousChannelsConnected();
     void ensureAnonymousReadConnection();
 
@@ -200,20 +213,19 @@ private:
 
     bool prepareToSend(const std::shared_ptr<TwitchChannel> &channel);
 
+    void refreshModeratedChannels();
+    void applyModeratedChannelInfo();
+
     QMap<QString, std::weak_ptr<Channel>> channels;
     QMap<QString, std::weak_ptr<Channel>> anonymousChannels;
     std::mutex channelMutex;
 
     QObjectPtr<IrcConnection> writeConnection_ = nullptr;
-    QObjectPtr<IrcConnection> readConnection_ = nullptr;
+    QObjectPtr<TwitchReadConnectionPool> readConnection_ = nullptr;
     QObjectPtr<IrcConnection> anonymousReadConnection_ = nullptr;
     bool anonymousReadConnectionStarted_ = false;
 
-    QObjectPtr<RatelimitBucket> joinBucket_;
     QObjectPtr<RatelimitBucket> anonymousJoinBucket_;
-
-    QTimer reconnectTimer_;
-    int falloffCounter_ = 1;
 
     std::mutex connectionMutex_;
 
@@ -225,7 +237,8 @@ private:
     std::chrono::steady_clock::time_point lastErrorTimeSpeed_;
     std::chrono::steady_clock::time_point lastErrorTimeAmount_;
 
-    QRandomGenerator generator;
+    QSet</* login */ QString> moderatedChannels;
+    ScopedCancellationToken moderatedChannelFetchToken;
 };
 
 }  // namespace chatterino

@@ -353,6 +353,29 @@ function c2.DateTime:to_unix_milliseconds() end
 ---Convert a datetime to a Unix timestamp (offset from 1970-01-01 00:00 UTC) in seconds.
 ---@return number
 function c2.DateTime:to_unix_seconds() end
+
+---Check if the datetime is a local time.
+---
+---Local times are represented without a timezone.
+---Whenever the timezone is needed (e.g. for comparison) it is queried from the system.
+---This is distinct from a date time with your system timezone.
+---@return boolean
+function c2.DateTime:is_local() end
+
+---Check if the datetime is in UTC.
+---@return boolean
+function c2.DateTime:is_utc() end
+
+---Returns a copy of this datetime converted to the user's local timezone.
+---
+---Local time is represented without a timezone.
+---That is `1970-01-01T00:00:00` is a local time but `1970-01-01T00:00:00Z` is not.
+---@return c2.DateTime
+function c2.DateTime:to_local() end
+
+---Returns a copy of this datetime converted to UTC.
+---@return c2.DateTime
+function c2.DateTime:to_utc() end
 -- End src/controllers/plugins/api/DateTime.hpp
 
 -- Begin src/controllers/plugins/api/HTTPResponse.hpp
@@ -438,6 +461,49 @@ function c2.HTTPRequest.create(method, url) end
 
 -- End src/controllers/plugins/api/HTTPRequest.hpp
 
+-- Begin src/controllers/plugins/api/Menu.hpp
+
+
+---A generic menu used for context menus.
+---@class c2.Menu
+c2.Menu = {}
+
+---Appends a new action to the menu.
+---@param text string
+---@param cb fun()
+function c2.Menu:add_action(text, cb) end
+
+---Inserts an action named `text` before `before`. If `before` is not found,
+---the action is inserted at the end. `before` can either be a name or a
+---one-based index.
+---@param before string|integer A name or index of an action.
+---@param text string
+---@param cb fun()
+function c2.Menu:insert_action(before, text, cb) end
+
+---Appends a new Menu with `title` to the menu.
+---@param title string
+---@return c2.Menu
+function c2.Menu:add_menu(title) end
+
+---Inserts a new Menu named `title` before `before`. If `before` is not found,
+---the menu is inserted at the end. `before` can either be a name or a one-based
+---index.
+---@param before string|integer A name or index of an action.
+---@param title string
+function c2.Menu:insert_menu(before, title) end
+
+---Appends a new separator.
+function c2.Menu:add_separator() end
+
+---Inserts a new separator before `before`. If `before` is not found,
+---the separator is inserted at the end. `before` can either be a name or a
+---one-based index.
+---@param before string|integer A name or index of an action.
+function c2.Menu:insert_separator(before) end
+-- End src/controllers/plugins/api/Menu.hpp
+
+
 -- Begin src/controllers/plugins/api/Message.hpp
 
 
@@ -446,9 +512,14 @@ function c2.HTTPRequest.create(method, url) end
 ---@field flags c2.MessageElementFlag The element's flags
 ---@field tooltip string The tooltip (if any)
 ---@field trailing_space boolean Whether to add a trailing space after the element
+---@field exhaustive_flags boolean Whether the element checks all of its flags for existence when performing a layout
 ---@field link c2.Link An action when clicking on this element. Mention and Link elements don't support this. They manage the link themselves.
 c2.MessageElementBase = {}
 -- ^^^ this is kinda fake - this table doesn't exist in Lua, we only declare it to add methods
+
+--- Returns the pretty-printed JSON representation of the element.
+--- This is meant for debugging and is subject to change.
+function c2.MessageElementBase:to_json() end
 
 --- Add flags to this element
 ---
@@ -460,6 +531,7 @@ function c2.MessageElementBase:add_flags(flags) end
 ---@field tooltip? string Tooltip text
 ---@field trailing_space? boolean Whether to add a trailing space after the element (default: true)
 ---@field link? c2.Link An action when clicking on this element. Mention and Link elements don't support this. They manage the link themselves.
+---@field exhaustive_flags? boolean Whether this message should only be laid out if all its flags exist in the message layout context.
 
 ---@class c2.TextElement : c2.MessageElementBase
 ---@field type "text"
@@ -595,6 +667,10 @@ function c2.Message:elements() end
 ---@param init MessageElementInit The element to add
 function c2.Message:append_element(init) end
 
+---Returns an identical, non-frozen message, independent from this one.
+---@return c2.Message
+function c2.Message:clone() end
+
 ---A table to initialize a new message
 ---@class MessageInit
 ---@field flags? c2.MessageFlag Message flags (see `c2.MessageFlags`)
@@ -696,6 +772,9 @@ c2.MessageElementFlag = {
     KickUsername = 0,
     PlatformBadgeAlways = 0,
     PlatformBadgeIfUnselected = 0,
+    HeaderTimestamp = 0,
+    AnnouncementHeader = 0,
+    SubscriptionHeader = 0,
     Default = 0,
 }
 
@@ -754,6 +833,7 @@ c2.MessageFlag = {
     ChatWarning = 0,
     RepeatedMessage = 0,
     Follow = 0,
+    AsciiArt = 0,
 }
 
 -- End src/messages/MessageFlag.hpp

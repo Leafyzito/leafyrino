@@ -5,6 +5,7 @@
 #include "util/StreamLink.hpp"
 
 #include "Application.hpp"
+#include "common/LinkParser.hpp"
 #include "common/QLogging.hpp"
 #include "common/Version.hpp"
 #include "singletons/Settings.hpp"
@@ -153,12 +154,12 @@ void getStreamQualities(const QString &channelURL,
     p->start();
 }
 
-void openStreamlink(const QString &channelURL, const QString &quality,
+void openStreamlink(const QString &url, const QString &quality,
                     QStringList extraArguments)
 {
     auto *proc = createStreamlinkProcess();
     auto arguments = proc->arguments()
-                     << std::move(extraArguments) << channelURL << quality;
+                     << std::move(extraArguments) << url << quality;
 
     arguments.removeAll(QString());
 
@@ -174,7 +175,8 @@ void openStreamlink(const QString &channelURL, const QString &quality,
     }
 }
 
-void openStreamlinkForChannel(const QString &channel, QStringView prefixURL)
+void openStreamlinkForChannelOrUrl(const QString &channelOrUrl,
+                                   QStringView prefixURL)
 {
     static const QString INFO_TEMPLATE("Opening %1 in Streamlink ...");
 
@@ -189,18 +191,26 @@ void openStreamlinkForChannel(const QString &channel, QStringView prefixURL)
         if (currentSplit != nullptr)
         {
             currentSplit->getChannel()->addSystemMessage(
-                INFO_TEMPLATE.arg(channel));
+                INFO_TEMPLATE.arg(channelOrUrl));
         }
     }
 
-    QString channelURL = prefixURL % channel;
+    QString url;
+    if (linkparser::parse(channelOrUrl).has_value())
+    {
+        url = channelOrUrl;
+    }
+    else
+    {
+        url = prefixURL % channelOrUrl;
+    }
 
     auto preferredQuality = getSettings()->preferredQuality.getEnum();
 
     if (preferredQuality == StreamLinkPreferredQuality::Choose)
     {
-        getStreamQualities(channelURL, [=](QStringList qualityOptions) {
-            QualityPopup::showDialog(channelURL, qualityOptions);
+        getStreamQualities(url, [=](QStringList qualityOptions) {
+            QualityPopup::showDialog(url, qualityOptions);
         });
 
         return;
@@ -240,7 +250,7 @@ void openStreamlinkForChannel(const QString &channel, QStringView prefixURL)
         args << "--stream-sorting-excludes" << exclude;
     }
 
-    openStreamlink(channelURL, quality, args);
+    openStreamlink(url, quality, args);
 }
 
 }  // namespace chatterino

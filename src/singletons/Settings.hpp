@@ -124,6 +124,12 @@ enum class SplitMpsWindow : std::uint8_t {
     Seconds10,
 };
 
+enum class TwitchReadConnectionMode : uint8_t {
+    Authenticated,
+    Anonymous,
+    AnonymousParallel,
+};
+
 constexpr std::optional<std::string_view> qmagicenumDisplayName(
     EmoteTooltipScale value) noexcept
 {
@@ -206,6 +212,23 @@ constexpr int splitMpsWindowSeconds(SplitMpsWindow window) noexcept
     return 5;
 }
 
+constexpr std::optional<std::string_view> qmagicenumDisplayName(
+    TwitchReadConnectionMode value) noexcept
+{
+    switch (value)
+    {
+        case TwitchReadConnectionMode::Authenticated:
+            return "Authenticated (default)";
+
+        case TwitchReadConnectionMode::Anonymous:
+            return {};
+
+        case TwitchReadConnectionMode::AnonymousParallel:
+            return "Anonymous (parallel)";
+    }
+    return {};
+}
+
 struct SettingsArgs {
     bool isTest = false;
     bool runMigrations = true;
@@ -269,8 +292,22 @@ public:
 
     /// Appearance
     BoolSetting showTimestamps = {"/appearance/messages/showTimestamps", true};
+    BoolSetting showHeaderTimestamps = {
+        "/appearance/messages/header/showTimestamps",
+        false,
+    };
+    BoolSetting showAnnouncementHeader = {
+        "/appearance/messages/announcements/showHeader",
+        true,
+    };
+    BoolSetting showSubscriptionHeader = {
+        "/appearance/messages/subscriptions/showHeader",
+        true,
+    };
     BoolSetting animationsWhenFocused = {
         "/appearance/enableAnimationsWhenFocused", false};
+    BoolSetting hideMessageTimestampsWhenLive = {
+        "/appearance/messages/hideMessageTimestampsWhenLive", false};
     QStringSetting timestampFormat = {"/appearance/messages/timestampFormat",
                                       "h:mm"};
     BoolSetting showLastMessageIndicator = {
@@ -290,6 +327,10 @@ public:
                                      false};
     EnumSetting<MessageOverflow> messageOverflow = {
         "/appearance/messages/messageOverflow", MessageOverflow::Highlight};
+    BoolSetting wrapAsciiArt = {
+        "/appearance/messages/wrapAsciiArt",
+        false,
+    };
     BoolSetting separateMessages = {"/appearance/messages/separateMessages",
                                     false};
     BoolSetting fadeMessageHistory = {"/appearance/messages/fadeMessageHistory",
@@ -937,6 +978,10 @@ public:
     };
     BoolSetting displaySevenTVAnimatedProfile = {
         "/misc/displaySevenTVAnimatedProfile", true};
+
+    EnumStringSetting<TwitchReadConnectionMode> twitchReadConnectionMode = {
+        "/misc/x-7tv/twitchReadConnectionMode",
+        TwitchReadConnectionMode::Authenticated};
 
     EnumStringSetting<ChatSendProtocol> chatSendProtocol = {
         "/misc/chatSendProtocol", ChatSendProtocol::Default};

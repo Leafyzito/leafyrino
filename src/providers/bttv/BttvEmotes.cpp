@@ -6,6 +6,7 @@
 
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
+#include "common/network/RetryingGet.hpp"
 #include "common/Outcome.hpp"
 #include "common/QLogging.hpp"
 #include "messages/Emote.hpp"
@@ -208,7 +209,7 @@ std::shared_ptr<const EmoteMap> BttvEmotes::emotes() const
     return this->global_.get();
 }
 
-std::optional<EmotePtr> BttvEmotes::emote(const EmoteName &name) const
+std::optional<EmotePtr> BttvEmotes::emote(EmoteNameView name) const
 {
     auto emotes = this->global_.get();
     auto it = emotes->find(name);
@@ -268,10 +269,10 @@ void BttvEmotes::loadChannel(std::weak_ptr<Channel> channel,
                              std::function<void(EmoteMap &&)> callback,
                              bool manualRefresh, bool cacheHit)
 {
-    NetworkRequest(QString(bttvChannelEmoteApiUrl) + channelId)
-        .timeout(20000)
-        .onSuccess([callback = std::move(callback), channel, channelId,
-                    channelDisplayName, manualRefresh](auto result) {
+    network::fetchWithBackoff(
+        QString(bttvChannelEmoteApiUrl) + channelId,
+        [callback = std::move(callback), channel, channelId, channelDisplayName,
+         manualRefresh](auto result) {
             auto emotes =
                 parseChannelEmotes(result.parseJson(), channelDisplayName);
             bool hasEmotes = !emotes.empty();
@@ -290,8 +291,8 @@ void BttvEmotes::loadChannel(std::weak_ptr<Channel> channel,
                     shared->addSystemMessage(CHANNEL_HAS_NO_EMOTES);
                 }
             }
-        })
-        .onError([channelId, channel, manualRefresh, cacheHit](auto result) {
+        },
+        [channelId, channel, manualRefresh, cacheHit](auto result) {
             auto shared = channel.lock();
             if (!shared)
             {
@@ -321,8 +322,8 @@ void BttvEmotes::loadChannel(std::weak_ptr<Channel> channel,
                         "Using cached BetterTTV emotes as fallback.");
                 }
             }
-        })
-        .execute();
+        },
+        20000);
 }
 
 EmotePtr BttvEmotes::addEmote(

@@ -71,7 +71,7 @@ public:
     /// Expanded pinned-message preview, or nullptr if unavailable.
     MessageView *pinnedExpandedMessageView() const;
 
-    IndirectChannel getIndirectChannel();
+    IndirectChannel getIndirectChannel() const;
     ChannelPtr getChannel() const;
     ChannelPtr getSelectedChannel() const;
     void setChannel(IndirectChannel newChannel);

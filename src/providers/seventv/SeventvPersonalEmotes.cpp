@@ -194,7 +194,7 @@ QList<std::shared_ptr<const EmoteMap>>
 }
 
 EmotePtr SeventvPersonalEmotes::getEmoteForTwitchUser(
-    const QString &userID, const EmoteName &emoteName) const
+    const QString &userID, EmoteNameView emoteName) const
 {
     std::shared_lock<std::shared_mutex> lock(this->mutex_);
     if (!this->enabled_)
@@ -212,7 +212,7 @@ EmotePtr SeventvPersonalEmotes::getEmoteForTwitchUser(
 }
 
 EmotePtr SeventvPersonalEmotes::getEmoteForKickUser(
-    uint64_t userID, const EmoteName &emoteName) const
+    uint64_t userID, EmoteNameView emoteName) const
 {
     std::shared_lock<std::shared_mutex> lock(this->mutex_);
     if (!this->enabled_)
@@ -264,7 +264,7 @@ QList<std::shared_ptr<const EmoteMap>> SeventvPersonalEmotes::collectEmoteSets(
 }
 
 EmotePtr SeventvPersonalEmotes::findInEmoteSets(
-    std::span<const QString> emoteSetIDs, const EmoteName &name) const
+    std::span<const QString> emoteSetIDs, EmoteNameView name) const
 {
     for (const auto &id : emoteSetIDs)
     {

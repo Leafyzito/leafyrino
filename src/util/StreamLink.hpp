@@ -24,12 +24,21 @@ constexpr inline QStringView STREAMLINK_BINARY_NAME = u"streamlink.exe";
 constexpr inline QStringView STREAMLINK_BINARY_NAME = u"streamlink";
 #endif
 
-void openStreamlink(const QString &channelURL, const QString &quality,
+// Open streamlink for given url, quality and extra arguments
+// the "Additional arguments" are fetched and added at the beginning of the
+// streamlink call
+void openStreamlink(const QString &url, const QString &quality,
                     QStringList extraArguments = QStringList());
 
-// Start opening streamlink for the given channel, reading settings like quality
+// Start opening streamlink for the given channel or url, reading settings like quality
 // from settings and opening a quality dialog if the quality is "Choose"
-void openStreamlinkForChannel(const QString &channel,
-                              QStringView prefixURL = u"twitch.tv/");
+void openStreamlinkForChannelOrUrl(const QString &channelOrUrl,
+                                   QStringView prefixURL = u"twitch.tv/");
+
+inline void openStreamlinkForChannel(const QString &channel,
+                                     QStringView prefixURL = u"twitch.tv/")
+{
+    openStreamlinkForChannelOrUrl(channel, prefixURL);
+}
 
 }  // namespace chatterino

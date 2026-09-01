@@ -83,6 +83,8 @@ enum class MessageFlag : std::int64_t {
     ChatWarning = (1LL << 46),
     RepeatedMessage = (1LL << 47),
     Follow = (1LL << 48),
+    /// The message was detected as ASCII art and has its layout width limited to the default web chat width.
+    AsciiArt = (1LL << 49),
 };
 using MessageFlags = FlagsEnum<MessageFlag>;
 
