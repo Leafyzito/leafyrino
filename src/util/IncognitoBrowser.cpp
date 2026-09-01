@@ -5,9 +5,9 @@
 #include "util/IncognitoBrowser.hpp"
 #ifdef USEWINSDK
 #    include "util/WindowsHelper.hpp"
-#elif defined(Q_OS_UNIX) and !defined(Q_OS_DARWIN)
+#elif defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
 #    include "util/XDGHelper.hpp"
-#elifdef Q_OS_DARWIN
+#elif defined(Q_OS_DARWIN)
 #    include "util/MacOsHelpers.h"
 #endif
 
@@ -56,7 +56,7 @@ QString getDefaultBrowserExecutable()
     }();
 
     return defaultBrowser;
-#elifdef Q_OS_DARWIN
+#elif defined(Q_OS_DARWIN)
     return getMacOSDefaultBrowserPath();
 #else
     return {};
