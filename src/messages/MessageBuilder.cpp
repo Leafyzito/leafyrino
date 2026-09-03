@@ -2265,11 +2265,11 @@ bool MessageBuilder::tryAddGif(Communi::TagsRef tags, QStringView content)
 
     if (content.startsWith(u'['))
     {
-        content.slice(1);
+        content = content.sliced(1);
     }
     if (content.endsWith(u']'))
     {
-        content.slice(0, content.size() - 1);
+        content = content.sliced(0, content.size() - 1);
     }
     QString baseLink = link.toString();
     QString link100 = baseLink.replace("giphy.gif"_L1, "100.webp"_L1);
