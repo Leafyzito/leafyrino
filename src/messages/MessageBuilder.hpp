@@ -6,6 +6,7 @@
 #include "messages/MessageColor.hpp"
 #include "messages/MessageElement.hpp"
 #include "messages/MessageFlag.hpp"
+#include "messages/MessageParseArgs.hpp"
 #include "singletons/Fonts.hpp"
 
 #include <IrcMessage>
@@ -75,17 +76,6 @@ const ImageUploaderResultTag imageUploaderResultMessage{};
 
 MessagePtr makeSystemMessage(const QString &text);
 MessagePtr makeSystemMessage(const QString &text, const QTime &time);
-
-struct MessageParseArgs {
-    bool disablePingSounds = false;
-    bool isReceivedWhisper = false;
-    bool isSentWhisper = false;
-    bool trimSubscriberUsername = false;
-    bool isSubscriptionMessage = false;
-    bool allowIgnore = true;
-    bool isAction = false;
-    QString channelPointRewardId = "";
-};
 
 struct HighlightAlert {
     QUrl customSound;
@@ -293,6 +283,8 @@ private:
     void addTextOrEmote(TextState &state, QString string,
                         FontStyle style = FontStyle::ChatMedium);
 
+    bool tryAddGif(Communi::TagsRef tags, QStringView content);
+
     Outcome tryAppendCheermote(TextState &state, const QString &string);
     Outcome tryAppendEmote(TwitchChannel *twitchChannel, const QString &userID,
                            EmoteNameView name);
@@ -307,6 +299,11 @@ private:
                        TwitchChannel *twitchChannel,
                        bool trimSubscriberUsername);
     void parseMessageID(Communi::TagsRef tags);
+    void appendOrEmplaceTextWithUser(
+        TwitchChannel *channel, const QString &userID,
+        const QString &userLoginName, const QString &userDisplayName,
+        const QString &userColorString, const QString &messageText,
+        MessageElementFlags mentionFlags, MessageElementFlags textFlags);
     /// Parses most of the message flags based on the given tags
     void parseMessageTags(Communi::TagsRef tags, TwitchChannel *channel,
                           bool hasContent);

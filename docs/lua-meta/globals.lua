@@ -769,12 +769,13 @@ c2.MessageElementFlag = {
     LowercaseLinks = 0,
     RepliedMessage = 0,
     ReplyButton = 0,
-    KickUsername = 0,
-    PlatformBadgeAlways = 0,
-    PlatformBadgeIfUnselected = 0,
     HeaderTimestamp = 0,
     AnnouncementHeader = 0,
     SubscriptionHeader = 0,
+    WatchStreakHeader = 0,
+    KickUsername = 0,
+    PlatformBadgeAlways = 0,
+    PlatformBadgeIfUnselected = 0,
     Default = 0,
 }
 
