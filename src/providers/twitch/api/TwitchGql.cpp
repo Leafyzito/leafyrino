@@ -5465,6 +5465,12 @@ void TwitchGql::getChatSettingsBadges(
             badges.authorityBadges = badgesFromArray(
                 userSelf.value("availableChannelAuthorityBadges").toArray());
 
+            if (!userSelf.value("selectedChannelAuthorityBadge").isNull())
+            {
+                badges.selectedAuthorityBadge = badgeFromJson(
+                    userSelf.value("selectedChannelAuthorityBadge").toObject());
+            }
+
             badges.useCustomChannelBadge =
                 !userSelf.value("selectedBadge").isNull() &&
                 !userSelf.value("selectedBadge")
@@ -5600,6 +5606,53 @@ void TwitchGql::deselectChannelBadge(
                 }
                 successCallback();
             })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void TwitchGql::selectRoleBadge(
+    const QString &badgeSetID, const QString &badgeSetVersion,
+    const QString &channelID, const QString &oauthToken,
+    std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject input;
+    input.insert("badgeSetID", badgeSetID);
+    input.insert("badgeSetVersion", badgeSetVersion);
+    input.insert("channelID", channelID);
+
+    QJsonObject variables;
+    variables.insert("input", input);
+
+    makePersistedGqlRequest(
+        "ChatSettings_SelectRoleBadge",
+        "8995a08e2fb92ed29a200e7aa75c4bb90941c2a5fb6a9ea6569377d2e5ef43b6",
+        variables, oauthToken)
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            const auto gqlError = extractFirstGqlErrorMessage(root);
+            if (!gqlError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + gqlError);
+                return;
+            }
+
+            const auto isSuccessful = payloadDataObject(root)
+                                          .value("selectChannelAuthorityBadge")
+                                          .toObject()
+                                          .value("isSuccessful")
+                                          .toBool();
+            if (!isSuccessful)
+            {
+                failureCallback("Badge selection failed");
+                return;
+            }
+
+            successCallback();
+        })
         .onError([failureCallback](const NetworkResult &result) {
             failureCallback("Network Error: " + result.formatError());
         })

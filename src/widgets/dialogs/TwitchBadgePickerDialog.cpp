@@ -607,6 +607,46 @@ std::vector<BadgePreviewFallback> toBadgePreviewFallbacks(
     return result;
 }
 
+const GqlBadge *findAuthorityBadge(const QVector<GqlBadge> &badges,
+                                   const QString &setID)
+{
+    for (const auto &badge : badges)
+    {
+        if (badge.setID.compare(setID, Qt::CaseInsensitive) == 0)
+        {
+            return &badge;
+        }
+    }
+
+    return nullptr;
+}
+
+bool isLeadModeratorSet(const QString &setID)
+{
+    return setID.compare(QStringLiteral("lead_moderator"),
+                         Qt::CaseInsensitive) == 0;
+}
+
+bool hasLeadModeratorChoice(const GqlChatSettingsBadges &badgeState)
+{
+    return findAuthorityBadge(badgeState.authorityBadges,
+                              QStringLiteral("lead_moderator")) != nullptr &&
+           findAuthorityBadge(badgeState.authorityBadges,
+                              QStringLiteral("moderator")) != nullptr;
+}
+
+bool usesLeadModeratorBadge(const GqlChatSettingsBadges &badgeState)
+{
+    if (!badgeState.selectedAuthorityBadge.setID.isEmpty())
+    {
+        return isLeadModeratorSet(badgeState.selectedAuthorityBadge.setID);
+    }
+
+    // Twitch defaults lead mods to the hammer badge.
+    return findAuthorityBadge(badgeState.authorityBadges,
+                              QStringLiteral("lead_moderator")) != nullptr;
+}
+
 std::vector<TwitchBadge> collectPreviewBadges(
     const GqlChatSettingsBadges &badgeState, TwitchChannel *channel,
     const QString &userId)
@@ -623,9 +663,26 @@ std::vector<TwitchBadge> collectPreviewBadges(
         badges.emplace_back(setID, version);
     };
 
-    for (const auto &badge : badgeState.authorityBadges)
+    if (!badgeState.selectedAuthorityBadge.setID.isEmpty())
     {
-        addBadge(badge.setID, badge.version);
+        addBadge(badgeState.selectedAuthorityBadge.setID,
+                 badgeState.selectedAuthorityBadge.version);
+    }
+    else
+    {
+        const auto *leadBadge = findAuthorityBadge(
+            badgeState.authorityBadges, QStringLiteral("lead_moderator"));
+        if (leadBadge != nullptr)
+        {
+            addBadge(leadBadge->setID, leadBadge->version);
+        }
+        else
+        {
+            for (const auto &badge : badgeState.authorityBadges)
+            {
+                addBadge(badge.setID, badge.version);
+            }
+        }
     }
 
     if (channel != nullptr)
@@ -680,6 +737,7 @@ std::unordered_map<QString, GqlBadge> gqlBadgeLookup(
     {
         add(badge);
     }
+    add(badgeState.selectedAuthorityBadge);
     add(badgeState.selectedGlobalBadge);
     add(badgeState.selectedChannelBadge);
 
@@ -1286,6 +1344,31 @@ void TwitchBadgePickerDialog::rebuildChannelBadges()
         this->contentLayout_->addWidget(
             makeSettingRow("Badge Flair for Tier 2 and 3 Subscriptions",
                            flairButton, this->contentWidget_, scale));
+    }
+
+    if (hasLeadModeratorChoice(this->badges_))
+    {
+        auto *leadModButton = new BadgePickerToggleSwitch(this->contentWidget_);
+        leadModButton->setChecked(usesLeadModeratorBadge(this->badges_));
+        leadModButton->setEnabled(!this->actionInFlight_);
+        leadModButton->updateMetrics(scale);
+
+        QObject::connect(leadModButton, &QPushButton::clicked, this,
+                         [this](bool checked) {
+                             const auto *badge = findAuthorityBadge(
+                                 this->badges_.authorityBadges,
+                                 checked ? QStringLiteral("lead_moderator")
+                                         : QStringLiteral("moderator"));
+                             if (badge == nullptr)
+                             {
+                                 return;
+                             }
+                             this->selectRole(*badge);
+                         });
+
+        this->contentLayout_->addWidget(
+            makeSettingRow("Lead Moderator Badge", leadModButton,
+                           this->contentWidget_, scale));
     }
 
     if (available.isEmpty())
@@ -2081,6 +2164,42 @@ void TwitchBadgePickerDialog::selectChannel(const GqlBadge &badge)
             self->setStatus(
                 MoltorinoAuth::normalizeAuthError("selecting badge", error),
                 true);
+            self->rebuildContent();
+        });
+}
+
+void TwitchBadgePickerDialog::selectRole(const GqlBadge &badge)
+{
+    const auto token = this->authTokenOrMessage();
+    if (token.isEmpty())
+        return;
+
+    this->badges_.selectedAuthorityBadge = badge;
+    this->actionInFlight_ = true;
+    this->rebuildContent();
+    this->updatePreview();
+
+    QPointer<TwitchBadgePickerDialog> self = this;
+    const auto channelId = this->channel_->roomId();
+
+    TwitchGql::selectRoleBadge(
+        badge.setID, badge.version, channelId, token,
+        [self, badge] {
+            if (!self)
+                return;
+            self->actionInFlight_ = false;
+            self->badges_.selectedAuthorityBadge = badge;
+            self->channel_->addSystemMessage(
+                QStringLiteral("Role badge set to: %1").arg(badge.title));
+            self->rebuildContent();
+        },
+        [self](const QString &error) {
+            if (!self)
+                return;
+            self->actionInFlight_ = false;
+            self->setStatus(MoltorinoAuth::normalizeAuthError(
+                                "selecting role badge", error),
+                            true);
             self->rebuildContent();
         });
 }

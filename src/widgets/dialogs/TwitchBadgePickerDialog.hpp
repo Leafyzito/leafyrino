@@ -78,6 +78,7 @@ private:
     void setStatus(const QString &text, bool error = false);
     void selectGlobal(const GqlBadge &badge);
     void selectChannel(const GqlBadge &badge);
+    void selectRole(const GqlBadge &badge);
     void selectColor(const QString &color);
     QString authTokenOrMessage();
     void applySizeConstraints();

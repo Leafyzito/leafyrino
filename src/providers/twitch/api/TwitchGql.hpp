@@ -146,6 +146,7 @@ struct GqlChatSettingsBadges {
     GqlBadge selectedChannelBadge;
     QVector<GqlBadge> availableChannel;
     QVector<GqlBadge> authorityBadges;
+    GqlBadge selectedAuthorityBadge;
     bool useCustomChannelBadge = false;
     bool isBadgeModifierHidden = false;
     int subscriptionTier = 0;  //(1000=T1, 2000=T2, 3000=T3)
@@ -441,6 +442,10 @@ void selectChannelBadge(const QString &badgeSetID,
 void deselectChannelBadge(const QString &channelID, const QString &oauthToken,
                           std::function<void()> successCallback,
                           std::function<void(const QString &)> failureCallback);
+void selectRoleBadge(const QString &badgeSetID, const QString &badgeSetVersion,
+                     const QString &channelID, const QString &oauthToken,
+                     std::function<void()> successCallback,
+                     std::function<void(const QString &)> failureCallback);
 void setBadgeModifierHidden(
     bool hidden, const QString &oauthToken,
     std::function<void(bool)> successCallback,
