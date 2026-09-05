@@ -15,10 +15,18 @@
 
 namespace chatterino {
 class PluginController;
-}
+}  // namespace chatterino
 
 namespace chatterino::lua::api {
+// NOLINTBEGIN(readability-identifier-naming)
 
+/**
+ * @lua@alias c2.HTTPCallback fun(result: c2.HTTPResponse): nil
+ */
+
+/**
+ * @lua@class c2.HTTPRequest
+ */
 class HTTPRequest : public std::enable_shared_from_this<HTTPRequest>
 {
     struct ConstructorAccessTag {

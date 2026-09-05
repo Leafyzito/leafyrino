@@ -19,30 +19,75 @@
 
 struct lua_State;
 namespace chatterino::lua::api {
+// function names in this namespace reflect what's visible inside Lua and follow the lua naming scheme
 
+// NOLINTBEGIN(readability-identifier-naming)
+// Following functions are exposed in c2 table.
+
+// Comments in this file are special, the docs/plugin-meta.lua file is generated from them
+// All multiline comments will be added into that file. See scripts/make_luals_meta.py script for more info.
+
+/**
+ * @exposeenum c2.LogLevel
+ */
+// Represents "calls" to qCDebug, qCInfo ...
 enum class LogLevel { Debug, Info, Warning, Critical };
 
+/**
+ * @includefile controllers/plugins/api/EventType.hpp
+ */
+
+/**
+ * @lua@class CommandContext
+ * @lua@field words string[] The words typed when executing the command. For example `/foo bar baz` will result in `{"/foo", "bar", "baz"}`.
+ * @lua@field channel c2.Channel The channel the command was executed in.
+ */
+
+/**
+ * @lua@class CompletionList
+ */
 struct CompletionList {
     CompletionList(const sol::table &);
 
+    /**
+     * @lua@field values string[] The completions
+     */
     QStringList values;
 
+    /**
+     * @lua@field hide_others boolean Whether other completions from Chatterino should be hidden/ignored.
+     */
     bool hideOthers{};
 };
 
+/**
+ * @lua@class CompletionEvent
+ */
 struct CompletionEvent {
+    /**
+     * @lua@field query string The word being completed
+     */
     QString query;
-
+    /**
+     * @lua@field full_text_content string Content of the text input
+     */
     QString full_text_content;
-
+    /**
+     * @lua@field cursor_position integer Position of the cursor in the text input in unicode codepoints (not bytes)
+     */
     int cursor_position{};
-
+    /**
+     * @lua@field is_first_word boolean True if this is the first word in the input
+     */
     bool is_first_word{};
 };
 
 sol::table toTable(lua_State *L, const CompletionEvent &ev);
 
 /* @lua-fragment
+
+---@alias QSize [integer, integer] A pair of [width, height]
+---@alias QSizeF [number, number] A pair of [width, height]
 */
 
 /**
@@ -78,15 +123,32 @@ sol::table toTable(lua_State *L, const CompletionEvent &ev);
 void c2_register_callback(ThisPluginState L, EventType evtType,
                           sol::protected_function callback);
 
+/**
+ * Writes a message to the Chatterino log.
+ *
+ * @lua@param level c2.LogLevel The desired level.
+ * @lua@param ... any Values to log. Should be convertible to a string with `tostring()`.
+ * @exposed c2.log
+ */
 void c2_log(ThisPluginState L, LogLevel lvl, sol::variadic_args args);
 
+/**
+ * Calls callback around msec milliseconds later. Does not freeze Chatterino.
+ *
+ * @lua@param callback fun() The callback that will be called.
+ * @lua@param msec number How long to wait.
+ * @exposed c2.later
+ */
 void c2_later(ThisPluginState L, sol::protected_function callback, int time);
 
+// These ones are global
 sol::variadic_results g_load(ThisPluginState s, sol::object data);
 void g_print(ThisPluginState L, sol::variadic_args args);
 
 void package_loadlib(sol::variadic_args args);
+// NOLINTEND(readability-identifier-naming)
 
+// This is for require() exposed as an element of package.searchers
 int searcherAbsolute(lua_State *L);
 int searcherRelative(lua_State *L);
 

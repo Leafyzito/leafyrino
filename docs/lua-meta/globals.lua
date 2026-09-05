@@ -36,6 +36,10 @@ c2.EventType = {
 ---@field cursor_position integer Position of the cursor in the text input in unicode codepoints (not bytes)
 ---@field is_first_word boolean True if this is the first word in the input
 
+
+
+---@alias QSize [integer, integer] A pair of [width, height]
+---@alias QSizeF [number, number] A pair of [width, height]
 -- Begin src/common/Channel.hpp
 
 ---@enum c2.ChannelType
@@ -50,6 +54,7 @@ c2.ChannelType = {
     TwitchAutomod = {}, ---@type c2.ChannelType.TwitchAutomod
     TwitchEnd = {}, ---@type c2.ChannelType.TwitchEnd
     Kick = {}, ---@type c2.ChannelType.Kick
+    YouTube = {}, ---@type c2.ChannelType.YouTube
     Misc = {}, ---@type c2.ChannelType.Misc
     Multi = {}, ---@type c2.ChannelType.Multi
 }
@@ -503,7 +508,6 @@ function c2.Menu:add_separator() end
 function c2.Menu:insert_separator(before) end
 -- End src/controllers/plugins/api/Menu.hpp
 
-
 -- Begin src/controllers/plugins/api/Message.hpp
 
 
@@ -663,9 +667,10 @@ c2.Message = {}
 function c2.Message:elements() end
 
 --- Add an element to this message.
+--- If given a MessageElement, it will be cloned before being added.
 ---
----@param init MessageElementInit The element to add
-function c2.Message:append_element(init) end
+---@param elem (MessageElement|MessageElementInit) The element to add
+function c2.Message:append_element(elem) end
 
 ---Returns an identical, non-frozen message, independent from this one.
 ---@return c2.Message
@@ -686,7 +691,7 @@ function c2.Message:clone() end
 ---@field username_color? string The color of the username
 ---@field server_received_time? number The time the server received the message (in milliseconds since epoch)
 ---@field highlight_color? string|nil The color of the highlight (if any)
----@field elements? MessageElementInit[] The elements of the message
+---@field elements? (MessageElementInit|MessageElement)[] The elements of the message
 
 ---@alias MessageColor "text"|"link"|"system"|string A color for a text element - "text", "link", and "system" are special values that take the current theme into account
 
@@ -715,6 +720,8 @@ c2.FontStyle = {
     ChatSmall = {}, ---@type c2.FontStyle.ChatSmall
     ChatMediumSmall = {}, ---@type c2.FontStyle.ChatMediumSmall
     ChatMedium = {}, ---@type c2.FontStyle.ChatMedium
+    ChatMediumMono = {}, ---@type c2.FontStyle.ChatMediumMono
+    ChatMediumStrikethrough = {}, ---@type c2.FontStyle.ChatMediumStrikethrough
     ChatMediumBold = {}, ---@type c2.FontStyle.ChatMediumBold
     ChatMediumItalic = {}, ---@type c2.FontStyle.ChatMediumItalic
     ChatLarge = {}, ---@type c2.FontStyle.ChatLarge
@@ -742,6 +749,7 @@ c2.MessageElementFlag = {
     EmoteImage = 0,
     EmoteText = 0,
     Emote = 0,
+    BadgeHomiesSupporter = 0,
     ChannelPointReward = 0,
     ChannelPointRewardImage = 0,
     BitsStatic = 0,
@@ -756,6 +764,13 @@ c2.MessageElementFlag = {
     BadgeSevenTV = 0,
     BadgeBttv = 0,
     BadgeFfz = 0,
+    BadgeHomies = 0,
+    BadgeHomiesCustom = 0,
+    BadgeMoltorino = 0,
+    BadgeFolhinha = 0,
+    BadgeFfzAp = 0,
+    BadgeDankChat = 0,
+    BadgeChatsen = 0,
     Badges = 0,
     ChannelName = 0,
     BitsAmount = 0,
@@ -766,6 +781,7 @@ c2.MessageElementFlag = {
     AlwaysShow = 0,
     Collapsed = 0,
     Mention = 0,
+    RepeatedMessageCounter = 0,
     LowercaseLinks = 0,
     RepliedMessage = 0,
     ReplyButton = 0,
