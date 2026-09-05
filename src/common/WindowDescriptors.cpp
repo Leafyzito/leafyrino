@@ -246,9 +246,7 @@ IndirectChannel SplitDescriptor::decodeChannel() const
 {
     assertInGuiThread();
 
-    auto type = qmagicenum::enumCast<Channel::Type>(this->type_);
-    if (!type)
-    {
+    auto twitchChannel = [this]() -> IndirectChannel {
         if (this->anonymous_)
         {
             return getApp()->getTwitch()->getOrAddAnonymousChannel(
@@ -256,12 +254,18 @@ IndirectChannel SplitDescriptor::decodeChannel() const
         }
 
         return getApp()->getTwitch()->getOrAddChannel(this->channelName_);
+    };
+
+    auto type = qmagicenum::enumCast<Channel::Type>(this->type_);
+    if (!type)
+    {
+        return twitchChannel();
     }
 
     switch (*type)
     {
         case Channel::Type::Twitch:
-            return getApp()->getTwitch()->getOrAddChannel(this->channelName_);
+            return twitchChannel();
         case Channel::Type::TwitchMentions:
             return getApp()->getTwitch()->getMentionsChannel();
         case Channel::Type::TwitchWatching:
