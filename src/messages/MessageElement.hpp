@@ -97,9 +97,9 @@ enum class MessageElementFlag : int64_t {
     // - FolhinhaBot Supporter
     BadgeFolhinha = (1LL << 62),
 
-    BadgeFfzAp = (1LL << 38),
-    BadgeDankChat = (1LL << 39),
-    BadgeChatsen = (1LL << 41),
+    BadgeFfzAp = (1LL << 43),
+    BadgeDankChat = (1LL << 42),
+    BadgeChatsen = (1LL << 44),
 
     Badges = BadgeGlobalAuthority | BadgePredictions | BadgeChannelAuthority |
              BadgeSubscription | BadgeVanity | BadgeChatterino | BadgeSevenTV |
