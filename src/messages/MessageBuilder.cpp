@@ -2067,65 +2067,68 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
             });
         twitchEmotes.erase(uniqueEmotes.begin(), uniqueEmotes.end());
 
-        bool traditionalParsing = true;
-        if (getSettings()->markdownParsing)
+        // FIXME(c7TV): This is temporary until upstream merges the support.
+        // GIFs must be handled before markdown parsing: Twitch GIF messages are
+        // wrapped in [brackets], which the markdown parser accepts as text.
+        if (!builder.tryAddGif(tags, content))
         {
-            // parse
-            auto tokens = ast::lex(content);
-            // debug logs
-            // {
-            //     QDebug dbg = qDebug().nospace().noquote();
-            //     dbg << "[";
-            //     for (auto token : tokens)
-            //     {
-            //         dbg << ast::stringifyToken(token);
-            //         dbg << ", ";
-            //     }
-            //     dbg << "]";
-            // }
-
-            QVector<ast::ASTNode> ast;
-            try
+            bool traditionalParsing = true;
+            if (getSettings()->markdownParsing)
             {
-                ast::MatchResponse response = ast::matchMarkdown(0, &tokens);
-                if (response.accepted)
+                // parse
+                auto tokens = ast::lex(content);
+                // debug logs
+                // {
+                //     QDebug dbg = qDebug().nospace().noquote();
+                //     dbg << "[";
+                //     for (auto token : tokens)
+                //     {
+                //         dbg << ast::stringifyToken(token);
+                //         dbg << ", ";
+                //     }
+                //     dbg << "]";
+                // }
+
+                QVector<ast::ASTNode> ast;
+                try
                 {
-                    traditionalParsing = false;
-                    ast = ast::normalizeTextNodes(response.nodes);
+                    ast::MatchResponse response =
+                        ast::matchMarkdown(0, &tokens);
+                    if (response.accepted)
+                    {
+                        traditionalParsing = false;
+                        ast = ast::normalizeTextNodes(response.nodes);
+                    }
+                }
+                catch (const std::exception &e)
+                {
+                    traditionalParsing = true;
+                    qWarning() << "Exception parsing message:" << e.what();
+                }
+
+                if (!traditionalParsing)
+                {
+                    // debug logs
+                    // QDebug dbg = qDebug().nospace().noquote();
+                    // dbg << "[";
+                    // for (auto node : ast)
+                    // {
+                    //     dbg << ast::stringifyNode(node);
+                    //     dbg << ", ";
+                    // }
+                    // dbg << "]";
+
+                    builder.addWordsFromAstNodes(ast, twitchEmotes, textState);
                 }
             }
-            catch (const std::exception &e)
-            {
-                traditionalParsing = true;
-                qWarning() << "Exception parsing message:" << e.what();
-            }
 
-            if (!traditionalParsing)
+            if (traditionalParsing)
             {
-                // debug logs
-                // QDebug dbg = qDebug().nospace().noquote();
-                // dbg << "[";
-                // for (auto node : ast)
-                // {
-                //     dbg << ast::stringifyNode(node);
-                //     dbg << ", ";
-                // }
-                // dbg << "]";
+                if (getSettings()->wrapAsciiArt && isAsciiArt(content))
+                {
+                    builder->flags.set(MessageFlag::AsciiArt);
+                }
 
-                builder.addWordsFromAstNodes(ast, twitchEmotes, textState);
-            }
-        }
-
-        if (traditionalParsing)
-        {
-            if (getSettings()->wrapAsciiArt && isAsciiArt(content))
-            {
-                builder->flags.set(MessageFlag::AsciiArt);
-            }
-
-            // FIXME(c7TV): This is temporary until upstream merges the support.
-            if (!builder.tryAddGif(tags, content))
-            {
                 // words
                 QStringList splits = content.split(' ');
                 builder.addWords(splits, twitchEmotes, textState);
