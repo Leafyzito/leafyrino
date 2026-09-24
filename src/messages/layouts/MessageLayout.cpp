@@ -23,9 +23,36 @@
 #include <QtGlobal>
 #include <QThread>
 
+#include <optional>
+
 namespace chatterino {
 
 namespace {
+
+std::optional<QColor> clientDetectionHighlightColor(
+    Message::ClientDetectionStatus status,
+    const MessagePreferences &preferences)
+{
+    if (!preferences.enableClientDetectionHighlight)
+    {
+        return std::nullopt;
+    }
+
+    switch (status)
+    {
+        case Message::ClientDetectionStatus::Web:
+            return preferences.clientDetectionWebColor;
+        case Message::ClientDetectionStatus::Android:
+            return preferences.clientDetectionAndroidColor;
+        case Message::ClientDetectionStatus::IOS:
+            return preferences.clientDetectionIosColor;
+        case Message::ClientDetectionStatus::Unknown:
+        case Message::ClientDetectionStatus::Abnormal:
+            return std::nullopt;
+    }
+
+    return std::nullopt;
+}
 
 QColor blendColors(const QColor &base, const QColor &apply)
 {
@@ -478,27 +505,10 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
     {
         backgroundColor = QColor("#4A273D");
     }
-    else if (ctx.preferences.enableClientDetectionHighlight)
+    else if (const auto clientColor = clientDetectionHighlightColor(
+                 this->message_->clientDetection, ctx.preferences))
     {
-        switch (this->message_->clientDetection)
-        {
-            case Message::ClientDetectionStatus::Web:
-                backgroundColor = blendColors(
-                    backgroundColor, ctx.preferences.clientDetectionWebColor);
-                break;
-            case Message::ClientDetectionStatus::Android:
-                backgroundColor =
-                    blendColors(backgroundColor,
-                                ctx.preferences.clientDetectionAndroidColor);
-                break;
-            case Message::ClientDetectionStatus::IOS:
-                backgroundColor = blendColors(
-                    backgroundColor, ctx.preferences.clientDetectionIosColor);
-                break;
-            case Message::ClientDetectionStatus::Unknown:
-            case Message::ClientDetectionStatus::Abnormal:
-                break;
-        }
+        backgroundColor = blendColors(backgroundColor, *clientColor);
     }
     else if (this->message_->flags.has(MessageFlag::UncategorizedNotification))
     {
