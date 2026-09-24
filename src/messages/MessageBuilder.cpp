@@ -2182,6 +2182,11 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
                 return std::holds_alternative<TwitchGifOccurrence>(item.data);
             });
 
+        if (getSettings()->wrapAsciiArt && isAsciiArt(content))
+        {
+            builder->flags.set(MessageFlag::AsciiArt);
+        }
+
         bool traditionalParsing = true;
         if (getSettings()->markdownParsing && !hasGif)
         {
@@ -2211,11 +2216,6 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
 
         if (traditionalParsing)
         {
-            if (getSettings()->wrapAsciiArt && isAsciiArt(content))
-            {
-                builder->flags.set(MessageFlag::AsciiArt);
-            }
-
             builder.addWords(content, twitchSpecials, textState);
         }
 
