@@ -2414,10 +2414,10 @@ void MessageBuilder::addTwitchGif(const QString &id, QStringView originalText)
         ImageSet set{
             Image::fromUrl(
                 Url{u"https://media4.giphy.com/media/" % id % u"/100.webp"},
-                1.0, {100, 100}),
+                1.0),
             Image::fromUrl(
                 Url{u"https://media4.giphy.com/media/" % id % u"/200.webp"},
-                0.5, {200, 200}),
+                0.5),
         };
         this->emplace<LinebreakElement>(MessageElementFlag::TwitchGif);
         this->emplace<ScalingImageElement>(set, MessageElementFlag::TwitchGif)
