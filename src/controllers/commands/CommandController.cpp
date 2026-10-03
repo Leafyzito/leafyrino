@@ -23,6 +23,7 @@
 #include "controllers/commands/builtin/twitch/GetFounders.hpp"
 #include "controllers/commands/builtin/twitch/GetModerators.hpp"
 #include "controllers/commands/builtin/twitch/GetVIPs.hpp"
+#include "controllers/commands/builtin/twitch/Gif.hpp"
 #include "controllers/commands/builtin/twitch/LowTrust.hpp"
 #include "controllers/commands/builtin/twitch/ModVipActions.hpp"
 #include "controllers/commands/builtin/twitch/Nuke.hpp"
@@ -550,6 +551,7 @@ CommandController::CommandController(const Paths &paths)
     this->registerCommand("/poll", &commands::createPoll);
     this->registerCommand("/redeem", &commands::openChannelPointRewards);
     this->registerCommand("/pointschart", &commands::openChannelPointsChart);
+    this->registerCommand("/gif", &commands::openGifPicker);
     this->registerCommand("/cancelpoll", &commands::cancelPoll);
     this->registerCommand("/endpoll", &commands::endPoll);
 

@@ -101,6 +101,8 @@ set(SOURCE_FILES
         controllers/commands/builtin/twitch/BlockedTerms.hpp
         controllers/commands/builtin/twitch/ChannelPoints.cpp
         controllers/commands/builtin/twitch/ChannelPoints.hpp
+        controllers/commands/builtin/twitch/Gif.cpp
+        controllers/commands/builtin/twitch/Gif.hpp
         controllers/commands/builtin/twitch/ChatSettings.cpp
         controllers/commands/builtin/twitch/ChatSettings.hpp
         controllers/commands/builtin/twitch/Chatters.cpp
@@ -850,6 +852,8 @@ set(SOURCE_FILES
         widgets/dialogs/EditUserNotesDialog.cpp
         widgets/dialogs/EditUserNotesDialog.hpp
         widgets/dialogs/EmotePopup.cpp
+        widgets/dialogs/GifPickerDialog.cpp
+        widgets/dialogs/GifPickerDialog.hpp
         widgets/dialogs/EmotePopup.hpp
 
         widgets/dialogs/font/FontDialog.cpp
