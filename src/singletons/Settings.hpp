@@ -999,6 +999,9 @@ public:
     BoolSetting displaySevenTVAnimatedProfile = {
         "/misc/displaySevenTVAnimatedProfile", true};
 
+    /// The Giphy IDs of the GIFs saved in the GIF picker, newest first,
+    /// separated by commas.
+    QStringSetting twitchGifFavorites = {"/twitch/gifs/favorites", ""};
     EnumStringSetting<TwitchReadConnectionMode> twitchReadConnectionMode = {
         "/misc/x-7tv/twitchReadConnectionMode",
         TwitchReadConnectionMode::Authenticated};
