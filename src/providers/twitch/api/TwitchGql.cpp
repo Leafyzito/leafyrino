@@ -1684,6 +1684,186 @@ QVector<GqlBadge> badgesFromArray(const QJsonArray &arr)
     return result;
 }
 
+constexpr int REWARD_QUEUE_PAGE_SIZE = 50;
+constexpr int REWARD_QUEUE_USER_BATCH_SIZE = 30;
+
+NetworkRequest makePersistedGqlBatchRequest(const QJsonArray &payloadArray,
+                                            const QString &oauthToken)
+{
+    auto request =
+        NetworkRequest("https://gql.twitch.tv/gql", NetworkRequestType::Post)
+            .timeout(TWITCH_GQL_TIMEOUT_MS)
+            .header("Client-Id", "kimne78kx3ncx6brgo4mv6wki5h1ko")
+            .header("Client-Session-Id", twitchGqlSessionId())
+            .header("Client-Version", TWITCH_GQL_BROWSER_CLIENT_VERSION)
+            .header("User-Agent", TWITCH_GQL_BROWSER_USER_AGENT)
+            .header("X-Device-Id", twitchGqlDeviceId())
+            .json(payloadArray);
+
+    const auto normalizedToken = normalizeCustomTwitchAuthToken(oauthToken);
+    if (!normalizedToken.isEmpty())
+    {
+        request = std::move(request).header("Authorization",
+                                            "OAuth " + normalizedToken);
+    }
+
+    return request;
+}
+
+QString rewardQueueImageUrl(const QJsonObject &obj)
+{
+    auto image = obj.value("image").toObject();
+    if (image.isEmpty())
+    {
+        image = obj.value("defaultImage").toObject();
+    }
+
+    auto url = image.value("url2x").toString();
+    if (url.isEmpty())
+    {
+        url = image.value("url").toString();
+    }
+    return url;
+}
+
+GqlRewardQueueUser rewardQueueUserFromObject(const QString &userId,
+                                             const QJsonObject &obj)
+{
+    GqlRewardQueueUser user;
+    user.id = userId;
+    user.login = obj.value("login").toString();
+    user.displayName = obj.value("displayName").toString();
+    user.color = obj.value("chatColor").toString();
+    for (const auto &value : obj.value("displayBadges").toArray())
+    {
+        if (!value.isObject())
+        {
+            continue;
+        }
+        user.badges.push_back(badgeFromJson(value.toObject()));
+    }
+    return user;
+}
+
+struct RewardQueueUsersState {
+    QString channelLogin;
+    QStringList userIds;
+    QString oauthToken;
+    QVector<GqlRewardQueueUser> users;
+    std::function<void(QVector<GqlRewardQueueUser>)> successCallback;
+    std::function<void(const QString &)> failureCallback;
+};
+
+void fetchRewardQueueUsers(std::shared_ptr<RewardQueueUsersState> state,
+                           qsizetype offset)
+{
+    if (offset >= state->userIds.size())
+    {
+        state->successCallback(std::move(state->users));
+        return;
+    }
+
+    const auto batch = state->userIds.mid(offset, REWARD_QUEUE_USER_BATCH_SIZE);
+    QJsonArray payloadArray;
+    for (const auto &userId : batch)
+    {
+        QJsonObject variables;
+        variables.insert("channelLogin", state->channelLogin);
+        variables.insert("userID", userId);
+        payloadArray.append(persistedPayload(
+            "UserWithBadges", variables,
+            "9a1a4c9d9bf80eed822bb8e0ab9d60325b4de1bd28f194e5ca9b44ea3813813"
+            "4"));
+    }
+
+    makePersistedGqlBatchRequest(payloadArray, state->oauthToken)
+        .onSuccess([state, batch, offset](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            if (!root.isArray())
+            {
+                const auto gqlError = extractFirstGqlErrorMessage(root);
+                state->failureCallback(gqlError.isEmpty()
+                                           ? "Failed to parse GQL response"
+                                           : "Twitch API Error: " + gqlError);
+                return;
+            }
+
+            const auto payloads = root.toArray();
+            for (qsizetype i = 0; i < batch.size() && i < payloads.size(); ++i)
+            {
+                const auto user = payloads.at(i)
+                                      .toObject()
+                                      .value("data")
+                                      .toObject()
+                                      .value("user")
+                                      .toObject();
+                if (user.isEmpty())
+                {
+                    continue;
+                }
+                state->users.push_back(
+                    rewardQueueUserFromObject(batch.at(i), user));
+            }
+
+            fetchRewardQueueUsers(state, offset + batch.size());
+        })
+        .onError([state](const NetworkResult &result) {
+            state->failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void runRewardRedemptionMutation(
+    const QString &operationName, const QString &hash,
+    const QString &payloadKey, const QJsonObject &input,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject variables;
+    variables.insert("input", input);
+
+    makeTvPersistedGqlRequest(operationName, hash, variables, oauthToken)
+        .onSuccess([successCallback, failureCallback,
+                    payloadKey](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            if (root.isUndefined() || root.isNull())
+            {
+                failureCallback("Failed to parse GQL response");
+                return;
+            }
+
+            const auto gqlError = extractFirstGqlErrorMessage(root);
+            if (!gqlError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + gqlError);
+                return;
+            }
+
+            const auto payload =
+                payloadDataObject(root).value(payloadKey).toObject();
+            if (payload.isEmpty())
+            {
+                failureCallback(
+                    "Twitch API Error: Failed to update the reward request");
+                return;
+            }
+
+            const auto payloadError = gqlPayloadErrorMessage(
+                payload.value("error"), "Failed to update the reward request");
+            if (!payloadError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + payloadError);
+                return;
+            }
+
+            successCallback();
+        })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -5702,6 +5882,249 @@ void TwitchGql::setBadgeModifierHidden(
             failureCallback("Network Error: " + result.formatError());
         })
         .execute();
+}
+
+void TwitchGql::getRewardQueue(
+    const QString &channelLogin, const QString &oauthToken,
+    std::function<void(GqlRewardQueue)> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject variables;
+    variables.insert("channelLogin", channelLogin);
+
+    makePersistedGqlRequest(
+        "CoPoRewardQueue",
+        "3800572d63eefadf648592b20bd46765b6de50fc7e4afdb32a908e1961497a33",
+        variables, oauthToken)
+        .onSuccess(
+            [successCallback, failureCallback](const NetworkResult &result) {
+                const auto root = result.parseJsonValue();
+                if (root.isUndefined() || root.isNull())
+                {
+                    failureCallback("Failed to parse GQL response");
+                    return;
+                }
+
+                const auto gqlError = extractFirstGqlErrorMessage(root);
+                if (!gqlError.isEmpty())
+                {
+                    failureCallback("Twitch API Error: " + gqlError);
+                    return;
+                }
+
+                const auto channel = payloadDataObject(root)
+                                         .value("user")
+                                         .toObject()
+                                         .value("channel")
+                                         .toObject();
+                const auto settings =
+                    channel.value("communityPointsSettings").toObject();
+                if (channel.isEmpty() || settings.isEmpty())
+                {
+                    failureCallback("The reward queue is unavailable");
+                    return;
+                }
+
+                GqlRewardQueue queue;
+                queue.channelId = channel.value("id").toString();
+                for (const auto &value :
+                     settings.value("summarizedRewards").toArray())
+                {
+                    const auto summary = value.toObject();
+                    const auto node = summary.value("node").toObject();
+                    if (node.isEmpty())
+                    {
+                        continue;
+                    }
+
+                    GqlRewardQueueReward reward;
+                    reward.id = node.value("id").toString();
+                    reward.title = node.value("title").toString();
+                    reward.prompt = node.value("prompt").toString();
+                    reward.backgroundColor =
+                        node.value("backgroundColor").toString();
+                    reward.imageUrl = rewardQueueImageUrl(node);
+                    reward.cost = node.value("cost").toInt(0);
+                    reward.count = summary.value("count").toInt(0);
+                    reward.isUserInputRequired =
+                        node.value("isUserInputRequired").toBool(false);
+                    reward.isEnabled = node.value("isEnabled").toBool(true);
+                    reward.isPaused = node.value("isPaused").toBool(false);
+                    queue.rewards.push_back(reward);
+                }
+
+                successCallback(std::move(queue));
+            })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void TwitchGql::getRewardQueueRedemptions(
+    const QString &channelLogin, const QString &rewardId, const QString &cursor,
+    const QString &oauthToken,
+    std::function<void(GqlRewardRedemptionPage)> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject variables;
+    variables.insert("channelLogin", channelLogin);
+    variables.insert("order", "OLDEST");
+    variables.insert("count", REWARD_QUEUE_PAGE_SIZE);
+    if (!rewardId.isEmpty())
+    {
+        variables.insert("id", rewardId);
+    }
+    if (!cursor.isEmpty())
+    {
+        variables.insert("cursor", cursor);
+    }
+
+    makePersistedGqlRequest(
+        "RedemptionsByRewardID_Paginated",
+        "74740dc72455f428e464fad11770a543c3ac1092b89cb39ed7411ff3a69e6d37",
+        variables, oauthToken)
+        .onSuccess(
+            [successCallback, failureCallback](const NetworkResult &result) {
+                const auto root = result.parseJsonValue();
+                if (root.isUndefined() || root.isNull())
+                {
+                    failureCallback("Failed to parse GQL response");
+                    return;
+                }
+
+                const auto gqlError = extractFirstGqlErrorMessage(root);
+                if (!gqlError.isEmpty())
+                {
+                    failureCallback("Twitch API Error: " + gqlError);
+                    return;
+                }
+
+                const auto channel = payloadDataObject(root)
+                                         .value("user")
+                                         .toObject()
+                                         .value("channel")
+                                         .toObject();
+                if (channel.isEmpty())
+                {
+                    failureCallback("The reward queue is unavailable");
+                    return;
+                }
+
+                const auto queue =
+                    channel.value("communityPointsRedemptionQueue").toObject();
+
+                GqlRewardRedemptionPage page;
+                page.hasNextPage = queue.value("pageInfo")
+                                       .toObject()
+                                       .value("hasNextPage")
+                                       .toBool(false);
+                for (const auto &value : queue.value("edges").toArray())
+                {
+                    const auto edge = value.toObject();
+                    const auto node = edge.value("node").toObject();
+                    const auto edgeCursor = edge.value("cursor").toString();
+                    if (!edgeCursor.isEmpty())
+                    {
+                        page.nextCursor = edgeCursor;
+                    }
+                    if (node.isEmpty())
+                    {
+                        continue;
+                    }
+
+                    const auto reward = node.value("reward").toObject();
+                    GqlRewardRedemption redemption;
+                    redemption.id = node.value("id").toString();
+                    redemption.rewardId = reward.value("id").toString();
+                    redemption.rewardTitle = reward.value("title").toString();
+                    redemption.userId =
+                        node.value("user").toObject().value("id").toString();
+                    redemption.input = node.value("input").toString();
+                    redemption.timestamp = QDateTime::fromString(
+                        node.value("timestamp").toString(), Qt::ISODateWithMs);
+                    if (redemption.id.isEmpty())
+                    {
+                        continue;
+                    }
+                    page.redemptions.push_back(redemption);
+                }
+
+                successCallback(std::move(page));
+            })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void TwitchGql::getRewardQueueUsers(
+    const QString &channelLogin, const QStringList &userIds,
+    const QString &oauthToken,
+    std::function<void(QVector<GqlRewardQueueUser>)> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    auto state = std::make_shared<RewardQueueUsersState>();
+    state->channelLogin = channelLogin;
+    state->userIds = userIds;
+    state->oauthToken = oauthToken;
+    state->successCallback = std::move(successCallback);
+    state->failureCallback = std::move(failureCallback);
+
+    fetchRewardQueueUsers(std::move(state), 0);
+}
+
+void TwitchGql::updateRewardRedemptionStatus(
+    const QString &channelId, const QString &redemptionId, bool fulfill,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject input;
+    input.insert("channelID", channelId);
+    input.insert("redemptionID", redemptionId);
+    input.insert("newStatus", fulfill ? "FULFILLED" : "CANCELED");
+
+    runRewardRedemptionMutation(
+        "UpdateCoPoCustomRewardStatus",
+        "d940a7ebb2e588c3fc0c69a2fb61c5aeb566833f514cf55b9de728082c90361d",
+        "updateCommunityPointsCustomRewardRedemptionStatus", input, oauthToken,
+        std::move(successCallback), std::move(failureCallback));
+}
+
+void TwitchGql::pauseRewardRedemptions(
+    const QString &channelId, const QString &rewardId, bool paused,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject input;
+    input.insert("channelID", channelId);
+    input.insert("rewardID", rewardId);
+    input.insert("isPaused", paused);
+
+    runRewardRedemptionMutation(
+        "PauseCustomRewardRedemptions",
+        "1217cae91b1ebc6eba035ebce8ba308d255b0e7c4524130f739e176213b95b7a",
+        "updateCommunityPointsCustomReward", input, oauthToken,
+        std::move(successCallback), std::move(failureCallback));
+}
+
+void TwitchGql::updateRewardRedemptionStatuses(
+    const QString &channelId, const QStringList &redemptionIds, bool fulfill,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject input;
+    input.insert("channelID", channelId);
+    input.insert("newStatus", fulfill ? "FULFILLED" : "CANCELED");
+    input.insert("oldStatus", "UNFULFILLED");
+    input.insert("redemptionIDs", QJsonArray::fromStringList(redemptionIds));
+
+    runRewardRedemptionMutation(
+        "BulkUpdateRedemptions",
+        "cba9ec6d62b16450c3b6fad790b6c4bc26ff3efb68731bbbb7ecc24c3b9188ce",
+        "updateCommunityPointsCustomRewardRedemptionStatusesByRedemptions",
+        input, oauthToken, std::move(successCallback),
+        std::move(failureCallback));
 }
 
 }  // namespace chatterino

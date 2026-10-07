@@ -6,6 +6,7 @@
 #include "providers/moltorino/MoltorinoFeatureFlags.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "singletons/WindowManager.hpp"
+#include "widgets/dialogs/RewardQueueDialog.hpp"
 #include "widgets/Notebook.hpp"
 #include "widgets/splits/Split.hpp"
 #include "widgets/splits/SplitContainer.hpp"
@@ -127,6 +128,31 @@ QString openChannelPointsChart(const CommandContext &ctx)
             "Channel point charts are not available in this build.");
     }
 #endif
+
+    return {};
+}
+
+QString openRewardQueue(const CommandContext &ctx)
+{
+    if (ctx.twitchChannel == nullptr)
+    {
+        if (ctx.channel != nullptr)
+        {
+            ctx.channel->addSystemMessage(
+                "The /rewardqueue command only works in Twitch channels.");
+        }
+        return {};
+    }
+
+    if (!ctx.twitchChannel->hasModRights())
+    {
+        ctx.channel->addSystemMessage(
+            "You must be a moderator to open the reward queue.");
+        return {};
+    }
+
+    RewardQueueDialog::showDialog(ctx.twitchChannel,
+                                  findOpenSplitForChannel(ctx.channel));
 
     return {};
 }

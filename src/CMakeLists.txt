@@ -883,6 +883,8 @@ set(SOURCE_FILES
         widgets/dialogs/PredictionDialog.hpp
         widgets/dialogs/PollDialog.cpp
         widgets/dialogs/PollDialog.hpp
+        widgets/dialogs/RewardQueueDialog.cpp
+        widgets/dialogs/RewardQueueDialog.hpp
         widgets/dialogs/ReplyThreadPopup.cpp
         widgets/dialogs/ReplyThreadPopup.hpp
         widgets/dialogs/RestoreBackupsDialog.cpp

@@ -13,6 +13,7 @@
 #    include "widgets/buttons/Button.hpp"
 #    include "widgets/buttons/SvgButton.hpp"
 #    include "widgets/dialogs/ChannelPointsChartDialog.hpp"
+#    include "widgets/dialogs/RewardQueueDialog.hpp"
 #    include "widgets/helper/Line.hpp"
 #    include "widgets/splits/SplitInput.hpp"
 
@@ -933,6 +934,19 @@ ChannelPointsDialog::ChannelPointsDialog(TwitchChannel *channel,
     headerTextLayout->addWidget(this->headerSubtitleLabel_);
     headerLayout->addLayout(headerTextLayout);
     headerLayout->addStretch(1);
+
+    if (this->channel_->hasModRights())
+    {
+        auto *queueButton =
+            new QPushButton(QStringLiteral("Queue"), this->headerWidget_);
+        queueButton->setObjectName("ChannelPointsUtilityButton");
+        queueButton->setToolTip(QStringLiteral("Open the reward queue"));
+        queueButton->setCursor(Qt::PointingHandCursor);
+        QObject::connect(queueButton, &QPushButton::clicked, this, [this] {
+            RewardQueueDialog::showDialog(this->channel_, this->parentWidget());
+        });
+        headerLayout->addWidget(queueButton);
+    }
 
     auto *chartButton =
         new QPushButton(QStringLiteral("Chart"), this->headerWidget_);

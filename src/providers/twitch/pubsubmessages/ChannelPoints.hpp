@@ -10,6 +10,9 @@ struct PubSubCommunityPointsChannelV1Message {
     enum class Type {
         AutomaticRewardRedeemed,
         RewardRedeemed,
+        RedemptionStatusUpdate,
+        UpdateRedemptionStatusesProgress,
+        UpdateRedemptionStatusesFinished,
 
         INVALID,
     };
@@ -54,6 +57,15 @@ constexpr magic_enum::customize::customize_t magic_enum::customize::enum_name<
         case chatterino::PubSubCommunityPointsChannelV1Message::Type::
             RewardRedeemed:
             return "reward-redeemed";
+        case chatterino::PubSubCommunityPointsChannelV1Message::Type::
+            RedemptionStatusUpdate:
+            return "redemption-status-update";
+        case chatterino::PubSubCommunityPointsChannelV1Message::Type::
+            UpdateRedemptionStatusesProgress:
+            return "update-redemption-statuses-progress";
+        case chatterino::PubSubCommunityPointsChannelV1Message::Type::
+            UpdateRedemptionStatusesFinished:
+            return "update-redemption-statuses-finished";
         default:
             return default_tag;
     }

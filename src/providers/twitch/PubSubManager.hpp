@@ -41,6 +41,9 @@ public:
 
     struct {
         Signal<const QJsonObject &> redeemed;
+        Signal<const QJsonObject &> statusUpdated;
+        Signal<const QJsonObject &> bulkUpdateProgressed;
+        Signal<const QJsonObject &> bulkUpdateFinished;
     } pointReward;
 
     struct {

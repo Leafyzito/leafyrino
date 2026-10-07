@@ -550,6 +550,7 @@ CommandController::CommandController(const Paths &paths)
     this->registerCommand("/poll", &commands::createPoll);
     this->registerCommand("/redeem", &commands::openChannelPointRewards);
     this->registerCommand("/pointschart", &commands::openChannelPointsChart);
+    this->registerCommand("/rewardqueue", &commands::openRewardQueue);
     this->registerCommand("/cancelpoll", &commands::cancelPoll);
     this->registerCommand("/endpoll", &commands::endPoll);
 

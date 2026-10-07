@@ -225,6 +225,29 @@ void PubSubClient::handleMessageResponse(const PubSubMessageMessage &message)
             }
             break;
 
+            case PubSubCommunityPointsChannelV1Message::Type::
+                RedemptionStatusUpdate: {
+                auto redemption =
+                    innerMessage.data.value("redemption").toObject();
+                this->manager_.pointReward.statusUpdated.invoke(redemption);
+            }
+            break;
+
+            case PubSubCommunityPointsChannelV1Message::Type::
+                UpdateRedemptionStatusesProgress: {
+                auto progress = innerMessage.data.value("progress").toObject();
+                this->manager_.pointReward.bulkUpdateProgressed.invoke(
+                    progress);
+            }
+            break;
+
+            case PubSubCommunityPointsChannelV1Message::Type::
+                UpdateRedemptionStatusesFinished: {
+                auto progress = innerMessage.data.value("progress").toObject();
+                this->manager_.pointReward.bulkUpdateFinished.invoke(progress);
+            }
+            break;
+
             case PubSubCommunityPointsChannelV1Message::Type::INVALID:
             default: {
                 qCDebug(chatterinoPubSub)

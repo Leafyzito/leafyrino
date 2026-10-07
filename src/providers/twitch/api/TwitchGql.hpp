@@ -152,6 +152,47 @@ struct GqlChatSettingsBadges {
     int subscriptionTier = 0;  //(1000=T1, 2000=T2, 3000=T3)
 };
 
+struct GqlRewardQueueReward {
+    QString id;
+    QString title;
+    QString prompt;
+    QString backgroundColor;
+    QString imageUrl;
+    int cost = 0;
+    int count = 0;
+    bool isUserInputRequired = false;
+    bool isEnabled = true;
+    bool isPaused = false;
+};
+
+struct GqlRewardQueue {
+    QString channelId;
+    QVector<GqlRewardQueueReward> rewards;
+};
+
+struct GqlRewardRedemption {
+    QString id;
+    QString rewardId;
+    QString rewardTitle;
+    QString userId;
+    QString input;
+    QDateTime timestamp;
+};
+
+struct GqlRewardRedemptionPage {
+    QVector<GqlRewardRedemption> redemptions;
+    QString nextCursor;
+    bool hasNextPage = false;
+};
+
+struct GqlRewardQueueUser {
+    QString id;
+    QString login;
+    QString displayName;
+    QString color;
+    QVector<GqlBadge> badges;
+};
+
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
 struct GqlChannelPointReward {
     QString id;
@@ -402,6 +443,31 @@ void getChannelPointEmoteModifiers(
     std::function<void(QVector<GqlChannelPointEmoteModifier>)> successCallback,
     std::function<void(const QString &)> failureCallback);
 #endif
+void getRewardQueue(const QString &channelLogin, const QString &oauthToken,
+                    std::function<void(GqlRewardQueue)> successCallback,
+                    std::function<void(const QString &)> failureCallback);
+void getRewardQueueRedemptions(
+    const QString &channelLogin, const QString &rewardId, const QString &cursor,
+    const QString &oauthToken,
+    std::function<void(GqlRewardRedemptionPage)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void getRewardQueueUsers(
+    const QString &channelLogin, const QStringList &userIds,
+    const QString &oauthToken,
+    std::function<void(QVector<GqlRewardQueueUser>)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void updateRewardRedemptionStatus(
+    const QString &channelId, const QString &redemptionId, bool fulfill,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void pauseRewardRedemptions(
+    const QString &channelId, const QString &rewardId, bool paused,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void updateRewardRedemptionStatuses(
+    const QString &channelId, const QStringList &redemptionIds, bool fulfill,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback);
 void getChatWarningStatus(
     const QString &channelId, const QString &targetUserId,
     const QString &oauthToken,

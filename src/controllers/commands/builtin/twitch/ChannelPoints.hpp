@@ -12,5 +12,6 @@ namespace chatterino::commands {
 
 QString openChannelPointRewards(const CommandContext &ctx);
 QString openChannelPointsChart(const CommandContext &ctx);
+QString openRewardQueue(const CommandContext &ctx);
 
 }  // namespace chatterino::commands
