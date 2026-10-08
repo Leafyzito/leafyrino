@@ -496,6 +496,11 @@ void Split::addShortcuts()
              this->openModViewInBrowser();
              return "";
          }},
+        {"openRewardQueue",
+         [this](const std::vector<QString> &) -> QString {
+             this->openRewardQueue();
+             return "";
+         }},
         {"createClip",
          [this](const std::vector<QString> &) -> QString {
              // Alt+X: create clip LUL

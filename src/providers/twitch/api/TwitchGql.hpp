@@ -448,7 +448,7 @@ void getRewardQueue(const QString &channelLogin, const QString &oauthToken,
                     std::function<void(const QString &)> failureCallback);
 void getRewardQueueRedemptions(
     const QString &channelLogin, const QString &rewardId, const QString &cursor,
-    const QString &oauthToken,
+    bool newestFirst, const QString &oauthToken,
     std::function<void(GqlRewardRedemptionPage)> successCallback,
     std::function<void(const QString &)> failureCallback);
 void getRewardQueueUsers(

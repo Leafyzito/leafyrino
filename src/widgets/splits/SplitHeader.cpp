@@ -818,8 +818,10 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
 
         if (twitchChannel && twitchChannel->hasModRights())
         {
-            menu->addAction("Open reward queue", this->split_,
-                            &Split::openRewardQueue);
+            menu->addAction(
+                "Open &reward queue",
+                h->getDisplaySequence(HotkeyCategory::Split, "openRewardQueue"),
+                this->split_, &Split::openRewardQueue);
         }
 
         if (twitchChannel)

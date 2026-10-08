@@ -943,7 +943,7 @@ ChannelPointsDialog::ChannelPointsDialog(TwitchChannel *channel,
         queueButton->setToolTip(QStringLiteral("Open the reward queue"));
         queueButton->setCursor(Qt::PointingHandCursor);
         QObject::connect(queueButton, &QPushButton::clicked, this, [this] {
-            RewardQueueDialog::showDialog(this->channel_, this->parentWidget());
+            RewardQueueDialog::showDialog(this->channel_, this);
         });
         headerLayout->addWidget(queueButton);
     }

@@ -124,6 +124,7 @@ inline const std::map<HotkeyCategory, ActionDefinitionMap> actionNames{
           ActionDefinition{"Open stream in custom player"}},
          {"openInStreamlink", ActionDefinition{"Open stream in streamlink"}},
          {"openModView", ActionDefinition{"Open mod view in browser"}},
+         {"openRewardQueue", ActionDefinition{"Open reward queue"}},
          {"openViewerList", ActionDefinition{"Open chatter list"}},
          {"pickFilters", ActionDefinition{"Pick filters"}},
          {"reconnect", ActionDefinition{"Reconnect to chat"}},

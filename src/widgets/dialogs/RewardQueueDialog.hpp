@@ -24,6 +24,7 @@ class QJsonObject;
 class QLabel;
 class QPushButton;
 class QScrollArea;
+class QShowEvent;
 class QVBoxLayout;
 
 namespace chatterino {
@@ -40,17 +41,24 @@ public:
 protected:
     void themeChangedEvent() override;
     void scaleChangedEvent(float scale) override;
+    void showEvent(QShowEvent *event) override;
 
 private:
     void refreshStyle();
+    void applySizeConstraints();
     void reload(bool quiet = false);
+    void refreshCounts();
+    void applyRewardQueue(GqlRewardQueue queue);
     void loadRedemptions(bool append);
     void loadUsers(const QStringList &userIds, std::function<void()> callback);
     void finishLoading();
     void onRewardRedeemed(const QJsonObject &redemption);
     void onRedemptionStatusUpdated(const QJsonObject &redemption);
     void onBulkUpdateProgress(const QJsonObject &progress, bool finished);
-    void resolveLocally(const QString &redemptionId, const QString &rewardId);
+    void resolveLocally(const QString &redemptionId, const QString &rewardId,
+                        bool adjustCount = true);
+    bool isNewerThanSnapshot(const QDateTime &timestamp) const;
+    void scheduleUnpinParentOnClose(QWidget *parent);
     const GqlRewardRedemption *findRedemption(
         const QString &redemptionId) const;
     void setIdleStatus();
@@ -62,6 +70,8 @@ private:
     QWidget *createRow(const GqlRewardRedemption &redemption);
     void updateActions();
     void selectReward(const QString &rewardId);
+    void toggleSortOrder();
+    void updateSortButton();
     void updateRedemptions(const QStringList &ids, bool fulfill);
     void sendStatusUpdate(const QStringList &ids, bool fulfill,
                           const QString &token);
@@ -86,20 +96,25 @@ private:
     QSet<QString> selected_;
     QSet<QString> resolvedIds_;
     QSet<QString> redeemedIds_;
+    QSet<QString> badgeFetchFailed_;
     QStringList inFlightIds_;
     QString pendingError_;
     QString selectedRewardId_;
     QString nextCursor_;
     bool hasNextPage_ = false;
+    bool newestFirst_ = false;
     bool extraPagesLoaded_ = false;
     bool loading_ = false;
     bool pauseInFlight_ = false;
     bool quietLoad_ = false;
     bool statusIsError_ = false;
     bool actionInFlight_ = false;
+    bool countsRefreshInFlight_ = false;
+    bool parentUnpinScheduled_ = false;
     std::optional<bool> updateAllStatus_;
     int updateAllRounds_ = 0;
     int generation_ = 0;
+    QDateTime countsValidAt_;
 
     QVBoxLayout *sidebarLayout_{};
     QScrollArea *sidebarScrollArea_{};
@@ -115,6 +130,7 @@ private:
     QPushButton *completeAllButton_{};
     QPushButton *rejectAllButton_{};
     QPushButton *loadMoreButton_{};
+    QPushButton *sortButton_{};
     QHash<QString, QCheckBox *> rowCheckBoxes_;
     std::vector<std::pair<QPointer<QLabel>, QDateTime>> timeLabels_;
     QTimer reloadTimer_;

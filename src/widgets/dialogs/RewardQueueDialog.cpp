@@ -12,9 +12,9 @@
 
 #include <QCheckBox>
 #include <QCursor>
+#include <QDateTime>
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QIcon>
 #include <QJsonObject>
 #include <QLabel>
 #include <QLayout>
@@ -22,13 +22,17 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QPushButton>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QShowEvent>
 #include <QSignalBlocker>
 #include <QStyle>
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <memory>
 #include <utility>
 
 namespace {
@@ -125,6 +129,17 @@ QString badgeImageUrl(const GqlBadge &badge)
     return badge.image1x;
 }
 
+QString channelIdFromPayload(const QJsonObject &data)
+{
+    auto channelId = data.value("channel_id").toString();
+    if (channelId.isEmpty())
+    {
+        channelId =
+            data.value("reward").toObject().value("channel_id").toString();
+    }
+    return channelId;
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -200,6 +215,14 @@ RewardQueueDialog::RewardQueueDialog(TwitchChannel *channel, QWidget *parent)
                          }
                      });
     actionsLayout->addWidget(this->selectAllCheckBox_);
+
+    this->sortButton_ = new QPushButton(container);
+    this->sortButton_->setObjectName("RewardQueueButton");
+    this->updateSortButton();
+    QObject::connect(this->sortButton_, &QPushButton::clicked, this, [this] {
+        this->toggleSortOrder();
+    });
+    actionsLayout->addWidget(this->sortButton_);
     actionsLayout->addStretch(1);
 
     this->completeSelectedButton_ = new QPushButton(container);
@@ -272,6 +295,7 @@ RewardQueueDialog::RewardQueueDialog(TwitchChannel *channel, QWidget *parent)
              this->completeAllButton_,
              this->rejectAllButton_,
              this->loadMoreButton_,
+             this->sortButton_,
          })
     {
         button->setCursor(Qt::PointingHandCursor);
@@ -300,8 +324,7 @@ RewardQueueDialog::RewardQueueDialog(TwitchChannel *channel, QWidget *parent)
         this->managedConnections_.emplace_back(
             signal.connect([self, handler](const QJsonObject &data) {
                 postToThread([self, handler, data] {
-                    if (!self ||
-                        data.value("channel_id").toString() != self->channelId_)
+                    if (!self || channelIdFromPayload(data) != self->channelId_)
                     {
                         return;
                     }
@@ -329,6 +352,7 @@ RewardQueueDialog::RewardQueueDialog(TwitchChannel *channel, QWidget *parent)
     this->refreshStyle();
     this->rebuildSidebar();
     this->rebuildList();
+    this->applySizeConstraints();
 }
 
 void RewardQueueDialog::showDialog(TwitchChannel *channel, QWidget *parent)
@@ -338,6 +362,9 @@ void RewardQueueDialog::showDialog(TwitchChannel *channel, QWidget *parent)
         return;
     }
 
+    const bool wasAutoPinned = DraggablePopup::pinParentIfNeeded(parent);
+
+    RewardQueueDialog *dialog = nullptr;
     for (auto it = activeDialogs_.begin(); it != activeDialogs_.end();)
     {
         if (it->isNull())
@@ -347,30 +374,67 @@ void RewardQueueDialog::showDialog(TwitchChannel *channel, QWidget *parent)
         }
         if ((*it)->channelLogin_ == channel->getName())
         {
-            (*it)->raise();
-            (*it)->activateWindow();
-            (*it)->reload();
-            return;
+            dialog = it->data();
+            dialog->raise();
+            dialog->activateWindow();
+            dialog->reload();
+            break;
         }
         ++it;
     }
 
-    auto *dialog = new RewardQueueDialog(channel, parent);
-    activeDialogs_.push_back(dialog);
-
-    QPoint center = QCursor::pos();
-    if (parent != nullptr && parent->window() != nullptr)
+    if (dialog == nullptr)
     {
-        center = parent->window()->geometry().center();
+        // Keep using `parent` for placement, but do not make another
+        // DraggablePopup the QObject owner. Otherwise closing that popup
+        // (for example channel rewards) destroys the queue with it.
+        QWidget *ownershipParent = parent;
+        if (qobject_cast<DraggablePopup *>(parent) != nullptr)
+        {
+            ownershipParent = nullptr;
+        }
+
+        dialog = new RewardQueueDialog(channel, ownershipParent);
+        activeDialogs_.push_back(dialog);
+
+        QPoint center = QCursor::pos();
+        if (parent != nullptr && parent->window() != nullptr)
+        {
+            center = parent->window()->geometry().center();
+        }
+
+        dialog->show();
+        const auto size = dialog->size();
+        dialog->showAndMoveTo(
+            center - QPoint(size.width() / 2, size.height() / 2),
+            widgets::BoundsChecking::DesiredPosition);
+        dialog->raise();
+        dialog->activateWindow();
+        dialog->reload();
     }
 
-    dialog->show();
-    const auto size = dialog->size();
-    dialog->showAndMoveTo(center - QPoint(size.width() / 2, size.height() / 2),
-                          widgets::BoundsChecking::DesiredPosition);
-    dialog->raise();
-    dialog->activateWindow();
-    dialog->reload();
+    if (wasAutoPinned)
+    {
+        dialog->scheduleUnpinParentOnClose(parent);
+    }
+}
+
+void RewardQueueDialog::scheduleUnpinParentOnClose(QWidget *parent)
+{
+    if (this->parentUnpinScheduled_ || parent == nullptr)
+    {
+        return;
+    }
+
+    this->parentUnpinScheduled_ = true;
+
+    QPointer<QWidget> parentPtr(parent);
+    QObject::connect(this, &QObject::destroyed, parent, [parentPtr] {
+        if (parentPtr)
+        {
+            DraggablePopup::unpinParentIfNeeded(parentPtr);
+        }
+    });
 }
 
 void RewardQueueDialog::themeChangedEvent()
@@ -387,6 +451,60 @@ void RewardQueueDialog::scaleChangedEvent(float scale)
     this->refreshStyle();
     this->rebuildSidebar(true);
     this->rebuildList();
+    // setScale locks the size again after this returns.
+    QTimer::singleShot(0, this, [this] {
+        this->applySizeConstraints();
+    });
+}
+
+void RewardQueueDialog::showEvent(QShowEvent *event)
+{
+    DraggablePopup::showEvent(event);
+    this->applySizeConstraints();
+}
+
+void RewardQueueDialog::applySizeConstraints()
+{
+    const int minWidth = std::max(
+        420, int(DEFAULT_DIALOG_SIZE.width() * 0.65F * this->scale()));
+    const int minHeight = std::max(
+        280, int(DEFAULT_DIALOG_SIZE.height() * 0.65F * this->scale()));
+    const int defaultWidth =
+        std::max(minWidth, int(DEFAULT_DIALOG_SIZE.width() * this->scale()));
+    const int defaultHeight = std::max(
+        minHeight, int(DEFAULT_DIALOG_SIZE.height() * this->scale()));
+
+    int maxWidth = QWIDGETSIZE_MAX;
+    int maxHeight = QWIDGETSIZE_MAX;
+    auto *screen = this->screen();
+    if (screen == nullptr)
+    {
+        screen = QGuiApplication::screenAt(QCursor::pos());
+    }
+    if (screen == nullptr)
+    {
+        screen = QGuiApplication::primaryScreen();
+    }
+    if (screen != nullptr)
+    {
+        const auto available = screen->availableGeometry();
+        const int margin = std::max(12, int(16 * this->scale()));
+        maxWidth = std::max(minWidth, available.width() - margin * 2);
+        maxHeight = std::max(minHeight, available.height() - margin * 2);
+    }
+
+    this->setMinimumSize(minWidth, minHeight);
+    this->setMaximumSize(maxWidth, maxHeight);
+    this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    if (this->width() <= 0 || this->height() <= 0)
+    {
+        this->resize(defaultWidth, defaultHeight);
+        return;
+    }
+
+    this->resize(qBound(minWidth, this->width(), maxWidth),
+                 qBound(minHeight, this->height(), maxHeight));
 }
 
 void RewardQueueDialog::refreshStyle()
@@ -449,6 +567,18 @@ void RewardQueueDialog::refreshStyle()
         }
         QPushButton#RewardQueueSidebarButton {
             text-align: left;
+            padding: 0;
+        }
+        QLabel#RewardQueueSidebarLabel, QLabel#RewardQueueSidebarIcon {
+            background: transparent;
+        }
+        QPushButton#RewardQueueSidebarButton[rewardDisabled="true"]
+            QLabel#RewardQueueSidebarLabel {
+            color: %4;
+        }
+        QPushButton#RewardQueueSidebarButton:checked
+            QLabel#RewardQueueSidebarLabel {
+            font-weight: 700;
         }
         QPushButton#RewardQueueCompleteButton {
             font-weight: 700;
@@ -464,7 +594,6 @@ void RewardQueueDialog::refreshStyle()
         }
         QPushButton#RewardQueueSidebarButton:checked {
             border-color: %7;
-            font-weight: 700;
         }
         QPushButton#RewardQueueButton:disabled,
         QPushButton#RewardQueueCompleteButton:disabled {
@@ -505,47 +634,7 @@ void RewardQueueDialog::reload(bool quiet)
             {
                 return;
             }
-            if (!queue.channelId.isEmpty() &&
-                queue.channelId != self->channelId_)
-            {
-                self->channelId_ = queue.channelId;
-                getApp()->getTwitchPubSub()->listenToChannelPointRewards(
-                    self->channelId_);
-            }
-            for (const auto &known : self->rewards_)
-            {
-                const auto stillListed = std::ranges::any_of(
-                    queue.rewards, [&known](const auto &reward) {
-                        return reward.id == known.id;
-                    });
-                if (!stillListed)
-                {
-                    auto kept = known;
-                    kept.count = 0;
-                    queue.rewards.push_back(kept);
-                }
-            }
-            for (const auto &reward : queue.rewards)
-            {
-                if (!self->rewardOrder_.contains(reward.id))
-                {
-                    self->rewardOrder_.push_back(reward.id);
-                }
-            }
-            std::ranges::stable_sort(
-                queue.rewards, {}, [&self](const auto &reward) {
-                    return self->rewardOrder_.indexOf(reward.id);
-                });
-            self->rewards_ = std::move(queue.rewards);
-            const auto selectedExists = std::ranges::any_of(
-                self->rewards_, [&self](const auto &reward) {
-                    return reward.id == self->selectedRewardId_;
-                });
-            if (!selectedExists)
-            {
-                self->selectedRewardId_.clear();
-            }
-            self->rebuildSidebar();
+            self->applyRewardQueue(std::move(queue));
             self->loadRedemptions(false);
         },
         [self, generation](const QString &error) {
@@ -560,6 +649,97 @@ void RewardQueueDialog::reload(bool quiet)
                             true);
             self->updateActions();
         });
+}
+
+void RewardQueueDialog::refreshCounts()
+{
+    if (this->countsRefreshInFlight_)
+    {
+        return;
+    }
+
+    const auto token = this->authTokenOrMessage("viewing the reward queue");
+    if (token.isEmpty())
+    {
+        return;
+    }
+
+    this->countsRefreshInFlight_ = true;
+    const auto generation = this->generation_;
+    QPointer<RewardQueueDialog> self = this;
+    TwitchGql::getRewardQueue(
+        this->channelLogin_, token,
+        [self, generation](GqlRewardQueue queue) {
+            if (!self || generation != self->generation_)
+            {
+                if (self)
+                {
+                    self->countsRefreshInFlight_ = false;
+                }
+                return;
+            }
+            self->countsRefreshInFlight_ = false;
+            self->applyRewardQueue(std::move(queue));
+        },
+        [self, generation](const QString &error) {
+            if (!self || generation != self->generation_)
+            {
+                if (self)
+                {
+                    self->countsRefreshInFlight_ = false;
+                }
+                return;
+            }
+            self->countsRefreshInFlight_ = false;
+            self->setStatus(MoltorinoAuth::normalizeAuthError(
+                                "loading the reward queue", error),
+                            true);
+        });
+}
+
+void RewardQueueDialog::applyRewardQueue(GqlRewardQueue queue)
+{
+    if (!queue.channelId.isEmpty() && queue.channelId != this->channelId_)
+    {
+        this->channelId_ = queue.channelId;
+        getApp()->getTwitchPubSub()->listenToChannelPointRewards(
+            this->channelId_);
+    }
+
+    for (const auto &known : this->rewards_)
+    {
+        const auto stillListed = std::ranges::any_of(
+            queue.rewards, [&known](const auto &reward) {
+                return reward.id == known.id;
+            });
+        if (!stillListed && known.id == this->selectedRewardId_)
+        {
+            auto kept = known;
+            kept.count = 0;
+            queue.rewards.push_back(kept);
+        }
+    }
+    for (const auto &reward : queue.rewards)
+    {
+        if (!this->rewardOrder_.contains(reward.id))
+        {
+            this->rewardOrder_.push_back(reward.id);
+        }
+    }
+    std::ranges::stable_sort(queue.rewards, {}, [this](const auto &reward) {
+        return this->rewardOrder_.indexOf(reward.id);
+    });
+    this->rewards_ = std::move(queue.rewards);
+    const auto selectedExists = std::ranges::any_of(
+        this->rewards_, [this](const auto &reward) {
+            return reward.id == this->selectedRewardId_;
+        });
+    if (!selectedExists)
+    {
+        this->selectedRewardId_.clear();
+    }
+    this->countsValidAt_ = QDateTime::currentDateTimeUtc();
+    this->rebuildSidebar();
 }
 
 void RewardQueueDialog::loadRedemptions(bool append)
@@ -598,9 +778,130 @@ void RewardQueueDialog::loadRedemptions(bool append)
         self->updateActions();
     };
 
+    if (append && this->selectedRewardId_.isEmpty())
+    {
+        QStringList rewardIds;
+        for (const auto &reward : this->rewards_)
+        {
+            if (reward.count > 0 && !reward.id.isEmpty())
+            {
+                rewardIds.push_back(reward.id);
+            }
+        }
+        if (!rewardIds.isEmpty())
+        {
+            struct PageBatch
+            {
+                int remaining = 0;
+                int added = 0;
+                bool anyNextPage = false;
+                QString error;
+                QStringList missingUsers;
+            };
+            auto batch = std::make_shared<PageBatch>();
+            batch->remaining = static_cast<int>(rewardIds.size());
+
+            auto finishBatch = [self, generation, batch] {
+                if (!self || generation != self->generation_)
+                {
+                    return;
+                }
+
+                const auto newest = self->newestFirst_;
+                std::stable_sort(
+                    self->redemptions_.begin(), self->redemptions_.end(),
+                    [newest](const GqlRewardRedemption &left,
+                             const GqlRewardRedemption &right) {
+                        if (newest)
+                        {
+                            return left.timestamp > right.timestamp;
+                        }
+                        return left.timestamp < right.timestamp;
+                    });
+                self->extraPagesLoaded_ = true;
+                self->nextCursor_.clear();
+                self->hasNextPage_ = batch->anyNextPage;
+                if (batch->added == 0 && !batch->error.isEmpty())
+                {
+                    self->loading_ = false;
+                    self->updateAllStatus_.reset();
+                    self->setStatus(MoltorinoAuth::normalizeAuthError(
+                                        "loading reward requests",
+                                        batch->error),
+                                    true);
+                    self->updateActions();
+                    return;
+                }
+                self->loadUsers(
+                    batch->missingUsers, [self, generation] {
+                        if (!self || generation != self->generation_)
+                        {
+                            return;
+                        }
+                        self->finishLoading();
+                    });
+            };
+
+            for (const auto &rewardId : rewardIds)
+            {
+                TwitchGql::getRewardQueueRedemptions(
+                    this->channelLogin_, rewardId, QString(),
+                    this->newestFirst_, token,
+                    [self, generation, batch,
+                     finishBatch](GqlRewardRedemptionPage page) {
+                        if (self && generation == self->generation_)
+                        {
+                            batch->anyNextPage = batch->anyNextPage ||
+                                                 page.hasNextPage;
+                            for (const auto &redemption : page.redemptions)
+                            {
+                                if (self->resolvedIds_.contains(
+                                        redemption.id) ||
+                                    self->findRedemption(redemption.id) !=
+                                        nullptr)
+                                {
+                                    continue;
+                                }
+                                self->redemptions_.push_back(redemption);
+                                ++batch->added;
+                                const auto needsUser =
+                                    !redemption.userId.isEmpty() &&
+                                    (!self->users_.contains(
+                                         redemption.userId) ||
+                                     self->badgeFetchFailed_.contains(
+                                         redemption.userId));
+                                if (needsUser &&
+                                    !batch->missingUsers.contains(
+                                        redemption.userId))
+                                {
+                                    batch->missingUsers.push_back(
+                                        redemption.userId);
+                                }
+                            }
+                        }
+                        if (--batch->remaining == 0)
+                        {
+                            finishBatch();
+                        }
+                    },
+                    [batch, finishBatch](const QString &error) {
+                        if (batch->error.isEmpty())
+                        {
+                            batch->error = error;
+                        }
+                        if (--batch->remaining == 0)
+                        {
+                            finishBatch();
+                        }
+                    });
+            }
+            return;
+        }
+    }
+
     TwitchGql::getRewardQueueRedemptions(
         this->channelLogin_, this->selectedRewardId_,
-        append ? this->nextCursor_ : QString(), token,
+        append ? this->nextCursor_ : QString(), this->newestFirst_, token,
         [self, generation, append](GqlRewardRedemptionPage page) {
             if (!self || generation != self->generation_)
             {
@@ -624,9 +925,11 @@ void RewardQueueDialog::loadRedemptions(bool append)
                     continue;
                 }
                 self->redemptions_.push_back(redemption);
-                if (!redemption.userId.isEmpty() &&
-                    !self->users_.contains(redemption.userId) &&
-                    !missingUsers.contains(redemption.userId))
+                const auto needsUser =
+                    !redemption.userId.isEmpty() &&
+                    (!self->users_.contains(redemption.userId) ||
+                     self->badgeFetchFailed_.contains(redemption.userId));
+                if (needsUser && !missingUsers.contains(redemption.userId))
                 {
                     missingUsers.push_back(redemption.userId);
                 }
@@ -657,10 +960,14 @@ void RewardQueueDialog::loadUsers(const QStringList &userIds,
     QPointer<RewardQueueDialog> self = this;
     TwitchGql::getRewardQueueUsers(
         this->channelLogin_, userIds, auth.token,
-        [self, callback](QVector<GqlRewardQueueUser> users) {
+        [self, callback, userIds](QVector<GqlRewardQueueUser> users) {
             if (!self)
             {
                 return;
+            }
+            for (const auto &id : userIds)
+            {
+                self->badgeFetchFailed_.remove(id);
             }
             for (const auto &user : users)
             {
@@ -668,7 +975,14 @@ void RewardQueueDialog::loadUsers(const QStringList &userIds,
             }
             callback();
         },
-        [callback](const QString &) {
+        [self, callback, userIds](const QString &) {
+            if (self)
+            {
+                for (const auto &id : userIds)
+                {
+                    self->badgeFetchFailed_.insert(id);
+                }
+            }
             callback();
         });
 }
@@ -694,9 +1008,17 @@ void RewardQueueDialog::finishLoading()
     }
 
     const auto ids = this->loadedIds();
-    if (ids.isEmpty() || this->updateAllRounds_ >= MAX_UPDATE_ALL_ROUNDS)
+    if (ids.isEmpty())
     {
         this->updateAllStatus_.reset();
+        return;
+    }
+    if (this->updateAllRounds_ >= MAX_UPDATE_ALL_ROUNDS)
+    {
+        this->updateAllStatus_.reset();
+        this->setStatus(
+            "Stopped before the rest of the queue was updated. Run it again "
+            "to continue.");
         return;
     }
 
@@ -726,6 +1048,13 @@ void RewardQueueDialog::onRewardRedeemed(const QJsonObject &redemption)
         return;
     }
 
+    const auto timestamp = QDateTime::fromString(
+        redemption.value("redeemed_at").toString(), Qt::ISODateWithMs);
+    if (!this->isNewerThanSnapshot(timestamp))
+    {
+        return;
+    }
+
     const auto rewardIt =
         std::ranges::find_if(this->rewards_, [&rewardId](const auto &r) {
             return r.id == rewardId;
@@ -741,7 +1070,7 @@ void RewardQueueDialog::onRewardRedeemed(const QJsonObject &redemption)
 
     const auto matchesFilter = this->selectedRewardId_.isEmpty() ||
                                this->selectedRewardId_ == rewardId;
-    if (!matchesFilter || this->hasNextPage_)
+    if (!matchesFilter || (!this->newestFirst_ && this->hasNextPage_))
     {
         return;
     }
@@ -753,21 +1082,34 @@ void RewardQueueDialog::onRewardRedeemed(const QJsonObject &redemption)
     item.rewardTitle = reward.value("title").toString();
     item.userId = user.value("id").toString();
     item.input = redemption.value("user_input").toString();
-    item.timestamp = QDateTime::fromString(
-        redemption.value("redeemed_at").toString(), Qt::ISODateWithMs);
+    item.timestamp = timestamp;
     if (!item.timestamp.isValid())
     {
         item.timestamp = QDateTime::currentDateTimeUtc();
     }
-    this->redemptions_.push_back(item);
-
-    if (!item.userId.isEmpty() && !this->users_.contains(item.userId))
+    if (this->newestFirst_)
     {
-        GqlRewardQueueUser partialUser;
-        partialUser.id = item.userId;
-        partialUser.login = user.value("login").toString();
-        partialUser.displayName = user.value("display_name").toString();
-        this->users_.insert(partialUser.id, partialUser);
+        this->redemptions_.prepend(item);
+    }
+    else
+    {
+        this->redemptions_.push_back(item);
+    }
+
+    const auto needsUser =
+        !item.userId.isEmpty() &&
+        (!this->users_.contains(item.userId) ||
+         this->badgeFetchFailed_.contains(item.userId));
+    if (needsUser)
+    {
+        if (!this->users_.contains(item.userId))
+        {
+            GqlRewardQueueUser partialUser;
+            partialUser.id = item.userId;
+            partialUser.login = user.value("login").toString();
+            partialUser.displayName = user.value("display_name").toString();
+            this->users_.insert(partialUser.id, partialUser);
+        }
 
         QPointer<RewardQueueDialog> self = this;
         this->loadUsers({item.userId}, [self] {
@@ -805,8 +1147,12 @@ void RewardQueueDialog::onRedemptionStatusUpdated(const QJsonObject &redemption)
         return;
     }
 
+    const auto timestamp = QDateTime::fromString(
+        redemption.value("redeemed_at").toString(), Qt::ISODateWithMs);
+    const auto wasVisible = this->findRedemption(id) != nullptr;
     this->resolveLocally(
-        id, redemption.value("reward").toObject().value("id").toString());
+        id, redemption.value("reward").toObject().value("id").toString(),
+        wasVisible || this->isNewerThanSnapshot(timestamp));
     this->rebuildSidebar();
     this->rebuildList();
     if (!this->actionInFlight_ && !this->statusIsError_)
@@ -843,7 +1189,8 @@ void RewardQueueDialog::onBulkUpdateProgress(const QJsonObject &progress,
 }
 
 void RewardQueueDialog::resolveLocally(const QString &redemptionId,
-                                       const QString &rewardId)
+                                       const QString &rewardId,
+                                       bool adjustCount)
 {
     auto resolvedRewardId = rewardId;
     const auto it = std::ranges::find_if(
@@ -860,6 +1207,11 @@ void RewardQueueDialog::resolveLocally(const QString &redemptionId,
     }
     this->selected_.remove(redemptionId);
 
+    if (!adjustCount)
+    {
+        return;
+    }
+
     for (auto &reward : this->rewards_)
     {
         if (reward.id == resolvedRewardId)
@@ -868,6 +1220,15 @@ void RewardQueueDialog::resolveLocally(const QString &redemptionId,
             return;
         }
     }
+}
+
+bool RewardQueueDialog::isNewerThanSnapshot(const QDateTime &timestamp) const
+{
+    if (!this->countsValidAt_.isValid() || !timestamp.isValid())
+    {
+        return true;
+    }
+    return timestamp > this->countsValidAt_;
 }
 
 const GqlRewardRedemption *RewardQueueDialog::findRedemption(
@@ -900,9 +1261,14 @@ void RewardQueueDialog::onTick()
         }
     }
 
-    if (this->loading_ || this->actionInFlight_ || this->extraPagesLoaded_ ||
+    if (this->loading_ || this->actionInFlight_ ||
         this->reloadTimer_.isActive() || !this->isVisible())
     {
+        return;
+    }
+    if (this->extraPagesLoaded_)
+    {
+        this->refreshCounts();
         return;
     }
     this->reload(true);
@@ -918,18 +1284,46 @@ void RewardQueueDialog::rebuildSidebar(bool force)
     }
 
     const auto iconSize = int(REWARD_ICON_SIZE * this->scale());
+    const auto pad = std::max(2, int(4 * this->scale()));
     if (force || ids != this->sidebarIds_ || this->sidebarButtons_.isEmpty())
     {
         clearLayout(this->sidebarLayout_);
         this->sidebarButtons_.clear();
         this->sidebarIds_ = ids;
 
-        auto addButton = [this, iconSize](const QString &rewardId) {
+        auto addButton = [this, iconSize, pad](const QString &rewardId,
+                                                bool withIcon) {
             auto *button = new QPushButton();
             button->setObjectName("RewardQueueSidebarButton");
             button->setCheckable(true);
             button->setCursor(Qt::PointingHandCursor);
-            button->setIconSize(QSize(iconSize, iconSize));
+            button->setMinimumWidth(0);
+            button->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Minimum);
+            auto *row = new QHBoxLayout(button);
+            row->setContentsMargins(pad * 2, pad, pad * 2, pad);
+            row->setSpacing(pad);
+
+            if (withIcon)
+            {
+                auto *iconLabel = new QLabel(button);
+                iconLabel->setObjectName("RewardQueueSidebarIcon");
+                iconLabel->setFixedSize(iconSize, iconSize);
+                iconLabel->setAlignment(Qt::AlignCenter);
+                iconLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+                row->addWidget(iconLabel, 0, Qt::AlignVCenter);
+            }
+
+            auto *textLabel = new QLabel(button);
+            textLabel->setObjectName("RewardQueueSidebarLabel");
+            textLabel->setWordWrap(true);
+            textLabel->setTextFormat(Qt::PlainText);
+            textLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+            textLabel->setMinimumWidth(0);
+            textLabel->setSizePolicy(QSizePolicy::Ignored,
+                                     QSizePolicy::Minimum);
+            textLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+            row->addWidget(textLabel, 1);
+
             QObject::connect(button, &QPushButton::clicked, this,
                              [this, rewardId] {
                                  this->selectReward(rewardId);
@@ -938,13 +1332,55 @@ void RewardQueueDialog::rebuildSidebar(bool force)
             this->sidebarButtons_.insert(rewardId, button);
         };
 
-        addButton({});
+        addButton({}, false);
         for (const auto &id : ids)
         {
-            addButton(id);
+            addButton(id, true);
         }
         this->sidebarLayout_->addStretch(1);
     }
+
+    int sidebarWidth = this->sidebarScrollArea_->viewport()->width();
+    if (sidebarWidth <= 0)
+    {
+        sidebarWidth =
+            int(SIDEBAR_WIDTH * this->scale()) -
+            this->sidebarScrollArea_->verticalScrollBar()->sizeHint().width();
+    }
+
+    auto fitButton = [sidebarWidth](QPushButton *button) {
+        auto *label = button->findChild<QLabel *>(
+            QStringLiteral("RewardQueueSidebarLabel"));
+        auto *layout = button->layout();
+        if (label == nullptr || layout == nullptr)
+        {
+            return;
+        }
+
+        const auto margins = layout->contentsMargins();
+        int available = sidebarWidth - margins.left() - margins.right();
+        if (auto *icon = button->findChild<QLabel *>(
+                QStringLiteral("RewardQueueSidebarIcon")))
+        {
+            available -= icon->width() + layout->spacing();
+        }
+        available = std::max(available, 1);
+
+        const int textHeight = label->heightForWidth(available);
+        label->setMinimumHeight(textHeight);
+        button->setMinimumHeight(textHeight + margins.top() +
+                                  margins.bottom());
+    };
+
+    auto setButtonText = [&fitButton](QPushButton *button,
+                                      const QString &text) {
+        if (auto *label = button->findChild<QLabel *>(
+                QStringLiteral("RewardQueueSidebarLabel")))
+        {
+            label->setText(text);
+        }
+        fitButton(button);
+    };
 
     int total = 0;
     const GqlRewardQueueReward *selectedReward = nullptr;
@@ -967,9 +1403,9 @@ void RewardQueueDialog::rebuildSidebar(bool force)
         {
             title += QStringLiteral(" (disabled)");
         }
-        button->setText(QStringLiteral("%1 (%2)").arg(
-            title, QLocale().toString(reward.count)));
         button->setChecked(reward.id == this->selectedRewardId_);
+        setButtonText(button, QStringLiteral("%1 (%2)").arg(
+                                  title, QLocale().toString(reward.count)));
 
         auto tooltip = QStringLiteral("%1 - %2 points")
                            .arg(reward.title, QLocale().toString(reward.cost));
@@ -992,21 +1428,37 @@ void RewardQueueDialog::rebuildSidebar(bool force)
             button->setProperty("rewardDisabled", !reward.isEnabled);
             button->style()->unpolish(button);
             button->style()->polish(button);
+            if (auto *label = button->findChild<QLabel *>(
+                    QStringLiteral("RewardQueueSidebarLabel")))
+            {
+                label->style()->unpolish(label);
+                label->style()->polish(label);
+            }
+            setButtonText(button, QStringLiteral("%1 (%2)").arg(
+                                      title, QLocale().toString(reward.count)));
+        }
+
+        auto *iconLabel = button->findChild<QLabel *>(
+            QStringLiteral("RewardQueueSidebarIcon"));
+        if (iconLabel == nullptr)
+        {
+            continue;
         }
 
         if (reward.isPaused)
         {
-            button->setIcon(
-                QIcon(pausePixmap(iconSize, this->theme->window.text)));
+            iconLabel->setPixmap(
+                pausePixmap(iconSize, this->theme->window.text));
             continue;
         }
 
-        button->setIcon({});
+        iconLabel->clear();
         QPointer<RewardQueueDialog> self = this;
-        QPointer<QPushButton> buttonPtr = button;
-        this->loadPixmap(reward.imageUrl, [self, buttonPtr, id = reward.id](
+        QPointer<QLabel> iconPtr = iconLabel;
+        this->loadPixmap(reward.imageUrl, [self, iconPtr, iconSize,
+                                            id = reward.id](
                                               const QPixmap &pixmap) {
-            if (!self || !buttonPtr)
+            if (!self || !iconPtr)
             {
                 return;
             }
@@ -1016,15 +1468,17 @@ void RewardQueueDialog::rebuildSidebar(bool force)
                 });
             if (!paused)
             {
-                buttonPtr->setIcon(QIcon(pixmap));
+                iconPtr->setPixmap(pixmap.scaled(
+                    iconSize, iconSize, Qt::KeepAspectRatio,
+                    Qt::SmoothTransformation));
             }
         });
     }
 
     if (auto *allButton = this->sidebarButtons_.value(QString()))
     {
-        allButton->setText(
-            QStringLiteral("All requests (%1)").arg(QLocale().toString(total)));
+        setButtonText(allButton, QStringLiteral("All requests (%1)")
+                                      .arg(QLocale().toString(total)));
         allButton->setChecked(this->selectedRewardId_.isEmpty());
     }
 
@@ -1282,11 +1736,50 @@ void RewardQueueDialog::updateActions()
     this->rejectAllButton_->setEnabled(idle && hasRedemptions);
     this->loadMoreButton_->setEnabled(idle);
     this->loadMoreButton_->setVisible(this->hasNextPage_);
+    this->sortButton_->setEnabled(idle);
 
     const QSignalBlocker blocker(this->selectAllCheckBox_);
     this->selectAllCheckBox_->setEnabled(hasRedemptions);
     this->selectAllCheckBox_->setChecked(
         hasRedemptions && selectedCount == this->redemptions_.size());
+}
+
+void RewardQueueDialog::toggleSortOrder()
+{
+    if (this->loading_ || this->actionInFlight_)
+    {
+        return;
+    }
+
+    this->newestFirst_ = !this->newestFirst_;
+    this->updateSortButton();
+    this->selected_.clear();
+    this->redemptions_.clear();
+    this->nextCursor_.clear();
+    this->hasNextPage_ = false;
+    this->extraPagesLoaded_ = false;
+    this->updateAllStatus_.reset();
+    this->rebuildList();
+
+    this->reloadTimer_.stop();
+    ++this->generation_;
+    this->quietLoad_ = false;
+    this->setStatus("Loading reward requests...");
+    this->loadRedemptions(false);
+}
+
+void RewardQueueDialog::updateSortButton()
+{
+    if (this->newestFirst_)
+    {
+        this->sortButton_->setText("Newest");
+        this->sortButton_->setToolTip(
+            "Showing the most recent requests first");
+        return;
+    }
+
+    this->sortButton_->setText("Oldest");
+    this->sortButton_->setToolTip("Showing the oldest requests first");
 }
 
 void RewardQueueDialog::selectReward(const QString &rewardId)
@@ -1445,7 +1938,7 @@ void RewardQueueDialog::setStatus(const QString &text, bool error)
 {
     this->statusIsError_ = error;
     this->statusLabel_->setText(text);
-    this->statusLabel_->setStyleSheet(error ? QStringLiteral("color: #ff6b6b;")
+    this->statusLabel_->setStyleSheet(error ? QStringLiteral("color: #ff9e9e;")
                                             : QString());
 }
 

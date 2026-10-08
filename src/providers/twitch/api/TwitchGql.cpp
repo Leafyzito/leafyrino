@@ -890,14 +890,6 @@ GqlBlockedTerm blockedTermFromObject(const QJsonObject &obj)
     return term;
 }
 
-#if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
-QString makeTransactionId()
-{
-    auto uuid = generateUuid();
-    uuid.remove('{').remove('}').remove('-');
-    return uuid;
-}
-
 QString imageUrlFromRewardObject(const QJsonObject &obj)
 {
     auto image = obj.value("image").toObject();
@@ -920,6 +912,14 @@ QString imageUrlFromRewardObject(const QJsonObject &obj)
         url = image.value("url_1x").toString();
     }
     return url;
+}
+
+#if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
+QString makeTransactionId()
+{
+    auto uuid = generateUuid();
+    uuid.remove('{').remove('}').remove('-');
+    return uuid;
 }
 
 int rewardCostFromObject(const QJsonObject &obj)
@@ -1710,22 +1710,6 @@ NetworkRequest makePersistedGqlBatchRequest(const QJsonArray &payloadArray,
     return request;
 }
 
-QString rewardQueueImageUrl(const QJsonObject &obj)
-{
-    auto image = obj.value("image").toObject();
-    if (image.isEmpty())
-    {
-        image = obj.value("defaultImage").toObject();
-    }
-
-    auto url = image.value("url2x").toString();
-    if (url.isEmpty())
-    {
-        url = image.value("url").toString();
-    }
-    return url;
-}
-
 GqlRewardQueueUser rewardQueueUserFromObject(const QString &userId,
                                              const QJsonObject &obj)
 {
@@ -1734,14 +1718,7 @@ GqlRewardQueueUser rewardQueueUserFromObject(const QString &userId,
     user.login = obj.value("login").toString();
     user.displayName = obj.value("displayName").toString();
     user.color = obj.value("chatColor").toString();
-    for (const auto &value : obj.value("displayBadges").toArray())
-    {
-        if (!value.isObject())
-        {
-            continue;
-        }
-        user.badges.push_back(badgeFromJson(value.toObject()));
-    }
+    user.badges = badgesFromArray(obj.value("displayBadges").toArray());
     return user;
 }
 
@@ -5943,7 +5920,7 @@ void TwitchGql::getRewardQueue(
                     reward.prompt = node.value("prompt").toString();
                     reward.backgroundColor =
                         node.value("backgroundColor").toString();
-                    reward.imageUrl = rewardQueueImageUrl(node);
+                    reward.imageUrl = imageUrlFromRewardObject(node);
                     reward.cost = node.value("cost").toInt(0);
                     reward.count = summary.value("count").toInt(0);
                     reward.isUserInputRequired =
@@ -5963,13 +5940,13 @@ void TwitchGql::getRewardQueue(
 
 void TwitchGql::getRewardQueueRedemptions(
     const QString &channelLogin, const QString &rewardId, const QString &cursor,
-    const QString &oauthToken,
+    bool newestFirst, const QString &oauthToken,
     std::function<void(GqlRewardRedemptionPage)> successCallback,
     std::function<void(const QString &)> failureCallback)
 {
     QJsonObject variables;
     variables.insert("channelLogin", channelLogin);
-    variables.insert("order", "OLDEST");
+    variables.insert("order", newestFirst ? "NEWEST" : "OLDEST");
     variables.insert("count", REWARD_QUEUE_PAGE_SIZE);
     if (!rewardId.isEmpty())
     {
@@ -5984,8 +5961,8 @@ void TwitchGql::getRewardQueueRedemptions(
         "RedemptionsByRewardID_Paginated",
         "74740dc72455f428e464fad11770a543c3ac1092b89cb39ed7411ff3a69e6d37",
         variables, oauthToken)
-        .onSuccess(
-            [successCallback, failureCallback](const NetworkResult &result) {
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
                 const auto root = result.parseJsonValue();
                 if (root.isUndefined() || root.isNull())
                 {
