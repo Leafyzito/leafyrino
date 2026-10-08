@@ -5961,8 +5961,8 @@ void TwitchGql::getRewardQueueRedemptions(
         "RedemptionsByRewardID_Paginated",
         "74740dc72455f428e464fad11770a543c3ac1092b89cb39ed7411ff3a69e6d37",
         variables, oauthToken)
-        .onSuccess([successCallback,
-                    failureCallback](const NetworkResult &result) {
+        .onSuccess(
+            [successCallback, failureCallback](const NetworkResult &result) {
                 const auto root = result.parseJsonValue();
                 if (root.isUndefined() || root.isNull())
                 {

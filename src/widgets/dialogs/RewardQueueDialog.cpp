@@ -14,6 +14,7 @@
 #include <QCursor>
 #include <QDateTime>
 #include <QFrame>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QJsonObject>
 #include <QLabel>
@@ -22,7 +23,6 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QPushButton>
-#include <QGuiApplication>
 #include <QScreen>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -465,14 +465,14 @@ void RewardQueueDialog::showEvent(QShowEvent *event)
 
 void RewardQueueDialog::applySizeConstraints()
 {
-    const int minWidth = std::max(
-        420, int(DEFAULT_DIALOG_SIZE.width() * 0.65F * this->scale()));
+    const int minWidth =
+        std::max(420, int(DEFAULT_DIALOG_SIZE.width() * 0.65F * this->scale()));
     const int minHeight = std::max(
         280, int(DEFAULT_DIALOG_SIZE.height() * 0.65F * this->scale()));
     const int defaultWidth =
         std::max(minWidth, int(DEFAULT_DIALOG_SIZE.width() * this->scale()));
-    const int defaultHeight = std::max(
-        minHeight, int(DEFAULT_DIALOG_SIZE.height() * this->scale()));
+    const int defaultHeight =
+        std::max(minHeight, int(DEFAULT_DIALOG_SIZE.height() * this->scale()));
 
     int maxWidth = QWIDGETSIZE_MAX;
     int maxHeight = QWIDGETSIZE_MAX;
@@ -708,8 +708,8 @@ void RewardQueueDialog::applyRewardQueue(GqlRewardQueue queue)
 
     for (const auto &known : this->rewards_)
     {
-        const auto stillListed = std::ranges::any_of(
-            queue.rewards, [&known](const auto &reward) {
+        const auto stillListed =
+            std::ranges::any_of(queue.rewards, [&known](const auto &reward) {
                 return reward.id == known.id;
             });
         if (!stillListed && known.id == this->selectedRewardId_)
@@ -730,8 +730,8 @@ void RewardQueueDialog::applyRewardQueue(GqlRewardQueue queue)
         return this->rewardOrder_.indexOf(reward.id);
     });
     this->rewards_ = std::move(queue.rewards);
-    const auto selectedExists = std::ranges::any_of(
-        this->rewards_, [this](const auto &reward) {
+    const auto selectedExists =
+        std::ranges::any_of(this->rewards_, [this](const auto &reward) {
             return reward.id == this->selectedRewardId_;
         });
     if (!selectedExists)
@@ -790,8 +790,7 @@ void RewardQueueDialog::loadRedemptions(bool append)
         }
         if (!rewardIds.isEmpty())
         {
-            struct PageBatch
-            {
+            struct PageBatch {
                 int remaining = 0;
                 int added = 0;
                 bool anyNextPage = false;
@@ -825,21 +824,20 @@ void RewardQueueDialog::loadRedemptions(bool append)
                 {
                     self->loading_ = false;
                     self->updateAllStatus_.reset();
-                    self->setStatus(MoltorinoAuth::normalizeAuthError(
-                                        "loading reward requests",
-                                        batch->error),
-                                    true);
+                    self->setStatus(
+                        MoltorinoAuth::normalizeAuthError(
+                            "loading reward requests", batch->error),
+                        true);
                     self->updateActions();
                     return;
                 }
-                self->loadUsers(
-                    batch->missingUsers, [self, generation] {
-                        if (!self || generation != self->generation_)
-                        {
-                            return;
-                        }
-                        self->finishLoading();
-                    });
+                self->loadUsers(batch->missingUsers, [self, generation] {
+                    if (!self || generation != self->generation_)
+                    {
+                        return;
+                    }
+                    self->finishLoading();
+                });
             };
 
             for (const auto &rewardId : rewardIds)
@@ -851,8 +849,8 @@ void RewardQueueDialog::loadRedemptions(bool append)
                      finishBatch](GqlRewardRedemptionPage page) {
                         if (self && generation == self->generation_)
                         {
-                            batch->anyNextPage = batch->anyNextPage ||
-                                                 page.hasNextPage;
+                            batch->anyNextPage =
+                                batch->anyNextPage || page.hasNextPage;
                             for (const auto &redemption : page.redemptions)
                             {
                                 if (self->resolvedIds_.contains(
@@ -870,9 +868,8 @@ void RewardQueueDialog::loadRedemptions(bool append)
                                          redemption.userId) ||
                                      self->badgeFetchFailed_.contains(
                                          redemption.userId));
-                                if (needsUser &&
-                                    !batch->missingUsers.contains(
-                                        redemption.userId))
+                                if (needsUser && !batch->missingUsers.contains(
+                                                     redemption.userId))
                                 {
                                     batch->missingUsers.push_back(
                                         redemption.userId);
@@ -1096,10 +1093,9 @@ void RewardQueueDialog::onRewardRedeemed(const QJsonObject &redemption)
         this->redemptions_.push_back(item);
     }
 
-    const auto needsUser =
-        !item.userId.isEmpty() &&
-        (!this->users_.contains(item.userId) ||
-         this->badgeFetchFailed_.contains(item.userId));
+    const auto needsUser = !item.userId.isEmpty() &&
+                           (!this->users_.contains(item.userId) ||
+                            this->badgeFetchFailed_.contains(item.userId));
     if (needsUser)
     {
         if (!this->users_.contains(item.userId))
@@ -1292,7 +1288,7 @@ void RewardQueueDialog::rebuildSidebar(bool force)
         this->sidebarIds_ = ids;
 
         auto addButton = [this, iconSize, pad](const QString &rewardId,
-                                                bool withIcon) {
+                                               bool withIcon) {
             auto *button = new QPushButton();
             button->setObjectName("RewardQueueSidebarButton");
             button->setCheckable(true);
@@ -1368,8 +1364,7 @@ void RewardQueueDialog::rebuildSidebar(bool force)
 
         const int textHeight = label->heightForWidth(available);
         label->setMinimumHeight(textHeight);
-        button->setMinimumHeight(textHeight + margins.top() +
-                                  margins.bottom());
+        button->setMinimumHeight(textHeight + margins.top() + margins.bottom());
     };
 
     auto setButtonText = [&fitButton](QPushButton *button,
@@ -1455,30 +1450,31 @@ void RewardQueueDialog::rebuildSidebar(bool force)
         iconLabel->clear();
         QPointer<RewardQueueDialog> self = this;
         QPointer<QLabel> iconPtr = iconLabel;
-        this->loadPixmap(reward.imageUrl, [self, iconPtr, iconSize,
-                                            id = reward.id](
-                                              const QPixmap &pixmap) {
-            if (!self || !iconPtr)
-            {
-                return;
-            }
-            const auto paused =
-                std::ranges::any_of(self->rewards_, [&id](const auto &r) {
-                    return r.id == id && r.isPaused;
-                });
-            if (!paused)
-            {
-                iconPtr->setPixmap(pixmap.scaled(
-                    iconSize, iconSize, Qt::KeepAspectRatio,
-                    Qt::SmoothTransformation));
-            }
-        });
+        this->loadPixmap(
+            reward.imageUrl,
+            [self, iconPtr, iconSize, id = reward.id](const QPixmap &pixmap) {
+                if (!self || !iconPtr)
+                {
+                    return;
+                }
+                const auto paused =
+                    std::ranges::any_of(self->rewards_, [&id](const auto &r) {
+                        return r.id == id && r.isPaused;
+                    });
+                if (!paused)
+                {
+                    iconPtr->setPixmap(pixmap.scaled(iconSize, iconSize,
+                                                     Qt::KeepAspectRatio,
+                                                     Qt::SmoothTransformation));
+                }
+            });
     }
 
     if (auto *allButton = this->sidebarButtons_.value(QString()))
     {
-        setButtonText(allButton, QStringLiteral("All requests (%1)")
-                                      .arg(QLocale().toString(total)));
+        setButtonText(
+            allButton,
+            QStringLiteral("All requests (%1)").arg(QLocale().toString(total)));
         allButton->setChecked(this->selectedRewardId_.isEmpty());
     }
 
@@ -1773,8 +1769,7 @@ void RewardQueueDialog::updateSortButton()
     if (this->newestFirst_)
     {
         this->sortButton_->setText("Newest");
-        this->sortButton_->setToolTip(
-            "Showing the most recent requests first");
+        this->sortButton_->setToolTip("Showing the most recent requests first");
         return;
     }
 
