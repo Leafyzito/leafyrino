@@ -23,6 +23,7 @@
 #include "messages/MessageColor.hpp"
 #include "messages/MessageElement.hpp"
 #include "messages/MessageThread.hpp"
+#include "providers/bluzyrino/BluzyrinoBadges.hpp"
 #include "providers/bttv/BttvBadges.hpp"
 #include "providers/bttv/BttvEmotes.hpp"
 #include "providers/chatsen/ChatsenBadges.hpp"
@@ -2155,6 +2156,7 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
         builder.appendSeventvBadges(userID);
         builder.appendDankChatBadges(userID);
         builder.appendChatsenBadges(userID);
+        builder.appendBluzyrinoBadges(userID);
         builder.appendHomiesBadges(userID);
         builder.appendFolhinhaBadges(userID);
 
@@ -3618,6 +3620,20 @@ void MessageBuilder::appendChatsenBadges(const QString &userID)
     }
 }
 
+void MessageBuilder::appendBluzyrinoBadges(const QString &userID)
+{
+    auto *provider = getApp()->getBluzyrinoBadges();
+    if (provider == nullptr)
+    {
+        return;
+    }
+    for (const auto &badge : provider->getBadges({userID}))
+    {
+        this->emplace<BadgeElement>(badge, MessageElementFlag::BadgeBluzyrino);
+        this->message().externalBadges.emplace_back(badge->name.string);
+    }
+}
+
 void MessageBuilder::appendMoltorinoBadges(const QString &userID)
 {
     if (!getSettings()->showBadgesMoltorino)
@@ -3908,6 +3924,7 @@ MessagePtr MessageBuilder::makeSelfBadgePreviewMessage(
     builder.appendSeventvBadges(userId);
     builder.appendDankChatBadges(userId);
     builder.appendChatsenBadges(userId);
+    builder.appendBluzyrinoBadges(userId);
     builder.appendHomiesBadges(userId);
     builder.appendFolhinhaBadges(userId);
 

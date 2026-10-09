@@ -212,6 +212,11 @@ public:
         return nullptr;
     }
 
+    BluzyrinoBadges *getBluzyrinoBadges() override
+    {
+        return nullptr;
+    }
+
     MoltorinoSupporterBadges *getMoltorinoSupporterBadges() override
     {
         return nullptr;

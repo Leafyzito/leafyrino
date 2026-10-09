@@ -444,6 +444,9 @@ set(SOURCE_FILES
         providers/chatsen/ChatsenBadges.cpp
         providers/chatsen/ChatsenBadges.hpp
 
+        providers/bluzyrino/BluzyrinoBadges.cpp
+        providers/bluzyrino/BluzyrinoBadges.hpp
+
         providers/colors/ColorProvider.cpp
         providers/colors/ColorProvider.hpp
 

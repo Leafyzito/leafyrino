@@ -100,12 +100,13 @@ enum class MessageElementFlag : int64_t {
     BadgeFfzAp = (1LL << 43),
     BadgeDankChat = (1LL << 42),
     BadgeChatsen = (1LL << 44),
+    BadgeBluzyrino = (1LL << 45),
 
     Badges = BadgeGlobalAuthority | BadgePredictions | BadgeChannelAuthority |
              BadgeSubscription | BadgeVanity | BadgeChatterino | BadgeSevenTV |
              BadgeFfz | BadgeSharedChannel | BadgeBttv | BadgeHomiesSupporter |
              BadgeHomies | BadgeHomiesCustom | BadgeMoltorino | BadgeFolhinha |
-             BadgeFfzAp | BadgeDankChat | BadgeChatsen,
+             BadgeFfzAp | BadgeDankChat | BadgeChatsen | BadgeBluzyrino,
 
     ChannelName = (1LL << 20),
 

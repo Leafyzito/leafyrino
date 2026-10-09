@@ -204,6 +204,7 @@ WindowManager::WindowManager(const Args &appArgs_, const Paths &paths,
     this->updateWordTypeMaskListener.add(settings.showBadgesFfzAp);
     this->updateWordTypeMaskListener.add(settings.showBadgesDankChat);
     this->updateWordTypeMaskListener.add(settings.showBadgesChatsen);
+    this->updateWordTypeMaskListener.add(settings.showBadgesBluzyrino);
     this->updateWordTypeMaskListener.add(settings.enableEmoteImages);
     this->updateWordTypeMaskListener.add(settings.lowercaseDomains);
     this->updateWordTypeMaskListener.add(settings.showReplyButton);
@@ -353,6 +354,7 @@ void WindowManager::updateWordTypeMask()
     flags.set(settings->showBadgesFfzAp ? MEF::BadgeFfzAp : MEF::None);
     flags.set(settings->showBadgesDankChat ? MEF::BadgeDankChat : MEF::None);
     flags.set(settings->showBadgesChatsen ? MEF::BadgeChatsen : MEF::None);
+    flags.set(settings->showBadgesBluzyrino ? MEF::BadgeBluzyrino : MEF::None);
 
     // username
     flags.set(MEF::Username);

@@ -62,6 +62,10 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->addKeywords({"chatsen"})
         ->setTooltip("Chatsen supporter and developer badges")
         ->addTo(layout);
+    SettingWidget::checkbox("Bluzyrino", s.showBadgesBluzyrino)
+        ->addKeywords({"bluzyrino", "bluzy"})
+        ->setTooltip("Bluzyrino badges")
+        ->addTo(layout);
 
     layout.addTitle("Client");
     SettingWidget::checkbox("Show select badge button", s.showSelectBadgeButton)

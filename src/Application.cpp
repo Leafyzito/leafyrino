@@ -37,6 +37,7 @@
 #include "debug/AssertInGuiThread.hpp"
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
+#include "providers/bluzyrino/BluzyrinoBadges.hpp"
 #include "providers/bttv/BttvLiveUpdates.hpp"
 #include "providers/chatsen/ChatsenBadges.hpp"
 #include "providers/chatterino/ChatterinoBadges.hpp"
@@ -211,6 +212,7 @@ Application::Application(Settings &_settings, const Paths &paths,
     , ffzApBadges(new FfzApBadges)
     , dankChatBadges(new DankChatBadges)
     , chatsenBadges(new ChatsenBadges)
+    , bluzyrinoBadges(new BluzyrinoBadges)
     , moltorinoSupporterBadges(new MoltorinoSupporterBadges)
     , repeatedMessageDetector(new RepeatedMessageDetector)
     , seventvPaints(new SeventvPaints)
@@ -280,6 +282,7 @@ void Application::initialize(Settings &settings, const Paths &paths)
 
     this->ffzBadges->load();
     this->bttvBadges->load();
+    this->bluzyrinoBadges->initialize();
     this->moltorinoSupporterBadges->initialize();
 
     this->bttvEmotes->loadEmotes();
@@ -569,6 +572,12 @@ ChatsenBadges *Application::getChatsenBadges()
     return this->chatsenBadges.get();
 }
 
+BluzyrinoBadges *Application::getBluzyrinoBadges()
+{
+    assert(this->bluzyrinoBadges);
+    return this->bluzyrinoBadges.get();
+}
+
 MoltorinoSupporterBadges *Application::getMoltorinoSupporterBadges()
 {
     assert(this->moltorinoSupporterBadges);
@@ -839,6 +848,7 @@ void Application::stop()
     this->ffzApBadges.reset();
     this->dankChatBadges.reset();
     this->chatsenBadges.reset();
+    this->bluzyrinoBadges.reset();
     this->twitch.reset();
     this->highlights.reset();
     this->notifications.reset();

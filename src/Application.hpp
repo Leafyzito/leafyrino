@@ -60,6 +60,7 @@ class FolhinhaBadges;
 class FfzApBadges;
 class DankChatBadges;
 class ChatsenBadges;
+class BluzyrinoBadges;
 class MoltorinoSupporterBadges;
 class RepeatedMessageDetector;
 class IStreamerMode;
@@ -120,6 +121,7 @@ public:
     virtual FfzApBadges *getFfzApBadges() = 0;
     virtual DankChatBadges *getDankChatBadges() = 0;
     virtual ChatsenBadges *getChatsenBadges() = 0;
+    virtual BluzyrinoBadges *getBluzyrinoBadges() = 0;
     virtual MoltorinoSupporterBadges *getMoltorinoSupporterBadges() = 0;
     virtual RepeatedMessageDetector *getRepeatedMessageDetector() = 0;
     virtual IUserDataController *getUserData() = 0;
@@ -213,6 +215,7 @@ private:
     std::unique_ptr<FfzApBadges> ffzApBadges;
     std::unique_ptr<DankChatBadges> dankChatBadges;
     std::unique_ptr<ChatsenBadges> chatsenBadges;
+    std::unique_ptr<BluzyrinoBadges> bluzyrinoBadges;
     std::unique_ptr<MoltorinoSupporterBadges> moltorinoSupporterBadges;
     std::unique_ptr<RepeatedMessageDetector> repeatedMessageDetector;
     std::unique_ptr<SeventvPaints> seventvPaints;
@@ -276,6 +279,7 @@ public:
     FfzApBadges *getFfzApBadges() override;
     DankChatBadges *getDankChatBadges() override;
     ChatsenBadges *getChatsenBadges() override;
+    BluzyrinoBadges *getBluzyrinoBadges() override;
     MoltorinoSupporterBadges *getMoltorinoSupporterBadges() override;
     RepeatedMessageDetector *getRepeatedMessageDetector() override;
     IUserDataController *getUserData() override;
