@@ -346,6 +346,8 @@ public:
         "/appearance/messages/showTwitchGifs",
         true,
     };
+    /// Giphy IDs saved in the GIF picker, newest first, as a JSON array.
+    QStringSetting favoriteTwitchGifs{"/twitch/gifs/favorites", "[]"};
     BoolSetting separateMessages = {"/appearance/messages/separateMessages",
                                     false};
     BoolSetting fadeMessageHistory = {"/appearance/messages/fadeMessageHistory",

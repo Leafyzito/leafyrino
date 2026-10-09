@@ -113,6 +113,8 @@ set(SOURCE_FILES
         controllers/commands/builtin/twitch/GetFounders.hpp
         controllers/commands/builtin/twitch/GetVIPs.cpp
         controllers/commands/builtin/twitch/GetVIPs.hpp
+        controllers/commands/builtin/twitch/Gif.cpp
+        controllers/commands/builtin/twitch/Gif.hpp
         controllers/commands/builtin/twitch/LowTrust.cpp
         controllers/commands/builtin/twitch/LowTrust.hpp
         controllers/commands/builtin/twitch/ModVipActions.cpp
@@ -661,6 +663,8 @@ set(SOURCE_FILES
         providers/twitch/api/HelixEnums.hpp
         providers/twitch/api/TwitchGql.cpp
         providers/twitch/api/TwitchGql.hpp
+        providers/twitch/api/TwitchGifs.cpp
+        providers/twitch/api/TwitchGifs.hpp
 
         singletons/CrashHandler.cpp
         singletons/CrashHandler.hpp
@@ -874,6 +878,8 @@ set(SOURCE_FILES
         widgets/dialogs/EditUserNotesDialog.hpp
         widgets/dialogs/EmotePopup.cpp
         widgets/dialogs/EmotePopup.hpp
+        widgets/dialogs/GifPickerDialog.cpp
+        widgets/dialogs/GifPickerDialog.hpp
 
         widgets/dialogs/font/FontDialog.cpp
         widgets/dialogs/font/FontDialog.hpp
