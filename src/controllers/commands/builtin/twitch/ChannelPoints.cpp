@@ -223,9 +223,11 @@ QString sendGigantifiedEmote(const CommandContext &ctx)
                 return;
             }
 
-            const auto rewardIt = std::find_if(
-                rewards.rewards.cbegin(), rewards.rewards.cend(),
-                [](const auto &reward) { return isGigantifyReward(reward); });
+            const auto rewardIt =
+                std::find_if(rewards.rewards.cbegin(), rewards.rewards.cend(),
+                             [](const auto &reward) {
+                                 return isGigantifyReward(reward);
+                             });
             if (rewardIt == rewards.rewards.cend())
             {
                 channel->addSystemMessage(
@@ -269,18 +271,19 @@ QString sendGigantifiedEmote(const CommandContext &ctx)
                         return;
                     }
 
-                    const auto emoteIt = std::find_if(
-                        emotes.cbegin(), emotes.cend(),
-                        [&emoteToken](const auto &emote) {
-                            return emote.token == emoteToken &&
-                                   !emote.id.isEmpty();
-                        });
+                    const auto emoteIt =
+                        std::find_if(emotes.cbegin(), emotes.cend(),
+                                     [&emoteToken](const auto &emote) {
+                                         return emote.token == emoteToken &&
+                                                !emote.id.isEmpty();
+                                     });
                     if (emoteIt == emotes.cend())
                     {
                         addGigantifySystemMessage(
-                            weak, QStringLiteral("'%1' is not a Twitch emote "
-                                                 "you can send in this channel.")
-                                      .arg(emoteToken));
+                            weak,
+                            QStringLiteral("'%1' is not a Twitch emote "
+                                           "you can send in this channel.")
+                                .arg(emoteToken));
                         return;
                     }
 
@@ -298,9 +301,8 @@ QString sendGigantifiedEmote(const CommandContext &ctx)
                 });
         },
         [weak](const QString &error) {
-            addGigantifySystemMessage(
-                weak, MoltorinoAuth::normalizeAuthError("loading Gigantify",
-                                                        error));
+            addGigantifySystemMessage(weak, MoltorinoAuth::normalizeAuthError(
+                                                "loading Gigantify", error));
         });
 #else
     ctx.channel->addSystemMessage(

@@ -5017,7 +5017,8 @@ void TwitchGql::getChannelPointEmoteModifiers(
 
 void TwitchGql::sendGigantifiedChatEmote(
     const QString &channelId, const QString &emoteId, const QString &message,
-    int bitsCost, const QString &oauthToken, std::function<void()> successCallback,
+    int bitsCost, const QString &oauthToken,
+    std::function<void()> successCallback,
     std::function<void(const QString &)> failureCallback)
 {
     QJsonObject input;
@@ -5041,7 +5042,8 @@ void TwitchGql::sendGigantifiedChatEmote(
     )";
 
     makeTvInlineGqlRequest(query, variables, oauthToken)
-        .onSuccess([successCallback, failureCallback](const NetworkResult &result) {
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
             const auto root = result.parseJsonValue();
             if (root.isUndefined() || root.isNull())
             {
@@ -5225,7 +5227,8 @@ void TwitchGql::getAvailableGigantifyEmotes(
                 }
 
                 QString nextCursor;
-                for (const auto &edgeValue : connection.value("edges").toArray())
+                for (const auto &edgeValue :
+                     connection.value("edges").toArray())
                 {
                     const auto edge = edgeValue.toObject();
                     const auto edgeCursor = edge.value("cursor").toString();
@@ -5245,9 +5248,9 @@ void TwitchGql::getAvailableGigantifyEmotes(
                         GqlChannelPointEmote emote;
                         emote.id = emoteObject.value("id").toString();
                         emote.token = emoteObject.value("token").toString();
-                        emote.type = emoteObject.value("assetType")
-                                         .toString(emoteObject.value("type")
-                                                       .toString());
+                        emote.type =
+                            emoteObject.value("assetType")
+                                .toString(emoteObject.value("type").toString());
                         emote.ownerLogin = ownerLogin;
                         emote.ownerDisplayName = ownerDisplayName;
                         if (emote.id.isEmpty() || emote.token.isEmpty() ||
@@ -5289,9 +5292,8 @@ void TwitchGql::getAvailableGigantifyEmotes(
 
                             if (state->emotes.size() >= MAX_EMOTES)
                             {
-                                finishFailure(
-                                    state,
-                                    "Twitch returned too many available emotes");
+                                finishFailure(state, "Twitch returned too many "
+                                                     "available emotes");
                                 return;
                             }
                             state->seenEmoteIds.insert(variant.id);
@@ -5331,8 +5333,7 @@ void TwitchGql::getAvailableGigantifyEmotes(
                 }
             })
             .onError([state, finishFailure](const NetworkResult &result) {
-                finishFailure(state,
-                              "Network Error: " + result.formatError());
+                finishFailure(state, "Network Error: " + result.formatError());
             })
             .execute();
     };

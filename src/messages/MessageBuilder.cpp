@@ -823,23 +823,22 @@ void tokenizeWords(QStringView text,
 
             // A special item at the end always has a trailing space.
             bool trailingSpace = current == end || *current == ' ';
-            std::visit(
-                variant::Overloaded{[&](const TwitchEmoteOccurrence &emote) {
-                                        visitor(TokenizedEmote{
-                                            .emote = emote.ptr,
-                                            .trailingSpace = trailingSpace,
-                                            .gigantified =
-                                                special.start ==
-                                                gigantifiedEmoteStart,
-                                        });
-                                    },
-                                    [&](const TwitchGifOccurrence &gif) {
-                                        visitor(TokenizedGif{
-                                            .id = gif.id,
-                                            .originalText = originalText,
-                                        });
-                                    }},
-                special.data);
+            std::visit(variant::Overloaded{
+                           [&](const TwitchEmoteOccurrence &emote) {
+                               visitor(TokenizedEmote{
+                                   .emote = emote.ptr,
+                                   .trailingSpace = trailingSpace,
+                                   .gigantified =
+                                       special.start == gigantifiedEmoteStart,
+                               });
+                           },
+                           [&](const TwitchGifOccurrence &gif) {
+                               visitor(TokenizedGif{
+                                   .id = gif.id,
+                                   .originalText = originalText,
+                               });
+                           }},
+                       special.data);
 
             specials = specials.subspan(1);
             continue;
@@ -2247,8 +2246,8 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
             if (!traditionalParsing)
             {
                 builder.addWordsFromAstNodes(ast, twitchSpecials, textState,
-                                              FontStyle::ChatMedium,
-                                              gigantifiedEmoteStart);
+                                             FontStyle::ChatMedium,
+                                             gigantifiedEmoteStart);
             }
         }
 
@@ -3277,9 +3276,9 @@ void MessageBuilder::addWordsFromAstNodes(
                     }
                 },
                 [&](const ast::ItalicASTNode &node) {
-                    this->addWordsFromAstNodes(
-                        node.data, twitchSpecials, state,
-                        FontStyle::ChatMediumItalic, gigantifiedEmoteStart);
+                    this->addWordsFromAstNodes(node.data, twitchSpecials, state,
+                                               FontStyle::ChatMediumItalic,
+                                               gigantifiedEmoteStart);
                 },
                 [&](const ast::BoldASTNode &node) {
                     this->addWordsFromAstNodes(node.data, twitchSpecials, state,
@@ -3407,7 +3406,8 @@ void MessageBuilder::addWords(
                 this->addEmoji(tok.emote);
             },
             [&](const TokenizedEmote &tok) {
-                this->emplace<EmoteElement>(tok.emote, MessageElementFlag::Emote,
+                this->emplace<EmoteElement>(tok.emote,
+                                            MessageElementFlag::Emote,
                                             this->textColor_, tok.gigantified)
                     ->setTrailingSpace(tok.trailingSpace);
             },

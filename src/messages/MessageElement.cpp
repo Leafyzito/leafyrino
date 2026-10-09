@@ -467,9 +467,8 @@ MessageLayoutElement *EmoteElement::makeImageLayoutElement(
 
 std::unique_ptr<MessageElement> EmoteElement::clone() const
 {
-    auto el = std::make_unique<EmoteElement>(this->emote_, this->getFlags(),
-                                             this->textColor_,
-                                             this->gigantified_);
+    auto el = std::make_unique<EmoteElement>(
+        this->emote_, this->getFlags(), this->textColor_, this->gigantified_);
     el->cloneFrom(*this);
     return el;
 }

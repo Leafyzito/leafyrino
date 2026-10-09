@@ -459,7 +459,8 @@ void getChannelPointEmoteModifiers(
     std::function<void(const QString &)> failureCallback);
 void sendGigantifiedChatEmote(
     const QString &channelId, const QString &emoteId, const QString &message,
-    int bitsCost, const QString &oauthToken, std::function<void()> successCallback,
+    int bitsCost, const QString &oauthToken,
+    std::function<void()> successCallback,
     std::function<void(const QString &)> failureCallback);
 void getAvailableGigantifyEmotes(
     const QString &channelId, const QString &oauthToken,

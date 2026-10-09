@@ -873,8 +873,7 @@ void MessageView::paintEvent(QPaintEvent * /*event*/)
     };
 
     const auto result = this->messageLayout_->paint(ctx);
-    this->animationRegion_ =
-        result.animatedRegion.intersected(this->rect());
+    this->animationRegion_ = result.animatedRegion.intersected(this->rect());
 }
 
 void MessageView::themeChangedEvent()

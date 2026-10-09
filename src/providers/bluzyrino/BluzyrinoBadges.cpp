@@ -52,8 +52,7 @@ bool validImageUrl(const QString &value)
 
 bool validUserId(const QString &id)
 {
-    return !id.isEmpty() && id.size() <= 20 &&
-           id.front() != QLatin1Char('0') &&
+    return !id.isEmpty() && id.size() <= 20 && id.front() != QLatin1Char('0') &&
            std::ranges::all_of(id, [](QChar c) {
                return c >= QLatin1Char('0') && c <= QLatin1Char('9');
            });

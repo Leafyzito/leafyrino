@@ -577,8 +577,7 @@ void TextLayoutElement::paint(QPainter &painter,
     }
 }
 
-QRegion TextLayoutElement::paintAnimated(QPainter &painter,
-                                          const qreal yOffset)
+QRegion TextLayoutElement::paintAnimated(QPainter &painter, const qreal yOffset)
 {
     if (this->getRect().isEmpty())
     {
