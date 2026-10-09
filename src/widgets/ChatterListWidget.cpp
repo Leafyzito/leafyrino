@@ -463,11 +463,11 @@ void finishCommunityRequest(const QString &login,
 
         while (cache.entries.size() > COMMUNITY_CACHE_LIMIT)
         {
-            const auto oldest = std::min_element(
-                cache.entries.begin(), cache.entries.end(),
-                [](const auto &left, const auto &right) {
-                    return left.lastUsedAt < right.lastUsedAt;
-                });
+            const auto oldest =
+                std::min_element(cache.entries.begin(), cache.entries.end(),
+                                 [](const auto &left, const auto &right) {
+                                     return left.lastUsedAt < right.lastUsedAt;
+                                 });
             cache.entries.erase(oldest);
         }
     }
@@ -1216,7 +1216,7 @@ QString countLabel(int count, const QString &singular, const QString &plural)
                                        count == 1 ? singular : plural);
 }
 
-}
+}  // namespace
 
 class ChatterListWidgetPrivate
 {
@@ -1658,8 +1658,7 @@ public:
 
         const auto eligibleChannels = std::ranges::count_if(
             this->twitchChannels, [](const auto &channel) {
-                return channel->hasModRights() &&
-                       !channel->roomId().isEmpty();
+                return channel->hasModRights() && !channel->roomId().isEmpty();
             });
         const auto available =
             std::max(0, CHATTER_LIMIT - this->model->total());
@@ -1675,8 +1674,7 @@ public:
         const QPointer<ChatterListWidget> guard(this->q);
         for (const auto &channel : this->twitchChannels)
         {
-            if (!channel->hasModRights() ||
-                channel->roomId().isEmpty())
+            if (!channel->hasModRights() || channel->roomId().isEmpty())
             {
                 continue;
             }
@@ -2179,4 +2177,4 @@ void ChatterListWidget::scaleChangedEvent(float scale)
     }
 }
 
-}
+}  // namespace chatterino

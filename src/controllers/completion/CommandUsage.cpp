@@ -155,7 +155,7 @@ bool placeholder(const QString &field)
     return field.startsWith(QChar('<')) || field.startsWith(QChar('['));
 }
 
-}
+}  // namespace
 
 QStringList splitCommandUsageFields(const QString &usage)
 {
@@ -374,4 +374,4 @@ QString remainingCommandUsage(const CommandUsage &usage,
     return remaining.join(QChar(' '));
 }
 
-}
+}  // namespace chatterino::completion

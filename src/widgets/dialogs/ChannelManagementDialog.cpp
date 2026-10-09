@@ -182,7 +182,7 @@ QString formatCooldown(int seconds)
                                              QChar('0'));
 }
 
-}
+}  // namespace
 
 void ChannelManagementDialog::showForChannel(
     const std::shared_ptr<TwitchChannel> &channel, QWidget *parent)
@@ -774,8 +774,7 @@ void ChannelManagementDialog::applyState(ChannelManagementState state)
     this->rerunCheck_->setToolTip(
         this->originalMetadata_.canEditRerun
             ? QStringLiteral("Previously recorded stream")
-            : QStringLiteral(
-                  "Could not load Twitch's rerun setting."));
+            : QStringLiteral("Could not load Twitch's rerun setting."));
 }
 
 void ChannelManagementDialog::refreshParentHeaderIcons() const
@@ -1898,8 +1897,7 @@ void ChannelManagementDialog::fitToContent()
         screen->availableGeometry().adjusted(margin, margin, -margin, -margin);
     auto *root = this->getLayoutContainer()->layout();
     const auto margins = root->contentsMargins();
-    const auto width =
-        std::min(int(500 * this->scale()), available.width());
+    const auto width = std::min(int(500 * this->scale()), available.width());
     const auto contentWidth =
         std::max(1, width - margins.left() - margins.right());
     if (auto *commercialRow = this->contentWidget_->findChild<QBoxLayout *>(
@@ -1955,4 +1953,4 @@ void ChannelManagementDialog::windowDeactivationEvent()
     DraggablePopup::windowDeactivationEvent();
 }
 
-}
+}  // namespace chatterino

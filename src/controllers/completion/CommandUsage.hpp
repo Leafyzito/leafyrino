@@ -41,4 +41,4 @@ QString remainingCommandUsage(const CommandUsage &usage,
                               const QString &arguments,
                               bool *appendDirectly = nullptr);
 
-}
+}  // namespace chatterino::completion

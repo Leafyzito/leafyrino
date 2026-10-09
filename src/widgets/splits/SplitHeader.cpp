@@ -18,8 +18,8 @@
 #include "controllers/notifications/NotificationController.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
-#include "providers/twitch/ChannelManagement.hpp"
 #include "providers/twitch/api/Helix.hpp"
+#include "providers/twitch/ChannelManagement.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
@@ -45,13 +45,13 @@
 #include "widgets/TooltipWidget.hpp"
 
 #include <QDrag>
-#include <QPointer>
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QPainter>
+#include <QPointer>
 
 #include <cmath>
 #include <ranges>

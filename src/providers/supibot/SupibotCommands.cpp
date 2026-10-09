@@ -183,9 +183,8 @@ QSet<QString> parseChannels(const QByteArray &payload, bool *ok)
         }
         const auto platform =
             object.value(QStringLiteral("platformName")).toString();
-        if (!platform.isEmpty() &&
-            platform.compare(QStringLiteral("twitch"), Qt::CaseInsensitive) !=
-                0)
+        if (!platform.isEmpty() && platform.compare(QStringLiteral("twitch"),
+                                                    Qt::CaseInsensitive) != 0)
         {
             continue;
         }
@@ -259,7 +258,7 @@ void sortCommands(std::vector<SupibotCommand> &commands)
     });
 }
 
-}
+}  // namespace
 SupibotCommands::SupibotCommands() = default;
 
 void SupibotCommands::ensureLoaded()
@@ -692,4 +691,4 @@ QString SupibotCommands::metadataFile(Catalog catalog) const
     return {};
 }
 
-}
+}  // namespace chatterino

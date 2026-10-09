@@ -915,9 +915,9 @@ void Split::runDeferredTwitchRefresh()
     const bool forcePersonalRefresh = this->deferredTwitchForcePersonalRefresh_;
     this->deferredTwitchForcePersonalRefresh_ = false;
 
-    const int editorOffsetMs =
-        interactive ? INTERACTIVE_TWITCH_EDITOR_REFRESH_OFFSET_MS
-                    : DEFERRED_TWITCH_EDITOR_REFRESH_OFFSET_MS;
+    const int editorOffsetMs = interactive
+                                   ? INTERACTIVE_TWITCH_EDITOR_REFRESH_OFFSET_MS
+                                   : DEFERRED_TWITCH_EDITOR_REFRESH_OFFSET_MS;
     const int pollOffsetMs = interactive
                                  ? INTERACTIVE_TWITCH_POLL_REFRESH_OFFSET_MS
                                  : DEFERRED_TWITCH_POLL_REFRESH_OFFSET_MS;
@@ -2580,16 +2580,16 @@ void Split::openChatterList()
 
     auto *chatterDock = new ChatterListWidget(std::move(channel), this);
 
-    QObject::connect(
-        chatterDock, &ChatterListWidget::userClicked, this,
-        [this](const QString &userLogin, MessagePlatform platform,
-               const QString &channelName, const QString &) {
-            if (platform == MessagePlatform::YouTube)
-            {
-                return;
-            }
-            this->view_->showUserInfoPopup(userLogin, platform, channelName);
-        });
+    QObject::connect(chatterDock, &ChatterListWidget::userClicked, this,
+                     [this](const QString &userLogin, MessagePlatform platform,
+                            const QString &channelName, const QString &) {
+                         if (platform == MessagePlatform::YouTube)
+                         {
+                             return;
+                         }
+                         this->view_->showUserInfoPopup(userLogin, platform,
+                                                        channelName);
+                     });
 
     chatterDock->resize(chatterListWidth, chatterListHeight);
     widgets::showAndMoveWindowTo(

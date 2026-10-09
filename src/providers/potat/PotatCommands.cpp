@@ -258,7 +258,7 @@ std::shared_ptr<const completion::CommandUsage> documentedAliasUsage(
     return std::make_shared<const completion::CommandUsage>(std::move(best));
 }
 
-}
+}  // namespace
 
 namespace potat::detail {
 
@@ -356,7 +356,7 @@ std::vector<PotatCommand> parseCommands(const QByteArray &payload)
     return commands;
 }
 
-}
+}  // namespace potat::detail
 
 void PotatCommands::ensureLoaded()
 {
@@ -391,9 +391,9 @@ void PotatCommands::loadCache()
     QFile metadata(metadataPath());
     if (metadata.open(QIODevice::ReadOnly))
     {
-        const auto object = QJsonDocument::fromJson(
-                                metadata.read(MAX_METADATA_SIZE + 1))
-                                .object();
+        const auto object =
+            QJsonDocument::fromJson(metadata.read(MAX_METADATA_SIZE + 1))
+                .object();
         this->etag_ = object.value(QStringLiteral("etag")).toString();
     }
 
@@ -508,4 +508,4 @@ void PotatCommands::saveMetadata() const
     file.commit();
 }
 
-}
+}  // namespace chatterino

@@ -163,7 +163,8 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->addKeywords({"usercard", "chatter", "count"})
         ->addTo(layout);
     SettingWidget::checkbox("Show followage", s.showUsercardFollowage)
-        ->setTooltip("Show how long the user has followed this channel. Only available when you are the broadcaster or a moderator.")
+        ->setTooltip("Show how long the user has followed this channel. Only "
+                     "available when you are the broadcaster or a moderator.")
         ->addKeywords({"usercard", "followage", "follow"})
         ->addTo(layout);
     SettingWidget::checkbox("Show follow button", s.showFollowButtonInUsercard)

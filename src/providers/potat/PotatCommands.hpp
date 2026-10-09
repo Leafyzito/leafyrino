@@ -64,4 +64,4 @@ private:
     QDateTime nextRetryAt_;
 };
 
-}
+}  // namespace chatterino

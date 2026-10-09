@@ -39,4 +39,4 @@ private:
     std::unique_ptr<ChatterListWidgetPrivate> d_;
 };
 
-}
+}  // namespace chatterino

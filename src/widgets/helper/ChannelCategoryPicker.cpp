@@ -1,8 +1,8 @@
 #include "widgets/helper/ChannelCategoryPicker.hpp"
 
 #include <QAbstractItemView>
-#include <QEvent>
 #include <QCompleter>
+#include <QEvent>
 #include <QItemSelectionModel>
 #include <QKeyEvent>
 #include <QPointer>
@@ -24,7 +24,7 @@ QString searchKey(const QString &text)
     return text.trimmed().toCaseFolded();
 }
 
-}
+}  // namespace
 
 ChannelCategoryPicker::ChannelCategoryPicker(QWidget *parent)
     : QLineEdit(parent)
@@ -359,4 +359,4 @@ void ChannelCategoryPicker::keyPressEvent(QKeyEvent *event)
     QLineEdit::keyPressEvent(event);
 }
 
-}
+}  // namespace chatterino

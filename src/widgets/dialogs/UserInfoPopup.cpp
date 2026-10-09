@@ -1584,8 +1584,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
             .assign(&this->ui_.ignoreHighlights);
         // visibility of this is updated in setData
 
-        user.emplace<LabelButton>("&Notes", this)
-            .assign(&this->ui_.notesAdd);
+        user.emplace<LabelButton>("&Notes", this).assign(&this->ui_.notesAdd);
         auto usercard = user.emplace<LabelButton>("&Usercard", this)
                             .assign(&this->ui_.usercardLabel);
         auto userlogs = user.emplace<LabelButton>("&Logs", this)
@@ -5089,30 +5088,30 @@ UserInfoPopup::TimeoutWidget::TimeoutWidget()
         }
         *buttonOut = button.getElement();
 
-        QObject::connect(button.getElement(), &Button::clicked,
-                         [this, action](Qt::MouseButton mouseButton) {
-                             if (!shouldHandleModerationButtonClick(mouseButton))
-                             {
-                                 return;
-                             }
+        QObject::connect(
+            button.getElement(), &Button::clicked,
+            [this, action](Qt::MouseButton mouseButton) {
+                if (!shouldHandleModerationButtonClick(mouseButton))
+                {
+                    return;
+                }
 
-                             UsercardModerationRequest request;
-                             request.action = action;
-                             if (action == UsercardModerationAction::Ban)
-                             {
-                                 request.reason = timeoutBanReason();
-                             }
-                             request.promptForReason =
-                                 action != UsercardModerationAction::Unban &&
-                                 shouldPromptForModerationReason(mouseButton);
+                UsercardModerationRequest request;
+                request.action = action;
+                if (action == UsercardModerationAction::Ban)
+                {
+                    request.reason = timeoutBanReason();
+                }
+                request.promptForReason =
+                    action != UsercardModerationAction::Unban &&
+                    shouldPromptForModerationReason(mouseButton);
 
-                             this->buttonClicked.invoke(request);
-                         });
+                this->buttonClicked.invoke(request);
+            });
 
         auto crossRow = column.emplace<QHBoxLayout>().withoutMargin();
         crossRow->addStretch(1);
-        auto cross =
-            crossRow.emplace<LabelButton>("Cross", this, QSize{2, 0});
+        auto cross = crossRow.emplace<LabelButton>("Cross", this, QSize{2, 0});
         cross->setToolTip(crossTooltip);
         cross->setVisible(false);
         *crossOut = cross.getElement();
@@ -5125,12 +5124,10 @@ UserInfoPopup::TimeoutWidget::TimeoutWidget()
 
     auto addTimeouts = [&](const QString &title) {
         auto column = layout.emplace<QWidget>().assign(&this->timeoutsColumn_);
-        auto columnLayout =
-            column.setLayoutType<QVBoxLayout>().withoutMargin();
+        auto columnLayout = column.setLayoutType<QVBoxLayout>().withoutMargin();
         addColumnTitle(columnLayout, title);
 
-        auto hbox =
-            columnLayout.emplace<QHBoxLayout>().withoutMargin();
+        auto hbox = columnLayout.emplace<QHBoxLayout>().withoutMargin();
         hbox->setSpacing(0);
 
         int index = 0;

@@ -268,10 +268,10 @@ void getCurrentPin(
 void getUserByLogin(const QString &login, const QString &oauthToken,
                     std::function<void(std::optional<GqlUser>)> successCallback,
                     std::function<void(const QString &)> failureCallback);
-void banUserFromChatRoom(
-    const QString &channelId, const QString &targetLogin, const QString &reason,
-    const QString &oauthToken, std::function<void()> successCallback,
-    std::function<void(const QString &)> failureCallback);
+void banUserFromChatRoom(const QString &channelId, const QString &targetLogin,
+                         const QString &reason, const QString &oauthToken,
+                         std::function<void()> successCallback,
+                         std::function<void(const QString &)> failureCallback);
 void unbanUserFromChatRoom(
     const QString &channelId, const QString &targetLogin,
     const QString &oauthToken, std::function<void()> successCallback,
@@ -523,17 +523,15 @@ void updateBroadcastSettings(
     const GqlBroadcastSettings &settings, const QString &oauthToken,
     std::function<void(GqlBroadcastSettings)> successCallback,
     std::function<void(const QString &)> failureCallback);
-void setFreeformTags(
-    const QString &channelId, const QStringList &tags,
-    const QString &oauthToken,
-    std::function<void(QStringList)> successCallback,
-    std::function<void(const QString &)> failureCallback);
+void setFreeformTags(const QString &channelId, const QStringList &tags,
+                     const QString &oauthToken,
+                     std::function<void(QStringList)> successCallback,
+                     std::function<void(const QString &)> failureCallback);
 void setContentClassificationLabels(
     const QString &channelId,
     const QVector<GqlContentClassificationLabel> &labels,
     const QString &oauthToken,
-    std::function<void(QVector<GqlContentClassificationLabel>)>
-        successCallback,
+    std::function<void(QVector<GqlContentClassificationLabel>)> successCallback,
     std::function<void(const QString &)> failureCallback);
 void setChannelRerunStatus(
     const QString &channelId, bool shouldBeRerun, const QString &oauthToken,

@@ -133,6 +133,6 @@ void startCommercial(
     std::function<void(ChannelManagementCommercialResult)> successCallback,
     std::function<void(ChannelManagementCommercialFailure)> failureCallback);
 
-}
+}  // namespace ChannelManagement
 
-}
+}  // namespace chatterino

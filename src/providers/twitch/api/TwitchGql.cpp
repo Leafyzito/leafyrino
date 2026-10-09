@@ -430,9 +430,8 @@ QHash<QString, bool> parseChatRoomBanStatuses(
     for (const auto &errorValue :
          payload.value(QStringLiteral("errors")).toArray())
     {
-        const auto path = errorValue.toObject()
-                              .value(QStringLiteral("path"))
-                              .toArray();
+        const auto path =
+            errorValue.toObject().value(QStringLiteral("path")).toArray();
         if (!path.isEmpty() && path.first().isString())
         {
             erroredAliases.insert(path.first().toString());
@@ -449,10 +448,9 @@ QHash<QString, bool> parseChatRoomBanStatuses(
         }
 
         const auto status = data.value(alias).toObject();
-        statuses.insert(channelIds.at(index),
-                        !status.value(QStringLiteral("createdAt"))
-                             .toString()
-                             .isEmpty());
+        statuses.insert(
+            channelIds.at(index),
+            !status.value(QStringLiteral("createdAt")).toString().isEmpty());
     }
     return statuses;
 }
@@ -1725,149 +1723,146 @@ QVector<GqlBadge> badgesFromArray(const QJsonArray &arr)
     return result;
 }
 
+GqlBroadcastSettings parseBroadcastSettings(const QString &userId,
+                                            const QJsonObject &settings)
+{
+    GqlBroadcastSettings result;
+    result.userId = userId.trimmed();
+    result.title = settings.value("title").toString();
+    result.language = settings.value("language").toString().trimmed();
 
-    GqlBroadcastSettings parseBroadcastSettings(
-        const QString &userId, const QJsonObject &settings)
+    const auto game = settings.value("game").toObject();
+    result.category.id = game.value("id").toString().trimmed();
+    result.category.name = game.value("name").toString().trimmed();
+    result.category.displayName =
+        game.value("displayName").toString().trimmed();
+    if (result.category.displayName.isEmpty())
     {
-        GqlBroadcastSettings result;
-        result.userId = userId.trimmed();
-        result.title = settings.value("title").toString();
-        result.language = settings.value("language").toString().trimmed();
+        result.category.displayName = result.category.name;
+    }
 
-        const auto game = settings.value("game").toObject();
-        result.category.id = game.value("id").toString().trimmed();
-        result.category.name = game.value("name").toString().trimmed();
-        result.category.displayName =
-            game.value("displayName").toString().trimmed();
-        if (result.category.displayName.isEmpty())
+    return result;
+}
+
+std::optional<GqlContentClassificationLabel> parseContentClassificationLabel(
+    const QJsonValue &value)
+{
+    if (!value.isObject())
+    {
+        return std::nullopt;
+    }
+
+    const auto object = value.toObject();
+    GqlContentClassificationLabel label;
+    label.id = object.value("id").toString().trimmed();
+    if (label.id.isEmpty())
+    {
+        return std::nullopt;
+    }
+
+    label.name = object.value("localizedName").toString().trimmed();
+    if (label.name.isEmpty())
+    {
+        label.name = object.value("name").toString().trimmed();
+    }
+    if (label.name.isEmpty())
+    {
+        label.name = label.id;
+    }
+    label.description = object.value("description").toString().trimmed();
+    label.lockedUntil = object.value("lockedUntil").toString().trimmed();
+    label.isEnabled = object.value("isEnabled").toBool(false);
+    label.isLocked = object.value("isLocked").toBool(false);
+    label.isSelectable = object.value("isSelectable").toBool(false);
+    return label;
+}
+
+std::optional<QVector<GqlContentClassificationLabel>>
+    parseContentClassificationLabels(const QJsonValue &value)
+{
+    if (!value.isArray())
+    {
+        return std::nullopt;
+    }
+
+    QVector<GqlContentClassificationLabel> labels;
+    for (const auto &labelValue : value.toArray())
+    {
+        auto label = parseContentClassificationLabel(labelValue);
+        if (!label)
         {
-            result.category.displayName = result.category.name;
+            return std::nullopt;
         }
+        labels.push_back(std::move(*label));
+    }
+    return labels;
+}
 
+QStringList parseStringArray(const QJsonValue &value)
+{
+    QStringList result;
+    if (!value.isArray())
+    {
         return result;
     }
 
-    std::optional<GqlContentClassificationLabel>
-        parseContentClassificationLabel(const QJsonValue &value)
+    for (const auto &entry : value.toArray())
     {
-        if (!value.isObject())
+        const auto text = entry.toString().trimmed();
+        if (!text.isEmpty())
         {
-            return std::nullopt;
+            result.push_back(text);
         }
-
-        const auto object = value.toObject();
-        GqlContentClassificationLabel label;
-        label.id = object.value("id").toString().trimmed();
-        if (label.id.isEmpty())
-        {
-            return std::nullopt;
-        }
-
-        label.name = object.value("localizedName").toString().trimmed();
-        if (label.name.isEmpty())
-        {
-            label.name = object.value("name").toString().trimmed();
-        }
-        if (label.name.isEmpty())
-        {
-            label.name = label.id;
-        }
-        label.description =
-            object.value("description").toString().trimmed();
-        label.lockedUntil =
-            object.value("lockedUntil").toString().trimmed();
-        label.isEnabled = object.value("isEnabled").toBool(false);
-        label.isLocked = object.value("isLocked").toBool(false);
-        label.isSelectable = object.value("isSelectable").toBool(false);
-        return label;
     }
+    return result;
+}
 
-    std::optional<QVector<GqlContentClassificationLabel>>
-        parseContentClassificationLabels(const QJsonValue &value)
+struct BroadcastManagementRequestState {
+    std::mutex mutex;
+    bool completed = false;
+    bool contextReady = false;
+    bool tagsReady = false;
+    GqlBroadcastSettings settings;
+    QStringList tags;
+    std::function<void(GqlBroadcastSettings)> successCallback;
+    std::function<void(const QString &)> failureCallback;
+};
+
+void failBroadcastManagementRequest(
+    const std::shared_ptr<BroadcastManagementRequestState> &state,
+    const QString &error)
+{
+    std::function<void(const QString &)> callback;
     {
-        if (!value.isArray())
+        const std::lock_guard guard(state->mutex);
+        if (state->completed)
         {
-            return std::nullopt;
+            return;
         }
-
-        QVector<GqlContentClassificationLabel> labels;
-        for (const auto &labelValue : value.toArray())
-        {
-            auto label = parseContentClassificationLabel(labelValue);
-            if (!label)
-            {
-                return std::nullopt;
-            }
-            labels.push_back(std::move(*label));
-        }
-        return labels;
+        state->completed = true;
+        callback = std::move(state->failureCallback);
     }
+    callback(error);
+}
 
-    QStringList parseStringArray(const QJsonValue &value)
+void finishBroadcastManagementRequestIfReady(
+    const std::shared_ptr<BroadcastManagementRequestState> &state)
+{
+    std::function<void(GqlBroadcastSettings)> callback;
+    GqlBroadcastSettings settings;
     {
-        QStringList result;
-        if (!value.isArray())
+        const std::lock_guard guard(state->mutex);
+        if (state->completed || !state->contextReady || !state->tagsReady)
         {
-            return result;
+            return;
         }
-
-        for (const auto &entry : value.toArray())
-        {
-            const auto text = entry.toString().trimmed();
-            if (!text.isEmpty())
-            {
-                result.push_back(text);
-            }
-        }
-        return result;
+        state->completed = true;
+        settings = std::move(state->settings);
+        settings.tags = std::move(state->tags);
+        callback = std::move(state->successCallback);
     }
-
-    struct BroadcastManagementRequestState {
-        std::mutex mutex;
-        bool completed = false;
-        bool contextReady = false;
-        bool tagsReady = false;
-        GqlBroadcastSettings settings;
-        QStringList tags;
-        std::function<void(GqlBroadcastSettings)> successCallback;
-        std::function<void(const QString &)> failureCallback;
-    };
-
-    void failBroadcastManagementRequest(
-        const std::shared_ptr<BroadcastManagementRequestState> &state,
-        const QString &error)
-    {
-        std::function<void(const QString &)> callback;
-        {
-            const std::lock_guard guard(state->mutex);
-            if (state->completed)
-            {
-                return;
-            }
-            state->completed = true;
-            callback = std::move(state->failureCallback);
-        }
-        callback(error);
-    }
-
-    void finishBroadcastManagementRequestIfReady(
-        const std::shared_ptr<BroadcastManagementRequestState> &state)
-    {
-        std::function<void(GqlBroadcastSettings)> callback;
-        GqlBroadcastSettings settings;
-        {
-            const std::lock_guard guard(state->mutex);
-            if (state->completed || !state->contextReady || !state->tagsReady)
-            {
-                return;
-            }
-            state->completed = true;
-            settings = std::move(state->settings);
-            settings.tags = std::move(state->tags);
-            callback = std::move(state->successCallback);
-        }
-        callback(std::move(settings));
-    }
+    callback(std::move(settings));
+}
 
 }  // namespace
 
@@ -5889,11 +5884,9 @@ void TwitchGql::setBadgeModifierHidden(
         .execute();
 }
 
-
 void TwitchGql::getChannelEditorStatus(
     const QString &channelLogin, const QString &expectedChannelId,
-    const QString &oauthToken,
-    std::function<void(bool)> successCallback,
+    const QString &oauthToken, std::function<void(bool)> successCallback,
     std::function<void(const QString &)> failureCallback)
 {
     static constexpr auto QUERY = R"(
@@ -5911,8 +5904,8 @@ query AccessIsChannelEditorQuery($channelLogin: String!) {
     variables.insert("channelLogin", channelLogin.trimmed());
 
     makeInlineGqlRequest(QUERY, variables, oauthToken)
-        .onSuccess([expectedChannelId, successCallback, failureCallback](
-                       const NetworkResult &result) {
+        .onSuccess([expectedChannelId, successCallback,
+                    failureCallback](const NetworkResult &result) {
             const auto root = result.parseJsonValue();
             if (root.isUndefined() || root.isNull())
             {
@@ -5981,8 +5974,8 @@ query MoltorinoChannelManagementBroadcastSettings($login: String!) {
     variables.insert("login", channelLogin.trimmed());
 
     makeInlineGqlRequest(QUERY, variables, oauthToken)
-        .onSuccess([successCallback, failureCallback](
-                       const NetworkResult &result) {
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
             const auto root = result.parseJsonValue();
             if (root.isUndefined() || root.isNull())
             {
@@ -5997,10 +5990,8 @@ query MoltorinoChannelManagementBroadcastSettings($login: String!) {
                 return;
             }
 
-            const auto user =
-                payloadDataObject(root).value("user").toObject();
-            const auto settings =
-                user.value("broadcastSettings").toObject();
+            const auto user = payloadDataObject(root).value("user").toObject();
+            const auto settings = user.value("broadcastSettings").toObject();
             if (user.value("id").toString().isEmpty() || settings.isEmpty())
             {
                 failureCallback(
@@ -6107,8 +6098,7 @@ query MoltorinoBroadcastManagementFreeformTags($login: String!) {
     contextVariables.insert("channelID", normalizedChannelId);
 
     makeInlineGqlRequest(CONTEXT_QUERY, contextVariables, oauthToken)
-        .onSuccess([state, normalizedChannelId](
-                       const NetworkResult &result) {
+        .onSuccess([state, normalizedChannelId](const NetworkResult &result) {
             const auto root = result.parseJsonValue();
             if (root.isUndefined() || root.isNull())
             {
@@ -6120,15 +6110,14 @@ query MoltorinoBroadcastManagementFreeformTags($login: String!) {
             const auto gqlError = extractFirstGqlErrorMessage(root);
             if (!gqlError.isEmpty())
             {
-                failBroadcastManagementRequest(
-                    state, "Twitch API Error: " + gqlError);
+                failBroadcastManagementRequest(state,
+                                               "Twitch API Error: " + gqlError);
                 return;
             }
 
             const auto data = payloadDataObject(root);
             const auto user = data.value("user").toObject();
-            const auto returnedUserId =
-                user.value("id").toString().trimmed();
+            const auto returnedUserId = user.value("id").toString().trimmed();
             if (returnedUserId.isEmpty())
             {
                 failBroadcastManagementRequest(
@@ -6215,12 +6204,11 @@ query MoltorinoBroadcastManagementFreeformTags($login: String!) {
                                  .toObject()
                                  .value("isRerun")
                                  .toBool(false);
-            parsed.canEditAudience =
-                data.value("currentUser")
-                    .toObject()
-                    .value("id")
-                    .toString()
-                    .trimmed() == normalizedChannelId;
+            parsed.canEditAudience = data.value("currentUser")
+                                         .toObject()
+                                         .value("id")
+                                         .toString()
+                                         .trimmed() == normalizedChannelId;
             parsed.allowedContentLabelIds = parseStringArray(
                 broadcastSettings
                     .value(
@@ -6249,8 +6237,7 @@ query MoltorinoBroadcastManagementFreeformTags($login: String!) {
     tagsVariables.insert("login", normalizedLogin);
 
     makeInlineGqlRequest(TAGS_QUERY, tagsVariables, oauthToken)
-        .onSuccess([state, normalizedChannelId](
-                       const NetworkResult &result) {
+        .onSuccess([state, normalizedChannelId](const NetworkResult &result) {
             const auto root = result.parseJsonValue();
             if (root.isUndefined() || root.isNull())
             {
@@ -6262,15 +6249,13 @@ query MoltorinoBroadcastManagementFreeformTags($login: String!) {
             const auto gqlError = extractFirstGqlErrorMessage(root);
             if (!gqlError.isEmpty())
             {
-                failBroadcastManagementRequest(
-                    state, "Twitch API Error: " + gqlError);
+                failBroadcastManagementRequest(state,
+                                               "Twitch API Error: " + gqlError);
                 return;
             }
 
-            const auto user =
-                payloadDataObject(root).value("user").toObject();
-            const auto returnedUserId =
-                user.value("id").toString().trimmed();
+            const auto user = payloadDataObject(root).value("user").toObject();
+            const auto returnedUserId = user.value("id").toString().trimmed();
             if (returnedUserId != normalizedChannelId)
             {
                 failBroadcastManagementRequest(
@@ -6294,10 +6279,8 @@ query MoltorinoBroadcastManagementFreeformTags($login: String!) {
             QStringList tags;
             for (const auto &tagValue : tagsValue.toArray())
             {
-                const auto name = tagValue.toObject()
-                                      .value("name")
-                                      .toString()
-                                      .trimmed();
+                const auto name =
+                    tagValue.toObject().value("name").toString().trimmed();
                 if (!name.isEmpty())
                 {
                     tags.push_back(name);
@@ -6366,8 +6349,8 @@ mutation EditBroadcastContext_BroadcastSettingsMutation(
     variables.insert("input", input);
 
     makeInlineGqlRequest(MUTATION, variables, oauthToken)
-        .onSuccess([successCallback, failureCallback, settings](
-                       const NetworkResult &result) {
+        .onSuccess([successCallback, failureCallback,
+                    settings](const NetworkResult &result) {
             const auto root = result.parseJsonValue();
             if (root.isUndefined() || root.isNull())
             {
@@ -6387,8 +6370,7 @@ mutation EditBroadcastContext_BroadcastSettingsMutation(
                                     .toObject();
             if (update.isEmpty())
             {
-                failureCallback(
-                    "Twitch did not return an update result");
+                failureCallback("Twitch did not return an update result");
                 return;
             }
 
@@ -6404,8 +6386,8 @@ mutation EditBroadcastContext_BroadcastSettingsMutation(
                 update.value("broadcastSettings").toObject();
             if (returnedSettings.isEmpty())
             {
-                failureCallback(
-                    "Twitch accepted the request but returned no stream information");
+                failureCallback("Twitch accepted the request but returned no "
+                                "stream information");
                 return;
             }
 
@@ -6421,8 +6403,7 @@ mutation EditBroadcastContext_BroadcastSettingsMutation(
             parsed.canEditAudience = settings.canEditAudience;
             parsed.contentLabels = settings.contentLabels;
             parsed.audienceOptions = settings.audienceOptions;
-            parsed.allowedContentLabelIds =
-                settings.allowedContentLabelIds;
+            parsed.allowedContentLabelIds = settings.allowedContentLabelIds;
             successCallback(std::move(parsed));
         })
         .onError([failureCallback](const NetworkResult &result) {
@@ -6433,8 +6414,7 @@ mutation EditBroadcastContext_BroadcastSettingsMutation(
 
 void TwitchGql::setFreeformTags(
     const QString &channelId, const QStringList &tags,
-    const QString &oauthToken,
-    std::function<void(QStringList)> successCallback,
+    const QString &oauthToken, std::function<void(QStringList)> successCallback,
     std::function<void(const QString &)> failureCallback)
 {
     const auto normalizedChannelId = channelId.trimmed();
@@ -6470,9 +6450,8 @@ void TwitchGql::setFreeformTags(
         const auto comparisonKey = normalizedTag.toCaseFolded();
         if (seenTags.contains(comparisonKey))
         {
-            failureCallback(
-                QStringLiteral("Channel tag '%1' is duplicated")
-                    .arg(normalizedTag));
+            failureCallback(QStringLiteral("Channel tag '%1' is duplicated")
+                                .arg(normalizedTag));
             return;
         }
         seenTags.insert(comparisonKey);
@@ -6506,8 +6485,8 @@ mutation MoltorinoSetFreeformTags($input: SetFreeformTagsInput!) {
     variables.insert("input", input);
 
     makeInlineGqlRequest(MUTATION, variables, oauthToken)
-        .onSuccess([successCallback, failureCallback, normalizedTags](
-                       const NetworkResult &result) {
+        .onSuccess([successCallback, failureCallback,
+                    normalizedTags](const NetworkResult &result) {
             const auto root = result.parseJsonValue();
             if (root.isUndefined() || root.isNull())
             {
@@ -6535,10 +6514,9 @@ mutation MoltorinoSetFreeformTags($input: SetFreeformTagsInput!) {
                 QStringLiteral("Failed to update channel tags"));
             if (!payloadError.isEmpty())
             {
-                const auto failedTags = parseStringArray(
-                    payload.value("error")
-                        .toObject()
-                        .value("failedFreeformTagNames"));
+                const auto failedTags =
+                    parseStringArray(payload.value("error").toObject().value(
+                        "failedFreeformTagNames"));
                 if (!failedTags.isEmpty())
                 {
                     payloadError +=
@@ -6560,8 +6538,7 @@ void TwitchGql::setContentClassificationLabels(
     const QString &channelId,
     const QVector<GqlContentClassificationLabel> &labels,
     const QString &oauthToken,
-    std::function<void(QVector<GqlContentClassificationLabel>)>
-        successCallback,
+    std::function<void(QVector<GqlContentClassificationLabel>)> successCallback,
     std::function<void(const QString &)> failureCallback)
 {
     const auto normalizedChannelId = channelId.trimmed();
@@ -6572,8 +6549,8 @@ void TwitchGql::setContentClassificationLabels(
     }
     if (labels.isEmpty())
     {
-        failureCallback(
-            "Content classification state is missing; refusing a partial update");
+        failureCallback("Content classification state is missing; refusing a "
+                        "partial update");
         return;
     }
 
@@ -6590,7 +6567,8 @@ void TwitchGql::setContentClassificationLabels(
         if (seenLabelIds.contains(labelId))
         {
             failureCallback(
-                QStringLiteral("Content classification label '%1' is duplicated")
+                QStringLiteral(
+                    "Content classification label '%1' is duplicated")
                     .arg(labelId));
             return;
         }
@@ -6633,8 +6611,8 @@ mutation MoltorinoSetContentClassificationLabels(
     variables.insert("input", input);
 
     makeInlineGqlRequest(MUTATION, variables, oauthToken)
-        .onSuccess([successCallback, failureCallback](
-                       const NetworkResult &result) {
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
             const auto root = result.parseJsonValue();
             if (root.isUndefined() || root.isNull())
             {
@@ -6674,8 +6652,8 @@ mutation MoltorinoSetContentClassificationLabels(
                 payload.value("contentClassificationLabels"));
             if (!returnedLabels)
             {
-                failureCallback(
-                    "Twitch accepted the request but returned invalid content classification labels");
+                failureCallback("Twitch accepted the request but returned "
+                                "invalid content classification labels");
                 return;
             }
             successCallback(std::move(*returnedLabels));
@@ -6687,8 +6665,8 @@ mutation MoltorinoSetContentClassificationLabels(
 }
 
 void TwitchGql::setChannelRerunStatus(
-    const QString &channelId, bool shouldBeRerun,
-    const QString &oauthToken, std::function<void(bool)> successCallback,
+    const QString &channelId, bool shouldBeRerun, const QString &oauthToken,
+    std::function<void(bool)> successCallback,
     std::function<void(const QString &)> failureCallback)
 {
     const auto normalizedChannelId = channelId.trimmed();
@@ -6783,7 +6761,8 @@ mutation MoltorinoSetChannelRerunStatus(
                 rerunStatus.value("isRerun").toBool(false);
             if (appliedStatus != shouldBeRerun)
             {
-                failureCallback("Twitch did not apply the requested rerun status");
+                failureCallback(
+                    "Twitch did not apply the requested rerun status");
                 return;
             }
             successCallback(appliedStatus);
@@ -6794,11 +6773,10 @@ mutation MoltorinoSetChannelRerunStatus(
         .execute();
 }
 
-void TwitchGql::startAd(
-    const QString &channelId, int lengthSeconds, GqlStartAdTrigger trigger,
-    const QString &oauthToken,
-    std::function<void(GqlStartAdResult)> successCallback,
-    std::function<void(const QString &)> failureCallback)
+void TwitchGql::startAd(const QString &channelId, int lengthSeconds,
+                        GqlStartAdTrigger trigger, const QString &oauthToken,
+                        std::function<void(GqlStartAdResult)> successCallback,
+                        std::function<void(const QString &)> failureCallback)
 {
     static constexpr auto MUTATION = R"(
 mutation StartAd($input: StartAdInput!) {
@@ -6818,10 +6796,9 @@ mutation StartAd($input: StartAdInput!) {
     QJsonObject input;
     input.insert("channelID", channelId.trimmed());
     input.insert("lengthSeconds", lengthSeconds);
-    input.insert("trigger",
-                 trigger == GqlStartAdTrigger::ChatCommand
-                     ? QStringLiteral("CHAT_COMMAND")
-                     : QStringLiteral("QUICK_ACTION"));
+    input.insert("trigger", trigger == GqlStartAdTrigger::ChatCommand
+                                ? QStringLiteral("CHAT_COMMAND")
+                                : QStringLiteral("QUICK_ACTION"));
     input.insert("commercialID",
                  QUuid::createUuid().toString(QUuid::Id128).toLower());
 
@@ -6829,8 +6806,8 @@ mutation StartAd($input: StartAdInput!) {
     variables.insert("input", input);
 
     makeInlineGqlRequest(MUTATION, variables, oauthToken)
-        .onSuccess([successCallback, failureCallback, lengthSeconds](
-                       const NetworkResult &result) {
+        .onSuccess([successCallback, failureCallback,
+                    lengthSeconds](const NetworkResult &result) {
             const auto root = result.parseJsonValue();
             if (root.isUndefined() || root.isNull())
             {
@@ -6864,11 +6841,10 @@ mutation StartAd($input: StartAdInput!) {
             parsed.retryAfterSeconds =
                 error.value("retryAfterSeconds").toInt(0);
             if (parsed.errorCode.isEmpty() &&
-                (parsed.adSessionId.isEmpty() ||
-                 parsed.lengthSeconds <= 0))
+                (parsed.adSessionId.isEmpty() || parsed.lengthSeconds <= 0))
             {
-                failureCallback(
-                    "Twitch returned neither a commercial error nor a usable ad session");
+                failureCallback("Twitch returned neither a commercial error "
+                                "nor a usable ad session");
                 return;
             }
             successCallback(std::move(parsed));

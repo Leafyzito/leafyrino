@@ -74,4 +74,4 @@ private:
     boost::signals2::scoped_connection userChanged_;
 };
 
-}
+}  // namespace chatterino

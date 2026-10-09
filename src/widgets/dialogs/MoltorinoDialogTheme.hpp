@@ -18,13 +18,11 @@ inline QPalette moltorinoDialogPalette(const Theme &theme)
     auto palette = theme.palette;
     palette.setColor(QPalette::Window, theme.window.background);
     palette.setColor(QPalette::WindowText, theme.window.text);
-    palette.setColor(QPalette::Base,
-                     theme.tabs.regular.backgrounds.regular);
+    palette.setColor(QPalette::Base, theme.tabs.regular.backgrounds.regular);
     palette.setColor(QPalette::AlternateBase,
                      theme.tabs.regular.backgrounds.hover);
     palette.setColor(QPalette::Text, theme.window.text);
-    palette.setColor(QPalette::Button,
-                     theme.tabs.selected.backgrounds.regular);
+    palette.setColor(QPalette::Button, theme.tabs.selected.backgrounds.regular);
     palette.setColor(QPalette::ButtonText, theme.window.text);
     palette.setColor(QPalette::Highlight,
                      theme.tabs.selected.backgrounds.regular);
@@ -82,8 +80,7 @@ namespace detail {
 class MoltorinoDialogThemeBinding final : public QObject
 {
 public:
-    MoltorinoDialogThemeBinding(QWidget *root,
-                                std::function<void()> afterApply)
+    MoltorinoDialogThemeBinding(QWidget *root, std::function<void()> afterApply)
         : QObject(root)
         , root_(root)
         , afterApply_(std::move(afterApply))
@@ -114,14 +111,14 @@ private:
     pajlada::Signals::SignalHolder connections_;
 };
 
-}
+}  // namespace detail
 
-inline void installMoltorinoDialogTheme(
-    QWidget *root, std::function<void()> afterApply = {})
+inline void installMoltorinoDialogTheme(QWidget *root,
+                                        std::function<void()> afterApply = {})
 {
     root->setAttribute(Qt::WA_WindowPropagation);
     root->setAutoFillBackground(true);
     new detail::MoltorinoDialogThemeBinding(root, std::move(afterApply));
 }
 
-}
+}  // namespace chatterino

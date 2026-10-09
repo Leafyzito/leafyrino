@@ -736,7 +736,8 @@ void fetchModeratedChannels(MoltorinoAuthAccount account,
                             normalizeToken(account.token)))
             {
                 account.moderatedChannels = existing.moderatedChannels;
-                account.verifiedEditorChannels = existing.verifiedEditorChannels;
+                account.verifiedEditorChannels =
+                    existing.verifiedEditorChannels;
                 break;
             }
         }

@@ -57,7 +57,7 @@ QString channelCount(int count)
                       : QStringLiteral("%1 channels").arg(count);
 }
 
-}
+}  // namespace
 
 CrossBanDialog::CrossBanDialog(CrossChannelAction action, QString targetId,
                                QString targetLogin, QString targetDisplayName,
@@ -387,8 +387,8 @@ void CrossBanDialog::updateActionState()
                                          : "Unban selected");
     }
 
-    const bool ready = !this->statusCheckInFlight_ &&
-                       this->authenticationError_.isEmpty();
+    const bool ready =
+        !this->statusCheckInFlight_ && this->authenticationError_.isEmpty();
     this->actionButton_->setEnabled(ready && selected > 0);
     this->selectAll_->setEnabled(ready && available > 0);
     this->clear_->setEnabled(ready && selected > 0);
@@ -816,8 +816,7 @@ void CrossBanDialog::finishAction(bool stopped)
                                        .arg(this->failed_));
     }
     this->progress_->setToolTip(
-        !this->authenticationError_.isEmpty()
-            ? this->authenticationError_
+        !this->authenticationError_.isEmpty() ? this->authenticationError_
         : this->failed_ > 0
             ? QStringLiteral("Hover a failed channel status for details")
             : QString());
@@ -830,14 +829,14 @@ void CrossBanDialog::finishAction(bool stopped)
     QString result;
     if (!this->authenticationError_.isEmpty())
     {
-        result = QStringLiteral(
-                     "%1 for %2 stopped: %3 succeeded, %4 failed, %5 not "
-                     "tried. %6")
-                     .arg(featureName, targetLogin_)
-                     .arg(this->completed_)
-                     .arg(this->failed_)
-                     .arg(notAttempted)
-                     .arg(this->authenticationError_);
+        result =
+            QStringLiteral("%1 for %2 stopped: %3 succeeded, %4 failed, %5 not "
+                           "tried. %6")
+                .arg(featureName, targetLogin_)
+                .arg(this->completed_)
+                .arg(this->failed_)
+                .arg(notAttempted)
+                .arg(this->authenticationError_);
     }
     else if (stopped)
     {
@@ -906,4 +905,4 @@ QString CrossBanDialog::pastActionVerb(bool capitalized) const
                        : QStringLiteral("unbanned");
 }
 
-}
+}  // namespace chatterino

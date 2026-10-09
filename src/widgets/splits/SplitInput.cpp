@@ -549,13 +549,13 @@ SplitInput::SplitInput(QWidget *parent, Split *_chatWidget,
         this->updateCompletionPopup();
     };
     getSettings()->includePotatCommands.connect(refreshCommandHints,
-                                               this->managedConnections_);
-    getSettings()->showPotatCommandAliases.connect(
-        refreshCommandHints, this->managedConnections_);
-    getSettings()->includeSupibotCommands.connect(
-        refreshCommandHints, this->managedConnections_);
-    getSettings()->showSupibotCommandAliases.connect(
-        refreshCommandHints, this->managedConnections_);
+                                                this->managedConnections_);
+    getSettings()->showPotatCommandAliases.connect(refreshCommandHints,
+                                                   this->managedConnections_);
+    getSettings()->includeSupibotCommands.connect(refreshCommandHints,
+                                                  this->managedConnections_);
+    getSettings()->showSupibotCommandAliases.connect(refreshCommandHints,
+                                                     this->managedConnections_);
     if (auto *potat = getApp()->getPotatCommands())
     {
         this->managedConnections_.managedConnect(potat->commandsUpdated,
@@ -3497,9 +3497,9 @@ void SplitInput::showCommandCompletionStatus(const QString &text)
                 "border: 0; }");
             auto muted = this->theme->splits.input.text;
             muted.setAlphaF(this->theme->isLightTheme() ? 0.68F : 0.58F);
-            row->setText(QStringLiteral("<span style=\"color:%1;\">%2</span>")
-                             .arg(muted.name(QColor::HexArgb),
-                                  text.toHtmlEscaped()));
+            row->setText(
+                QStringLiteral("<span style=\"color:%1;\">%2</span>")
+                    .arg(muted.name(QColor::HexArgb), text.toHtmlEscaped()));
             row->setToolTip({});
             row->setCursor(Qt::ArrowCursor);
             row->show();
@@ -3621,9 +3621,9 @@ void SplitInput::updateCommandArgumentHint(const QString &text,
         clear();
         return;
     }
-    const auto separator =
-        !text.isEmpty() && text.back().isSpace() ? QString{}
-                                                 : QStringLiteral(" ");
+    const auto separator = !text.isEmpty() && text.back().isSpace()
+                               ? QString{}
+                               : QStringLiteral(" ");
     this->ui_.textEdit->setGhostText(separator +
                                      this->resolvedSupibotDescription_);
 }

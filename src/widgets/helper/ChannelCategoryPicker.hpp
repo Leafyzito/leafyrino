@@ -66,4 +66,4 @@ private:
     std::vector<ChannelManagementCategory> results_;
 };
 
-}
+}  // namespace chatterino

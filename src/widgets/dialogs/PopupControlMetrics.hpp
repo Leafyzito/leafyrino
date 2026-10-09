@@ -19,4 +19,4 @@ inline int popupControlHeight(const QFont &font, float contentScale)
     return contentHeight + 2;
 }
 
-}
+}  // namespace chatterino

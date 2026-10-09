@@ -16,12 +16,12 @@
 
 #include <algorithm>
 #include <array>
-#include <ranges>
 #include <atomic>
 #include <chrono>
 #include <deque>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -198,8 +198,7 @@ bool accountIsStillAvailable(const MoltorinoAuthAccount &candidate)
 {
     for (const auto &account : MoltorinoAuth::accounts())
     {
-        if (!account.valid ||
-            account.token.trimmed().isEmpty())
+        if (!account.valid || account.token.trimmed().isEmpty())
         {
             continue;
         }
@@ -218,8 +217,7 @@ bool gqlAuthIsStillAvailable(const MoltorinoAuthToken &candidate)
 {
     for (const auto &account : MoltorinoAuth::accounts())
     {
-        if (!account.valid ||
-            account.token != candidate.token)
+        if (!account.valid || account.token != candidate.token)
         {
             continue;
         }
@@ -248,8 +246,7 @@ std::vector<MoltorinoAuthAccount> editorCandidates()
 {
     auto candidates = MoltorinoAuth::accounts();
     std::erase_if(candidates, [](const auto &account) {
-        return !account.valid ||
-               account.token.trimmed().isEmpty();
+        return !account.valid || account.token.trimmed().isEmpty();
     });
 
     const auto current = getApp()->getAccounts()->twitch.getCurrent();
@@ -826,7 +823,7 @@ void runCompositeUpdate(std::vector<CompositeUpdateStep> steps,
     (*state->advance)();
 }
 
-}
+}  // namespace
 
 namespace ChannelManagement {
 
@@ -928,8 +925,7 @@ bool hasVerifiedEditorAccess(const QString &channelId)
     {
         const auto stillValid =
             std::ranges::any_of(accounts, [&cachedToken](const auto &account) {
-                return account.valid &&
-                       account.token == cachedToken;
+                return account.valid && account.token == cachedToken;
             });
         if (stillValid)
         {
@@ -1660,6 +1656,6 @@ void startCommercial(
         });
 }
 
-}
+}  // namespace ChannelManagement
 
-}
+}  // namespace chatterino
