@@ -124,7 +124,7 @@ public:
 
     MOCK_METHOD(
         void, updateChannel,
-        (QString broadcasterId, QString gameId, QString language, QString title,
+        (QString broadcasterId, const HelixChannelUpdate &update,
          std::function<void(NetworkResult)> successCallback,
          (FailureCallback<HelixUpdateChannelError, QString> failureCallback)),
         (override));

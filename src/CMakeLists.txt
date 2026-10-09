@@ -587,6 +587,8 @@ set(SOURCE_FILES
         providers/twitch/TwitchBadges.cpp
         providers/twitch/TwitchBadges.hpp
         providers/twitch/api/TwitchGql.cpp
+        providers/twitch/ChannelManagement.cpp
+        providers/twitch/ChannelManagement.hpp
         providers/twitch/TwitchChannel.cpp
         providers/twitch/TwitchChannel.hpp
         providers/twitch/TwitchCommon.cpp
@@ -837,8 +839,12 @@ set(SOURCE_FILES
         widgets/dialogs/UserBadgesDialog.hpp
         widgets/dialogs/ChannelFilterEditorDialog.cpp
         widgets/dialogs/ChannelFilterEditorDialog.hpp
+        widgets/dialogs/ChannelManagementDialog.cpp
+        widgets/dialogs/ChannelManagementDialog.hpp
         widgets/dialogs/ChannelPointsDialog.cpp
         widgets/dialogs/ChannelPointsDialog.hpp
+        widgets/dialogs/MoltorinoDialogTheme.hpp
+        widgets/dialogs/PopupControlMetrics.hpp
         widgets/dialogs/ChannelPointsChartDialog.cpp
         widgets/dialogs/ChannelPointsChartDialog.hpp
         widgets/dialogs/ChannelPointsChartView.cpp
@@ -925,6 +931,8 @@ set(SOURCE_FILES
         widgets/helper/color/SBCanvas.cpp
         widgets/helper/color/SBCanvas.hpp
 
+        widgets/helper/ChannelCategoryPicker.cpp
+        widgets/helper/ChannelCategoryPicker.hpp
         widgets/helper/ChannelView.cpp
         widgets/helper/ChannelView.hpp
         widgets/helper/CmdDeleteKeyFilter.cpp

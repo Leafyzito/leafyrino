@@ -190,6 +190,24 @@ struct HelixGame {
     }
 };
 
+struct HelixContentClassificationLabelState {
+    QString id;
+    bool isEnabled = false;
+};
+
+struct HelixChannelUpdate {
+    std::optional<QString> gameId;
+    std::optional<QString> language;
+    std::optional<QString> title;
+    std::optional<QStringList> tags;
+    std::optional<std::vector<HelixContentClassificationLabelState>>
+        contentClassificationLabels;
+    std::optional<bool> isBrandedContent;
+
+    [[nodiscard]] bool empty() const;
+    [[nodiscard]] QJsonObject toJson() const;
+};
+
 struct HelixClip {
     QString id;
     QString editUrl;
@@ -208,6 +226,9 @@ struct HelixChannel {
     QString gameId;
     QString gameName;
     QString title;
+    QStringList tags;
+    QStringList contentClassificationLabels;
+    bool isBrandedContent = false;
 
     explicit HelixChannel(QJsonObject jsonObject)
         : userId(jsonObject.value("broadcaster_id").toString())
@@ -216,7 +237,20 @@ struct HelixChannel {
         , gameId(jsonObject.value("game_id").toString())
         , gameName(jsonObject.value("game_name").toString())
         , title(jsonObject.value("title").toString())
+        , isBrandedContent(jsonObject.value("is_branded_content").toBool())
     {
+        const auto jsonTags = jsonObject.value("tags").toArray();
+        for (const auto &tag : jsonTags)
+        {
+            this->tags.push_back(tag.toString());
+        }
+
+        const auto jsonLabels =
+            jsonObject.value("content_classification_labels").toArray();
+        for (const auto &label : jsonLabels)
+        {
+            this->contentClassificationLabels.push_back(label.toString());
+        }
     }
 };
 
@@ -888,7 +922,7 @@ public:
                              HelixFailureCallback failureCallback) = 0;
 
     virtual void updateChannel(
-        QString broadcasterId, QString gameId, QString language, QString title,
+        QString broadcasterId, const HelixChannelUpdate &update,
         std::function<void(NetworkResult)> successCallback,
         FailureCallback<HelixUpdateChannelError, QString> failureCallback) = 0;
 
@@ -1231,8 +1265,7 @@ public:
                      std::function<void()> successCallback,
                      HelixFailureCallback failureCallback) final;
 
-    void updateChannel(QString broadcasterId, QString gameId, QString language,
-                       QString title,
+    void updateChannel(QString broadcasterId, const HelixChannelUpdate &update,
                        std::function<void(NetworkResult)> successCallback,
                        FailureCallback<HelixUpdateChannelError, QString>
                            failureCallback) final;

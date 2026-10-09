@@ -27,6 +27,7 @@ struct MoltorinoAuthAccount {
     QString lastError;
     QString lastValidatedAt;
     QVector<MoltorinoAuthChannel> moderatedChannels;
+    QVector<MoltorinoAuthChannel> verifiedEditorChannels;
 };
 
 struct MoltorinoAuthToken {
@@ -69,6 +70,10 @@ QString legacyToken();
 void addOrUpdateToken(const QString &token,
                       std::function<void(MoltorinoAuthAccount)> successCallback,
                       std::function<void(const QString &)> failureCallback);
+void rememberEditorChannel(const QString &token,
+                           const MoltorinoAuthChannel &channel);
+void forgetEditorChannel(const QString &token, const QString &channelId,
+                         const QString &channelLogin);
 void removeAccount(const QString &userId, const QString &token);
 void refreshAccounts(std::function<void(MoltorinoAuthRefreshResult)> callback);
 void scheduleStartupRefresh();

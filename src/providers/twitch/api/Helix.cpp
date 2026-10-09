@@ -659,37 +659,75 @@ void Helix::unblockUser(QString targetUserId, const QObject *caller,
         .execute();
 }
 
+bool HelixChannelUpdate::empty() const
+{
+    return !this->gameId && !this->language && !this->title && !this->tags &&
+           !this->contentClassificationLabels && !this->isBrandedContent;
+}
+
+QJsonObject HelixChannelUpdate::toJson() const
+{
+    QJsonObject obj;
+
+    if (this->gameId)
+    {
+        obj.insert("game_id", *this->gameId);
+    }
+    if (this->language)
+    {
+        obj.insert("broadcaster_language", *this->language);
+    }
+    if (this->title)
+    {
+        obj.insert("title", *this->title);
+    }
+    if (this->tags)
+    {
+        QJsonArray tags;
+        for (const auto &tag : *this->tags)
+        {
+            tags.push_back(tag);
+        }
+        obj.insert("tags", tags);
+    }
+    if (this->contentClassificationLabels)
+    {
+        QJsonArray labels;
+        for (const auto &label : *this->contentClassificationLabels)
+        {
+            labels.push_back(QJsonObject{
+                {"id", label.id},
+                {"is_enabled", label.isEnabled},
+            });
+        }
+        obj.insert("content_classification_labels", labels);
+    }
+    if (this->isBrandedContent)
+    {
+        obj.insert("is_branded_content", *this->isBrandedContent);
+    }
+
+    return obj;
+}
+
 void Helix::updateChannel(
-    QString broadcasterId, QString gameId, QString language, QString title,
+    QString broadcasterId, const HelixChannelUpdate &update,
     std::function<void(NetworkResult)> successCallback,
     FailureCallback<HelixUpdateChannelError, QString> failureCallback)
 {
     using Error = HelixUpdateChannelError;
 
-    QUrlQuery urlQuery;
-    auto obj = QJsonObject();
-    if (!gameId.isEmpty())
-    {
-        obj.insert("game_id", gameId);
-    }
-    if (!language.isEmpty())
-    {
-        obj.insert("broadcaster_language", language);
-    }
-    if (!title.isEmpty())
-    {
-        obj.insert("title", title);
-    }
-
-    if (title.isEmpty() && gameId.isEmpty() && language.isEmpty())
+    if (update.empty())
     {
         qCDebug(chatterinoCommon) << "Tried to update channel with no changes!";
+        failureCallback(Error::Forwarded, "No channel changes were provided.");
         return;
     }
 
+    QUrlQuery urlQuery;
     urlQuery.addQueryItem("broadcaster_id", broadcasterId);
     this->makePatch("channels", urlQuery)
-        .json(obj)
+        .json(update.toJson())
         .onSuccess([successCallback, failureCallback](auto result) {
             successCallback(result);
         })

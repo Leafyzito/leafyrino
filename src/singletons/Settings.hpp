@@ -1301,6 +1301,10 @@ public:
     BoolSetting nukeSkipVips{"/moltorino/moderation/nuke/skipVips", false};
     QStringSetting nukeModerationMessage{
         "/moltorino/moderation/nuke/moderationMessage", ""};
+    BoolSetting showEditStreamInfoButtonInSplitHeader{
+        "/moltorino/showEditStreamInfoButtonInSplitHeader", true};
+    IntSetting defaultCommercialDuration{
+        "/moltorino/moderation/defaultCommercialDuration", 30};
     BoolSetting showRaidStatusAboveInput{
         "/moltorino/moderation/raid/showStatusAboveInput", true};
 

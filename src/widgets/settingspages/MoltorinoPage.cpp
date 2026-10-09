@@ -3,6 +3,7 @@
 #include "common/network/NetworkRequest.hpp"
 #include "common/network/NetworkResult.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
+#include "providers/twitch/ChannelManagement.hpp"
 #include "providers/translation/Translator.hpp"
 #include "singletons/Settings.hpp"
 #include "util/Clipboard.hpp"
@@ -939,6 +940,32 @@ MoltorinoPage::MoltorinoPage()
         this->managedConnections_, false);
     view->addWidget(nukeMessageRow,
                     {"Nuke mod message", "Nuke timeout ban message"});
+
+    SettingWidget::checkbox(
+        "Show the edit stream info button in the chat header",
+        s.showEditStreamInfoButtonInSplitHeader)
+        ->setTooltip("Show the edit stream info shortcut in the chat header "
+                     "when broadcaster or editor access is available.")
+        ->addTo(*view);
+
+    view->addSubtitle("Commercials");
+    view->addDropdown<int>(
+            "Default commercial duration",
+            {"30 seconds", "60 seconds", "90 seconds", "120 seconds",
+             "150 seconds", "180 seconds"},
+            s.defaultCommercialDuration,
+            [](int value) {
+                return QString("%1 seconds")
+                    .arg(ChannelManagement::isValidCommercialLength(value)
+                             ? value
+                             : 30);
+            },
+            [](auto args) {
+                return args.value.section(' ', 0, 0).toInt();
+            },
+            false)
+        ->setToolTip("Used when /commercial has no duration. An explicit "
+                     "duration, such as /commercial 60, overrides this.");
 
     view->addTitle("Client");
     view->addDescription(

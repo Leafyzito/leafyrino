@@ -1472,6 +1472,21 @@ void TwitchChannel::updateStreamTitle(const QString &title)
     this->streamStatusChanged.invoke();
 }
 
+void TwitchChannel::updateStreamGame(const QString &gameName,
+                                     const QString &gameId)
+{
+    {
+        auto status = this->streamStatus_.access();
+        if (status->game == gameName && status->gameId == gameId)
+        {
+            return;
+        }
+        status->game = gameName;
+        status->gameId = gameId;
+    }
+    this->streamStatusChanged.invoke();
+}
+
 void TwitchChannel::updateDisplayName(const QString &displayName)
 {
     if (displayName == this->nameOptions.actualDisplayName)
