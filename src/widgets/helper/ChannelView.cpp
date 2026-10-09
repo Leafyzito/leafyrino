@@ -4033,7 +4033,7 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
                         ? dateTime.toString("yyyy-MM-ddTHH:mm:ssZ")
                         : messageID;
 
-                QDesktopServices::openUrl(QUrl(u"https://tv.supa.sh/logs?c=" %
+                QDesktopServices::openUrl(QUrl(u"https://lurkology.com/logs?c=" %
                                                channelName % u"&d=" % logsDate %
                                                u"#" % logsJumpHash));
             });
