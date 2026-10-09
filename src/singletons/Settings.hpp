@@ -575,6 +575,11 @@ public:
         50,
     };
 
+    BoolSetting showChatterListInAllTwitchChannels = {
+        "/behaviour/chatterList/showInAllTwitchChannels", true};
+    QStringSetting chatterListDataMode = {"/behaviour/chatterList/dataMode",
+                                          "best"};
+
     // Auto-completion
     BoolSetting onlyFetchChattersForSmallerStreamers = {
         "/behaviour/autocompletion/onlyFetchChattersForSmallerStreamers", true};

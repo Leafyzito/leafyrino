@@ -2484,7 +2484,7 @@ void Split::openWithCustomScheme()
 
 void Split::openChatterList()
 {
-    auto channel = this->getSelectedChannel();
+    auto channel = this->getChannel();
     if (!channel)
     {
         qCWarning(chatterinoWidget)
@@ -2492,25 +2492,42 @@ void Split::openChatterList()
         return;
     }
 
-    auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get());
-    if (twitchChannel == nullptr)
+    if (!ChatterListWidget::supportsChannel(channel.get()))
     {
         qCWarning(chatterinoWidget)
-            << "Chatter list opened in a non-Twitch channel";
+            << "Chatter list opened without a supported channel";
         return;
+    }
+
+    for (auto *window : this->findChildren<ChatterListWidget *>())
+    {
+        if (window->channelName().compare(channel->getName(),
+                                          Qt::CaseInsensitive) == 0)
+        {
+            window->showNormal();
+            window->raise();
+            window->activateWindow();
+            return;
+        }
     }
 
     const auto chatterListWidth = static_cast<int>(this->width() * 0.5);
     const auto chatterListHeight =
-        this->height() - this->header_->height() - this->input_->height();
+        this->height() - this->header_->height() -
+        (this->input_ != nullptr ? this->input_->height() : 0);
 
-    auto *chatterDock = new ChatterListWidget(twitchChannel, this);
+    auto *chatterDock = new ChatterListWidget(std::move(channel), this);
 
-    QObject::connect(chatterDock, &ChatterListWidget::userClicked,
-                     [this](const QString &userLogin) {
-                         this->view_->showUserInfoPopup(
-                             userLogin, MessagePlatform::AnyOrTwitch);
-                     });
+    QObject::connect(
+        chatterDock, &ChatterListWidget::userClicked, this,
+        [this](const QString &userLogin, MessagePlatform platform,
+               const QString &channelName, const QString &) {
+            if (platform == MessagePlatform::YouTube)
+            {
+                return;
+            }
+            this->view_->showUserInfoPopup(userLogin, platform, channelName);
+        });
 
     chatterDock->resize(chatterListWidth, chatterListHeight);
     widgets::showAndMoveWindowTo(

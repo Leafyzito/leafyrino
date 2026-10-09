@@ -51,6 +51,7 @@
 #include <QPainter>
 
 #include <cmath>
+#include <ranges>
 
 using namespace Qt::StringLiterals;
 
@@ -125,6 +126,24 @@ QString formatRoomModeUnclean(const KickChannel::RoomModes &modes)
         twitch.slowMode = static_cast<int>(modes.slowModeDuration->count());
     }
     return formatRoomModeUnclean(twitch);
+}
+
+bool canShowChatterList(const ChannelPtr &rootChannel)
+{
+    const auto canUseTwitchChannel = [](const ChannelPtr &channel) {
+        const auto twitch = std::dynamic_pointer_cast<TwitchChannel>(channel);
+        return twitch && (twitch->hasModRights() ||
+                          getSettings()->showChatterListInAllTwitchChannels);
+    };
+
+    if (const auto multi = std::dynamic_pointer_cast<MultiChannel>(rootChannel))
+    {
+        return std::ranges::any_of(multi->channels(), [&](const auto &child) {
+            return child.platform == MultiChannel::Platform::Twitch &&
+                   canUseTwitchChannel(child.channel);
+        });
+    }
+    return canUseTwitchChannel(rootChannel);
 }
 
 void cleanRoomModeText(QString &text, bool hasModRights)
@@ -497,6 +516,11 @@ SplitHeader::SplitHeader(Split *split)
             {
                 twitchChannel->refreshFollowingStatus(true);
             }
+            this->updateIcons();
+        },
+        this->managedConnections_);
+    getSettings()->showChatterListInAllTwitchChannels.connect(
+        [this](bool, auto) {
             this->updateIcons();
         },
         this->managedConnections_);
@@ -962,16 +986,16 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
         moreMenu->addAction(action);
     }
 
+    if (canShowChatterList(this->split_->getChannel()))
+    {
+        moreMenu->addAction(
+            "Show chatter &list",
+            h->getDisplaySequence(HotkeyCategory::Split, "openViewerList"),
+            this->split_, &Split::openChatterList);
+    }
+
     if (twitchChannel)
     {
-        if (twitchChannel->hasModRights())
-        {
-            moreMenu->addAction(
-                "Show chatter &list",
-                h->getDisplaySequence(HotkeyCategory::Split, "openViewerList"),
-                this->split_, &Split::openChatterList);
-        }
-
         moreMenu->addAction("&Subscribe",
                             h->getDisplaySequence(HotkeyCategory::Split,
                                                   "openSubscriptionPage"),
@@ -1754,20 +1778,19 @@ void SplitHeader::updateIcons()
         {
             this->moderationButton_->hide();
         }
-
-        if (channel->hasModRights() && channel->isTwitchChannel())
-        {
-            this->chattersButton_->show();
-        }
-        else
-        {
-            this->chattersButton_->hide();
-        }
     }
     else
     {
         this->followButton_->hide();
         this->moderationButton_->hide();
+    }
+
+    if (canShowChatterList(this->split_->getChannel()))
+    {
+        this->chattersButton_->show();
+    }
+    else
+    {
         this->chattersButton_->hide();
     }
 }

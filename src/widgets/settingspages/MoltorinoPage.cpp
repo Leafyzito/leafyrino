@@ -1096,6 +1096,23 @@ MoltorinoPage::MoltorinoPage()
         }
     });
 
+    SettingWidget::checkbox("Show chatter list in all Twitch channels",
+                            s.showChatterListInAllTwitchChannels)
+        ->setTooltip(
+            "Show the chatter list button even when you are not a moderator.")
+        ->addTo(*view);
+    SettingWidget::dropdown("Chatter list source", s.chatterListDataMode,
+                            {{"Twitch and Tackling", "best"},
+                             {"Twitch only", "twitch"},
+                             {"Tackling only", "community"},
+                             {"Chat session only", "local"}})
+        ->setTooltip(
+            "Choose the API used for the chatter list. Tackling provides the "
+            "extended list. Twitch requires moderator access. All choices "
+            "include chatters seen in your chat session. Refresh or reopen "
+            "the list after changing its source.")
+        ->addTo(*view);
+
     SettingWidget::checkbox("Show follow button in chat header",
                             s.showFollowButtonInSplitHeader)
         ->setTooltip("Show a follow/unfollow button in the top bar above "
