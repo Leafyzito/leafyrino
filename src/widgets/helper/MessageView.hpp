@@ -12,6 +12,7 @@
 
 #include <pajlada/signals/signal.hpp>
 #include <QPointer>
+#include <QRegion>
 #include <QTimer>
 #include <QWidget>
 
@@ -81,7 +82,7 @@ private:
     void selectWholeMessage();
 
     bool layoutUsesChatWordFlags_{false};
-    bool hasAnimatedElements_{false};
+    QRegion animationRegion_;
     MessagePtr message_;
     std::unique_ptr<MessageLayout> messageLayout_;
 

@@ -290,7 +290,7 @@ MessagePaintResult MessageLayout::paint(const MessagePaintContext &ctx)
 
     ctx.painter.drawPixmap(QPoint{0, ctx.y}, *pixmap);
 
-    result.hasAnimatedElements = this->container_.paintAnimatedElements(
+    result.animatedRegion = this->container_.paintAnimatedElements(
         ctx.painter, ctx.y, ctx.isCollapsed);
 
     if (this->message_->flags.has(MessageFlag::Disabled))

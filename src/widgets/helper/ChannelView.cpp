@@ -1107,12 +1107,12 @@ void ChannelView::initializeSignals()
 
     this->signalHolder_.managedConnect(
         getApp()->getWindows()->gifRepaintRequested, [&] {
-            if (this->animationArea_.isEmpty())
+            if (!this->isVisible() || this->animationRegion_.isEmpty())
             {
                 return;
             }
 
-            this->queueUpdate();
+            this->update(this->animationRegion_);
         });
 
     this->signalHolder_.managedConnect(
@@ -2612,7 +2612,7 @@ void ChannelView::paintEvent(QPaintEvent *event)
     painter.setClipRect(this->rect());
 
     // draw messages
-    this->drawMessages(painter, event->rect());
+    this->drawMessages(painter, event->region());
 
     // draw paused sign
     if (this->paused())
@@ -2653,7 +2653,7 @@ void ChannelView::paintEvent(QPaintEvent *event)
 
 // if overlays is false then it draws the message, if true then it draws things
 // such as the grey overlay when a message is disabled
-void ChannelView::drawMessages(QPainter &painter, const QRect &area)
+void ChannelView::drawMessages(QPainter &painter, const QRegion &area)
 {
     auto &messagesSnapshot = this->getMessagesSnapshot();
 
@@ -2661,6 +2661,7 @@ void ChannelView::drawMessages(QPainter &painter, const QRect &area)
 
     if (start >= messagesSnapshot.size())
     {
+        this->animationRegion_ = {};
         return;
     }
 
@@ -2701,11 +2702,7 @@ void ChannelView::drawMessages(QPainter &painter, const QRect &area)
     };
     bool showLastMessageIndicator = getSettings()->showLastMessageIndicator;
 
-    // using QRect here, because we can only request updates with a rect
-    QRect animationArea;
-    auto areaContainsY = [&area](auto y) {
-        return y >= area.y() && y < area.y() + area.height();
-    };
+    QRegion animationRegion;
 
     for (; ctx.messageIndex < messagesSnapshot.size(); ++ctx.messageIndex)
     {
@@ -2720,9 +2717,9 @@ void ChannelView::drawMessages(QPainter &painter, const QRect &area)
             ctx.isLastReadMessage = false;
         }
 
-        if (areaContainsY(ctx.y) ||
-            areaContainsY(ctx.y + layout->getHeight()) ||
-            (ctx.y < area.y() && layout->getHeight() > area.height()))
+        const QRect messageRect{0, ctx.y, layout->getWidth(),
+                                layout->getHeight()};
+        if (area.intersects(messageRect))
         {
             auto paintResult = layout->paint(ctx);
             const auto &message = layout->getMessagePtr();
@@ -2741,24 +2738,7 @@ void ChannelView::drawMessages(QPainter &painter, const QRect &area)
                           layout->getHeight()},
                     QColor(255, 70, 70, 145));
             }
-            if (paintResult.hasAnimatedElements)
-            {
-                if (animationArea.isNull())
-                {
-                    animationArea = QRect{
-                        0,
-                        ctx.y,
-                        layout->getWidth(),
-                        layout->getHeight(),
-                    };
-                }
-                else
-                {
-                    animationArea.setBottom((ctx.y + layout->getHeight()));
-                    animationArea.setWidth(
-                        std::max(layout->getWidth(), animationArea.width()));
-                }
-            }
+            animationRegion += paintResult.animatedRegion;
 
             if (this->highlightedMessage_ == layout)
             {
@@ -2787,20 +2767,19 @@ void ChannelView::drawMessages(QPainter &painter, const QRect &area)
         }
     }
 
-    // Only update on a full repaint as some messages with animated elements
-    // might get left out in partial repaints.
-    // This happens for example when hovering over the go-to-bottom button.
-    if (this->height() <= area.height())
-    {
-        this->animationArea_ = animationArea;
-    }
+    // Keep animated rectangles outside this paint so a partial update does
+    // not freeze emotes that were not redrawn.
+    this->animationRegion_ =
+        (this->animationRegion_.subtracted(area) + animationRegion)
+            .intersected(this->rect());
 #ifdef FOURTF
-    else
+    if (!QRegion(this->rect()).subtracted(area).isEmpty())
     {
         // shows the updated area on partial repaints
         painter.setPen(Qt::red);
-        painter.drawRect(area.x(), area.y(), area.width() - 1,
-                         area.height() - 1);
+        const auto bounds = area.boundingRect();
+        painter.drawRect(bounds.x(), bounds.y(), bounds.width() - 1,
+                         bounds.height() - 1);
     }
 #endif
 

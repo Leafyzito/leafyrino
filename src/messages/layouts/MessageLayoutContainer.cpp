@@ -377,20 +377,20 @@ void MessageLayoutContainer::paintElements(QPainter &painter,
     }
 }
 
-bool MessageLayoutContainer::paintAnimatedElements(QPainter &painter,
-                                                   qreal yOffset,
-                                                   bool isCollapsed) const
+QRegion MessageLayoutContainer::paintAnimatedElements(QPainter &painter,
+                                                      qreal yOffset,
+                                                      bool isCollapsed) const
 {
-    bool anyAnimatedElement = false;
+    QRegion paintedRegion;
     for (const auto &element : this->elements_)
     {
         if (isCollapsed && element->getLine() > 0)
         {
             continue;
         }
-        anyAnimatedElement |= element->paintAnimated(painter, yOffset);
+        paintedRegion += element->paintAnimated(painter, yOffset);
     }
-    return anyAnimatedElement;
+    return paintedRegion;
 }
 
 void MessageLayoutContainer::paintSelection(QPainter &painter,

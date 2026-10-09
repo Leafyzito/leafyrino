@@ -9,6 +9,7 @@
 #include "messages/layouts/MessageLayoutContainer.hpp"
 
 #include <QPixmap>
+#include <QRegion>
 
 #include <cinttypes>
 #include <memory>
@@ -38,7 +39,7 @@ enum class MessageLayoutFlag : uint8_t {
 using MessageLayoutFlags = FlagsEnum<MessageLayoutFlag>;
 
 struct MessagePaintResult {
-    bool hasAnimatedElements = false;
+    QRegion animatedRegion;
 };
 
 class MessageLayout

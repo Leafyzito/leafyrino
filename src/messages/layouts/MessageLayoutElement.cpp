@@ -227,11 +227,11 @@ void ImageLayoutElement::paint(QPainter &painter,
     }
 }
 
-bool ImageLayoutElement::paintAnimated(QPainter &painter, qreal yOffset)
+QRegion ImageLayoutElement::paintAnimated(QPainter &painter, qreal yOffset)
 {
     if (this->image_ == nullptr)
     {
-        return false;
+        return {};
     }
 
     if (this->image_->animated())
@@ -240,12 +240,15 @@ bool ImageLayoutElement::paintAnimated(QPainter &painter, qreal yOffset)
         {
             auto rect = this->getRect();
             rect.moveTop(rect.y() + yOffset);
-            drawPixmapWithOptionalSmoothing(painter, QRectF(rect), *pixmap,
+            const auto drawRect = QRectF(rect);
+            drawPixmapWithOptionalSmoothing(painter, drawRect, *pixmap,
                                             this->getFlags());
-            return true;
+            return QRegion(rect.toAlignedRect()) |
+                   QRegion(snapRectToDevicePixels(drawRect, painter)
+                               .toAlignedRect());
         }
     }
-    return false;
+    return {};
 }
 
 int ImageLayoutElement::getMouseOverIndex(QPointF abs) const
@@ -348,7 +351,8 @@ void LayeredImageLayoutElement::paint(QPainter &painter,
     }
 }
 
-bool LayeredImageLayoutElement::paintAnimated(QPainter &painter, qreal yOffset)
+QRegion LayeredImageLayoutElement::paintAnimated(QPainter &painter,
+                                                 qreal yOffset)
 {
     auto fullRect = QRectF(this->getRect());
     fullRect.moveTop(fullRect.y() + yOffset);
@@ -381,7 +385,11 @@ bool LayeredImageLayoutElement::paintAnimated(QPainter &painter, qreal yOffset)
             }
         }
     }
-    return animatedFlag;
+    if (!animatedFlag)
+    {
+        return {};
+    }
+    return QRegion(fullRect.toAlignedRect());
 }
 
 int LayeredImageLayoutElement::getMouseOverIndex(QPointF abs) const
@@ -569,11 +577,12 @@ void TextLayoutElement::paint(QPainter &painter,
     }
 }
 
-bool TextLayoutElement::paintAnimated(QPainter &painter, const qreal yOffset)
+QRegion TextLayoutElement::paintAnimated(QPainter &painter,
+                                          const qreal yOffset)
 {
     if (this->getRect().isEmpty())
     {
-        return false;
+        return {};
     }
 
     const auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
@@ -584,14 +593,14 @@ bool TextLayoutElement::paintAnimated(QPainter &painter, const qreal yOffset)
     const bool drawPaint = isNametag && getSettings()->displaySevenTVPaints;
     if (!drawPaint)
     {
-        return false;
+        return {};
     }
     const auto paint = getApp()->getSeventvPaints()->getPaint(
         this->getLink().value.toLower(),
         this->getCreator().getFlags().has(MessageElementFlag::KickUsername));
     if (!paint || !paint->animated())
     {
-        return false;
+        return {};
     }
 
     const auto paintPixmap =
@@ -601,7 +610,7 @@ bool TextLayoutElement::paintAnimated(QPainter &painter, const qreal yOffset)
     auto rect = this->getRect();
     rect.moveTop(rect.y() + yOffset);
     painter.drawPixmap(rect, paintPixmap, QRectF());
-    return true;
+    return QRegion(rect.toAlignedRect());
 }
 
 int TextLayoutElement::getMouseOverIndex(QPointF abs) const
@@ -726,10 +735,10 @@ void TextIconLayoutElement::paint(QPainter &painter,
     }
 }
 
-bool TextIconLayoutElement::paintAnimated(QPainter & /*painter*/,
-                                          qreal /*yOffset*/)
+QRegion TextIconLayoutElement::paintAnimated(QPainter & /*painter*/,
+                                             qreal /*yOffset*/)
 {
-    return false;
+    return {};
 }
 
 int TextIconLayoutElement::getMouseOverIndex(QPointF abs) const
@@ -806,10 +815,10 @@ void ReplyCurveLayoutElement::paint(QPainter &painter,
     painter.drawPath(path);
 }
 
-bool ReplyCurveLayoutElement::paintAnimated(QPainter & /*painter*/,
-                                            qreal /*yOffset*/)
+QRegion ReplyCurveLayoutElement::paintAnimated(QPainter & /*painter*/,
+                                               qreal /*yOffset*/)
 {
-    return false;
+    return {};
 }
 
 int ReplyCurveLayoutElement::getMouseOverIndex(QPointF abs) const

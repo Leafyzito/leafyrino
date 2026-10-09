@@ -107,10 +107,12 @@ MessageView::MessageView(QWidget *parent)
 
     this->signalHolder_.managedConnect(
         getApp()->getWindows()->gifRepaintRequested, [this] {
-            if (this->hasAnimatedElements_ && this->isVisible())
+            if (!this->isVisible() || this->animationRegion_.isEmpty())
             {
-                this->update();
+                return;
             }
+
+            this->update(this->animationRegion_);
         });
 }
 
@@ -136,7 +138,7 @@ void MessageView::setMessage(const MessagePtr &message)
     {
         this->message_.reset();
         this->messageLayout_.reset();
-        this->hasAnimatedElements_ = false;
+        this->animationRegion_ = {};
         this->tooltipWidget_->hide();
         this->update();
         return;
@@ -168,7 +170,7 @@ void MessageView::setFullMessage(const MessagePtr &message)
     {
         this->message_.reset();
         this->messageLayout_.reset();
-        this->hasAnimatedElements_ = false;
+        this->animationRegion_ = {};
         this->tooltipWidget_->hide();
         this->update();
         return;
@@ -848,7 +850,7 @@ void MessageView::paintEvent(QPaintEvent * /*event*/)
 {
     if (this->messageLayout_ == nullptr)
     {
-        this->hasAnimatedElements_ = false;
+        this->animationRegion_ = {};
         return;
     }
 
@@ -871,7 +873,8 @@ void MessageView::paintEvent(QPaintEvent * /*event*/)
     };
 
     const auto result = this->messageLayout_->paint(ctx);
-    this->hasAnimatedElements_ = result.hasAnimatedElements;
+    this->animationRegion_ =
+        result.animatedRegion.intersected(this->rect());
 }
 
 void MessageView::themeChangedEvent()

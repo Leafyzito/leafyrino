@@ -18,11 +18,13 @@
 #    include "controllers/plugins/api/DebugLibrary.hpp"
 #    include "controllers/plugins/api/HTTPRequest.hpp"
 #    include "controllers/plugins/api/HTTPResponse.hpp"
+#    include "controllers/plugins/api/Images.hpp"
 #    include "controllers/plugins/api/IOWrapper.hpp"
 #    include "controllers/plugins/api/JSON.hpp"
 #    include "controllers/plugins/api/Menu.hpp"
 #    include "controllers/plugins/api/Message.hpp"
 #    include "controllers/plugins/api/WebSocket.hpp"
+#    include "controllers/plugins/api/WindowManager.hpp"
 #    include "controllers/plugins/LuaAPI.hpp"
 #    include "controllers/plugins/LuaUtilities.hpp"
 #    include "controllers/plugins/SolTypes.hpp"
@@ -30,7 +32,10 @@
 #    include "messages/MessageElement.hpp"
 #    include "singletons/Paths.hpp"
 #    include "singletons/Settings.hpp"
+#    include "singletons/WindowManager.hpp"
 #    include "util/Variant.hpp"
+#    include "widgets/splits/SplitContainer.hpp"
+#    include "widgets/Window.hpp"
 
 #    include <lauxlib.h>
 #    include <lua.h>
@@ -235,6 +240,8 @@ void PluginController::initSol(sol::state_view &lua, Plugin *plugin)
     lua::api::createAccounts(c2);
     lua::api::datetime::createUserTypes(c2);
     lua::api::menu::createUserType(c2);
+    lua::api::images::createUserTypes(c2);
+    lua::api::windowmanager::createUserTypes(c2);
     c2["ChannelType"] = lua::createEnumTable<Channel::Type>(lua);
     c2["HTTPMethod"] = lua::createEnumTable<NetworkRequestType>(lua);
     c2["EventType"] = lua::createEnumTable<lua::api::EventType>(lua);
@@ -246,6 +253,11 @@ void PluginController::initSol(sol::state_view &lua, Plugin *plugin)
     c2["MessageContext"] = lua::createEnumTable<MessageContext>(lua);
     c2["LinkType"] =
         lua::createEnumTable<lua::api::message::ExposedLinkType>(lua);
+    c2["SplitContainerNodeType"] =
+        lua::createEnumTable<SplitContainer::Node::Type>(lua);
+    c2["WindowType"] = lua::createEnumTable<WindowType>(lua);
+
+    c2["windows"] = getApp()->getWindows();
 
     sol::table io = g["io"];
     io.set_function(

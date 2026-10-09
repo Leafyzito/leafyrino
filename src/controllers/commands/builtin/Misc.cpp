@@ -220,9 +220,9 @@ public:
         painter.drawText(rect, this->right_, rightOption);
     }
 
-    bool paintAnimated(QPainter &, qreal) override
+    QRegion paintAnimated(QPainter &, qreal) override
     {
-        return false;
+        return {};
     }
 
     int getMouseOverIndex(QPointF abs) const override
