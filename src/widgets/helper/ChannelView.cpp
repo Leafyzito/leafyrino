@@ -3140,10 +3140,16 @@ void ChannelView::mouseMoveEvent(QMouseEvent *event)
             {
                 const auto emote = emoteElement ? emoteElement->getEmote()
                                                 : emoteLinkElement->getEmote();
+                auto tooltip = element->getTooltip();
+                if (emote->modifierPlacement != EmoteModifierPlacement::None &&
+                    !getSettings()->isEmoteModifierEnabled(emote->name.string))
+                {
+                    tooltip += "<br>Effect disabled";
+                }
                 auto scale = getSettings()->emoteTooltipScale.getEnum();
                 this->tooltipWidget_->setOne(TooltipEntry::scaled(
                     showThumbnail ? emote->images.getImage(3.0) : nullptr,
-                    element->getTooltip(), getTooltipScale(scale)));
+                    tooltip, getTooltipScale(scale)));
             }
             else if (layeredEmoteElement)
             {
@@ -3156,6 +3162,21 @@ void ChannelView::mouseMoveEvent(QMouseEvent *event)
 
                     const auto &emoteTooltips =
                         layeredEmoteElement->getEmoteTooltips();
+                    QStringList modifiers;
+                    for (const auto &modifier :
+                         layeredEmoteElement->getModifiers())
+                    {
+                        if (getSettings()->isEmoteModifierEnabled(
+                                modifier->name.string))
+                        {
+                            modifiers.append(
+                                modifier->name.string.toHtmlEscaped());
+                        }
+                    }
+                    const auto modifierTooltip =
+                        modifiers.isEmpty()
+                            ? QString{}
+                            : "<br>Modifiers: " + modifiers.join(", ");
 
                     // Someone performing some tomfoolery could put an emote with tens,
                     // if not hundreds of zero-width emotes on a single emote. If the
@@ -3179,7 +3200,8 @@ void ChannelView::mouseMoveEvent(QMouseEvent *event)
                             entries.push_back(TooltipEntry::scaled(
                                 showThumbnail ? emote->images.getImage(3.0)
                                               : nullptr,
-                                emoteTooltips[i], getTooltipScale(scale)));
+                                emoteTooltips[i] + modifierTooltip,
+                                getTooltipScale(scale)));
                         }
                         else
                         {
@@ -4033,9 +4055,9 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
                         ? dateTime.toString("yyyy-MM-ddTHH:mm:ssZ")
                         : messageID;
 
-                QDesktopServices::openUrl(QUrl(u"https://lurkology.com/logs?c=" %
-                                               channelName % u"&d=" % logsDate %
-                                               u"#" % logsJumpHash));
+                QDesktopServices::openUrl(
+                    QUrl(u"https://lurkology.com/logs?c=" % channelName %
+                         u"&d=" % logsDate % u"#" % logsJumpHash));
             });
     }
 }

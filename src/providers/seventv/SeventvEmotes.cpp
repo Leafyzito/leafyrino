@@ -159,15 +159,15 @@ CreateEmoteResult createEmote(const QJsonObject &activeEmote,
     }
 
     auto emote = Emote({
-        emoteName,
-        imageSet,
-        tooltip,
-        Url{EMOTE_LINK_FORMAT.arg(emoteId.string)},
-        zeroWidth,
-        emoteId,
-        author,
-        makeConditionedOptional(aliasedName, baseEmoteName),
-        tags,
+        .name = emoteName,
+        .images = imageSet,
+        .tooltip = tooltip,
+        .homePage = Url{EMOTE_LINK_FORMAT.arg(emoteId.string)},
+        .zeroWidth = zeroWidth,
+        .id = emoteId,
+        .author = author,
+        .baseName = makeConditionedOptional(aliasedName, baseEmoteName),
+        .tags = tags,
     });
 
     return {emote, emoteId, emoteName, !emote.images.getImage1()->isEmpty()};

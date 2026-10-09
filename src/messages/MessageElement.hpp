@@ -323,6 +323,7 @@ public:
 
     void appendText(QStringView text);
     void appendText(const QString &text);
+    void setText(const QString &text);
 
     QStringList words() const
     {
@@ -590,6 +591,7 @@ public:
         const MessageColor &textElementColor = MessageColor::Text);
 
     void addEmoteLayer(const Emote &emote);
+    void addModifier(const EmotePtr &modifier);
 
     void addToContainer(MessageLayoutContainer &container,
                         const MessageLayoutContext &ctx) override;
@@ -597,6 +599,7 @@ public:
     // Returns a concatenation of each emote layer's cleaned copy string
     QString getCleanCopyString() const;
     const std::vector<Emote> &getEmotes() const;
+    const std::vector<EmotePtr> &getModifiers() const;
     std::vector<Emote> getUniqueEmotes() const;
     const std::vector<QString> &getEmoteTooltips() const;
     const MessageColor &textElementColor() const;
@@ -606,6 +609,13 @@ public:
     std::unique_ptr<MessageElement> clone() const override;
 
 private:
+    struct ModifierData {
+        std::vector<EmotePtr> modifiers;
+        std::vector<EmotePtr> copyTokens;
+        std::vector<std::shared_ptr<EmoteElement>> icons;
+        std::vector<std::unique_ptr<TextElement>> textFallbacks;
+    };
+
     MessageLayoutElement *makeImageLayoutElement(
         const std::vector<ImagePtr> &image, const std::vector<QSizeF> &sizes,
         QSizeF largestSize);
@@ -616,6 +626,7 @@ private:
 
     std::vector<Emote> emotes_;
     std::vector<QString> emoteTooltips_;
+    std::unique_ptr<ModifierData> modifierData_;
 
     std::unique_ptr<TextElement> textElement_;
     MessageColor textElementColor_;

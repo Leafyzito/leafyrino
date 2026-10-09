@@ -4923,8 +4923,8 @@ void UserInfoPopup::appendCommonProfileActions(QMenu *menu)
 
         menu->addAction("Open channel &logs in browser", this,
                         [username = this->userName_] {
-                            QDesktopServices::openUrl(
-                                QUrl("https://lurkology.com/logs?c=" + username));
+                            QDesktopServices::openUrl(QUrl(
+                                "https://lurkology.com/logs?c=" + username));
                         });
     }
 

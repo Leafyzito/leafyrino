@@ -23,6 +23,8 @@
 #include <QStringLiteral>
 #include <QThread>
 
+#include <tuple>
+
 namespace {
 
 using namespace chatterino;
@@ -39,6 +41,76 @@ const QSet<QStringView> ZERO_WIDTH_EMOTES{
 
 constexpr QStringView EMOTE_CDN_FORMAT =
     u"https://cdn.betterttv.net/emote/%1/%2.webp";
+
+uint32_t modifierFlags(QStringView name)
+{
+    using namespace emote_modifiers;
+    if (name == u"w!")
+    {
+        return BTTV_WIDE;
+    }
+    if (name == u"h!")
+    {
+        return FLIP_X;
+    }
+    if (name == u"v!")
+    {
+        return FLIP_Y;
+    }
+    if (name == u"l!")
+    {
+        return ROTATE_LEFT;
+    }
+    if (name == u"r!")
+    {
+        return ROTATE_RIGHT;
+    }
+    if (name == u"z!")
+    {
+        return ZERO_SPACE;
+    }
+    if (name == u"c!")
+    {
+        return CURSED;
+    }
+    if (name == u"p!")
+    {
+        return PARTY;
+    }
+    if (name == u"s!")
+    {
+        return BTTV_SHAKE;
+    }
+    return 0;
+}
+
+void setModifierMetadata(bool isModifier, Emote &emote)
+{
+    emote.modifierFlags = 0;
+    emote.modifierPlacement = EmoteModifierPlacement::None;
+    emote.modifierSource = EmoteModifierSource::None;
+
+    if (!isModifier)
+    {
+        return;
+    }
+
+    const auto flags = modifierFlags(emote.name.string);
+    if ((flags & emote_modifiers::SUPPORTED) == 0)
+    {
+        return;
+    }
+
+    emote.modifierFlags = flags;
+    emote.modifierPlacement = EmoteModifierPlacement::Prefix;
+    emote.modifierSource = EmoteModifierSource::BetterTTV;
+    emote.tooltip = Tooltip{emote.name.string + "<br>BetterTTV emote effect"};
+}
+
+void applyModifierMetadata(const QJsonObject &jsonEmote, Emote &emote)
+{
+    setModifierMetadata(jsonEmote.value("modifier").toBool(), emote);
+}
 
 QSize emoteBaseSize(const QJsonObject &jsonEmote)
 {
@@ -90,6 +162,7 @@ std::pair<Outcome, EmoteMap> parseGlobalEmotes(const QJsonArray &jsonEmotes,
             .homePage = Url{EMOTE_LINK_FORMAT.arg(id.string)},
             .zeroWidth = ZERO_WIDTH_EMOTES.contains(name.string),
         });
+        applyModifierMetadata(emoteJson, emote);
 
         emotes[name] = cachedOrMakeEmotePtr(std::move(emote), currentEmotes);
     }
@@ -130,6 +203,7 @@ CreateEmoteResult createChannelEmote(const QString &channelDisplayName,
         .zeroWidth = false,
         .id = id,
     });
+    applyModifierMetadata(jsonEmote, emote);
 
     return {id, name, emote};
 }
@@ -138,6 +212,8 @@ bool updateChannelEmote(Emote &emote, const QString &channelDisplayName,
                         const QJsonObject &jsonEmote)
 {
     bool anyModifications = false;
+    const bool wasModifier =
+        emote.modifierSource == EmoteModifierSource::BetterTTV;
 
     if (jsonEmote.contains("code"))
     {
@@ -151,6 +227,19 @@ bool updateChannelEmote(Emote &emote, const QString &channelDisplayName,
         anyModifications = true;
     }
 
+    if (jsonEmote.contains("code") || jsonEmote.contains("modifier"))
+    {
+        const auto previous = std::tuple{
+            emote.modifierFlags, emote.modifierPlacement, emote.modifierSource};
+        setModifierMetadata(jsonEmote.contains("modifier")
+                                ? jsonEmote.value("modifier").toBool()
+                                : wasModifier,
+                            emote);
+        anyModifications |=
+            previous != std::tuple{emote.modifierFlags, emote.modifierPlacement,
+                                   emote.modifierSource};
+    }
+
     if (anyModifications)
     {
         emote.tooltip = Tooltip{
@@ -160,6 +249,11 @@ bool updateChannelEmote(Emote &emote, const QString &channelDisplayName,
                 .arg(emote.author.string.isEmpty() ? "Channel" : "Shared")
                 .arg(emote.author.string.isEmpty() ? channelDisplayName
                                                    : emote.author.string)};
+        if (emote.modifierSource == EmoteModifierSource::BetterTTV)
+        {
+            emote.tooltip =
+                Tooltip{emote.name.string + "<br>BetterTTV emote effect"};
+        }
     }
 
     return anyModifications;

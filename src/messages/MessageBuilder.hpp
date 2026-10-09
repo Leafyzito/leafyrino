@@ -295,6 +295,10 @@ private:
     Outcome tryAppendCheermote(TextState &state, const QString &string);
     Outcome tryAppendEmote(TwitchChannel *twitchChannel, const QString &userID,
                            EmoteNameView name);
+    bool appendModifier(const EmotePtr &modifier);
+    void flushPendingModifiers();
+    MessageElement *appendParsedEmote(const EmotePtr &emote,
+                                      bool gigantified = false);
 
     bool isEmpty() const;
     MessageElement &back();
@@ -381,6 +385,7 @@ private:
 
     std::shared_ptr<Message> message_;
     MessageColor textColor_ = MessageColor::Text;
+    std::vector<EmotePtr> pendingPrefixModifiers_;
 
     QColor usernameColor_ = {153, 153, 153};
 };

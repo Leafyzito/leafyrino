@@ -108,7 +108,10 @@ class LayeredImageLayoutElement : public MessageLayoutElement
 public:
     LayeredImageLayoutElement(MessageElement &creator,
                               std::vector<ImagePtr> images,
-                              std::vector<QSizeF> sizes, QSizeF largestSize);
+                              std::vector<QSizeF> sizes, QSizeF largestSize,
+                              uint32_t modifierFlags = 0);
+
+    bool removesPreviousSpace() const;
 
 protected:
     void addCopyTextToString(QString &str, uint32_t from = 0,
@@ -119,8 +122,14 @@ protected:
     int getMouseOverIndex(QPointF abs) const override;
     qreal getXFromIndex(size_t index) override;
 
+private:
+    bool needsAnimatedPaint() const;
+    QRegion paintModified(QPainter &painter, qreal yOffset);
+
     std::vector<ImagePtr> images_;
     std::vector<QSizeF> sizes_;
+    QSizeF contentSize_;
+    uint32_t modifierFlags_ = 0;
 };
 
 class ImageWithBackgroundLayoutElement : public ImageLayoutElement

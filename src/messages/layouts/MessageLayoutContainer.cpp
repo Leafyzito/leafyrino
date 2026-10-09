@@ -871,7 +871,11 @@ void MessageLayoutContainer::addElement(MessageLayoutElement *element,
         yOffset -= (MARGIN.top() * this->scale_);
     }
 
-    if (getSettings()->removeSpacesBetweenEmotes &&
+    const auto *layeredImage =
+        dynamic_cast<const LayeredImageLayoutElement *>(element);
+    const bool removeSpaceForModifier =
+        layeredImage != nullptr && layeredImage->removesPreviousSpace();
+    if ((getSettings()->removeSpacesBetweenEmotes || removeSpaceForModifier) &&
         element->getFlags().hasAny({MessageElementFlag::EmoteImage}) &&
         shouldRemoveSpaceBetweenEmotes())
     {
