@@ -1336,6 +1336,10 @@ public:
     BoolSetting includePotatCommands{"/moltorino/includePotatCommands", true};
     BoolSetting showPotatCommandAliases{"/moltorino/showPotatCommandAliases",
                                         true};
+    BoolSetting includeSupibotCommands{"/leafyrino/includeSupibotCommands",
+                                       true};
+    BoolSetting showSupibotCommandAliases{
+        "/leafyrino/showSupibotCommandAliases", true};
     BoolSetting hideUnavailableModCommands{
         "/moltorino/hideUnavailableModCommands", true};
     BoolSetting showFollowButtonInSplitHeader{

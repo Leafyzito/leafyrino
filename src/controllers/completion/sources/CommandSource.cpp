@@ -10,6 +10,7 @@
 #include "controllers/completion/sources/Helpers.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/potat/PotatCommands.hpp"
+#include "providers/supibot/SupibotCommands.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchCommon.hpp"
 #include "singletons/Settings.hpp"
@@ -485,6 +486,41 @@ void CommandSource::update(const QString &query)
                 .prefix = QStringLiteral("#"),
                 .usage = command.usage,
                 .argumentHint = command.argumentHint,
+            });
+        }
+        this->strategy_->apply(items, this->output_, query);
+        return;
+    }
+    if (query.startsWith(QChar('$')))
+    {
+        if (!getSettings()->includeSupibotCommands ||
+            this->strategy_ == nullptr || this->channel_ == nullptr ||
+            this->channel_->getType() != Channel::Type::Twitch)
+        {
+            return;
+        }
+        auto *supibot = getApp()->getSupibotCommands();
+        if (supibot == nullptr)
+        {
+            return;
+        }
+        supibot->ensureLoaded();
+        if (!supibot->isActive(this->channel_->getName()))
+        {
+            return;
+        }
+        std::vector<CommandItem> items;
+        items.reserve(supibot->commands().size());
+        for (const auto &command : supibot->commands())
+        {
+            if (command.alias && !getSettings()->showSupibotCommandAliases)
+            {
+                continue;
+            }
+            items.push_back({
+                .name = command.name,
+                .prefix = QStringLiteral("$"),
+                .usage = command.usage,
             });
         }
         this->strategy_->apply(items, this->output_, query);

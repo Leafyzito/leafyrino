@@ -298,6 +298,7 @@ protected:
     QString commandHintKey_;
     std::weak_ptr<Channel> commandHintChannel_;
     std::shared_ptr<const completion::CommandUsage> resolvedCommandHint_;
+    QString resolvedSupibotDescription_;
     QTimer nukePreviewTimer_;
     QTimer outgoingTranslationPreviewTimer_;
     QString pendingNukePreviewText_;

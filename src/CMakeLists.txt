@@ -530,6 +530,9 @@ set(SOURCE_FILES
         providers/potat/PotatCommands.cpp
         providers/potat/PotatCommands.hpp
 
+        providers/supibot/SupibotCommands.cpp
+        providers/supibot/SupibotCommands.hpp
+
         providers/recentmessages/Api.cpp
         providers/recentmessages/Api.hpp
         providers/recentmessages/Impl.cpp

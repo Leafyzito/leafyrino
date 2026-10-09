@@ -18,6 +18,7 @@
 #include "messages/Message.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/potat/PotatCommands.hpp"
+#include "providers/supibot/SupibotCommands.hpp"
 #include "providers/translation/Translator.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
@@ -544,15 +545,25 @@ SplitInput::SplitInput(QWidget *parent, Split *_chatWidget,
     const auto refreshCommandHints = [this] {
         this->commandHintKey_.clear();
         this->resolvedCommandHint_.reset();
+        this->resolvedSupibotDescription_.clear();
         this->updateCompletionPopup();
     };
     getSettings()->includePotatCommands.connect(refreshCommandHints,
                                                this->managedConnections_);
     getSettings()->showPotatCommandAliases.connect(
         refreshCommandHints, this->managedConnections_);
+    getSettings()->includeSupibotCommands.connect(
+        refreshCommandHints, this->managedConnections_);
+    getSettings()->showSupibotCommandAliases.connect(
+        refreshCommandHints, this->managedConnections_);
     if (auto *potat = getApp()->getPotatCommands())
     {
         this->managedConnections_.managedConnect(potat->commandsUpdated,
+                                                 refreshCommandHints);
+    }
+    if (auto *supibot = getApp()->getSupibotCommands())
+    {
+        this->managedConnections_.managedConnect(supibot->commandsUpdated,
                                                  refreshCommandHints);
     }
     getSettings()->showOutgoingTranslationButton.connect(
@@ -3011,16 +3022,16 @@ void SplitInput::updateCompletionPopup()
         {
             const auto prefix = beforeCursor.at(commandStart);
             const auto isSlash = prefix == '/' || prefix == '.';
-            const auto isPotat = prefix == '#';
+            const auto isBot = prefix == '#' || prefix == '$';
             const auto commandLength = beforeCursor.size() - commandStart;
-            if ((isSlash || isPotat) &&
+            if ((isSlash || isBot) &&
                 !beforeCursor.mid(commandStart).contains(QChar(' ')) &&
                 !beforeCursor.mid(commandStart).contains(QChar('\n')) &&
-                (isPotat || commandLength >= 2))
+                (isBot || commandLength >= 2))
             {
                 const auto query = beforeCursor.mid(commandStart);
                 auto commandEnd = cursorPosition;
-                if (isPotat)
+                if (isBot)
                 {
                     while (commandEnd < text.size() &&
                            !text.at(commandEnd).isSpace())
@@ -3087,9 +3098,11 @@ bool SplitInput::updateCommandCompletion(const QString &query, int start,
         return false;
     }
 
+    const bool catalogQuery =
+        query.startsWith(QChar('#')) || query.startsWith(QChar('$'));
     const Channel *completionChannel =
-        query.startsWith(QChar('#')) ? this->split_->getSelectedChannel().get()
-                                     : this->split_->getChannel().get();
+        catalogQuery ? this->split_->getSelectedChannel().get()
+                     : this->split_->getChannel().get();
     completion::CommandSource source(
         std::make_unique<completion::CommandStrategy>(false), nullptr,
         completionChannel);
@@ -3119,6 +3132,20 @@ bool SplitInput::updateCommandCompletion(const QString &query, int start,
             {
                 this->showCommandCompletionStatus(
                     QStringLiteral("Loading Potat commands…"));
+                return true;
+            }
+        }
+        if (query.startsWith(QChar('$')) &&
+            getSettings()->includeSupibotCommands &&
+            selectedChannel != nullptr &&
+            selectedChannel->getType() == Channel::Type::Twitch)
+        {
+            if (auto *supibot = getApp()->getSupibotCommands();
+                supibot != nullptr && supibot->isLoading() &&
+                (supibot->commands().empty() || !supibot->channelListReady()))
+            {
+                this->showCommandCompletionStatus(
+                    QStringLiteral("Loading Supibot commands…"));
                 return true;
             }
         }
@@ -3491,8 +3518,7 @@ void SplitInput::updateCommandArgumentHint(const QString &text,
     auto clear = [this] {
         this->ui_.textEdit->setGhostText({});
     };
-    if (!getSettings()->includePotatCommands ||
-        !getSettings()->showCommandSuggestions || cursorPosition < 0 ||
+    if (!getSettings()->showCommandSuggestions || cursorPosition < 0 ||
         cursorPosition != text.size() ||
         this->ui_.textEdit->textCursor().hasSelection())
     {
@@ -3506,7 +3532,17 @@ void SplitInput::updateCommandArgumentHint(const QString &text,
     {
         ++start;
     }
-    if (start >= text.size() || text.at(start) != QChar('#'))
+    if (start >= text.size())
+    {
+        clear();
+        return;
+    }
+    const auto prefix = text.at(start);
+    const bool potat = prefix == QChar('#');
+    const bool supibot = prefix == QChar('$');
+    if ((potat && !getSettings()->includePotatCommands) ||
+        (supibot && !getSettings()->includeSupibotCommands) ||
+        (!potat && !supibot))
     {
         clear();
         return;
@@ -3531,6 +3567,7 @@ void SplitInput::updateCommandArgumentHint(const QString &text,
         this->commandHintKey_ = command;
         this->commandHintChannel_ = channel;
         this->resolvedCommandHint_.reset();
+        this->resolvedSupibotDescription_.clear();
 
         completion::CommandSource source(
             std::make_unique<completion::CommandStrategy>(false), nullptr,
@@ -3543,29 +3580,52 @@ void SplitInput::updateCommandArgumentHint(const QString &text,
             });
         if (exact != source.output().end())
         {
-            this->resolvedCommandHint_ = exact->argumentHint;
+            if (potat)
+            {
+                this->resolvedCommandHint_ = exact->argumentHint;
+            }
+            else
+            {
+                this->resolvedSupibotDescription_ = exact->usage;
+            }
         }
     }
 
-    if (!this->resolvedCommandHint_)
+    if (potat)
     {
-        clear();
+        if (!this->resolvedCommandHint_)
+        {
+            clear();
+            return;
+        }
+        const auto arguments = text.mid(commandEnd);
+        bool appendDirectly = false;
+        const auto remaining = completion::remainingCommandUsage(
+            *this->resolvedCommandHint_, arguments, &appendDirectly);
+        if (remaining.isEmpty())
+        {
+            clear();
+            return;
+        }
+        const auto separator =
+            appendDirectly || (!text.isEmpty() && text.back().isSpace())
+                ? QString{}
+                : QStringLiteral(" ");
+        this->ui_.textEdit->setGhostText(separator + remaining);
         return;
     }
-    const auto arguments = text.mid(commandEnd);
-    bool appendDirectly = false;
-    const auto remaining = completion::remainingCommandUsage(
-        *this->resolvedCommandHint_, arguments, &appendDirectly);
-    if (remaining.isEmpty())
+
+    if (this->resolvedSupibotDescription_.isEmpty() ||
+        !text.mid(commandEnd).trimmed().isEmpty())
     {
         clear();
         return;
     }
     const auto separator =
-        appendDirectly || (!text.isEmpty() && text.back().isSpace())
-            ? QString{}
-            : QStringLiteral(" ");
-    this->ui_.textEdit->setGhostText(separator + remaining);
+        !text.isEmpty() && text.back().isSpace() ? QString{}
+                                                 : QStringLiteral(" ");
+    this->ui_.textEdit->setGhostText(separator +
+                                     this->resolvedSupibotDescription_);
 }
 
 bool SplitInput::hasSelection() const
@@ -4567,6 +4627,7 @@ void SplitInput::updateChannel()
         this->commandHintKey_.clear();
         this->commandHintChannel_.reset();
         this->resolvedCommandHint_.reset();
+        this->resolvedSupibotDescription_.clear();
         this->updateCommandArgumentHint(
             this->ui_.textEdit->toPlainText(),
             this->ui_.textEdit->textCursor().position());

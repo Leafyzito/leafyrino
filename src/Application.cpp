@@ -47,6 +47,7 @@
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/potat/PotatCommands.hpp"
+#include "providers/supibot/SupibotCommands.hpp"
 #include "providers/repetitions/RepeatedMessageDetector.hpp"
 #include "providers/seventv/SeventvBadges.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
@@ -233,6 +234,7 @@ Application::Application(Settings &_settings, const Paths &paths,
     , kickChatServer(new KickChatServer)
     , youTubeChatServer(new YouTubeChatServer)
     , potatCommands(new PotatCommands)
+    , supibotCommands(new SupibotCommands)
 #ifdef CHATTERINO_HAVE_PLUGINS
     , plugins(new PluginController(paths))
 #endif
@@ -790,6 +792,13 @@ PotatCommands *Application::getPotatCommands()
     return this->potatCommands.get();
 }
 
+SupibotCommands *Application::getSupibotCommands()
+{
+    assert(this->supibotCommands);
+
+    return this->supibotCommands.get();
+}
+
 void Application::aboutToQuit()
 {
     ABOUT_TO_QUIT.store(true);
@@ -835,6 +844,7 @@ void Application::stop()
     this->notifications.reset();
     this->commands.reset();
     this->potatCommands.reset();
+    this->supibotCommands.reset();
     this->crashHandler.reset();
     this->seventvAPI.reset();
     this->imageUploader.reset();
