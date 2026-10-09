@@ -38,6 +38,7 @@
 #include "util/IncognitoBrowser.hpp"
 #include "util/StreamLink.hpp"
 #include "util/Twitch.hpp"
+#include "widgets/dialogs/CrossBanDialog.hpp"
 #include "widgets/dialogs/UserInfoPopup.hpp"
 #include "widgets/helper/ChannelView.hpp"
 #include "widgets/Notebook.hpp"
@@ -66,6 +67,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <utility>
 #include <vector>
 
@@ -1630,6 +1632,152 @@ QString requests(const CommandContext &ctx)
         QString("https://www.twitch.tv/popout/%1/reward-queue").arg(target)));
 
     return "";
+}
+
+static QString crossChannelAction(const CommandContext &ctx,
+                                  CrossChannelAction action)
+{
+    const bool ban = action == CrossChannelAction::Ban;
+    const auto command =
+        ban ? QStringLiteral("/crossban") : QStringLiteral("/crossunban");
+    const auto feature =
+        ban ? QStringLiteral("Cross ban") : QStringLiteral("Cross unban");
+    if (ctx.channel == nullptr)
+    {
+        return "";
+    }
+    if (ctx.twitchChannel == nullptr || ctx.twitchChannel->isEmpty())
+    {
+        ctx.channel->addSystemMessage(
+            QStringLiteral("The %1 command only works in Twitch channels.")
+                .arg(command));
+        return "";
+    }
+    if (ctx.words.size() != 2)
+    {
+        ctx.channel->addSystemMessage(
+            QStringLiteral("Usage: %1 <username>").arg(command));
+        return "";
+    }
+
+    QString target = ctx.words.at(1);
+    stripUserName(target);
+    target = target.trimmed().toLower();
+    static const QRegularExpression validLogin(
+        QStringLiteral("^[a-z0-9_]{1,25}$"));
+    if (!validLogin.match(target).hasMatch())
+    {
+        ctx.channel->addSystemMessage(
+            QStringLiteral("Invalid Twitch username: %1").arg(target));
+        return "";
+    }
+
+    const auto channelId = ctx.twitchChannel->roomId();
+    const auto channelLogin = ctx.twitchChannel->getName();
+    if (channelId.isEmpty())
+    {
+        ctx.channel->addSystemMessage(
+            QStringLiteral("%1 is still waiting for this channel's Twitch "
+                           "ID. Try again in a moment.")
+                .arg(feature));
+        return "";
+    }
+
+    QString authError;
+    auto auth = MoltorinoAuth::resolveModerationToken(channelId, channelLogin,
+                                                      &authError);
+    const bool canModerateCurrentChannel = auth.hasToken() && !auth.legacy;
+    if (!auth.hasToken() &&
+        getSettings()->showCrossActionsInUnmoderatedChannels)
+    {
+        auth = MoltorinoAuth::resolveCurrentUserToken(&authError);
+    }
+    if (!auth.hasToken() || auth.legacy)
+    {
+        ctx.channel->addSystemMessage(
+            !authError.isEmpty()
+                ? authError
+                : QStringLiteral("%1 needs a saved Twitch account in "
+                                 "Moltorino Authentication.")
+                      .arg(feature));
+        return "";
+    }
+    if (ban && target.compare(auth.login, Qt::CaseInsensitive) == 0)
+    {
+        ctx.channel->addSystemMessage("You cannot cross ban your own account.");
+        return "";
+    }
+
+    const auto savedAccounts = MoltorinoAuth::accounts();
+    const auto accountIt = std::ranges::find_if(
+        savedAccounts, [&auth](const MoltorinoAuthAccount &account) {
+            return account.valid && account.userId == auth.userId &&
+                   account.token.trimmed() == auth.token.trimmed();
+        });
+    if (accountIt == savedAccounts.end())
+    {
+        ctx.channel->addSystemMessage(
+            QStringLiteral(
+                "%1 could not find the saved account for this action. "
+                "Refresh accounts in Moltorino Authentication.")
+                .arg(feature));
+        return "";
+    }
+
+    QVector<MoltorinoAuthChannel> channels = accountIt->moderatedChannels;
+    const auto addChannel = [&channels](MoltorinoAuthChannel channel) {
+        if (channel.id.trimmed().isEmpty() || channel.login.trimmed().isEmpty())
+        {
+            return;
+        }
+        if (std::ranges::none_of(channels, [&channel](const auto &existing) {
+                return existing.id == channel.id;
+            }))
+        {
+            channels.push_back(std::move(channel));
+        }
+    };
+    addChannel({accountIt->userId, accountIt->login, accountIt->displayName});
+    if (canModerateCurrentChannel)
+    {
+        addChannel({channelId, channelLogin, ctx.channel->getLocalizedName()});
+    }
+
+    TwitchGql::getUserByLogin(
+        target, auth.token,
+        [channel = ctx.channel, target, action, auth, channelId,
+         channels = std::move(channels)](std::optional<GqlUser> user) {
+            if (!user)
+            {
+                channel->addSystemMessage(
+                    QStringLiteral("Could not find Twitch user %1.")
+                        .arg(target));
+                return;
+            }
+            CrossBanDialog::showDialog(
+                action, user->id, user->login, user->displayName, auth.login,
+                auth.token, channels, channelId, channel,
+                &getApp()->getWindows()->getMainWindow());
+        },
+        [channel = ctx.channel, target, feature](const QString &error) {
+            const auto normalized = MoltorinoAuth::normalizeAuthError(
+                QStringLiteral("opening %1").arg(feature.toLower()), error);
+            channel->addSystemMessage(
+                QStringLiteral("Could not open %1 for %2: %3")
+                    .arg(feature.toLower(), target, normalized));
+        });
+
+    return "";
+}
+
+QString crossBan(const CommandContext &ctx)
+{
+    return crossChannelAction(ctx, CrossChannelAction::Ban);
+}
+
+QString crossUnban(const CommandContext &ctx)
+{
+    return crossChannelAction(ctx, CrossChannelAction::Unban);
 }
 
 QString lowtrust(const CommandContext &ctx)

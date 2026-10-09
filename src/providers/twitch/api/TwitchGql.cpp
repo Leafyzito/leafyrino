@@ -16,6 +16,7 @@
 
 #include <QCryptographicHash>
 #include <QDateTime>
+#include <QHash>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -417,6 +418,43 @@ QJsonObject firstPayloadObject(const QJsonValue &value)
     }
 
     return {};
+}
+
+QHash<QString, bool> parseChatRoomBanStatuses(
+    const QJsonValue &response, const QVector<QString> &channelIds)
+{
+    const auto payload = firstPayloadObject(response);
+    const auto data = payload.value(QStringLiteral("data")).toObject();
+
+    QSet<QString> erroredAliases;
+    for (const auto &errorValue :
+         payload.value(QStringLiteral("errors")).toArray())
+    {
+        const auto path = errorValue.toObject()
+                              .value(QStringLiteral("path"))
+                              .toArray();
+        if (!path.isEmpty() && path.first().isString())
+        {
+            erroredAliases.insert(path.first().toString());
+        }
+    }
+
+    QHash<QString, bool> statuses;
+    for (int index = 0; index < channelIds.size(); ++index)
+    {
+        const auto alias = QStringLiteral("status%1").arg(index);
+        if (!data.contains(alias) || erroredAliases.contains(alias))
+        {
+            continue;
+        }
+
+        const auto status = data.value(alias).toObject();
+        statuses.insert(channelIds.at(index),
+                        !status.value(QStringLiteral("createdAt"))
+                             .toString()
+                             .isEmpty());
+    }
+    return statuses;
 }
 
 bool readInteger(const rapidjson::Value &value, qint64 &out)
@@ -6841,5 +6879,247 @@ mutation StartAd($input: StartAdInput!) {
         .execute();
 }
 
+void TwitchGql::banUserFromChatRoom(
+    const QString &channelId, const QString &targetLogin, const QString &reason,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    const auto normalizedChannelId = channelId.trimmed();
+    const auto normalizedTarget = targetLogin.trimmed().toLower();
+    if (normalizedChannelId.isEmpty() || normalizedTarget.isEmpty())
+    {
+        failureCallback("The channel or username is missing");
+        return;
+    }
+
+    static constexpr auto MUTATION = R"(
+mutation MoltorinoBanUserFromChatRoom($input: BanUserFromChatRoomInput!) {
+  banUserFromChatRoom(input: $input) {
+    ban {
+      isPermanent
+    }
+    error {
+      code
+    }
+  }
+}
+)";
+
+    QJsonObject input;
+    input.insert("channelID", normalizedChannelId);
+    input.insert("bannedUserLogin", normalizedTarget);
+    input.insert("expiresIn", QJsonValue::Null);
+    if (!reason.trimmed().isEmpty())
+    {
+        input.insert("reason", reason.trimmed());
+    }
+
+    QJsonObject variables;
+    variables.insert("input", input);
+
+    makeInlineGqlRequest(MUTATION, variables, oauthToken)
+        .hideRequestBody()
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            if (root.isUndefined() || root.isNull())
+            {
+                failureCallback("Failed to parse Twitch's ban response");
+                return;
+            }
+
+            const auto gqlError = extractFirstGqlErrorMessage(root);
+            if (!gqlError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + gqlError);
+                return;
+            }
+
+            const auto payload =
+                payloadDataObject(root).value("banUserFromChatRoom").toObject();
+            if (payload.isEmpty())
+            {
+                failureCallback("Twitch did not return a ban result");
+                return;
+            }
+
+            const auto payloadError = gqlPayloadErrorMessage(
+                payload.value("error"), QStringLiteral("Failed to ban user"));
+            if (!payloadError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + payloadError);
+                return;
+            }
+
+            if (payload.value("ban").toObject().isEmpty())
+            {
+                failureCallback("Twitch did not confirm the ban");
+                return;
+            }
+            successCallback();
+        })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void TwitchGql::unbanUserFromChatRoom(
+    const QString &channelId, const QString &targetLogin,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    const auto normalizedChannelId = channelId.trimmed();
+    const auto normalizedTarget = targetLogin.trimmed().toLower();
+    if (normalizedChannelId.isEmpty() || normalizedTarget.isEmpty())
+    {
+        failureCallback("The channel or username is missing");
+        return;
+    }
+
+    static constexpr auto MUTATION = R"(
+mutation MoltorinoUnbanUserFromChatRoom($input: UnbanUserFromChatRoomInput!) {
+  unbanUserFromChatRoom(input: $input) {
+    ban {
+      isPermanent
+    }
+    error {
+      code
+    }
+  }
+}
+)";
+
+    QJsonObject input;
+    input.insert("channelID", normalizedChannelId);
+    input.insert("bannedUserLogin", normalizedTarget);
+
+    QJsonObject variables;
+    variables.insert("input", input);
+
+    makeInlineGqlRequest(MUTATION, variables, oauthToken)
+        .onSuccess([successCallback,
+                    failureCallback](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            if (root.isUndefined() || root.isNull())
+            {
+                failureCallback("Failed to parse Twitch's unban response");
+                return;
+            }
+
+            const auto gqlError = extractFirstGqlErrorMessage(root);
+            if (!gqlError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + gqlError);
+                return;
+            }
+
+            const auto payload = payloadDataObject(root)
+                                     .value("unbanUserFromChatRoom")
+                                     .toObject();
+            if (payload.isEmpty())
+            {
+                failureCallback("Twitch did not return an unban result");
+                return;
+            }
+
+            const auto payloadError = gqlPayloadErrorMessage(
+                payload.value("error"), QStringLiteral("Failed to unban user"));
+            if (!payloadError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + payloadError);
+                return;
+            }
+            successCallback();
+        })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void TwitchGql::getChatRoomBanStatuses(
+    const QString &targetUserId, const QVector<QString> &channelIds,
+    const QString &oauthToken,
+    std::function<void(QHash<QString, bool>)> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    const auto normalizedTarget = targetUserId.trimmed();
+    if (normalizedTarget.isEmpty())
+    {
+        failureCallback("The target user ID is missing");
+        return;
+    }
+
+    QVector<QString> normalizedChannels;
+    normalizedChannels.reserve(channelIds.size());
+    QSet<QString> seen;
+    for (const auto &channelId : channelIds)
+    {
+        const auto normalized = channelId.trimmed();
+        if (!normalized.isEmpty() && !seen.contains(normalized))
+        {
+            seen.insert(normalized);
+            normalizedChannels.push_back(normalized);
+        }
+    }
+    if (normalizedChannels.isEmpty())
+    {
+        successCallback({});
+        return;
+    }
+    if (normalizedChannels.size() > 25)
+    {
+        failureCallback("Too many channels in one ban status request");
+        return;
+    }
+
+    QStringList definitions{QStringLiteral("$targetID: ID!")};
+    QStringList selections;
+    QJsonObject variables;
+    variables.insert(QStringLiteral("targetID"), normalizedTarget);
+    for (int index = 0; index < normalizedChannels.size(); ++index)
+    {
+        const auto variable = QStringLiteral("channel%1").arg(index);
+        const auto alias = QStringLiteral("status%1").arg(index);
+        definitions.push_back(QStringLiteral("$%1: ID!").arg(variable));
+        selections.push_back(
+            QStringLiteral(
+                "%1: chatRoomBanStatus(channelID: $%2, userID: $targetID) "
+                "{ createdAt }")
+                .arg(alias, variable));
+        variables.insert(variable, normalizedChannels.at(index));
+    }
+
+    const auto query =
+        QStringLiteral("query MoltorinoCrossChannelBanStatus(%1) { %2 }")
+            .arg(definitions.join(QStringLiteral(", ")),
+                 selections.join(QLatin1Char('\n')))
+            .toUtf8();
+
+    makeInlineGqlRequest(query.constData(), variables, oauthToken)
+        .onSuccess([normalizedChannels, successCallback,
+                    failureCallback](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            if (root.isUndefined() || root.isNull())
+            {
+                failureCallback("Failed to parse Twitch's ban status response");
+                return;
+            }
+
+            const auto data = payloadDataObject(root);
+            const auto gqlError = extractFirstGqlErrorMessage(root);
+            if (data.isEmpty() && !gqlError.isEmpty())
+            {
+                failureCallback("Twitch API Error: " + gqlError);
+                return;
+            }
+            successCallback(parseChatRoomBanStatuses(root, normalizedChannels));
+        })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
 
 }  // namespace chatterino

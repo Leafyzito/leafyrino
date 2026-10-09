@@ -25,6 +25,8 @@ QString sayTranslate(const CommandContext &ctx);
 QString uptime(const CommandContext &ctx);
 QString user(const CommandContext &ctx);
 QString requests(const CommandContext &ctx);
+QString crossBan(const CommandContext &ctx);
+QString crossUnban(const CommandContext &ctx);
 QString lowtrust(const CommandContext &ctx);
 QString clip(const CommandContext &ctx);
 QString marker(const CommandContext &ctx);

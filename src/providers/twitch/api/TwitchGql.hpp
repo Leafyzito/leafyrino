@@ -8,6 +8,7 @@
 #include "providers/twitch/TwitchChannel.hpp"
 
 #include <QDateTime>
+#include <QHash>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -267,6 +268,19 @@ void getCurrentPin(
 void getUserByLogin(const QString &login, const QString &oauthToken,
                     std::function<void(std::optional<GqlUser>)> successCallback,
                     std::function<void(const QString &)> failureCallback);
+void banUserFromChatRoom(
+    const QString &channelId, const QString &targetLogin, const QString &reason,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void unbanUserFromChatRoom(
+    const QString &channelId, const QString &targetLogin,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void getChatRoomBanStatuses(
+    const QString &targetUserId, const QVector<QString> &channelIds,
+    const QString &oauthToken,
+    std::function<void(QHash<QString, bool>)> successCallback,
+    std::function<void(const QString &)> failureCallback);
 void followUser(const QString &targetId, const QString &oauthToken,
                 std::function<void()> successCallback,
                 std::function<void(const QString &)> failureCallback);

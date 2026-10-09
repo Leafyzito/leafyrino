@@ -387,6 +387,9 @@ CommandController::CommandController(const Paths &paths)
 
     this->registerCommand("/requests", &commands::requests);
 
+    this->registerCommand("/crossban", &commands::crossBan);
+    this->registerCommand("/crossunban", &commands::crossUnban);
+
     this->registerCommand("/lowtrust", &commands::lowtrust);
 
     this->registerCommand("/chatters", &commands::chatters);

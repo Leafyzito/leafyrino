@@ -1045,6 +1045,12 @@ MoltorinoPage::MoltorinoPage()
             "lead moderator roles. Actions still require a saved broadcaster "
             "login.")
         ->addTo(*view);
+    SettingWidget::checkbox(
+        "Show cross ban and cross unban in channels you don't moderate",
+        s.showCrossActionsInUnmoderatedChannels)
+        ->setTooltip("Use your saved account's channels even when you cannot "
+                     "moderate the channel you are viewing.")
+        ->addTo(*view);
 
 #ifndef Q_OS_MACOS
     view->addTitle("Tray");

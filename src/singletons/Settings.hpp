@@ -1062,6 +1062,8 @@ public:
                                           true};
     BoolSetting showUsercardRoleManagementMenu = {
         "/usercard/showRoleManagementMenu", false};
+    BoolSetting showCrossActionsInUnmoderatedChannels = {
+        "/usercard/showCrossActionsInUnmoderatedChannels", false};
     BoolSetting hideModActionsOnModUsercards = {
         "/misc/hideModActionsOnModUsercards", true};
     BoolSetting showModActionsOnModUsercardsAsLeadMod = {
