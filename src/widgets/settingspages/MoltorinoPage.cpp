@@ -684,6 +684,13 @@ MoltorinoPage::MoltorinoPage()
                      "grid instead of staying on the current picker.")
         ->addTo(*view);
 
+    SettingWidget::checkbox("Show Gigantify emotes in chat",
+                            s.enableGigantifyEmotes)
+        ->setTooltip(
+            "Show Twitch's Gigantify reward and enlarge its selected emote in "
+            "chat. The /gigantify command still works when this is off.")
+        ->addTo(*view);
+
     view->addTitle("Input Box");
     view->addDescription(
         "Chat input buttons, typing helpers, and quick controls.");

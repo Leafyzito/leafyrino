@@ -72,6 +72,7 @@ QString commandUsage(const QString &command)
         {"/followers", "[duration]"},
         {"/followersoff", ""},
         {"/founders", ""},
+        {"/gigantify", "<Twitch emote>"},
         {"/help", ""},
         {"/host", "<username>"},
         {"/ignore", "<username>"},

@@ -351,13 +351,15 @@ private:
     void addWordsFromAstNodes(
         const QVector<ast::ASTNode> &nodes,
         const std::vector<TwitchSpecialOccurrence> &twitchSpecials,
-        TextState &state, FontStyle style = FontStyle::ChatMedium);
+        TextState &state, FontStyle style = FontStyle::ChatMedium,
+        int gigantifiedEmoteStart = -1);
     void addWords(const QStringList &words,
                   const std::vector<TwitchSpecialOccurrence> &twitchSpecials,
-                  TextState &state, FontStyle style = FontStyle::ChatMedium);
+                  TextState &state, FontStyle style = FontStyle::ChatMedium,
+                  int gigantifiedEmoteStart = -1);
     void addWords(QStringView text,
                   const std::vector<TwitchSpecialOccurrence> &twitchSpecials,
-                  TextState &state);
+                  TextState &state, int gigantifiedEmoteStart = -1);
 
     void appendTwitchBadges(Communi::TagsRef tags,
                             TwitchChannel *twitchChannel);

@@ -29,6 +29,13 @@ using namespace chatterino;
 
 constexpr QMargins MARGIN{8, 4, 8, 4};
 constexpr qreal COMPACT_EMOTES_OFFSET = 4;
+
+bool isRenderedGigantifiedEmote(const MessageElement &element)
+{
+    const auto *emote = dynamic_cast<const EmoteElement *>(&element);
+    return emote != nullptr && emote->isGigantified() &&
+           getSettings()->enableGigantifyEmotes;
+}
 /// Target width used to match Twitch's desktop chat layout.
 constexpr qreal ASCII_ART_WIDTH = 300.0;
 
@@ -222,6 +229,7 @@ void MessageLayoutContainer::breakLine()
 
         bool isCompactEmote =
             !this->flags_.has(MessageFlag::DisableCompactEmotes) &&
+            !isRenderedGigantifiedEmote(element->getCreator()) &&
             element->getCreator().getFlags().has(
                 MessageElementFlag::EmoteImage);
 
@@ -841,6 +849,7 @@ void MessageLayoutContainer::addElement(MessageLayoutElement *element,
     // compact emote offset
     bool isCompactEmote =
         !this->flags_.has(MessageFlag::DisableCompactEmotes) &&
+        !isRenderedGigantifiedEmote(element->getCreator()) &&
         element->getCreator().getFlags().has(MessageElementFlag::EmoteImage);
 
     if (isCompactEmote)

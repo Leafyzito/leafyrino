@@ -1245,6 +1245,8 @@ public:
         "/moltorino/channelPoints/closeAfterRedeem", true};
     BoolSetting rewardsReturnToListAfterRedeem{
         "/moltorino/channelPoints/returnToListAfterRedeem", false};
+    BoolSetting enableGigantifyEmotes{
+        "/moltorino/channelPoints/enableGigantifyEmotes", true};
 
     /// Banner content text scales. These intentionally do not scale banner
     /// chrome, icons, timers, or progress bars.

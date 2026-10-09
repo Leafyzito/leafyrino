@@ -160,6 +160,46 @@ QString fullPoints(qint64 value)
     return formatChannelPoints(value);
 }
 
+bool isBitsReward(const GqlChannelPointReward &reward)
+{
+    return reward.pricingType.compare(QStringLiteral("BITS"),
+                                      Qt::CaseInsensitive) == 0;
+}
+
+bool isGigantifyReward(const GqlChannelPointReward &reward)
+{
+    return reward.isAutomatic &&
+           reward.rewardType == QStringLiteral("SEND_GIGANTIFIED_EMOTE") &&
+           isBitsReward(reward);
+}
+
+QString rewardCostLabel(const GqlChannelPointReward &reward, bool compact)
+{
+    const auto amount =
+        compact ? compactPoints(reward.cost) : fullPoints(reward.cost);
+    return isBitsReward(reward) ? amount + QStringLiteral(" Bits") : amount;
+}
+
+QString friendlyGigantifyError(const QString &error)
+{
+    const auto normalized =
+        MoltorinoAuth::normalizeAuthError("gigantifying a Twitch emote", error);
+    const auto upper = normalized.toUpper();
+    if (upper.contains(QStringLiteral("BIT")) &&
+        (upper.contains(QStringLiteral("INSUFFICIENT")) ||
+         upper.contains(QStringLiteral("NOT_ENOUGH")) ||
+         upper.contains(QStringLiteral("BALANCE_TOO_LOW"))))
+    {
+        return QStringLiteral(
+            "You do not have enough Bits to Gigantify this emote.");
+    }
+    if (normalized.trimmed().isEmpty())
+    {
+        return QStringLiteral("Twitch could not Gigantify that emote.");
+    }
+    return normalized;
+}
+
 QString emoteImageUrl(const GqlChannelPointEmote &emote)
 {
     return QStringLiteral(
@@ -321,12 +361,17 @@ bool isSupportedAutomaticReward(const GqlChannelPointReward &reward)
            reward.rewardType == "SEND_HIGHLIGHTED_MESSAGE" ||
            reward.rewardType == "RANDOM_SUB_EMOTE_UNLOCK" ||
            reward.rewardType == "CHOSEN_SUB_EMOTE_UNLOCK" ||
-           reward.rewardType == "CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK";
+           reward.rewardType == "CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK" ||
+           isGigantifyReward(reward);
 }
 
 bool shouldShowReward(const GqlChannelPointReward &reward)
 {
     if (!reward.isEnabled || !reward.isInStock)
+    {
+        return false;
+    }
+    if (isGigantifyReward(reward) && !getSettings()->enableGigantifyEmotes)
     {
         return false;
     }
@@ -589,7 +634,8 @@ protected:
         const auto rect = this->rect();
         bool unavailable =
             !this->reward_.isEnabled || !this->reward_.isInStock ||
-            (this->balance_ >= 0 && this->balance_ < this->reward_.cost);
+            (!isBitsReward(this->reward_) && this->balance_ >= 0 &&
+             this->balance_ < this->reward_.cost);
         if (!this->isEnabled())
         {
             unavailable = true;
@@ -642,7 +688,7 @@ protected:
         costFont.setPointSizeF(std::max(6.5, costFont.pointSizeF() * 0.82));
         painter.setFont(costFont);
         QFontMetrics costMetrics(costFont);
-        const auto costText = compactPoints(this->reward_.cost);
+        const auto costText = rewardCostLabel(this->reward_, true);
         const int pillPaddingX = scaledMetric(this->scale_, 5, 3);
         const int pillHeight = scaledMetric(this->scale_, 17, 12);
         const int pillWidth = std::max(
@@ -760,6 +806,11 @@ protected:
         if (this->isDown())
         {
             bg = theme->isLightTheme() ? bg.darker(110) : bg.lighter(114);
+        }
+        if (this->isChecked())
+        {
+            border = theme->splits.header.focusedBorder;
+            bg = theme->isLightTheme() ? bg.darker(108) : bg.lighter(112);
         }
 
         const auto rect = this->rect().adjusted(0, 0, -1, -1);
@@ -991,6 +1042,20 @@ ChannelPointsDialog::ChannelPointsDialog(TwitchChannel *channel,
         this->channel_->channelPointsChanged.connect([this] {
             this->refreshHeader();
         });
+    getSettings()->enableGigantifyEmotes.connect(
+        [this](bool enabled, auto) {
+            if (!enabled && this->selectedRewardValid_ &&
+                isGigantifyReward(this->selectedReward_))
+            {
+                this->showRewardsView();
+                return;
+            }
+            if (this->view_ == View::Rewards)
+            {
+                this->rebuildContent();
+            }
+        },
+        this->managedConnections_);
 
     this->refreshHeader();
     this->refreshStyle();
@@ -1205,7 +1270,8 @@ void ChannelPointsDialog::refreshStyle()
         QLabel#ChannelPointsStatusLabel {
             color: %4;
         }
-        QLineEdit#ChannelPointsEmoteSearch {
+        QLineEdit#ChannelPointsEmoteSearch,
+        QLineEdit#ChannelPointsGigantifyMessage {
             background: %6;
             color: %2;
             border: 1px solid %3;
@@ -1215,7 +1281,8 @@ void ChannelPointsDialog::refreshStyle()
         }
         QPushButton#ChannelPointsUtilityButton,
         QPushButton#ChannelPointsModifierButton,
-        QPushButton#ChannelPointsRedeemButton {
+        QPushButton#ChannelPointsRedeemButton,
+        QPushButton#ChannelPointsGigantifyConfirmButton {
             background: %5;
             color: %2;
             border: 1px solid %3;
@@ -1229,15 +1296,18 @@ void ChannelPointsDialog::refreshStyle()
         }
         QPushButton#ChannelPointsUtilityButton:hover,
         QPushButton#ChannelPointsModifierButton:hover,
-        QPushButton#ChannelPointsRedeemButton:hover {
+        QPushButton#ChannelPointsRedeemButton:hover,
+        QPushButton#ChannelPointsGigantifyConfirmButton:hover {
             background: %10;
             border-color: %11;
         }
-        QPushButton#ChannelPointsRedeemButton {
+        QPushButton#ChannelPointsRedeemButton,
+        QPushButton#ChannelPointsGigantifyConfirmButton {
             text-align: center;
             font-weight: 700;
         }
-        QPushButton#ChannelPointsRedeemButton:disabled {
+        QPushButton#ChannelPointsRedeemButton:disabled,
+        QPushButton#ChannelPointsGigantifyConfirmButton:disabled {
             color: %4;
             border-color: %3;
         }
@@ -1741,8 +1811,10 @@ void ChannelPointsDialog::rebuildRewardDetail()
     this->contentLayout_->addStretch(2);
 
     const auto balance = this->channel_->channelPointBalance();
-    const bool enoughPoints =
-        balance < 0 || balance >= this->selectedReward_.cost;
+    const bool bitsReward = isBitsReward(this->selectedReward_);
+    const bool enoughPoints = bitsReward || balance < 0 ||
+                              balance >= this->selectedReward_.cost;
+    const auto costLabel = rewardCostLabel(this->selectedReward_, false);
     const bool redeemable = !this->actionInFlight_ &&
                             this->selectedReward_.isEnabled &&
                             this->selectedReward_.isInStock && enoughPoints;
@@ -1764,13 +1836,11 @@ void ChannelPointsDialog::rebuildRewardDetail()
     }
     else if (!enoughPoints)
     {
-        button->setText(QStringLiteral("%1 Required")
-                            .arg(fullPoints(this->selectedReward_.cost)));
+        button->setText(QStringLiteral("%1 Required").arg(costLabel));
     }
     else
     {
-        button->setText(QStringLiteral("Redeem %1")
-                            .arg(fullPoints(this->selectedReward_.cost)));
+        button->setText(QStringLiteral("Redeem %1").arg(costLabel));
     }
     QObject::connect(button, &QPushButton::clicked, this, [this] {
         this->activateSelectedReward();
@@ -1854,6 +1924,57 @@ void ChannelPointsDialog::rebuildEmotes()
         this->contentLayout_->addWidget(modifierWidget);
     }
 
+    if (this->selectingGigantifiedEmote_ &&
+        this->selectedGigantifiedEmoteValid_)
+    {
+        auto *selection = new QLabel(
+            QStringLiteral("%1 · %2")
+                .arg(emoteLabel(this->selectedGigantifiedEmote_),
+                     rewardCostLabel(this->selectedReward_, false)),
+            this->contentWidget_);
+        selection->setTextFormat(Qt::PlainText);
+        selection->setObjectName("ChannelPointsGigantifySelectionLabel");
+        selection->setAlignment(Qt::AlignCenter);
+        selection->setFont(getApp()->getFonts()->getFont(
+            FontStyle::UiMediumBold, readableFontScale(effectiveScale)));
+        this->contentLayout_->addWidget(selection);
+
+        auto *messageInput = new QLineEdit(this->contentWidget_);
+        messageInput->setObjectName("ChannelPointsGigantifyMessage");
+        messageInput->setPlaceholderText(
+            "Optional message before the enlarged emote");
+        messageInput->setAccessibleName("Optional Gigantify message");
+        messageInput->setClearButtonEnabled(true);
+        messageInput->setMaxLength(500);
+        messageInput->setText(this->gigantifyMessage_);
+        messageInput->setEnabled(!this->actionInFlight_);
+        messageInput->setFont(getApp()->getFonts()->getFont(
+            FontStyle::UiMedium, readableFontScale(effectiveScale)));
+        QObject::connect(messageInput, &QLineEdit::textChanged, this,
+                         [this](const QString &message) {
+                             this->gigantifyMessage_ = message;
+                         });
+        QObject::connect(messageInput, &QLineEdit::returnPressed, this,
+                         [this] { this->sendSelectedGigantifiedEmote(); });
+        this->contentLayout_->addWidget(messageInput);
+
+        auto *confirm = new QPushButton(this->contentWidget_);
+        confirm->setObjectName("ChannelPointsGigantifyConfirmButton");
+        confirm->setCursor(this->actionInFlight_ ? Qt::ArrowCursor
+                                                 : Qt::PointingHandCursor);
+        confirm->setEnabled(!this->actionInFlight_);
+        confirm->setFont(getApp()->getFonts()->getFont(
+            FontStyle::UiMediumBold, readableFontScale(effectiveScale)));
+        confirm->setText(
+            this->actionInFlight_
+                ? QStringLiteral("Sending...")
+                : QStringLiteral("Send enlarged emote · %1")
+                      .arg(rewardCostLabel(this->selectedReward_, false)));
+        QObject::connect(confirm, &QPushButton::clicked, this,
+                         [this] { this->sendSelectedGigantifiedEmote(); });
+        this->contentLayout_->addWidget(confirm);
+    }
+
     if (this->emotesLoading_)
     {
         this->setStatus("Loading emotes...");
@@ -1894,7 +2015,7 @@ void ChannelPointsDialog::rebuildEmotes()
         {
             continue;
         }
-        if (emote.type == "GLOBALS")
+        if (emote.type == "GLOBALS" && !this->selectingGigantifiedEmote_)
         {
             continue;
         }
@@ -1916,9 +2037,21 @@ void ChannelPointsDialog::rebuildEmotes()
         button->setFont(getApp()->getFonts()->getFont(
             FontStyle::UiMedium, readableFontScale(effectiveScale)));
         button->setScale(effectiveScale);
-        QObject::connect(button, &QPushButton::clicked, this, [this, emote] {
-            this->unlockSelectedEmote(emote);
-        });
+        button->setEnabled(!this->actionInFlight_);
+        if (this->selectingGigantifiedEmote_)
+        {
+            button->setCheckable(true);
+            button->setChecked(this->selectedGigantifiedEmoteValid_ &&
+                               this->selectedGigantifiedEmote_.id == emote.id);
+            QObject::connect(
+                button, &QPushButton::clicked, this,
+                [this, emote] { this->selectGigantifiedEmote(emote); });
+        }
+        else
+        {
+            QObject::connect(button, &QPushButton::clicked, this,
+                             [this, emote] { this->unlockSelectedEmote(emote); });
+        }
         grid->addWidget(button, row, column);
         shown += 1;
         column += 1;
@@ -2014,6 +2147,9 @@ void ChannelPointsDialog::showRewardsView()
     this->view_ = View::Rewards;
     this->selectedRewardValid_ = false;
     this->selectingModifiedEmote_ = false;
+    this->selectingGigantifiedEmote_ = false;
+    this->selectedGigantifiedEmoteValid_ = false;
+    this->gigantifyMessage_.clear();
     this->setStatus({});
     this->refreshHeader();
     this->rebuildContent();
@@ -2188,6 +2324,17 @@ void ChannelPointsDialog::selectReward(const GqlChannelPointReward &reward)
         return;
     }
 
+    if (isGigantifyReward(reward))
+    {
+        if (!getSettings()->enableGigantifyEmotes)
+        {
+            this->setStatus("Gigantify emotes are turned off.", true);
+            return;
+        }
+        this->openGigantifyPicker(reward);
+        return;
+    }
+
     this->setStatus("This power-up is not supported by Leafyrino yet.", true);
 }
 
@@ -2269,6 +2416,30 @@ void ChannelPointsDialog::openEmotePicker(const GqlChannelPointReward &reward,
     this->selectedReward_ = reward;
     this->selectedRewardValid_ = true;
     this->selectingModifiedEmote_ = modified;
+    this->selectingGigantifiedEmote_ = false;
+    this->selectedGigantifiedEmoteValid_ = false;
+    this->gigantifyMessage_.clear();
+    this->view_ = View::Emotes;
+    this->headerTitleLabel_->setText(reward.title);
+    this->emoteSearch_.clear();
+    this->emoteVisibleLimit_ = EMOTE_GRID_INITIAL_LIMIT;
+    this->emoteScrollValue_ = 0;
+    this->emoteImageRefreshAttempts_ = 0;
+    this->emoteImageRefreshQueued_ = false;
+    this->emoteLazyLoadQueued_ = false;
+    this->setStatus({});
+    this->loadEmotePickerData();
+    this->rebuildContent();
+}
+
+void ChannelPointsDialog::openGigantifyPicker(const GqlChannelPointReward &reward)
+{
+    this->selectedReward_ = reward;
+    this->selectedRewardValid_ = true;
+    this->selectingModifiedEmote_ = false;
+    this->selectingGigantifiedEmote_ = true;
+    this->selectedGigantifiedEmoteValid_ = false;
+    this->gigantifyMessage_.clear();
     this->view_ = View::Emotes;
     this->headerTitleLabel_->setText(reward.title);
     this->emoteSearch_.clear();
@@ -2290,9 +2461,11 @@ void ChannelPointsDialog::loadEmotePickerData()
     }
 
     const bool loadingModifiedEmotes = this->selectingModifiedEmote_;
+    const bool loadingGigantifyEmotes = this->selectingGigantifiedEmote_;
     const bool needsEmotes =
         this->emotes_.isEmpty() ||
-        this->emotesLoadedForModifiedPicker_ != loadingModifiedEmotes;
+        this->emotesLoadedForModifiedPicker_ != loadingModifiedEmotes ||
+        this->emotesLoadedForGigantifyPicker_ != loadingGigantifyEmotes;
     if (needsEmotes)
     {
         this->emotes_.clear();
@@ -2375,7 +2548,7 @@ void ChannelPointsDialog::loadEmotePickerData()
     }
 
     const auto emoteSuccess = [self, loadModifiers, finish, needsModifiers,
-                               loadingModifiedEmotes](
+                               loadingModifiedEmotes, loadingGigantifyEmotes](
                                   QVector<GqlChannelPointEmote> emotes) {
         if (!self)
         {
@@ -2383,6 +2556,7 @@ void ChannelPointsDialog::loadEmotePickerData()
         }
         self->emotes_ = std::move(emotes);
         self->emotesLoadedForModifiedPicker_ = loadingModifiedEmotes;
+        self->emotesLoadedForGigantifyPicker_ = loadingGigantifyEmotes;
         if (self->selectingModifiedEmote_ && !self->modifiers_.isEmpty() &&
             (self->selectedModifierId_.isEmpty() ||
              !hasEmoteForModifier(self->emotes_, self->selectedModifierId_)))
@@ -2391,7 +2565,8 @@ void ChannelPointsDialog::loadEmotePickerData()
                 firstAvailableModifierId(self->modifiers_, self->emotes_);
         }
         if (self->view_ == View::Emotes &&
-            self->selectingModifiedEmote_ != loadingModifiedEmotes)
+            (self->selectingModifiedEmote_ != loadingModifiedEmotes ||
+             self->selectingGigantifiedEmote_ != loadingGigantifyEmotes))
         {
             self->emotesLoading_ = false;
             self->loadEmotePickerData();
@@ -2406,11 +2581,20 @@ void ChannelPointsDialog::loadEmotePickerData()
 
         loadModifiers();
     };
-    const auto emoteFailure = [finish](const QString &error) {
-        finish(MoltorinoAuth::normalizeAuthError("loading channel point emotes",
-                                                 error),
-               true);
+    const auto emoteFailure = [finish, loadingGigantifyEmotes](
+                                  const QString &error) {
+        const auto operation = loadingGigantifyEmotes
+                                   ? QStringLiteral("loading Twitch emotes")
+                                   : QStringLiteral("loading channel point emotes");
+        finish(MoltorinoAuth::normalizeAuthError(operation, error), true);
     };
+
+    if (loadingGigantifyEmotes)
+    {
+        TwitchGql::getAvailableGigantifyEmotes(this->redeemChannelId(), token,
+                                               emoteSuccess, emoteFailure);
+        return;
+    }
 
     if (loadingModifiedEmotes)
     {
@@ -2501,6 +2685,84 @@ void ChannelPointsDialog::unlockSelectedEmote(const GqlChannelPointEmote &emote)
                                            cost, token, success, failure);
 }
 
+void ChannelPointsDialog::selectGigantifiedEmote(
+    const GqlChannelPointEmote &emote)
+{
+    if (!this->selectingGigantifiedEmote_ || this->actionInFlight_)
+    {
+        return;
+    }
+    if (emote.id.isEmpty() || emote.token.isEmpty())
+    {
+        this->setStatus("That Twitch emote is unavailable.", true);
+        return;
+    }
+
+    this->selectedGigantifiedEmote_ = emote;
+    this->selectedGigantifiedEmoteValid_ = true;
+    this->setStatus(
+        "Review the selected emote, then confirm the Bits purchase.");
+    this->rebuildContent();
+}
+
+void ChannelPointsDialog::sendSelectedGigantifiedEmote()
+{
+    if (!getSettings()->enableGigantifyEmotes ||
+        !this->selectingGigantifiedEmote_ ||
+        !this->selectedGigantifiedEmoteValid_ || !this->selectedRewardValid_ ||
+        this->actionInFlight_)
+    {
+        return;
+    }
+    if (!isGigantifyReward(this->selectedReward_) ||
+        this->selectedReward_.cost <= 0)
+    {
+        this->setStatus("Twitch returned an invalid Gigantify price.", true);
+        return;
+    }
+    if (!this->canRedeem(this->selectedReward_))
+    {
+        return;
+    }
+
+    const auto token = this->authTokenOrMessage();
+    if (token.isEmpty())
+    {
+        return;
+    }
+
+    const auto channelId = this->redeemChannelId();
+    const auto emote = this->selectedGigantifiedEmote_;
+    const auto message = this->gigantifyMessage_;
+    const auto cost = this->selectedReward_.cost;
+    this->actionInFlight_ = true;
+    this->rebuildContent();
+
+    QPointer<ChannelPointsDialog> self = this;
+    TwitchGql::sendGigantifiedChatEmote(
+        channelId, emote.id, message, cost, token,
+        [self, emote] {
+            if (!self)
+            {
+                return;
+            }
+            self->selectedGigantifiedEmoteValid_ = false;
+            self->gigantifyMessage_.clear();
+            self->applyRedeemResult(
+                {}, QStringLiteral("Sent %1 as a gigantified emote")
+                        .arg(emoteLabel(emote)));
+        },
+        [self](const QString &error) {
+            if (!self)
+            {
+                return;
+            }
+            self->actionInFlight_ = false;
+            self->setStatus(friendlyGigantifyError(error), true);
+            self->rebuildContent();
+        });
+}
+
 void ChannelPointsDialog::applyRedeemResult(
     const GqlChannelPointRedeemResult &result, const QString &message)
 {
@@ -2522,6 +2784,9 @@ void ChannelPointsDialog::applyRedeemResult(
         this->view_ = View::Rewards;
         this->selectedRewardValid_ = false;
         this->selectingModifiedEmote_ = false;
+        this->selectingGigantifiedEmote_ = false;
+        this->selectedGigantifiedEmoteValid_ = false;
+        this->gigantifyMessage_.clear();
         this->reloadRewards(true);
         return;
     }
@@ -2671,7 +2936,7 @@ bool ChannelPointsDialog::canRedeem(const GqlChannelPointReward &reward)
         return false;
     }
     const auto balance = this->channel_->channelPointBalance();
-    if (balance >= 0 && reward.cost > balance)
+    if (!isBitsReward(reward) && balance >= 0 && reward.cost > balance)
     {
         this->setStatus(QStringLiteral("You need %1 more points.")
                             .arg(compactPoints(reward.cost - balance)),

@@ -356,10 +356,12 @@ std::string_view CircularImageElement::type() const
 
 // EMOTE
 EmoteElement::EmoteElement(const EmotePtr &emote, MessageElementFlags flags,
-                           const MessageColor &textElementColor)
+                           const MessageColor &textElementColor,
+                           bool gigantified)
     : MessageElement(flags)
     , textColor_(textElementColor)
     , emote_(emote)
+    , gigantified_(gigantified)
 {
     this->setTooltip(emote->tooltip.string);
 }
@@ -367,6 +369,11 @@ EmoteElement::EmoteElement(const EmotePtr &emote, MessageElementFlags flags,
 EmotePtr EmoteElement::getEmote() const
 {
     return this->emote_;
+}
+
+bool EmoteElement::isGigantified() const
+{
+    return this->gigantified_;
 }
 
 void EmoteElement::addToContainer(MessageLayoutContainer &container,
@@ -379,12 +386,56 @@ void EmoteElement::addToContainer(MessageLayoutContainer &container,
 
     if (ctx.flags.has(MessageElementFlag::EmoteImage))
     {
-        auto image =
-            this->emote_->images.getImageOrLoaded(container.getImageScale());
+        const bool renderGigantified =
+            this->gigantified_ && getSettings()->enableGigantifyEmotes;
+
+        ImagePtr image;
+        if (renderGigantified)
+        {
+            const ImagePtr *candidates[] = {
+                &this->emote_->images.getImage3(),
+                &this->emote_->images.getImage2(),
+                &this->emote_->images.getImage1(),
+            };
+            for (const auto *candidate : candidates)
+            {
+                if (*candidate && !(*candidate)->isEmpty())
+                {
+                    image = *candidate;
+                    image->load();
+                    break;
+                }
+            }
+            if (!image)
+            {
+                image = Image::getEmpty();
+            }
+        }
+        else
+        {
+            image = this->emote_->images.getImageOrLoaded(
+                container.getImageScale());
+        }
 
         if (image->isEmpty())
         {
             this->ensureText(true);
+        }
+        else if (renderGigantified)
+        {
+            if (!container.atStartOfLine())
+            {
+                container.breakLine();
+            }
+
+            constexpr qreal gigantifiedLogicalSize = 112;
+            const auto logicalSize = std::min<qreal>(
+                gigantifiedLogicalSize * container.getScale(),
+                std::max<qreal>(1.0, container.remainingWidth()));
+            const auto size = QSizeF(logicalSize, logicalSize);
+            container.addElementNoLineBreak(
+                this->makeImageLayoutElement(image, size));
+            return;
         }
         else
         {
@@ -417,7 +468,8 @@ MessageLayoutElement *EmoteElement::makeImageLayoutElement(
 std::unique_ptr<MessageElement> EmoteElement::clone() const
 {
     auto el = std::make_unique<EmoteElement>(this->emote_, this->getFlags(),
-                                             this->textColor_);
+                                             this->textColor_,
+                                             this->gigantified_);
     el->cloneFrom(*this);
     return el;
 }
@@ -447,6 +499,10 @@ QJsonObject EmoteElement::toJson() const
     if (this->textElement_)
     {
         base["text"_L1] = this->textElement_->toJson();
+    }
+    if (this->gigantified_)
+    {
+        base["gigantified"_L1] = true;
     }
 
     return base;

@@ -543,11 +543,13 @@ public:
     static constexpr std::string_view TYPE = "emote";
 
     EmoteElement(const EmotePtr &data, MessageElementFlags flags_,
-                 const MessageColor &textElementColor = MessageColor::Text);
+                 const MessageColor &textElementColor = MessageColor::Text,
+                 bool gigantified = false);
 
     void addToContainer(MessageLayoutContainer &container,
                         const MessageLayoutContext &ctx) override;
     EmotePtr getEmote() const;
+    bool isGigantified() const;
 
     std::unique_ptr<MessageElement> clone() const override;
 
@@ -566,6 +568,7 @@ private:
     bool usingFallbackColor_ = false;
 
     EmotePtr emote_;
+    bool gigantified_ = false;
 };
 
 // A LayeredEmoteElement represents multiple Emotes layered on top of each other.

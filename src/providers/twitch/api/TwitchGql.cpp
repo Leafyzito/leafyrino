@@ -1038,6 +1038,10 @@ QString automaticRewardPrompt(const QString &type)
     {
         return "Send one highlighted message.";
     }
+    if (type == "SEND_GIGANTIFIED_EMOTE")
+    {
+        return "Pick a Twitch emote to send enlarged in chat.";
+    }
     return {};
 }
 
@@ -4392,7 +4396,16 @@ void TwitchGql::getChannelPointRewards(
             {
                 const auto reward =
                     channelPointRewardFromObject(value.toObject(), true);
-                if (reward.pricingType != "POINTS" || reward.cost <= 0)
+                const bool isPointsReward =
+                    reward.pricingType.compare(QStringLiteral("POINTS"),
+                                               Qt::CaseInsensitive) == 0;
+                const bool isGigantifyBitsReward =
+                    reward.rewardType ==
+                        QStringLiteral("SEND_GIGANTIFIED_EMOTE") &&
+                    reward.pricingType.compare(QStringLiteral("BITS"),
+                                               Qt::CaseInsensitive) == 0;
+                if ((!isPointsReward && !isGigantifyBitsReward) ||
+                    reward.cost <= 0)
                 {
                     continue;
                 }
@@ -5000,6 +5013,331 @@ void TwitchGql::getChannelPointEmoteModifiers(
             failureCallback("Network Error: " + result.formatError());
         })
         .execute();
+}
+
+void TwitchGql::sendGigantifiedChatEmote(
+    const QString &channelId, const QString &emoteId, const QString &message,
+    int bitsCost, const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    QJsonObject input;
+    input.insert("channelID", channelId);
+    input.insert("bitsCost", bitsCost);
+    input.insert("message", message);
+    input.insert("emoteID", emoteId);
+    input.insert("transactionID", makeTransactionId());
+
+    QJsonObject variables;
+    variables.insert("input", input);
+
+    static const char *query = R"(
+        mutation SendGigantifiedChatEmote($input: SendGigantifiedChatEmoteInput!) {
+            sendGigantifiedChatEmote(input: $input) {
+                error {
+                    code
+                }
+            }
+        }
+    )";
+
+    makeTvInlineGqlRequest(query, variables, oauthToken)
+        .onSuccess([successCallback, failureCallback](const NetworkResult &result) {
+            const auto root = result.parseJsonValue();
+            if (root.isUndefined() || root.isNull())
+            {
+                failureCallback("Failed to parse GQL response");
+                return;
+            }
+
+            const auto payload = payloadDataObject(root)
+                                     .value("sendGigantifiedChatEmote")
+                                     .toObject();
+            if (rejectGqlOrPayloadError(root, payload,
+                                        "Failed to gigantify emote",
+                                        failureCallback))
+            {
+                return;
+            }
+            if (payload.isEmpty())
+            {
+                failureCallback("Twitch API Error: Failed to gigantify emote");
+                return;
+            }
+
+            successCallback();
+        })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
+void TwitchGql::getAvailableGigantifyEmotes(
+    const QString &channelId, const QString &oauthToken,
+    std::function<void(QVector<GqlChannelPointEmote>)> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    struct FetchState {
+        QString channelId;
+        QString oauthToken;
+        QVector<GqlChannelPointEmote> emotes;
+        QSet<QString> seenEmoteIds;
+        QSet<QString> seenCursors;
+        bool completed = false;
+        int pageCount = 0;
+        std::shared_ptr<std::function<void(QString)>> requestPage;
+        std::function<void(QVector<GqlChannelPointEmote>)> successCallback;
+        std::function<void(const QString &)> failureCallback;
+    };
+
+    static constexpr auto QUERY = R"(
+        query AvailableEmotesForChannelPaginated(
+            $channelID: ID!
+            $withOwner: Boolean!
+            $pageLimit: Int!
+            $cursor: Cursor
+        ) {
+            channel(id: $channelID) {
+                id
+                self {
+                    availableEmoteSetsPaginated(
+                        pageLimit: $pageLimit
+                        after: $cursor
+                    ) {
+                        edges {
+                            cursor
+                            node {
+                                id
+                                emotes {
+                                    id
+                                    setID
+                                    token
+                                    modifiers {
+                                        code
+                                        name
+                                    }
+                                    type
+                                    assetType
+                                }
+                                owner @include(if: $withOwner) {
+                                    id
+                                    login
+                                    displayName
+                                    profileImageURL(width: 28)
+                                }
+                            }
+                        }
+                        pageInfo {
+                            hasNextPage
+                        }
+                    }
+                }
+            }
+        }
+    )";
+
+    static constexpr int PAGE_LIMIT = 350;
+    static constexpr int MAX_PAGES = 100;
+    static constexpr int MAX_EMOTES = 25000;
+
+    auto state = std::make_shared<FetchState>();
+    state->channelId = channelId;
+    state->oauthToken = oauthToken;
+    state->successCallback = std::move(successCallback);
+    state->failureCallback = std::move(failureCallback);
+
+    auto finishSuccess = [](const std::shared_ptr<FetchState> &state) {
+        if (state->completed || !state->successCallback)
+        {
+            return;
+        }
+
+        state->completed = true;
+        auto callback = std::move(state->successCallback);
+        callback(std::move(state->emotes));
+    };
+
+    auto finishFailure = [](const std::shared_ptr<FetchState> &state,
+                            const QString &error) {
+        if (state->completed || !state->failureCallback)
+        {
+            return;
+        }
+
+        state->completed = true;
+        auto callback = std::move(state->failureCallback);
+        callback(error);
+    };
+
+    auto requestPage = std::make_shared<std::function<void(QString)>>();
+    state->requestPage = requestPage;
+    std::weak_ptr<FetchState> weakState = state;
+    std::weak_ptr<std::function<void(QString)>> weakRequestPage = requestPage;
+    *requestPage = [weakState, weakRequestPage, finishSuccess,
+                    finishFailure](QString cursor) {
+        const auto state = weakState.lock();
+        if (!state || state->completed)
+        {
+            return;
+        }
+        if (++state->pageCount > MAX_PAGES)
+        {
+            finishFailure(state,
+                          "Twitch returned too many available emote pages");
+            return;
+        }
+
+        QJsonObject variables;
+        variables.insert("channelID", state->channelId);
+        variables.insert("withOwner", true);
+        variables.insert("pageLimit", PAGE_LIMIT);
+        if (!cursor.isEmpty())
+        {
+            variables.insert("cursor", cursor);
+        }
+
+        makeTvInlineGqlRequest(QUERY, variables, state->oauthToken)
+            .onSuccess([state, weakRequestPage, finishSuccess,
+                        finishFailure](const NetworkResult &result) {
+                const auto root = result.parseJsonValue();
+                if (root.isUndefined() || root.isNull())
+                {
+                    finishFailure(state, "Failed to parse GQL response");
+                    return;
+                }
+                const auto gqlError = extractFirstGqlErrorMessage(root);
+                if (!gqlError.isEmpty())
+                {
+                    finishFailure(state, "Twitch API Error: " + gqlError);
+                    return;
+                }
+
+                const auto channel =
+                    payloadDataObject(root).value("channel").toObject();
+                const auto self = channel.value("self").toObject();
+                const auto connection =
+                    self.value("availableEmoteSetsPaginated").toObject();
+                if (channel.isEmpty() || self.isEmpty() || connection.isEmpty())
+                {
+                    finishFailure(state,
+                                  "Available Twitch emotes are unavailable");
+                    return;
+                }
+
+                QString nextCursor;
+                for (const auto &edgeValue : connection.value("edges").toArray())
+                {
+                    const auto edge = edgeValue.toObject();
+                    const auto edgeCursor = edge.value("cursor").toString();
+                    if (!edgeCursor.isEmpty())
+                    {
+                        nextCursor = edgeCursor;
+                    }
+
+                    const auto set = edge.value("node").toObject();
+                    const auto owner = set.value("owner").toObject();
+                    const auto ownerLogin = owner.value("login").toString();
+                    const auto ownerDisplayName =
+                        owner.value("displayName").toString();
+                    for (const auto &emoteValue : set.value("emotes").toArray())
+                    {
+                        const auto emoteObject = emoteValue.toObject();
+                        GqlChannelPointEmote emote;
+                        emote.id = emoteObject.value("id").toString();
+                        emote.token = emoteObject.value("token").toString();
+                        emote.type = emoteObject.value("assetType")
+                                         .toString(emoteObject.value("type")
+                                                       .toString());
+                        emote.ownerLogin = ownerLogin;
+                        emote.ownerDisplayName = ownerDisplayName;
+                        if (emote.id.isEmpty() || emote.token.isEmpty() ||
+                            state->seenEmoteIds.contains(emote.id))
+                        {
+                            continue;
+                        }
+
+                        if (state->emotes.size() >= MAX_EMOTES)
+                        {
+                            finishFailure(
+                                state,
+                                "Twitch returned too many available emotes");
+                            return;
+                        }
+                        state->seenEmoteIds.insert(emote.id);
+                        state->emotes.push_back(emote);
+
+                        for (const auto &modifierValue :
+                             emoteObject.value("modifiers").toArray())
+                        {
+                            const auto code = modifierValue.toObject()
+                                                  .value("code")
+                                                  .toString()
+                                                  .trimmed();
+                            if (code.isEmpty())
+                            {
+                                continue;
+                            }
+
+                            auto variant = emote;
+                            variant.id = emote.id + QStringLiteral("_") + code;
+                            variant.token =
+                                emote.token + QStringLiteral("_") + code;
+                            if (state->seenEmoteIds.contains(variant.id))
+                            {
+                                continue;
+                            }
+
+                            if (state->emotes.size() >= MAX_EMOTES)
+                            {
+                                finishFailure(
+                                    state,
+                                    "Twitch returned too many available emotes");
+                                return;
+                            }
+                            state->seenEmoteIds.insert(variant.id);
+                            state->emotes.push_back(std::move(variant));
+                        }
+                    }
+                }
+
+                const auto hasNextPage = connection.value("pageInfo")
+                                             .toObject()
+                                             .value("hasNextPage")
+                                             .toBool(false);
+                if (!hasNextPage)
+                {
+                    finishSuccess(state);
+                    return;
+                }
+                if (nextCursor.isEmpty())
+                {
+                    finishFailure(
+                        state,
+                        "Twitch did not return an available emote cursor");
+                    return;
+                }
+                if (state->seenCursors.contains(nextCursor))
+                {
+                    finishFailure(
+                        state,
+                        "Twitch repeated an available emote pagination cursor");
+                    return;
+                }
+
+                state->seenCursors.insert(nextCursor);
+                if (const auto nextPage = weakRequestPage.lock())
+                {
+                    (*nextPage)(nextCursor);
+                }
+            })
+            .onError([state, finishFailure](const NetworkResult &result) {
+                finishFailure(state,
+                              "Network Error: " + result.formatError());
+            })
+            .execute();
+    };
+
+    (*requestPage)({});
 }
 #endif
 

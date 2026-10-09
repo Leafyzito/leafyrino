@@ -107,6 +107,8 @@ struct Message {
     ClientDetectionStatus clientDetection = ClientDetectionStatus::Unknown;
 
     ScrollbarHighlight getScrollBarHighlight() const;
+    /// True when this message should hide the reward chrome and show the enlarged emote.
+    bool usesTwitchGigantifyPresentation() const;
 
     std::shared_ptr<ChannelPointReward> reward = nullptr;
 

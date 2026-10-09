@@ -85,6 +85,8 @@ enum class MessageFlag : std::int64_t {
     Follow = (1LL << 48),
     /// The message was detected as ASCII art and has its layout width limited to the default web chat width.
     AsciiArt = (1LL << 49),
+    /// The message is a Twitch Gigantify reward. The trailing emote is enlarged.
+    GigantifiedEmote = (1LL << 50),
 };
 using MessageFlags = FlagsEnum<MessageFlag>;
 

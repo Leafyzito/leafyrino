@@ -8,6 +8,7 @@
 #    include "widgets/DraggablePopup.hpp"
 
 #    include <pajlada/signals/scoped-connection.hpp>
+#    include <pajlada/signals/signalholder.hpp>
 #    include <QPointer>
 #    include <QString>
 #    include <QTimer>
@@ -75,8 +76,11 @@ private:
                             const QString &prompt);
     void unlockRandomEmote(const GqlChannelPointReward &reward);
     void openEmotePicker(const GqlChannelPointReward &reward, bool modified);
+    void openGigantifyPicker(const GqlChannelPointReward &reward);
     void loadEmotePickerData();
     void unlockSelectedEmote(const GqlChannelPointEmote &emote);
+    void selectGigantifiedEmote(const GqlChannelPointEmote &emote);
+    void sendSelectedGigantifiedEmote();
     void applyRedeemResult(const GqlChannelPointRedeemResult &result,
                            const QString &message);
     QString redeemChannelId() const;
@@ -112,7 +116,12 @@ private:
     GqlChannelPointReward selectedReward_;
     bool selectedRewardValid_ = false;
     bool selectingModifiedEmote_ = false;
+    bool selectingGigantifiedEmote_ = false;
+    GqlChannelPointEmote selectedGigantifiedEmote_;
+    bool selectedGigantifiedEmoteValid_ = false;
+    QString gigantifyMessage_;
     bool emotesLoadedForModifiedPicker_ = false;
+    bool emotesLoadedForGigantifyPicker_ = false;
     int emoteVisibleLimit_ = 48;
     int emoteScrollValue_ = 0;
     int emoteImageRefreshAttempts_ = 0;
@@ -135,6 +144,7 @@ private:
     QTimer layoutRefreshTimer_;
 
     pajlada::Signals::ScopedConnection channelPointsConnection_;
+    pajlada::Signals::SignalHolder managedConnections_;
 
     static std::vector<QPointer<ChannelPointsDialog>> activeDialogs_;
 };
