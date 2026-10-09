@@ -694,6 +694,17 @@ MoltorinoPage::MoltorinoPage()
                      "message input.")
         ->addTo(*view);
 
+    SettingWidget::checkbox("Include Potat commands in suggestions",
+                            s.includePotatCommands)
+        ->setTooltip("Suggest Potat # commands after you type #.")
+        ->addTo(*view);
+
+    SettingWidget::checkbox("Show Potat command aliases",
+                            s.showPotatCommandAliases)
+        ->setTooltip("Include shortcuts such as #ga in Potat suggestions.")
+        ->conditionallyEnabledBy(s.includePotatCommands)
+        ->addTo(*view);
+
     SettingWidget::checkbox("Hide unavailable mod commands",
                             s.hideUnavailableModCommands)
         ->setTooltip(

@@ -76,7 +76,9 @@ std::optional<TabCompletionModel::SourceKind>
     TabCompletionModel::deduceSourceKind(const QString &query,
                                          bool isFirstWord) const
 {
-    if (query.length() < 2 || !this->channel_.isTwitchOrKickChannel())
+    const bool potatPrefix = isFirstWord && query.startsWith('#');
+    if ((query.length() < 2 && !potatPrefix) ||
+        !this->channel_.isTwitchOrKickChannel())
     {
         return std::nullopt;
     }
@@ -89,7 +91,8 @@ std::optional<TabCompletionModel::SourceKind>
     {
         return SourceKind::Emote;
     }
-    else if (isFirstWord && (query.startsWith('/') || query.startsWith('.')))
+    else if (isFirstWord && (query.startsWith('/') || query.startsWith('.') ||
+                             query.startsWith('#')))
     {
         return SourceKind::Command;
     }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "controllers/completion/CommandUsage.hpp"
 #include "controllers/completion/sources/Source.hpp"
 #include "controllers/completion/strategies/Strategy.hpp"
 
@@ -19,6 +20,7 @@ struct CommandItem {
     QString name{};
     QString prefix{};
     QString usage{};
+    std::shared_ptr<const CommandUsage> argumentHint;
 };
 
 class CommandSource : public Source

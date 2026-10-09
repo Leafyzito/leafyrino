@@ -11,11 +11,13 @@
 
 #include <QAbstractTextDocumentLayout>
 #include <QEvent>
+#include <QFontMetrics>
 #include <QLayout>
 #include <QMenu>
 #include <QMimeData>
 #include <QMimeDatabase>
 #include <QObject>
+#include <QPainter>
 #include <QTextDocument>
 #include <QtMath>
 
@@ -58,6 +60,38 @@ ResizingTextEdit::ResizingTextEdit()
 
     this->setFocusPolicy(Qt::ClickFocus);
     this->installEventFilter(this);
+}
+
+void ResizingTextEdit::paintEvent(QPaintEvent *event)
+{
+    QTextEdit::paintEvent(event);
+    const auto cursor = this->textCursor();
+    if (this->ghostText_.isEmpty() || !this->hasFocus() ||
+        cursor.hasSelection() ||
+        cursor.position() != this->document()->characterCount() - 1)
+    {
+        return;
+    }
+
+    const auto caret = this->cursorRect();
+    const auto available = this->viewport()->width() - caret.right() - 3;
+    if (available <= 0)
+    {
+        return;
+    }
+
+    QPainter painter(this->viewport());
+    painter.setFont(this->font());
+    auto color = this->palette().color(QPalette::Text);
+    color.setAlphaF(0.42F);
+    painter.setPen(color);
+    const QFontMetrics metrics(this->font());
+    const auto text =
+        metrics.elidedText(this->ghostText_, Qt::ElideRight, available);
+    const auto baseline = caret.top() +
+                          (caret.height() - metrics.height()) / 2 +
+                          metrics.ascent();
+    painter.drawText(QPointF(caret.right() + 1, baseline), text);
 }
 
 void ResizingTextEdit::changeEvent(QEvent *event)
@@ -350,6 +384,21 @@ void ResizingTextEdit::setCompleter(QCompleter *c)
 void ResizingTextEdit::resetCompletion()
 {
     this->completionInProgress_ = false;
+}
+
+void ResizingTextEdit::setGhostText(QString text)
+{
+    if (this->ghostText_ == text)
+    {
+        return;
+    }
+    this->ghostText_ = std::move(text);
+    this->viewport()->update();
+}
+
+const QString &ResizingTextEdit::ghostText() const
+{
+    return this->ghostText_;
 }
 
 void ResizingTextEdit::insertCompletion(const QString &completion)

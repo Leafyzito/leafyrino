@@ -159,6 +159,8 @@ set(SOURCE_FILES
         controllers/commands/CommandModel.cpp
         controllers/commands/CommandModel.hpp
 
+        controllers/completion/CommandUsage.cpp
+        controllers/completion/CommandUsage.hpp
         controllers/completion/CompletionModel.cpp
         controllers/completion/CompletionModel.hpp
         controllers/completion/sources/Source.hpp
@@ -524,6 +526,9 @@ set(SOURCE_FILES
         providers/pronouns/UserPronouns.hpp
         providers/pronouns/alejo/PronounsAlejoApi.cpp
         providers/pronouns/alejo/PronounsAlejoApi.hpp
+
+        providers/potat/PotatCommands.cpp
+        providers/potat/PotatCommands.hpp
 
         providers/recentmessages/Api.cpp
         providers/recentmessages/Api.hpp

@@ -10,7 +10,7 @@ namespace chatterino::completion {
 
 QString normalizeQuery(const QString &query)
 {
-    if (query.startsWith('/') || query.startsWith('.'))
+    if (query.startsWith('/') || query.startsWith('.') || query.startsWith('#'))
     {
         return query.mid(1);
     }
@@ -31,18 +31,23 @@ void CommandStrategy::apply(const std::vector<CommandItem> &items,
 
     if (this->startsWithOnly_)
     {
+        const bool potatPrefix = query.startsWith('#');
         std::copy_if(items.begin(), items.end(),
                      std::back_insert_iterator(output),
-                     [&normalizedQuery](const CommandItem &item) {
-                         return item.name.startsWith(normalizedQuery,
+                     [&normalizedQuery, potatPrefix](const CommandItem &item) {
+                         return (!potatPrefix ||
+                                 item.prefix == QLatin1String("#")) &&
+                                item.name.startsWith(normalizedQuery,
                                                      Qt::CaseInsensitive);
                      });
     }
     else
     {
         const auto preferredPrefix =
-            (query.startsWith('/') || query.startsWith('.')) ? query.at(0)
-                                                             : QChar{};
+            (query.startsWith('/') || query.startsWith('.') ||
+             query.startsWith('#'))
+                ? query.at(0)
+                : QChar{};
         const auto hasPreferredPrefix = !preferredPrefix.isNull();
         auto effectivePrefix = [](const CommandItem &item) {
             return item.prefix.isEmpty() ? QStringLiteral("/") : item.prefix;
