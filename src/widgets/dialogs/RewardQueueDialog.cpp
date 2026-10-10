@@ -1768,12 +1768,12 @@ void RewardQueueDialog::updateSortButton()
 {
     if (this->newestFirst_)
     {
-        this->sortButton_->setText("Newest");
+        this->sortButton_->setText("Sort by newest");
         this->sortButton_->setToolTip("Showing the most recent requests first");
         return;
     }
 
-    this->sortButton_->setText("Oldest");
+    this->sortButton_->setText("Sort by oldest");
     this->sortButton_->setToolTip("Showing the oldest requests first");
 }
 

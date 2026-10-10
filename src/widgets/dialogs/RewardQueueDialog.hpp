@@ -102,7 +102,7 @@ private:
     QString selectedRewardId_;
     QString nextCursor_;
     bool hasNextPage_ = false;
-    bool newestFirst_ = false;
+    bool newestFirst_ = true;
     bool extraPagesLoaded_ = false;
     bool loading_ = false;
     bool pauseInFlight_ = false;
