@@ -260,6 +260,7 @@ void NetworkTask::finished()
 
     auto *reply = this->reply_;
     auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
+    auto etag = reply->rawHeader("ETag");
 
     if (reply->error() == QNetworkReply::OperationCanceledError)
     {
@@ -272,7 +273,8 @@ void NetworkTask::finished()
     if (reply->error() != QNetworkReply::NoError)
     {
         this->logReply();
-        this->data_->emitError({reply->error(), status, reply->readAll()});
+        this->data_->emitError(
+            {reply->error(), status, reply->readAll(), std::move(etag)});
         this->data_->emitFinally();
 
         return;
@@ -287,7 +289,7 @@ void NetworkTask::finished()
 
     DebugCount::increase(DebugObject::HTTPRequestSuccess);
     this->logReply();
-    this->data_->emitSuccess({reply->error(), status, bytes});
+    this->data_->emitSuccess({reply->error(), status, bytes, std::move(etag)});
     this->data_->emitFinally();
 }
 

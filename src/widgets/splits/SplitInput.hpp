@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "controllers/completion/CommandUsage.hpp"
 #include "messages/Message.hpp"
 #include "providers/moltorino/MoltorinoFeatureFlags.hpp"
 #include "widgets/BaseWidget.hpp"
@@ -25,6 +26,7 @@
 #endif
 #include <array>
 #include <memory>
+#include <optional>
 #include <vector>
 
 class QMimeData;
@@ -180,6 +182,8 @@ protected:
     void postTranslatedMessageSend(const QString &message,
                                    const std::vector<QString> &arguments);
     bool updateCommandCompletion(const QString &query, int start, int end);
+    void showCommandCompletionStatus(const QString &text);
+    void updateCommandArgumentHint(const QString &text, int cursorPosition);
     void renderCommandCompletion();
     void hideCommandCompletion();
     bool moveCommandCompletionSelection(int offset);
@@ -291,6 +295,10 @@ protected:
     std::vector<CommandCompletionSuggestion> commandCompletionSuggestions_;
     int commandCompletionSelectedIndex_ = 0;
     bool updatingCommandCompletionText_ = false;
+    QString commandHintKey_;
+    std::weak_ptr<Channel> commandHintChannel_;
+    std::shared_ptr<const completion::CommandUsage> resolvedCommandHint_;
+    QString resolvedSupibotDescription_;
     QTimer nukePreviewTimer_;
     QTimer outgoingTranslationPreviewTimer_;
     QString pendingNukePreviewText_;

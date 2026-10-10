@@ -7,20 +7,36 @@
 #include "widgets/BaseWindow.hpp"
 
 #include <QString>
-#include <QWidget>
+
+#include <cstdint>
+#include <memory>
 
 namespace chatterino {
 
-class TwitchChannel;
+class Channel;
+class ChatterListWidgetPrivate;
+enum class MessagePlatform : std::uint8_t;
 
 class ChatterListWidget : public BaseWindow
 {
     Q_OBJECT
 
 public:
-    ChatterListWidget(const TwitchChannel *twitchChannel, QWidget *parent);
+    ChatterListWidget(std::shared_ptr<Channel> channel, QWidget *parent);
+    ~ChatterListWidget() override;
 
-    Q_SIGNAL void userClicked(QString userLogin);
+    static bool supportsChannel(const Channel *channel);
+    const QString &channelName() const;
+
+    Q_SIGNAL void userClicked(QString userLogin, MessagePlatform platform,
+                              QString channelName, QString userId);
+
+protected:
+    void themeChangedEvent() override;
+    void scaleChangedEvent(float scale) override;
+
+private:
+    std::unique_ptr<ChatterListWidgetPrivate> d_;
 };
 
 }  // namespace chatterino

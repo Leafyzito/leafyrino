@@ -85,6 +85,7 @@ private:
     QAction *modeActionSetFollowers{};
 
     SvgButton *followButton_{};
+    SvgButton *manageChannelButton_{};
 
     SvgButton *moderationButton_{};
     SvgButton *chattersButton_{};

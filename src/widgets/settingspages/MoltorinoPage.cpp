@@ -4,6 +4,7 @@
 #include "common/network/NetworkResult.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/translation/Translator.hpp"
+#include "providers/twitch/ChannelManagement.hpp"
 #include "singletons/Settings.hpp"
 #include "util/Clipboard.hpp"
 #include "util/FuzzyConvert.hpp"
@@ -18,23 +19,30 @@
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/hotkeys/HotkeyCategory.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
+#include "messages/Emote.hpp"
+#include "providers/bttv/BttvEmotes.hpp"
+#include "providers/ffz/FfzEmotes.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 
 #include <QAbstractItemView>
+#include <QCheckBox>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
+#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QHideEvent>
 #include <QKeySequence>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMap>
 #include <QPointer>
 #include <QPushButton>
 #include <QSet>
+#include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QStackedWidget>
 #ifndef Q_OS_MACOS
@@ -683,6 +691,13 @@ MoltorinoPage::MoltorinoPage()
                      "grid instead of staying on the current picker.")
         ->addTo(*view);
 
+    SettingWidget::checkbox("Show Gigantify emotes in chat",
+                            s.enableGigantifyEmotes)
+        ->setTooltip(
+            "Show Twitch's Gigantify reward and enlarge its selected emote in "
+            "chat. The /gigantify command still works when this is off.")
+        ->addTo(*view);
+
     view->addTitle("Input Box");
     view->addDescription(
         "Chat input buttons, typing helpers, and quick controls.");
@@ -691,6 +706,17 @@ MoltorinoPage::MoltorinoPage()
                             s.showCommandSuggestions)
         ->setTooltip("Show a compact command suggestion strip above the "
                      "message input.")
+        ->addTo(*view);
+
+    SettingWidget::checkbox("Include Potat commands in suggestions",
+                            s.includePotatCommands)
+        ->setTooltip("Suggest Potat # commands after you type #.")
+        ->addTo(*view);
+
+    SettingWidget::checkbox("Show Potat command aliases",
+                            s.showPotatCommandAliases)
+        ->setTooltip("Include shortcuts such as #ga in Potat suggestions.")
+        ->conditionallyEnabledBy(s.includePotatCommands)
         ->addTo(*view);
 
     SettingWidget::checkbox("Hide unavailable mod commands",
@@ -940,6 +966,32 @@ MoltorinoPage::MoltorinoPage()
     view->addWidget(nukeMessageRow,
                     {"Nuke mod message", "Nuke timeout ban message"});
 
+    SettingWidget::checkbox(
+        "Show the edit stream info button in the chat header",
+        s.showEditStreamInfoButtonInSplitHeader)
+        ->setTooltip("Show the edit stream info shortcut in the chat header "
+                     "when broadcaster or editor access is available.")
+        ->addTo(*view);
+
+    view->addSubtitle("Commercials");
+    view->addDropdown<int>(
+            "Default commercial duration",
+            {"30 seconds", "60 seconds", "90 seconds", "120 seconds",
+             "150 seconds", "180 seconds"},
+            s.defaultCommercialDuration,
+            [](int value) {
+                return QString("%1 seconds")
+                    .arg(ChannelManagement::isValidCommercialLength(value)
+                             ? value
+                             : 30);
+            },
+            [](auto args) {
+                return args.value.section(' ', 0, 0).toInt();
+            },
+            false)
+        ->setToolTip("Used when /commercial has no duration. An explicit "
+                     "duration, such as /commercial 60, overrides this.");
+
     view->addTitle("Client");
     view->addDescription(
         "Twitch chat behavior, compatibility, and client experience options.");
@@ -1007,6 +1059,12 @@ MoltorinoPage::MoltorinoPage()
             "lead moderator roles. Actions still require a saved broadcaster "
             "login.")
         ->addTo(*view);
+    SettingWidget::checkbox(
+        "Show cross ban and cross unban in channels you don't moderate",
+        s.showCrossActionsInUnmoderatedChannels)
+        ->setTooltip("Use your saved account's channels even when you cannot "
+                     "moderate the channel you are viewing.")
+        ->addTo(*view);
 
 #ifndef Q_OS_MACOS
     view->addTitle("Tray");
@@ -1050,6 +1108,153 @@ MoltorinoPage::MoltorinoPage()
 
     view->addTitle("Fun");
     view->addDescription("Spam, pyramid, and playful chat command options.");
+
+    auto *modifierRow = new QWidget;
+    auto *modifierLayout = new QHBoxLayout(modifierRow);
+    modifierLayout->setContentsMargins(0, 0, 0, 0);
+    SettingWidget::checkbox("FFZ and BTTV emote modifiers",
+                            s.enableEmoteModifiers)
+        ->setTooltip(
+            "Turn off all modifier effects without changing your individual "
+            "choices. Disabled modifiers appear as separate emote icons.")
+        ->addToLayout(modifierLayout);
+    auto *chooseModifiers = new QPushButton("Choose...", modifierRow);
+    modifierLayout->addWidget(chooseModifiers);
+
+    QMap<QString, QStringList> modifierNames{
+        {"FFZ",
+         {"ffzArrive", "ffzBounce", "ffzCursed", "ffzHyper", "ffzJam",
+          "ffzLeave", "ffzRainbow", "ffzSlide", "ffzSpin", "ffzW", "ffzX",
+          "ffzY"}},
+        {"BTTV", {"w!", "h!", "v!", "l!", "r!", "z!", "c!", "p!", "s!"}},
+    };
+    const auto addLoadedModifiers = [&modifierNames](const auto &emotes,
+                                                     const QString &provider) {
+        for (const auto &[name, emote] : *emotes)
+        {
+            if (emote->modifierPlacement != EmoteModifierPlacement::None)
+            {
+                modifierNames[provider].append(name.string);
+            }
+        }
+    };
+    if (auto *ffz = getApp()->getFfzEmotes())
+    {
+        addLoadedModifiers(ffz->emotes(), "FFZ");
+    }
+    if (auto *bttv = getApp()->getBttvEmotes())
+    {
+        addLoadedModifiers(bttv->emotes(), "BTTV");
+    }
+    QStringList modifierKeywords{"FFZ", "BTTV", "emote", "modifiers"};
+    for (auto &names : modifierNames)
+    {
+        names.removeDuplicates();
+        names.sort();
+        modifierKeywords.append(names);
+    }
+    view->addWidget(modifierRow, modifierKeywords);
+    s.enableEmoteModifiers.connect(
+        [chooseModifiers](bool enabled, auto) {
+            chooseModifiers->setEnabled(enabled);
+        },
+        this->managedConnections_);
+    QObject::connect(
+        chooseModifiers, &QPushButton::clicked, this,
+        [this, &s, modifierNames] {
+            QDialog dialog(this);
+            dialog.setWindowTitle("Emote modifiers");
+            dialog.setWindowFlag(Qt::WindowContextHelpButtonHint, false);
+            auto *layout = new QVBoxLayout(&dialog);
+            auto *providers = new QHBoxLayout;
+            layout->addLayout(providers);
+            pajlada::Signals::SignalHolder connections;
+            const QMap<QString, QString> modifierDescriptions{
+                {QStringLiteral("w!"),
+                 QStringLiteral("Stretches the emote wide.")},
+                {QStringLiteral("h!"),
+                 QStringLiteral("Flips the emote horizontally.")},
+                {QStringLiteral("v!"),
+                 QStringLiteral("Flips the emote vertically.")},
+                {QStringLiteral("l!"),
+                 QStringLiteral("Rotates the emote left.")},
+                {QStringLiteral("r!"),
+                 QStringLiteral("Rotates the emote right.")},
+                {QStringLiteral("z!"),
+                 QStringLiteral("Removes the space before the emote.")},
+                {QStringLiteral("c!"),
+                 QStringLiteral("Darkens the emote with high contrast.")},
+                {QStringLiteral("p!"),
+                 QStringLiteral("Cycles the emote through party colors.")},
+                {QStringLiteral("s!"), QStringLiteral("Shakes the emote.")},
+                {QStringLiteral("ffzW"),
+                 QStringLiteral("Stretches the emote wide.")},
+                {QStringLiteral("ffzX"),
+                 QStringLiteral("Flips the emote horizontally.")},
+                {QStringLiteral("ffzY"),
+                 QStringLiteral("Flips the emote vertically.")},
+                {QStringLiteral("ffzSpin"), QStringLiteral("Spins the emote.")},
+                {QStringLiteral("ffzRainbow"),
+                 QStringLiteral("Cycles the emote's colors.")},
+                {QStringLiteral("ffzHyper"),
+                 QStringLiteral("Turns the emote hyper-red and shakes it.")},
+                {QStringLiteral("ffzCursed"),
+                 QStringLiteral("Darkens the emote with high contrast.")},
+                {QStringLiteral("ffzSlide"),
+                 QStringLiteral("Slides the emote from side to side.")},
+                {QStringLiteral("ffzArrive"),
+                 QStringLiteral("Fades the emote in.")},
+                {QStringLiteral("ffzLeave"),
+                 QStringLiteral("Fades the emote out.")},
+                {QStringLiteral("ffzJam"),
+                 QStringLiteral("Pulses the emote to a beat.")},
+                {QStringLiteral("ffzBounce"),
+                 QStringLiteral("Squashes and flips the emote.")},
+            };
+            for (const auto &provider : {QString("FFZ"), QString("BTTV")})
+            {
+                auto *group = new QGroupBox(provider, &dialog);
+                auto *choices = new QVBoxLayout(group);
+                providers->addWidget(group);
+                for (const auto &name : modifierNames.value(provider))
+                {
+                    auto *check = new QCheckBox(name, group);
+                    if (const auto description =
+                            modifierDescriptions.find(name);
+                        description != modifierDescriptions.end())
+                    {
+                        check->setToolTip(description.value());
+                    }
+                    choices->addWidget(check);
+                    s.disabledEmoteModifiers.connect(
+                        [check, name](const QStringList &disabled, auto) {
+                            const QSignalBlocker blocker(check);
+                            check->setChecked(!disabled.contains(name));
+                        },
+                        connections);
+                    QObject::connect(
+                        check, &QCheckBox::toggled, &dialog,
+                        [&s, name](bool enabled) {
+                            auto disabled = s.disabledEmoteModifiers.getValue();
+                            disabled.removeAll(name);
+                            if (!enabled)
+                            {
+                                disabled.append(name);
+                            }
+                            s.disabledEmoteModifiers.setValue(disabled);
+                        });
+                }
+                choices->addStretch();
+            }
+            auto *close =
+                new QDialogButtonBox(QDialogButtonBox::Close, &dialog);
+            layout->addWidget(close);
+            QObject::connect(close, &QDialogButtonBox::rejected, &dialog,
+                             &QDialog::reject);
+            dialog.adjustSize();
+            dialog.resize(qRound(dialog.width() * 1.2), dialog.height());
+            dialog.exec();
+        });
 
     SettingWidget::intInput("Delay between /spam and /pyramid messages",
                             s.spamCommandIntervalMs,
@@ -1095,6 +1300,23 @@ MoltorinoPage::MoltorinoPage()
             this->revealBotBadgeSettings(true);
         }
     });
+
+    SettingWidget::checkbox("Show chatter list in all Twitch channels",
+                            s.showChatterListInAllTwitchChannels)
+        ->setTooltip(
+            "Show the chatter list button even when you are not a moderator.")
+        ->addTo(*view);
+    SettingWidget::dropdown("Chatter list source", s.chatterListDataMode,
+                            {{"Twitch and Tackling", "best"},
+                             {"Twitch only", "twitch"},
+                             {"Tackling only", "community"},
+                             {"Chat session only", "local"}})
+        ->setTooltip(
+            "Choose the API used for the chatter list. Tackling provides the "
+            "extended list. Twitch requires moderator access. All choices "
+            "include chatters seen in your chat session. Refresh or reopen "
+            "the list after changing its source.")
+        ->addTo(*view);
 
     SettingWidget::checkbox("Show follow button in chat header",
                             s.showFollowButtonInSplitHeader)

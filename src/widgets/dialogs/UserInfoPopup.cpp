@@ -129,8 +129,7 @@ constexpr QStringView SEVENTV_TWITCH_USER_API =
 constexpr QStringView SEVENTV_KICK_USER_API =
     u"https://7tv.io/v3/users/kick/%1";
 constexpr QStringView SEVENTV_USER_PAGE = u"https://7tv.app/users/";
-constexpr QStringView SUSGEE_PAINT_PAGE =
-    u"https://susgee.dev/paint/%1?utm_source=leafyrino";
+constexpr QStringView SEVENTV_PAINT_PAGE = u"https://7database.com/paint/";
 
 using namespace chatterino;
 
@@ -1515,8 +1514,10 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                             return;
                         }
 
-                        QDesktopServices::openUrl(QUrl(
-                            SUSGEE_PAINT_PAGE.arg(this->seventvPaint_->id)));
+                        const auto encodedID = QString::fromLatin1(
+                            QUrl::toPercentEncoding(this->seventvPaint_->id));
+                        QDesktopServices::openUrl(
+                            QUrl(SEVENTV_PAINT_PAGE.toString() + encodedID));
                     });
             }
             vbox.emplace<Label>("").assign(&this->ui_.statusLabel);
@@ -1584,8 +1585,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
             .assign(&this->ui_.ignoreHighlights);
         // visibility of this is updated in setData
 
-        user.emplace<LabelButton>("Add &notes", this)
-            .assign(&this->ui_.notesAdd);
+        user.emplace<LabelButton>("&Notes", this).assign(&this->ui_.notesAdd);
         auto usercard = user.emplace<LabelButton>("&Usercard", this)
                             .assign(&this->ui_.usercardLabel);
         auto userlogs = user.emplace<LabelButton>("&Logs", this)
@@ -1638,7 +1638,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                 return;
             }
 
-            QUrl url("https://tv.supa.sh/logs");
+            QUrl url("https://lurkology.com/logs");
             QUrlQuery query;
             query.addQueryItem("c", this->underlyingChannel_->getName());
             query.addQueryItem("u", this->userName_);
@@ -1749,10 +1749,18 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
         // we only connect once
         std::ignore =
             this->userStateChanged_.connect([this, lineMod, timeout]() mutable {
-                bool visible = this->shouldShowModerationActions();
-                lineMod->setVisible(visible);
-                timeout->setVisible(visible);
+                const bool moderation = this->shouldShowModerationActions();
+                const bool cross = this->crossActionAvailable();
+                lineMod->setVisible(moderation || cross);
+                timeout->setModerationVisible(moderation);
+                timeout->setCrossVisible(cross);
+                timeout->setVisible(moderation || cross);
             });
+        getSettings()->showCrossActionsInUnmoderatedChannels.connect(
+            [this](bool, auto) {
+                this->userStateChanged_.invoke();
+            },
+            this->signalHolder_, false);
 
         // We can safely ignore this signal connection since we own the button, and
         // the button will always be destroyed before the UserInfoPopup
@@ -1766,6 +1774,10 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
 
                 this->executeUsercardModerationAction(request);
             });
+        std::ignore = timeout->crossActionClicked.connect([this](bool ban) {
+            this->runCrossAction(ban ? QStringLiteral("/crossban")
+                                     : QStringLiteral("/crossunban"));
+        });
     }
 
     layout.emplace<Line>(false);
@@ -2307,6 +2319,49 @@ bool UserInfoPopup::shouldShowModerationActions() const
     }
 
     return false;
+}
+
+bool UserInfoPopup::crossActionAvailable() const
+{
+    const auto *twitchChannel =
+        dynamic_cast<TwitchChannel *>(this->underlyingChannel_.get());
+    if (this->isKick_ || this->isYouTube_ || this->userName_.isEmpty() ||
+        twitchChannel == nullptr || twitchChannel->roomId().isEmpty())
+    {
+        return false;
+    }
+
+    const bool isMyself =
+        getApp()->getAccounts()->twitch.getCurrent()->getUserName().compare(
+            this->userName_, Qt::CaseInsensitive) == 0;
+    if (isMyself)
+    {
+        return false;
+    }
+
+    auto auth = MoltorinoAuth::resolveModerationToken(twitchChannel->roomId(),
+                                                      twitchChannel->getName());
+    if (!auth.hasToken() &&
+        getSettings()->showCrossActionsInUnmoderatedChannels)
+    {
+        auth = MoltorinoAuth::resolveCurrentUserToken();
+    }
+    return auth.hasToken() && !auth.legacy;
+}
+
+void UserInfoPopup::runCrossAction(const QString &command)
+{
+    if (!this->crossActionAvailable() || !this->underlyingChannel_)
+    {
+        return;
+    }
+
+    auto value = getApp()->getCommands()->execCommand(
+        command + ' ' + this->userName_, this->underlyingChannel_, false);
+    if (!value.isEmpty())
+    {
+        this->underlyingChannel_->sendMessage(value);
+    }
 }
 
 void UserInfoPopup::setData(const QString &name, const ChannelPtr &channel)
@@ -4868,8 +4923,8 @@ void UserInfoPopup::appendCommonProfileActions(QMenu *menu)
 
         menu->addAction("Open channel &logs in browser", this,
                         [username = this->userName_] {
-                            QDesktopServices::openUrl(
-                                QUrl("https://tv.supa.sh/logs?c=" + username));
+                            QDesktopServices::openUrl(QUrl(
+                                "https://lurkology.com/logs?c=" + username));
                         });
     }
 
@@ -5004,23 +5059,25 @@ UserInfoPopup::TimeoutWidget::TimeoutWidget()
 
     layout->setSpacing(16);
 
-    const auto addLayout = [&](const QString &text) {
-        auto vbox = layout.emplace<QVBoxLayout>().withoutMargin();
-        auto title = vbox.emplace<QHBoxLayout>().withoutMargin();
+    const auto addColumnTitle = [](auto &column, const QString &text) {
+        auto title = column.template emplace<QHBoxLayout>().withoutMargin();
         title->addStretch(1);
-        auto label = title.emplace<Label>(text);
+        auto label = title.template emplace<Label>(text);
         label->setStyleSheet("color: #BBB");
         label->setPadding(QMargins{});
         title->addStretch(1);
-
-        auto hbox = vbox.emplace<QHBoxLayout>().withoutMargin();
-        hbox->setSpacing(0);
-        return hbox;
     };
 
     const auto addButton = [&](UsercardModerationAction action,
-                               const QString &title, const QPixmap &pixmap) {
-        auto button = addLayout(title).emplace<PixmapButton>(nullptr);
+                               const QString &title, const QPixmap &pixmap,
+                               QWidget **buttonOut, QWidget **crossOut,
+                               const QString &crossTooltip, bool crossIsBan) {
+        auto column = layout.emplace<QVBoxLayout>().withoutMargin();
+        addColumnTitle(column, title);
+
+        auto hbox = column.emplace<QHBoxLayout>().withoutMargin();
+        hbox->setSpacing(0);
+        auto button = hbox.emplace<PixmapButton>(nullptr);
         button->setPixmap(pixmap);
         button->setScaleIndependentSize(buttonHeight, buttonHeight);
         button->setBorderColor(QColor(255, 255, 255, 127));
@@ -5030,30 +5087,49 @@ UserInfoPopup::TimeoutWidget::TimeoutWidget()
                 "Use the configured reason prompt shortcut to edit the reason "
                 "before sending.");
         }
+        *buttonOut = button.getElement();
 
-        QObject::connect(button.getElement(), &Button::clicked,
-                         [this, action](Qt::MouseButton button) {
-                             if (!shouldHandleModerationButtonClick(button))
-                             {
-                                 return;
-                             }
+        QObject::connect(
+            button.getElement(), &Button::clicked,
+            [this, action](Qt::MouseButton mouseButton) {
+                if (!shouldHandleModerationButtonClick(mouseButton))
+                {
+                    return;
+                }
 
-                             UsercardModerationRequest request;
-                             request.action = action;
-                             if (action == UsercardModerationAction::Ban)
-                             {
-                                 request.reason = timeoutBanReason();
-                             }
-                             request.promptForReason =
-                                 action != UsercardModerationAction::Unban &&
-                                 shouldPromptForModerationReason(button);
+                UsercardModerationRequest request;
+                request.action = action;
+                if (action == UsercardModerationAction::Ban)
+                {
+                    request.reason = timeoutBanReason();
+                }
+                request.promptForReason =
+                    action != UsercardModerationAction::Unban &&
+                    shouldPromptForModerationReason(mouseButton);
 
-                             this->buttonClicked.invoke(request);
+                this->buttonClicked.invoke(request);
+            });
+
+        auto crossRow = column.emplace<QHBoxLayout>().withoutMargin();
+        crossRow->addStretch(1);
+        auto cross = crossRow.emplace<LabelButton>("Cross", this, QSize{2, 0});
+        cross->setToolTip(crossTooltip);
+        cross->setVisible(false);
+        *crossOut = cross.getElement();
+        QObject::connect(cross.getElement(), &Button::leftClicked, this,
+                         [this, crossIsBan] {
+                             this->crossActionClicked.invoke(crossIsBan);
                          });
+        crossRow->addStretch(1);
     };
 
     auto addTimeouts = [&](const QString &title) {
-        auto hbox = addLayout(title);
+        auto column = layout.emplace<QWidget>().assign(&this->timeoutsColumn_);
+        auto columnLayout = column.setLayoutType<QVBoxLayout>().withoutMargin();
+        addColumnTitle(columnLayout, title);
+
+        auto hbox = columnLayout.emplace<QHBoxLayout>().withoutMargin();
+        hbox->setSpacing(0);
 
         int index = 0;
         for (const auto &item : getSettings()->timeoutButtons.getValue())
@@ -5094,9 +5170,13 @@ UserInfoPopup::TimeoutWidget::TimeoutWidget()
     };
 
     addButton(UsercardModerationAction::Unban, "Unban",
-              getResources().buttons.unban);
+              getResources().buttons.unban, &this->unbanButton_,
+              &this->crossUnbanButton_,
+              "Unban this user in other channels you moderate", false);
     addTimeouts("Timeouts");
-    addButton(UsercardModerationAction::Ban, "Ban", getResources().buttons.ban);
+    addButton(UsercardModerationAction::Ban, "Ban", getResources().buttons.ban,
+              &this->banButton_, &this->crossBanButton_,
+              "Ban this user in other channels you moderate", true);
 }
 
 void UserInfoPopup::TimeoutWidget::paintEvent(QPaintEvent *)
@@ -5111,9 +5191,46 @@ void UserInfoPopup::TimeoutWidget::paintEvent(QPaintEvent *)
 
 void UserInfoPopup::TimeoutWidget::setMinTimeout(int minSecs)
 {
+    this->minTimeoutSecs_ = minSecs;
+    this->applyModerationVisibility();
+}
+
+void UserInfoPopup::TimeoutWidget::setModerationVisible(bool visible)
+{
+    this->moderationVisible_ = visible;
+    this->applyModerationVisibility();
+}
+
+void UserInfoPopup::TimeoutWidget::setCrossVisible(bool visible)
+{
+    if (this->crossUnbanButton_ != nullptr)
+    {
+        this->crossUnbanButton_->setVisible(visible);
+    }
+    if (this->crossBanButton_ != nullptr)
+    {
+        this->crossBanButton_->setVisible(visible);
+    }
+}
+
+void UserInfoPopup::TimeoutWidget::applyModerationVisibility()
+{
+    if (this->unbanButton_ != nullptr)
+    {
+        this->unbanButton_->setVisible(this->moderationVisible_);
+    }
+    if (this->banButton_ != nullptr)
+    {
+        this->banButton_->setVisible(this->moderationVisible_);
+    }
+    if (this->timeoutsColumn_ != nullptr)
+    {
+        this->timeoutsColumn_->setVisible(this->moderationVisible_);
+    }
     for (auto &[widget, dur] : this->timeoutButtons)
     {
-        widget->setVisible(dur >= minSecs);
+        widget->setVisible(this->moderationVisible_ &&
+                           dur >= this->minTimeoutSecs_);
     }
 }
 

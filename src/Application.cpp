@@ -37,6 +37,7 @@
 #include "debug/AssertInGuiThread.hpp"
 #include "messages/Message.hpp"
 #include "messages/MessageBuilder.hpp"
+#include "providers/bluzyrino/BluzyrinoBadges.hpp"
 #include "providers/bttv/BttvLiveUpdates.hpp"
 #include "providers/chatsen/ChatsenBadges.hpp"
 #include "providers/chatterino/ChatterinoBadges.hpp"
@@ -46,11 +47,13 @@
 #include "providers/folhinha/FolhinhaBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
+#include "providers/potat/PotatCommands.hpp"
 #include "providers/repetitions/RepeatedMessageDetector.hpp"
 #include "providers/seventv/SeventvBadges.hpp"
 #include "providers/seventv/SeventvEventAPI.hpp"
 #include "providers/seventv/SeventvPaints.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
+#include "providers/supibot/SupibotCommands.hpp"
 #include "providers/twitch/ChannelPointReward.hpp"
 #include "providers/twitch/PubSubManager.hpp"
 #include "providers/twitch/PubSubMessages.hpp"
@@ -209,6 +212,7 @@ Application::Application(Settings &_settings, const Paths &paths,
     , ffzApBadges(new FfzApBadges)
     , dankChatBadges(new DankChatBadges)
     , chatsenBadges(new ChatsenBadges)
+    , bluzyrinoBadges(new BluzyrinoBadges)
     , moltorinoSupporterBadges(new MoltorinoSupporterBadges)
     , repeatedMessageDetector(new RepeatedMessageDetector)
     , seventvPaints(new SeventvPaints)
@@ -231,6 +235,8 @@ Application::Application(Settings &_settings, const Paths &paths,
     , spellChecker(new SpellChecker)
     , kickChatServer(new KickChatServer)
     , youTubeChatServer(new YouTubeChatServer)
+    , potatCommands(new PotatCommands)
+    , supibotCommands(new SupibotCommands)
 #ifdef CHATTERINO_HAVE_PLUGINS
     , plugins(new PluginController(paths))
 #endif
@@ -276,6 +282,7 @@ void Application::initialize(Settings &settings, const Paths &paths)
 
     this->ffzBadges->load();
     this->bttvBadges->load();
+    this->bluzyrinoBadges->initialize();
     this->moltorinoSupporterBadges->initialize();
 
     this->bttvEmotes->loadEmotes();
@@ -565,6 +572,12 @@ ChatsenBadges *Application::getChatsenBadges()
     return this->chatsenBadges.get();
 }
 
+BluzyrinoBadges *Application::getBluzyrinoBadges()
+{
+    assert(this->bluzyrinoBadges);
+    return this->bluzyrinoBadges.get();
+}
+
 MoltorinoSupporterBadges *Application::getMoltorinoSupporterBadges()
 {
     assert(this->moltorinoSupporterBadges);
@@ -781,6 +794,20 @@ YouTubeChatServer *Application::getYouTubeChatServer()
     return this->youTubeChatServer.get();
 }
 
+PotatCommands *Application::getPotatCommands()
+{
+    assert(this->potatCommands);
+
+    return this->potatCommands.get();
+}
+
+SupibotCommands *Application::getSupibotCommands()
+{
+    assert(this->supibotCommands);
+
+    return this->supibotCommands.get();
+}
+
 void Application::aboutToQuit()
 {
     ABOUT_TO_QUIT.store(true);
@@ -821,10 +848,13 @@ void Application::stop()
     this->ffzApBadges.reset();
     this->dankChatBadges.reset();
     this->chatsenBadges.reset();
+    this->bluzyrinoBadges.reset();
     this->twitch.reset();
     this->highlights.reset();
     this->notifications.reset();
     this->commands.reset();
+    this->potatCommands.reset();
+    this->supibotCommands.reset();
     this->crashHandler.reset();
     this->seventvAPI.reset();
     this->imageUploader.reset();

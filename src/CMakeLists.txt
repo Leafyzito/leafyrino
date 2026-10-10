@@ -113,6 +113,8 @@ set(SOURCE_FILES
         controllers/commands/builtin/twitch/GetFounders.hpp
         controllers/commands/builtin/twitch/GetVIPs.cpp
         controllers/commands/builtin/twitch/GetVIPs.hpp
+        controllers/commands/builtin/twitch/Gif.cpp
+        controllers/commands/builtin/twitch/Gif.hpp
         controllers/commands/builtin/twitch/LowTrust.cpp
         controllers/commands/builtin/twitch/LowTrust.hpp
         controllers/commands/builtin/twitch/ModVipActions.cpp
@@ -159,6 +161,8 @@ set(SOURCE_FILES
         controllers/commands/CommandModel.cpp
         controllers/commands/CommandModel.hpp
 
+        controllers/completion/CommandUsage.cpp
+        controllers/completion/CommandUsage.hpp
         controllers/completion/CompletionModel.cpp
         controllers/completion/CompletionModel.hpp
         controllers/completion/sources/Source.hpp
@@ -290,6 +294,8 @@ set(SOURCE_FILES
         controllers/plugins/api/HTTPRequest.hpp
         controllers/plugins/api/HTTPResponse.cpp
         controllers/plugins/api/HTTPResponse.hpp
+        controllers/plugins/api/Images.cpp
+        controllers/plugins/api/Images.hpp
         controllers/plugins/api/IOWrapper.cpp
         controllers/plugins/api/IOWrapper.hpp
         controllers/plugins/api/JSON.cpp
@@ -304,6 +310,8 @@ set(SOURCE_FILES
         controllers/plugins/api/Message.hpp
         controllers/plugins/api/WebSocket.cpp
         controllers/plugins/api/WebSocket.hpp
+        controllers/plugins/api/WindowManager.cpp
+        controllers/plugins/api/WindowManager.hpp
         controllers/plugins/ConnectionManager.cpp
         controllers/plugins/ConnectionManager.hpp
         controllers/plugins/LuaAPI.cpp
@@ -438,6 +446,9 @@ set(SOURCE_FILES
         providers/chatsen/ChatsenBadges.cpp
         providers/chatsen/ChatsenBadges.hpp
 
+        providers/bluzyrino/BluzyrinoBadges.cpp
+        providers/bluzyrino/BluzyrinoBadges.hpp
+
         providers/colors/ColorProvider.cpp
         providers/colors/ColorProvider.hpp
 
@@ -525,6 +536,12 @@ set(SOURCE_FILES
         providers/pronouns/alejo/PronounsAlejoApi.cpp
         providers/pronouns/alejo/PronounsAlejoApi.hpp
 
+        providers/potat/PotatCommands.cpp
+        providers/potat/PotatCommands.hpp
+
+        providers/supibot/SupibotCommands.cpp
+        providers/supibot/SupibotCommands.hpp
+
         providers/recentmessages/Api.cpp
         providers/recentmessages/Api.hpp
         providers/recentmessages/Impl.cpp
@@ -587,6 +604,8 @@ set(SOURCE_FILES
         providers/twitch/TwitchBadges.cpp
         providers/twitch/TwitchBadges.hpp
         providers/twitch/api/TwitchGql.cpp
+        providers/twitch/ChannelManagement.cpp
+        providers/twitch/ChannelManagement.hpp
         providers/twitch/TwitchChannel.cpp
         providers/twitch/TwitchChannel.hpp
         providers/twitch/TwitchCommon.cpp
@@ -644,6 +663,8 @@ set(SOURCE_FILES
         providers/twitch/api/HelixEnums.hpp
         providers/twitch/api/TwitchGql.cpp
         providers/twitch/api/TwitchGql.hpp
+        providers/twitch/api/TwitchGifs.cpp
+        providers/twitch/api/TwitchGifs.hpp
 
         singletons/CrashHandler.cpp
         singletons/CrashHandler.hpp
@@ -837,20 +858,28 @@ set(SOURCE_FILES
         widgets/dialogs/UserBadgesDialog.hpp
         widgets/dialogs/ChannelFilterEditorDialog.cpp
         widgets/dialogs/ChannelFilterEditorDialog.hpp
+        widgets/dialogs/ChannelManagementDialog.cpp
+        widgets/dialogs/ChannelManagementDialog.hpp
         widgets/dialogs/ChannelPointsDialog.cpp
         widgets/dialogs/ChannelPointsDialog.hpp
+        widgets/dialogs/MoltorinoDialogTheme.hpp
+        widgets/dialogs/PopupControlMetrics.hpp
         widgets/dialogs/ChannelPointsChartDialog.cpp
         widgets/dialogs/ChannelPointsChartDialog.hpp
         widgets/dialogs/ChannelPointsChartView.cpp
         widgets/dialogs/ChannelPointsChartView.hpp
         widgets/dialogs/ColorPickerDialog.cpp
         widgets/dialogs/ColorPickerDialog.hpp
+        widgets/dialogs/CrossBanDialog.cpp
+        widgets/dialogs/CrossBanDialog.hpp
         widgets/dialogs/EditHotkeyDialog.cpp
         widgets/dialogs/EditHotkeyDialog.hpp
         widgets/dialogs/EditUserNotesDialog.cpp
         widgets/dialogs/EditUserNotesDialog.hpp
         widgets/dialogs/EmotePopup.cpp
         widgets/dialogs/EmotePopup.hpp
+        widgets/dialogs/GifPickerDialog.cpp
+        widgets/dialogs/GifPickerDialog.hpp
 
         widgets/dialogs/font/FontDialog.cpp
         widgets/dialogs/font/FontDialog.hpp
@@ -927,6 +956,8 @@ set(SOURCE_FILES
         widgets/helper/color/SBCanvas.cpp
         widgets/helper/color/SBCanvas.hpp
 
+        widgets/helper/ChannelCategoryPicker.cpp
+        widgets/helper/ChannelCategoryPicker.hpp
         widgets/helper/ChannelView.cpp
         widgets/helper/ChannelView.hpp
         widgets/helper/CmdDeleteKeyFilter.cpp

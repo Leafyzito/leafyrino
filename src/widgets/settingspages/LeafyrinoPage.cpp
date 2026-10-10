@@ -62,6 +62,10 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->addKeywords({"chatsen"})
         ->setTooltip("Chatsen supporter and developer badges")
         ->addTo(layout);
+    SettingWidget::checkbox("Bluzyrino", s.showBadgesBluzyrino)
+        ->addKeywords({"bluzyrino", "bluzy"})
+        ->setTooltip("Bluzyrino badges")
+        ->addTo(layout);
 
     layout.addTitle("Client");
     SettingWidget::checkbox("Show select badge button", s.showSelectBadgeButton)
@@ -207,6 +211,36 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->conditionallyEnabledBy(s.showSplitMps)
         ->addTo(layout);
 
+    layout.addTitle("Events");
+    layout.addDescription(
+        "Channel event messages in chat. Requires Moltorino auth "
+        "(Settings → Moltorino → Authentication), experimental EventSub "
+        "enabled under Settings → General, and an app restart after turning "
+        "EventSub on.");
+
+    SettingWidget::checkbox("Show follow notifications in chat",
+                            s.showFollowEventsInChat)
+        ->setTooltip(
+            "Show a chat message when someone follows the channel. Only "
+            "available when you are the broadcaster or a moderator.")
+        ->addKeywords({"follow", "events", "eventsub", "chat", "moderator"})
+        ->addTo(layout);
+
+    layout.addTitle("Commands");
+    SettingWidget::checkbox("Include Supibot commands in suggestions",
+                            s.includeSupibotCommands)
+        ->addKeywords({"supibot", "supinic", "command", "suggestion"})
+        ->setTooltip("Suggest Supibot $ commands after you type $, in "
+                     "channels where Supibot is active.")
+        ->addTo(layout);
+    SettingWidget::checkbox("Show Supibot command aliases",
+                            s.showSupibotCommandAliases)
+        ->addKeywords({"supibot", "alias", "command", "suggestion"})
+        ->setTooltip("Include built-in shortcuts such as $cf, and your own "
+                     "Supibot aliases.")
+        ->conditionallyEnabledBy(s.includeSupibotCommands)
+        ->addTo(layout);
+
     layout.addTitle("Miscellaneous");
     SettingWidget::checkbox("Use message colors for tab alerts",
                             s.colorTabHighlightsByMessage)
@@ -225,18 +259,6 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
                      "timestamp. Uses your message timestamp format for the "
                      "time portion.")
         ->addKeywords({"timestamp", "date", "tooltip", "hover"})
-        ->addTo(layout);
-
-    layout.addTitle("Follow events");
-    layout.addDescription(
-        "Shows \"X followed the channel.\" system messages in chat. Only "
-        "works in channels where you are the broadcaster or a moderator. "
-        "Requires Moltorino auth (Settings → Moltorino → Authentication), "
-        "experimental EventSub enabled under Settings → General, and an app "
-        "restart after turning EventSub on.");
-    SettingWidget::checkbox("Show follow events in chat",
-                            s.showFollowEventsInChat)
-        ->addKeywords({"follow", "events", "eventsub", "chat", "moderator"})
         ->addTo(layout);
 
     layout.addStretch();

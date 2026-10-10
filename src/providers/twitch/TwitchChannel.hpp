@@ -541,6 +541,7 @@ public:
     void updateStreamStatus(const std::optional<HelixStream> &helixStream,
                             bool isInitialUpdate);
     void updateStreamTitle(const QString &title);
+    void updateStreamGame(const QString &gameName, const QString &gameId);
 
     /**
      * Returns the display name of the user

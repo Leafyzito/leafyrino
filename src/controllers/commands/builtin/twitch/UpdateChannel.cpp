@@ -4,62 +4,15 @@
 
 #include "controllers/commands/builtin/twitch/UpdateChannel.hpp"
 
-#include "common/network/NetworkResult.hpp"
+#include "Application.hpp"
+#include "controllers/accounts/AccountController.hpp"
 #include "controllers/commands/CommandContext.hpp"
-#include "providers/twitch/api/Helix.hpp"
+#include "providers/twitch/ChannelManagement.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 
-namespace {
+#include <boost/signals2/connection.hpp>
 
-using namespace chatterino;
-
-QString formatUpdateChannelError(const char *updateType,
-                                 HelixUpdateChannelError error,
-                                 const QString &message)
-{
-    using Error = HelixUpdateChannelError;
-
-    QString errorMessage = QString("Failed to set %1 - ").arg(updateType);
-
-    switch (error)
-    {
-        case Error::UserMissingScope: {
-            errorMessage += "Missing required scope. "
-                            "Re-login with your "
-                            "account and try again.";
-        }
-        break;
-
-        case Error::UserNotAuthorized: {
-            errorMessage += QString("You must be the broadcaster "
-                                    "to set the %1.")
-                                .arg(updateType);
-        }
-        break;
-
-        case Error::Ratelimited: {
-            errorMessage += "You are being ratelimited by Twitch. Try "
-                            "again in a few seconds.";
-        }
-        break;
-
-        case Error::Forwarded: {
-            errorMessage += message;
-        }
-        break;
-
-        case Error::Unknown:
-        default: {
-            errorMessage +=
-                QString("An unknown error has occurred (%1).").arg(message);
-        }
-        break;
-    }
-
-    return errorMessage;
-}
-
-}  // namespace
+#include <memory>
 
 namespace chatterino::commands {
 
@@ -83,20 +36,17 @@ QString setTitle(const CommandContext &ctx)
         return "";
     }
 
-    auto title = ctx.words.mid(1).join(" ");
+    const auto title = ctx.words.mid(1).join(" ").trimmed();
+    auto twitchChannel = std::dynamic_pointer_cast<TwitchChannel>(ctx.channel);
 
-    getHelix()->updateChannel(
-        ctx.twitchChannel->roomId(), "", "", title,
-        [channel{ctx.channel}, title](const auto &result) {
-            (void)result;
-
+    ChannelManagement::updateTitle(
+        twitchChannel, title,
+        [channel{ctx.channel}, title] {
             channel->addSystemMessage(
                 QString("Updated title to %1").arg(title));
         },
-        [channel{ctx.channel}](auto error, auto message) {
-            auto errorMessage =
-                formatUpdateChannelError("title", error, message);
-            channel->addSystemMessage(errorMessage);
+        [channel{ctx.channel}](const QString &error) {
+            channel->addSystemMessage(error);
         });
 
     return "";
@@ -124,10 +74,24 @@ QString setGame(const CommandContext &ctx)
 
     const auto gameName = ctx.words.mid(1).join(" ");
 
-    getHelix()->searchGames(
+    auto twitchChannel = std::dynamic_pointer_cast<TwitchChannel>(ctx.channel);
+    auto accountChanged = std::make_shared<bool>(false);
+    auto connection = std::make_shared<boost::signals2::scoped_connection>(
+        getApp()->getAccounts()->twitch.currentUserChanged.connect(
+            [accountChanged] {
+                *accountChanged = true;
+            }));
+
+    ChannelManagement::searchCategories(
         gameName,
-        [channel{ctx.channel}, twitchChannel{ctx.twitchChannel},
-         gameName](const std::vector<HelixGame> &games) {
+        [channel{ctx.channel}, twitchChannel, gameName, accountChanged,
+         connection](const std::vector<ChannelManagementCategory> &games) {
+            if (*accountChanged)
+            {
+                channel->addSystemMessage("The Twitch account changed while "
+                                          "looking up the category.");
+                return;
+            }
             if (games.empty())
             {
                 channel->addSystemMessage("Game not found.");
@@ -148,21 +112,18 @@ QString setGame(const CommandContext &ctx)
                 }
             }
 
-            auto status = twitchChannel->accessStreamStatus();
-            getHelix()->updateChannel(
-                twitchChannel->roomId(), matchedGame.id, "", "",
-                [channel, games, matchedGame](const NetworkResult &) {
+            ChannelManagement::updateCategory(
+                twitchChannel, matchedGame,
+                [channel, matchedGame] {
                     channel->addSystemMessage(
                         QString("Updated game to %1").arg(matchedGame.name));
                 },
-                [channel](auto error, auto message) {
-                    auto errorMessage =
-                        formatUpdateChannelError("game", error, message);
-                    channel->addSystemMessage(errorMessage);
+                [channel](const QString &error) {
+                    channel->addSystemMessage(error);
                 });
         },
-        [channel{ctx.channel}] {
-            channel->addSystemMessage("Failed to look up game.");
+        [channel{ctx.channel}](const QString &error) {
+            channel->addSystemMessage(error);
         });
 
     return "";

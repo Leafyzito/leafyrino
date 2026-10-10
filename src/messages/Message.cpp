@@ -65,7 +65,8 @@ ScrollbarHighlight Message::getScrollBarHighlight() const
     }
 
     if (this->flags.has(MessageFlag::RedeemedHighlight) ||
-        this->flags.has(MessageFlag::RedeemedChannelPointReward))
+        (this->flags.has(MessageFlag::RedeemedChannelPointReward) &&
+         !this->usesTwitchGigantifyPresentation()))
     {
         return {
             ColorProvider::instance().color(ColorType::RedeemedHighlight),
@@ -118,6 +119,12 @@ ScrollbarHighlight Message::getScrollBarHighlight() const
     }
 
     return {};
+}
+
+bool Message::usesTwitchGigantifyPresentation() const
+{
+    return this->flags.has(MessageFlag::GigantifiedEmote) &&
+           getSettings()->enableGigantifyEmotes;
 }
 
 std::shared_ptr<Message> Message::clone() const

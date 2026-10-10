@@ -130,6 +130,17 @@ MoltorinoAuthAccount accountFromJson(const QJsonObject &obj)
                 channelFromJson(channelValue.toObject()));
         }
     }
+
+    const auto editorChannels = obj.value("verifiedEditorChannels").toArray();
+    account.verifiedEditorChannels.reserve(editorChannels.size());
+    for (const auto &channelValue : editorChannels)
+    {
+        if (channelValue.isObject())
+        {
+            account.verifiedEditorChannels.push_back(
+                channelFromJson(channelValue.toObject()));
+        }
+    }
     return account;
 }
 
@@ -150,6 +161,13 @@ QJsonObject accountToJson(const MoltorinoAuthAccount &account)
         channels.append(channelToJson(channel));
     }
     obj.insert("moderatedChannels", channels);
+
+    QJsonArray editorChannels;
+    for (const auto &channel : account.verifiedEditorChannels)
+    {
+        editorChannels.append(channelToJson(channel));
+    }
+    obj.insert("verifiedEditorChannels", editorChannels);
     return obj;
 }
 
@@ -192,6 +210,17 @@ void upsertAccount(MoltorinoAuthAccount account)
 
     auto current = accounts();
     const auto token = account.token;
+    if (account.verifiedEditorChannels.isEmpty())
+    {
+        const auto existing = std::find_if(
+            current.begin(), current.end(), [&](const auto &saved) {
+                return sameAccount(saved, account.userId, token);
+            });
+        if (existing != current.end())
+        {
+            account.verifiedEditorChannels = existing->verifiedEditorChannels;
+        }
+    }
     current.erase(std::remove_if(current.begin(), current.end(),
                                  [&](const auto &existing) {
                                      return sameAccount(existing,
@@ -682,6 +711,16 @@ void fetchModeratedChannels(MoltorinoAuthAccount account,
         [finish](MoltorinoAuthAccount baseAccount,
                  QVector<MoltorinoAuthChannel> channels) mutable {
             baseAccount.moderatedChannels = std::move(channels);
+            for (const auto &existing : accounts())
+            {
+                if (sameAccount(existing, baseAccount.userId,
+                                normalizeToken(baseAccount.token)))
+                {
+                    baseAccount.verifiedEditorChannels =
+                        existing.verifiedEditorChannels;
+                    break;
+                }
+            }
             baseAccount.valid = true;
             baseAccount.lastError.clear();
             baseAccount.lastValidatedAt = nowIso();
@@ -697,6 +736,8 @@ void fetchModeratedChannels(MoltorinoAuthAccount account,
                             normalizeToken(account.token)))
             {
                 account.moderatedChannels = existing.moderatedChannels;
+                account.verifiedEditorChannels =
+                    existing.verifiedEditorChannels;
                 break;
             }
         }
@@ -981,6 +1022,100 @@ void addOrUpdateToken(const QString &token,
                 });
         },
         std::move(failureCallback));
+}
+
+void rememberEditorChannel(const QString &token,
+                           const MoltorinoAuthChannel &channel)
+{
+    const auto normalizedToken = normalizeToken(token);
+    auto normalizedChannel = channel;
+    normalizedChannel.id = normalizedChannel.id.trimmed();
+    normalizedChannel.login = lower(normalizedChannel.login);
+    normalizedChannel.displayName = normalizedChannel.displayName.trimmed();
+    if (normalizedToken.isEmpty() ||
+        (normalizedChannel.id.isEmpty() && normalizedChannel.login.isEmpty()))
+    {
+        return;
+    }
+
+    auto current = accounts();
+    auto account = std::find_if(
+        current.begin(), current.end(), [&normalizedToken](const auto &saved) {
+            return normalizeToken(saved.token) == normalizedToken;
+        });
+    if (account == current.end() || !account->valid)
+    {
+        return;
+    }
+
+    auto existing = std::find_if(
+        account->verifiedEditorChannels.begin(),
+        account->verifiedEditorChannels.end(),
+        [&normalizedChannel](const MoltorinoAuthChannel &saved) {
+            if (!normalizedChannel.id.isEmpty() && !saved.id.isEmpty())
+            {
+                return normalizedChannel.id == saved.id;
+            }
+            return !normalizedChannel.login.isEmpty() &&
+                   lower(saved.login) == normalizedChannel.login;
+        });
+    if (existing == account->verifiedEditorChannels.end())
+    {
+        account->verifiedEditorChannels.push_back(std::move(normalizedChannel));
+        saveAccounts(current);
+        return;
+    }
+
+    if (existing->id != normalizedChannel.id ||
+        existing->login != normalizedChannel.login ||
+        existing->displayName != normalizedChannel.displayName)
+    {
+        *existing = std::move(normalizedChannel);
+        saveAccounts(current);
+    }
+}
+
+void forgetEditorChannel(const QString &token, const QString &channelId,
+                         const QString &channelLogin)
+{
+    const auto normalizedToken = normalizeToken(token);
+    const auto normalizedChannelId = channelId.trimmed();
+    const auto normalizedChannelLogin = lower(channelLogin);
+    if (normalizedToken.isEmpty() ||
+        (normalizedChannelId.isEmpty() && normalizedChannelLogin.isEmpty()))
+    {
+        return;
+    }
+
+    auto current = accounts();
+    auto account = std::find_if(
+        current.begin(), current.end(), [&normalizedToken](const auto &saved) {
+            return normalizeToken(saved.token) == normalizedToken;
+        });
+    if (account == current.end())
+    {
+        return;
+    }
+
+    const auto previousSize = account->verifiedEditorChannels.size();
+    account->verifiedEditorChannels.erase(
+        std::remove_if(
+            account->verifiedEditorChannels.begin(),
+            account->verifiedEditorChannels.end(),
+            [&normalizedChannelId,
+             &normalizedChannelLogin](const MoltorinoAuthChannel &saved) {
+                if (!normalizedChannelId.isEmpty() && !saved.id.isEmpty())
+                {
+                    return saved.id.trimmed() == normalizedChannelId;
+                }
+                return !normalizedChannelLogin.isEmpty() &&
+                       lower(saved.login) == normalizedChannelLogin;
+            }),
+        account->verifiedEditorChannels.end());
+    if (account->verifiedEditorChannels.size() != previousSize)
+    {
+        saveAccounts(current);
+    }
 }
 
 void removeAccount(const QString &userId, const QString &token)

@@ -23,6 +23,7 @@
 #include "controllers/commands/builtin/twitch/GetFounders.hpp"
 #include "controllers/commands/builtin/twitch/GetModerators.hpp"
 #include "controllers/commands/builtin/twitch/GetVIPs.hpp"
+#include "controllers/commands/builtin/twitch/Gif.hpp"
 #include "controllers/commands/builtin/twitch/LowTrust.hpp"
 #include "controllers/commands/builtin/twitch/ModVipActions.hpp"
 #include "controllers/commands/builtin/twitch/Nuke.hpp"
@@ -387,6 +388,9 @@ CommandController::CommandController(const Paths &paths)
 
     this->registerCommand("/requests", &commands::requests);
 
+    this->registerCommand("/crossban", &commands::crossBan);
+    this->registerCommand("/crossunban", &commands::crossUnban);
+
     this->registerCommand("/lowtrust", &commands::lowtrust);
 
     this->registerCommand("/chatters", &commands::chatters);
@@ -549,6 +553,8 @@ CommandController::CommandController(const Paths &paths)
 
     this->registerCommand("/poll", &commands::createPoll);
     this->registerCommand("/redeem", &commands::openChannelPointRewards);
+    this->registerCommand("/gif", &commands::openGifPicker);
+    this->registerCommand("/gigantify", &commands::sendGigantifiedEmote);
     this->registerCommand("/pointschart", &commands::openChannelPointsChart);
     this->registerCommand("/rewardqueue", &commands::openRewardQueue);
     this->registerCommand("/cancelpoll", &commands::cancelPoll);

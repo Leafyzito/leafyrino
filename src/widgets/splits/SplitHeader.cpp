@@ -19,6 +19,7 @@
 #include "providers/kick/KickChannel.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/twitch/api/Helix.hpp"
+#include "providers/twitch/ChannelManagement.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
@@ -35,6 +36,7 @@
 #include "widgets/buttons/FollowButton.hpp"
 #include "widgets/buttons/LabelButton.hpp"
 #include "widgets/buttons/SvgButton.hpp"
+#include "widgets/dialogs/ChannelManagementDialog.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
 #include "widgets/helper/CommonTexts.hpp"
 #include "widgets/Label.hpp"
@@ -49,8 +51,10 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QPainter>
+#include <QPointer>
 
 #include <cmath>
+#include <ranges>
 
 using namespace Qt::StringLiterals;
 
@@ -125,6 +129,73 @@ QString formatRoomModeUnclean(const KickChannel::RoomModes &modes)
         twitch.slowMode = static_cast<int>(modes.slowModeDuration->count());
     }
     return formatRoomModeUnclean(twitch);
+}
+
+bool canShowChatterList(const ChannelPtr &rootChannel)
+{
+    const auto canUseTwitchChannel = [](const ChannelPtr &channel) {
+        const auto twitch = std::dynamic_pointer_cast<TwitchChannel>(channel);
+        return twitch && (twitch->hasModRights() ||
+                          getSettings()->showChatterListInAllTwitchChannels);
+    };
+
+    if (const auto multi = std::dynamic_pointer_cast<MultiChannel>(rootChannel))
+    {
+        return std::ranges::any_of(multi->channels(), [&](const auto &child) {
+            return child.platform == MultiChannel::Platform::Twitch &&
+                   canUseTwitchChannel(child.channel);
+        });
+    }
+    return canUseTwitchChannel(rootChannel);
+}
+
+bool canShowChannelManagementButton(const TwitchChannel &channel)
+{
+    if (channel.isEmpty())
+    {
+        return false;
+    }
+
+    const auto current = getApp()->getAccounts()->twitch.getCurrent();
+    if (current && !current->isAnon())
+    {
+        const auto roomId = channel.roomId();
+        if ((!roomId.isEmpty() && current->getUserId() == roomId) ||
+            (roomId.isEmpty() &&
+             current->getUserName().compare(channel.getName(),
+                                            Qt::CaseInsensitive) == 0))
+        {
+            return true;
+        }
+    }
+
+    if (ChannelManagement::hasVerifiedEditorAccess(channel.roomId()))
+    {
+        return true;
+    }
+
+    const auto matchesChannel = [&channel](const QString &userId,
+                                           const QString &login) {
+        if (!channel.roomId().isEmpty() && !userId.isEmpty())
+        {
+            return userId == channel.roomId();
+        }
+        return !login.isEmpty() &&
+               login.compare(channel.getName(), Qt::CaseInsensitive) == 0;
+    };
+
+    for (const auto &account : MoltorinoAuth::accounts())
+    {
+        if (!account.valid || account.token.isEmpty())
+        {
+            continue;
+        }
+        if (matchesChannel(account.userId, account.login))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 void cleanRoomModeText(QString &text, bool hasModRights)
@@ -487,6 +558,11 @@ SplitHeader::SplitHeader(Split *split)
             this->updateIcons();
         },
         this->managedConnections_);
+    getSettings()->showEditStreamInfoButtonInSplitHeader.connect(
+        [this](bool, auto) {
+            this->updateIcons();
+        },
+        this->managedConnections_);
     getSettings()->moltorinoAuthAccounts.connect(
         [this](const QString &, auto) {
             if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(
@@ -497,6 +573,11 @@ SplitHeader::SplitHeader(Split *split)
             {
                 twitchChannel->refreshFollowingStatus(true);
             }
+            this->updateIcons();
+        },
+        this->managedConnections_);
+    getSettings()->showChatterListInAllTwitchChannels.connect(
+        [this](bool, auto) {
             this->updateIcons();
         },
         this->managedConnections_);
@@ -554,6 +635,15 @@ void SplitHeader::initializeLayout()
     this->followButton_ =
         new SvgButton(followButtonSource(false), this, {4, 4});
 
+    this->manageChannelButton_ = new SvgButton(
+        {
+            .dark = ":/buttons/editStreamInfo-darkMode.svg",
+            .light = ":/buttons/editStreamInfo-lightMode.svg",
+        },
+        this, {6, 6});
+    this->manageChannelButton_->setToolTip("Edit stream info");
+    this->manageChannelButton_->setAccessibleName("Edit stream info");
+
     this->addButton_ = new DrawnButton(DrawnButton::Symbol::Plus,
                                        {
                                            .padding = 3,
@@ -594,6 +684,7 @@ void SplitHeader::initializeLayout()
             w->hide();
             w->setMenu(this->createChatModeMenu());
         }),
+        this->manageChannelButton_,
         // moderator
         this->moderationButton_,
         // chatter list
@@ -605,6 +696,47 @@ void SplitHeader::initializeLayout()
         // add split
         this->addButton_,
     });
+
+    QObject::connect(
+        this->manageChannelButton_, &Button::leftClicked, this, [this] {
+            auto channel = std::dynamic_pointer_cast<TwitchChannel>(
+                this->split_->getSelectedChannel());
+            if (!channel || channel->isEmpty())
+            {
+                return;
+            }
+
+            this->manageChannelButton_->setEnabled(false);
+            const QPointer<SplitHeader> self(this);
+            ChannelManagement::verifyAccess(
+                channel, true,
+                [self, channel](ChannelManagementAccess) {
+                    if (!self)
+                    {
+                        return;
+                    }
+                    self->manageChannelButton_->setEnabled(true);
+                    const auto selected =
+                        std::dynamic_pointer_cast<TwitchChannel>(
+                            self->split_->getSelectedChannel());
+                    if (selected != channel)
+                    {
+                        self->updateIcons();
+                        return;
+                    }
+                    ChannelManagementDialog::showForChannel(channel,
+                                                            self->split_);
+                },
+                [self, channel](const QString &error) {
+                    channel->addSystemMessage(error);
+                    if (!self)
+                    {
+                        return;
+                    }
+                    self->manageChannelButton_->setEnabled(true);
+                    self->updateIcons();
+                });
+        });
 
     QObject::connect(
         this->moderationButton_, &Button::clicked, this,
@@ -824,6 +956,22 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
                 this->split_, &Split::openRewardQueue);
         }
 
+        if (twitchChannel && !twitchChannel->isEmpty() &&
+            canShowChannelManagementButton(*twitchChannel))
+        {
+            auto managedChannel =
+                std::dynamic_pointer_cast<TwitchChannel>(selected);
+            auto *manageAction =
+                menu->addAction("Manage channel...", this->split_,
+                                [managedChannel, parent = this->split_] {
+                                    ChannelManagementDialog::showForChannel(
+                                        managedChannel, parent);
+                                });
+            manageAction->setToolTip(
+                "Edit stream information or run a commercial as the "
+                "broadcaster or a verified channel editor.");
+        }
+
         if (twitchChannel)
         {
             menu->addAction(
@@ -970,16 +1118,16 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
         moreMenu->addAction(action);
     }
 
+    if (canShowChatterList(this->split_->getChannel()))
+    {
+        moreMenu->addAction(
+            "Show chatter &list",
+            h->getDisplaySequence(HotkeyCategory::Split, "openViewerList"),
+            this->split_, &Split::openChatterList);
+    }
+
     if (twitchChannel)
     {
-        if (twitchChannel->hasModRights())
-        {
-            moreMenu->addAction(
-                "Show chatter &list",
-                h->getDisplaySequence(HotkeyCategory::Split, "openViewerList"),
-                this->split_, &Split::openChatterList);
-        }
-
         moreMenu->addAction("&Subscribe",
                             h->getDisplaySequence(HotkeyCategory::Split,
                                                   "openSubscriptionPage"),
@@ -1428,6 +1576,7 @@ void SplitHeader::scaleChangedEvent(float scale)
     this->setFixedHeight(w);
     this->dropdownButton_->setFixedWidth(w);
     this->followButton_->setFixedWidth(w);
+    this->manageChannelButton_->setFixedWidth(w);
     this->moderationButton_->setFixedWidth(w);
     this->chattersButton_->setFixedWidth(w);
     this->youtubeRefreshButton_->setFixedWidth(w);
@@ -1711,6 +1860,10 @@ void SplitHeader::updateIcons()
         if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get());
             twitchChannel != nullptr && !twitchChannel->isEmpty())
         {
+            this->manageChannelButton_->setVisible(
+                getSettings()->showEditStreamInfoButtonInSplitHeader &&
+                canShowChannelManagementButton(*twitchChannel));
+
             if (!getSettings()->showFollowButtonInSplitHeader ||
                 !canUseFollowButtonForChannel(*twitchChannel))
             {
@@ -1734,6 +1887,7 @@ void SplitHeader::updateIcons()
         else
         {
             this->followButton_->hide();
+            this->manageChannelButton_->hide();
         }
 
         auto moderationMode = this->split_->getModerationMode() &&
@@ -1762,20 +1916,20 @@ void SplitHeader::updateIcons()
         {
             this->moderationButton_->hide();
         }
-
-        if (channel->hasModRights() && channel->isTwitchChannel())
-        {
-            this->chattersButton_->show();
-        }
-        else
-        {
-            this->chattersButton_->hide();
-        }
     }
     else
     {
         this->followButton_->hide();
+        this->manageChannelButton_->hide();
         this->moderationButton_->hide();
+    }
+
+    if (canShowChatterList(this->split_->getChannel()))
+    {
+        this->chattersButton_->show();
+    }
+    else
+    {
         this->chattersButton_->hide();
     }
 }

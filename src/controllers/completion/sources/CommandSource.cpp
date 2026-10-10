@@ -9,6 +9,8 @@
 #include "controllers/commands/CommandController.hpp"
 #include "controllers/completion/sources/Helpers.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
+#include "providers/potat/PotatCommands.hpp"
+#include "providers/supibot/SupibotCommands.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchCommon.hpp"
 #include "singletons/Settings.hpp"
@@ -46,6 +48,8 @@ QString commandUsage(const QString &command)
         {"/commercial", "<length>"},
         {"/completeprediction", "<outcome>"},
         {"/copy", "<text>"},
+        {"/crossban", "<username>"},
+        {"/crossunban", "<username>"},
         {"/debug-args", ""},
         {"/debug-env", ""},
         {"/debug-eventsub", ""},
@@ -68,6 +72,7 @@ QString commandUsage(const QString &command)
         {"/followers", "[duration]"},
         {"/followersoff", ""},
         {"/founders", ""},
+        {"/gigantify", "<Twitch emote>"},
         {"/help", ""},
         {"/host", "<username>"},
         {"/ignore", "<username>"},
@@ -309,6 +314,20 @@ bool hasMoltorinoRoleManagementAccess(const Channel *channel)
         .hasToken();
 }
 
+bool hasCrossChannelActionAccess(const Channel *channel)
+{
+    auto *twitchChannel = dynamic_cast<const TwitchChannel *>(channel);
+    if (twitchChannel == nullptr)
+    {
+        return false;
+    }
+
+    QString ignored;
+    const auto auth = MoltorinoAuth::resolveModerationToken(
+        twitchChannel->roomId(), twitchChannel->getName(), &ignored);
+    return auth.hasToken() && !auth.legacy;
+}
+
 bool hasBotBadgeAuth()
 {
     const auto &settings = *getSettings();
@@ -392,7 +411,7 @@ bool shouldHideCommand(const CommandItem &item, bool hideUnavailable,
                        bool hasMoltorinoModerationAccess,
                        bool hasMoltorinoBroadcasterAccess,
                        bool hasMoltorinoRoleManagementAccess,
-                       bool hasBotBadgeAuth)
+                       bool hasBotBadgeAuth, bool hasCrossChannelActionAccess)
 {
     const auto command = normalizedCommand(item);
     if (isInternalCommand(command))
@@ -408,6 +427,11 @@ bool shouldHideCommand(const CommandItem &item, bool hideUnavailable,
     if (command == "/bot" && !hasBotBadgeAuth)
     {
         return true;
+    }
+
+    if (command == "/crossban" || command == "/crossunban")
+    {
+        return !hasCrossChannelActionAccess;
     }
 
     if (!hideUnavailable)
@@ -457,6 +481,73 @@ CommandSource::CommandSource(std::unique_ptr<CommandStrategy> strategy,
 void CommandSource::update(const QString &query)
 {
     this->output_.clear();
+    if (query.startsWith(QChar('#')))
+    {
+        if (!getSettings()->includePotatCommands ||
+            this->strategy_ == nullptr || this->channel_ == nullptr ||
+            this->channel_->getType() != Channel::Type::Twitch)
+        {
+            return;
+        }
+        auto *potat = getApp()->getPotatCommands();
+        if (potat == nullptr)
+        {
+            return;
+        }
+        potat->ensureLoaded();
+        std::vector<CommandItem> items;
+        items.reserve(potat->commands().size());
+        for (const auto &command : potat->commands())
+        {
+            if (command.alias && !getSettings()->showPotatCommandAliases)
+            {
+                continue;
+            }
+            items.push_back({
+                .name = command.name,
+                .prefix = QStringLiteral("#"),
+                .usage = command.usage,
+                .argumentHint = command.argumentHint,
+            });
+        }
+        this->strategy_->apply(items, this->output_, query);
+        return;
+    }
+    if (query.startsWith(QChar('$')))
+    {
+        if (!getSettings()->includeSupibotCommands ||
+            this->strategy_ == nullptr || this->channel_ == nullptr ||
+            this->channel_->getType() != Channel::Type::Twitch)
+        {
+            return;
+        }
+        auto *supibot = getApp()->getSupibotCommands();
+        if (supibot == nullptr)
+        {
+            return;
+        }
+        supibot->ensureLoaded();
+        if (!supibot->isActive(this->channel_->getName()))
+        {
+            return;
+        }
+        std::vector<CommandItem> items;
+        items.reserve(supibot->commands().size());
+        for (const auto &command : supibot->commands())
+        {
+            if (command.alias && !getSettings()->showSupibotCommandAliases)
+            {
+                continue;
+            }
+            items.push_back({
+                .name = command.name,
+                .prefix = QStringLiteral("$"),
+                .usage = command.usage,
+            });
+        }
+        this->strategy_->apply(items, this->output_, query);
+        return;
+    }
     if (this->strategy_)
     {
         this->strategy_->apply(this->items_, this->output_, query);
@@ -477,6 +568,8 @@ void CommandSource::update(const QString &query)
             needsMoltorinoRoleManagementAccess(this->output_) &&
             hasMoltorinoRoleManagementAccess(this->channel_);
         const bool botBadgeAuth = hasBotBadgeAuth();
+        const bool crossChannelActionAccess =
+            hasCrossChannelActionAccess(this->channel_);
         this->output_.erase(
             std::remove_if(this->output_.begin(), this->output_.end(),
                            [&](const auto &item) {
@@ -485,7 +578,8 @@ void CommandSource::update(const QString &query)
                                    hasCurrentAccountModRights,
                                    hasCurrentAccountBroadcasterRights,
                                    moltorinoAccess, moltorinoBroadcasterAccess,
-                                   moltorinoRoleManagementAccess, botBadgeAuth);
+                                   moltorinoRoleManagementAccess, botBadgeAuth,
+                                   crossChannelActionAccess);
                            }),
             this->output_.end());
     }

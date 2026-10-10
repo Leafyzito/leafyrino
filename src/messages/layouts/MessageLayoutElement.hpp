@@ -12,6 +12,7 @@
 #include <QPen>
 #include <QPoint>
 #include <QRect>
+#include <QRegion>
 #include <QString>
 
 #include <climits>
@@ -60,7 +61,7 @@ public:
     virtual void paint(QPainter &painter,
                        const MessageColors &messageColors) = 0;
 
-    virtual bool paintAnimated(QPainter &painter, qreal yOffset) = 0;
+    virtual QRegion paintAnimated(QPainter &painter, qreal yOffset) = 0;
     virtual int getMouseOverIndex(QPointF abs) const = 0;
     virtual qreal getXFromIndex(size_t index) = 0;
 
@@ -95,7 +96,7 @@ protected:
                              uint32_t to = UINT32_MAX) const override;
     size_t getSelectionIndexCount() const override;
     void paint(QPainter &painter, const MessageColors &messageColors) override;
-    bool paintAnimated(QPainter &painter, qreal yOffset) override;
+    QRegion paintAnimated(QPainter &painter, qreal yOffset) override;
     int getMouseOverIndex(QPointF abs) const override;
     qreal getXFromIndex(size_t index) override;
 
@@ -107,19 +108,28 @@ class LayeredImageLayoutElement : public MessageLayoutElement
 public:
     LayeredImageLayoutElement(MessageElement &creator,
                               std::vector<ImagePtr> images,
-                              std::vector<QSizeF> sizes, QSizeF largestSize);
+                              std::vector<QSizeF> sizes, QSizeF largestSize,
+                              uint32_t modifierFlags = 0);
+
+    bool removesPreviousSpace() const;
 
 protected:
     void addCopyTextToString(QString &str, uint32_t from = 0,
                              uint32_t to = UINT32_MAX) const override;
     size_t getSelectionIndexCount() const override;
     void paint(QPainter &painter, const MessageColors &messageColors) override;
-    bool paintAnimated(QPainter &painter, qreal yOffset) override;
+    QRegion paintAnimated(QPainter &painter, qreal yOffset) override;
     int getMouseOverIndex(QPointF abs) const override;
     qreal getXFromIndex(size_t index) override;
 
+private:
+    bool needsAnimatedPaint() const;
+    QRegion paintModified(QPainter &painter, qreal yOffset);
+
     std::vector<ImagePtr> images_;
     std::vector<QSizeF> sizes_;
+    QSizeF contentSize_;
+    uint32_t modifierFlags_ = 0;
 };
 
 class ImageWithBackgroundLayoutElement : public ImageLayoutElement
@@ -165,7 +175,7 @@ protected:
                              uint32_t to = UINT32_MAX) const override;
     size_t getSelectionIndexCount() const override;
     void paint(QPainter &painter, const MessageColors &messageColors) override;
-    bool paintAnimated(QPainter &painter, qreal yOffset) override;
+    QRegion paintAnimated(QPainter &painter, qreal yOffset) override;
     int getMouseOverIndex(QPointF abs) const override;
     qreal getXFromIndex(size_t index) override;
 
@@ -189,7 +199,7 @@ protected:
                              uint32_t to = UINT32_MAX) const override;
     size_t getSelectionIndexCount() const override;
     void paint(QPainter &painter, const MessageColors &messageColors) override;
-    bool paintAnimated(QPainter &painter, qreal yOffset) override;
+    QRegion paintAnimated(QPainter &painter, qreal yOffset) override;
     int getMouseOverIndex(QPointF abs) const override;
     qreal getXFromIndex(size_t index) override;
 
@@ -207,7 +217,7 @@ public:
 
 protected:
     void paint(QPainter &painter, const MessageColors &messageColors) override;
-    bool paintAnimated(QPainter &painter, qreal yOffset) override;
+    QRegion paintAnimated(QPainter &painter, qreal yOffset) override;
     int getMouseOverIndex(QPointF abs) const override;
     qreal getXFromIndex(size_t index) override;
     void addCopyTextToString(QString &str, uint32_t from = 0,

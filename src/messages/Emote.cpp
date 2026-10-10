@@ -16,8 +16,10 @@ using namespace literals;
 
 bool operator==(const Emote &a, const Emote &b)
 {
-    return std::tie(a.homePage, a.name, a.tooltip, a.images) ==
-           std::tie(b.homePage, b.name, b.tooltip, b.images);
+    return std::tie(a.homePage, a.name, a.tooltip, a.images, a.modifierFlags,
+                    a.modifierPlacement, a.modifierSource) ==
+           std::tie(b.homePage, b.name, b.tooltip, b.images, b.modifierFlags,
+                    b.modifierPlacement, b.modifierSource);
 }
 
 bool operator!=(const Emote &a, const Emote &b)
@@ -51,6 +53,26 @@ QJsonObject Emote::toJson() const
     if (this->baseName)
     {
         obj["baseName"_L1] = this->baseName->string;
+    }
+    if (this->modifierPlacement != EmoteModifierPlacement::None)
+    {
+        obj["modifierFlags"_L1] = static_cast<qint64>(this->modifierFlags);
+        obj["modifierPlacement"_L1] =
+            this->modifierPlacement == EmoteModifierPlacement::Prefix
+                ? u"prefix"_s
+                : u"suffix"_s;
+        switch (this->modifierSource)
+        {
+            case EmoteModifierSource::BetterTTV:
+                obj["modifierSource"_L1] = u"betterttv"_s;
+                break;
+            case EmoteModifierSource::FrankerFaceZ:
+                obj["modifierSource"_L1] = u"frankerfacez"_s;
+                break;
+            case EmoteModifierSource::None:
+                obj["modifierSource"_L1] = u"unknown"_s;
+                break;
+        }
     }
 
     return obj;

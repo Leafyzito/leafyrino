@@ -31,8 +31,9 @@ public:
     pajlada::Signals::Signal<QMenu *, QPoint> contextMenuRequested;
 
     void setCompleter(QCompleter *c);
-
     void resetCompletion();
+    void setGhostText(QString text);
+    const QString &ghostText() const;
 
 protected:
     int heightForWidth(int) const override;
@@ -41,6 +42,7 @@ protected:
 
     void focusInEvent(QFocusEvent *event) override;
     void focusOutEvent(QFocusEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
 
     bool canInsertFromMimeData(const QMimeData *source) const override;
     void insertFromMimeData(const QMimeData *source) override;
@@ -55,6 +57,7 @@ private:
 
     QCompleter *completer_ = nullptr;
     QString ignoredCompletionPrefix_;
+    QString ghostText_;
     /**
      * This is true if a completion was done but the user didn't type yet,
      * and might want to press `Tab` again to get the next completion

@@ -8,6 +8,7 @@
 #include "providers/twitch/TwitchChannel.hpp"
 
 #include <QDateTime>
+#include <QHash>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -35,6 +36,48 @@ struct GqlModeratedChannel {
 
 struct GqlChannelSelfData {
     bool isLeadModerator = false;
+};
+
+struct GqlBroadcastCategory {
+    QString id;
+    QString name;
+    QString displayName;
+};
+
+struct GqlContentClassificationLabel {
+    QString id;
+    QString name;
+    QString description;
+    QString lockedUntil;
+    bool isEnabled = false;
+    bool isLocked = false;
+    bool isSelectable = false;
+};
+
+struct GqlBroadcastSettings {
+    QString userId;
+    QString title;
+    QString language;
+    GqlBroadcastCategory category;
+    QStringList tags;
+    bool isRerun = false;
+    QString audience;
+    bool canEditAudience = false;
+    QVector<GqlContentClassificationLabel> contentLabels;
+    QStringList audienceOptions;
+    QStringList allowedContentLabelIds;
+};
+
+enum class GqlStartAdTrigger {
+    ChatCommand,
+    QuickAction,
+};
+
+struct GqlStartAdResult {
+    QString adSessionId;
+    QString errorCode;
+    int lengthSeconds = 0;
+    int retryAfterSeconds = 0;
 };
 
 struct GqlBlockedTerm {
@@ -266,6 +309,19 @@ void getCurrentPin(
 void getUserByLogin(const QString &login, const QString &oauthToken,
                     std::function<void(std::optional<GqlUser>)> successCallback,
                     std::function<void(const QString &)> failureCallback);
+void banUserFromChatRoom(const QString &channelId, const QString &targetLogin,
+                         const QString &reason, const QString &oauthToken,
+                         std::function<void()> successCallback,
+                         std::function<void(const QString &)> failureCallback);
+void unbanUserFromChatRoom(
+    const QString &channelId, const QString &targetLogin,
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void getChatRoomBanStatuses(
+    const QString &targetUserId, const QVector<QString> &channelIds,
+    const QString &oauthToken,
+    std::function<void(QHash<QString, bool>)> successCallback,
+    std::function<void(const QString &)> failureCallback);
 void followUser(const QString &targetId, const QString &oauthToken,
                 std::function<void()> successCallback,
                 std::function<void(const QString &)> failureCallback);
@@ -442,6 +498,15 @@ void getChannelPointEmoteModifiers(
     const QString &oauthToken,
     std::function<void(QVector<GqlChannelPointEmoteModifier>)> successCallback,
     std::function<void(const QString &)> failureCallback);
+void sendGigantifiedChatEmote(
+    const QString &channelId, const QString &emoteId, const QString &message,
+    int bitsCost, const QString &oauthToken,
+    std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void getAvailableGigantifyEmotes(
+    const QString &channelId, const QString &oauthToken,
+    std::function<void(QVector<GqlChannelPointEmote>)> successCallback,
+    std::function<void(const QString &)> failureCallback);
 #endif
 void getRewardQueue(const QString &channelLogin, const QString &oauthToken,
                     std::function<void(GqlRewardQueue)> successCallback,
@@ -516,6 +581,41 @@ void setBadgeModifierHidden(
     bool hidden, const QString &oauthToken,
     std::function<void(bool)> successCallback,
     std::function<void(const QString &)> failureCallback);
+void getChannelEditorStatus(
+    const QString &channelLogin, const QString &expectedChannelId,
+    const QString &oauthToken, std::function<void(bool)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void getBroadcastSettings(
+    const QString &channelLogin, const QString &oauthToken,
+    std::function<void(GqlBroadcastSettings)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void getBroadcastManagementState(
+    const QString &channelLogin, const QString &expectedChannelId,
+    const QString &oauthToken,
+    std::function<void(GqlBroadcastSettings)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void updateBroadcastSettings(
+    const GqlBroadcastSettings &settings, const QString &oauthToken,
+    std::function<void(GqlBroadcastSettings)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void setFreeformTags(const QString &channelId, const QStringList &tags,
+                     const QString &oauthToken,
+                     std::function<void(QStringList)> successCallback,
+                     std::function<void(const QString &)> failureCallback);
+void setContentClassificationLabels(
+    const QString &channelId,
+    const QVector<GqlContentClassificationLabel> &labels,
+    const QString &oauthToken,
+    std::function<void(QVector<GqlContentClassificationLabel>)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void setChannelRerunStatus(
+    const QString &channelId, bool shouldBeRerun, const QString &oauthToken,
+    std::function<void(bool)> successCallback,
+    std::function<void(const QString &)> failureCallback);
+void startAd(const QString &channelId, int lengthSeconds,
+             GqlStartAdTrigger trigger, const QString &oauthToken,
+             std::function<void(GqlStartAdResult)> successCallback,
+             std::function<void(const QString &)> failureCallback);
 
 }  // namespace TwitchGql
 

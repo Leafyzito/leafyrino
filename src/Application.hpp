@@ -60,6 +60,7 @@ class FolhinhaBadges;
 class FfzApBadges;
 class DankChatBadges;
 class ChatsenBadges;
+class BluzyrinoBadges;
 class MoltorinoSupporterBadges;
 class RepeatedMessageDetector;
 class IStreamerMode;
@@ -76,6 +77,10 @@ class SpellChecker;
 class KickChatServer;
 
 class YouTubeChatServer;
+
+class PotatCommands;
+
+class SupibotCommands;
 
 class IApplication
 {
@@ -116,6 +121,7 @@ public:
     virtual FfzApBadges *getFfzApBadges() = 0;
     virtual DankChatBadges *getDankChatBadges() = 0;
     virtual ChatsenBadges *getChatsenBadges() = 0;
+    virtual BluzyrinoBadges *getBluzyrinoBadges() = 0;
     virtual MoltorinoSupporterBadges *getMoltorinoSupporterBadges() = 0;
     virtual RepeatedMessageDetector *getRepeatedMessageDetector() = 0;
     virtual IUserDataController *getUserData() = 0;
@@ -144,6 +150,8 @@ public:
     virtual SpellChecker *getSpellChecker() = 0;
     virtual KickChatServer *getKickChatServer() = 0;
     virtual YouTubeChatServer *getYouTubeChatServer() = 0;
+    virtual PotatCommands *getPotatCommands() = 0;
+    virtual SupibotCommands *getSupibotCommands() = 0;
 
     int monoFontId;
 };
@@ -207,6 +215,7 @@ private:
     std::unique_ptr<FfzApBadges> ffzApBadges;
     std::unique_ptr<DankChatBadges> dankChatBadges;
     std::unique_ptr<ChatsenBadges> chatsenBadges;
+    std::unique_ptr<BluzyrinoBadges> bluzyrinoBadges;
     std::unique_ptr<MoltorinoSupporterBadges> moltorinoSupporterBadges;
     std::unique_ptr<RepeatedMessageDetector> repeatedMessageDetector;
     std::unique_ptr<SeventvPaints> seventvPaints;
@@ -229,6 +238,8 @@ private:
     std::unique_ptr<SpellChecker> spellChecker;
     std::unique_ptr<KickChatServer> kickChatServer;
     std::unique_ptr<YouTubeChatServer> youTubeChatServer;
+    std::unique_ptr<PotatCommands> potatCommands;
+    std::unique_ptr<SupibotCommands> supibotCommands;
 #ifdef CHATTERINO_HAVE_PLUGINS
     std::unique_ptr<PluginController> plugins;
 #endif
@@ -268,6 +279,7 @@ public:
     FfzApBadges *getFfzApBadges() override;
     DankChatBadges *getDankChatBadges() override;
     ChatsenBadges *getChatsenBadges() override;
+    BluzyrinoBadges *getBluzyrinoBadges() override;
     MoltorinoSupporterBadges *getMoltorinoSupporterBadges() override;
     RepeatedMessageDetector *getRepeatedMessageDetector() override;
     IUserDataController *getUserData() override;
@@ -299,6 +311,8 @@ public:
     SpellChecker *getSpellChecker() override;
     KickChatServer *getKickChatServer() override;
     YouTubeChatServer *getYouTubeChatServer() override;
+    PotatCommands *getPotatCommands() override;
+    SupibotCommands *getSupibotCommands() override;
 
 private:
     void initNm(const Modes &modes, const Paths &paths);

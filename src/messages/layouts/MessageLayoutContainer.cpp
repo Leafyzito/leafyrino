@@ -29,6 +29,13 @@ using namespace chatterino;
 
 constexpr QMargins MARGIN{8, 4, 8, 4};
 constexpr qreal COMPACT_EMOTES_OFFSET = 4;
+
+bool isRenderedGigantifiedEmote(const MessageElement &element)
+{
+    const auto *emote = dynamic_cast<const EmoteElement *>(&element);
+    return emote != nullptr && emote->isGigantified() &&
+           getSettings()->enableGigantifyEmotes;
+}
 /// Target width used to match Twitch's desktop chat layout.
 constexpr qreal ASCII_ART_WIDTH = 300.0;
 
@@ -222,6 +229,7 @@ void MessageLayoutContainer::breakLine()
 
         bool isCompactEmote =
             !this->flags_.has(MessageFlag::DisableCompactEmotes) &&
+            !isRenderedGigantifiedEmote(element->getCreator()) &&
             element->getCreator().getFlags().has(
                 MessageElementFlag::EmoteImage);
 
@@ -377,20 +385,20 @@ void MessageLayoutContainer::paintElements(QPainter &painter,
     }
 }
 
-bool MessageLayoutContainer::paintAnimatedElements(QPainter &painter,
-                                                   qreal yOffset,
-                                                   bool isCollapsed) const
+QRegion MessageLayoutContainer::paintAnimatedElements(QPainter &painter,
+                                                      qreal yOffset,
+                                                      bool isCollapsed) const
 {
-    bool anyAnimatedElement = false;
+    QRegion paintedRegion;
     for (const auto &element : this->elements_)
     {
         if (isCollapsed && element->getLine() > 0)
         {
             continue;
         }
-        anyAnimatedElement |= element->paintAnimated(painter, yOffset);
+        paintedRegion += element->paintAnimated(painter, yOffset);
     }
-    return anyAnimatedElement;
+    return paintedRegion;
 }
 
 void MessageLayoutContainer::paintSelection(QPainter &painter,
@@ -841,6 +849,7 @@ void MessageLayoutContainer::addElement(MessageLayoutElement *element,
     // compact emote offset
     bool isCompactEmote =
         !this->flags_.has(MessageFlag::DisableCompactEmotes) &&
+        !isRenderedGigantifiedEmote(element->getCreator()) &&
         element->getCreator().getFlags().has(MessageElementFlag::EmoteImage);
 
     if (isCompactEmote)
@@ -862,7 +871,11 @@ void MessageLayoutContainer::addElement(MessageLayoutElement *element,
         yOffset -= (MARGIN.top() * this->scale_);
     }
 
-    if (getSettings()->removeSpacesBetweenEmotes &&
+    const auto *layeredImage =
+        dynamic_cast<const LayeredImageLayoutElement *>(element);
+    const bool removeSpaceForModifier =
+        layeredImage != nullptr && layeredImage->removesPreviousSpace();
+    if ((getSettings()->removeSpacesBetweenEmotes || removeSpaceForModifier) &&
         element->getFlags().hasAny({MessageElementFlag::EmoteImage}) &&
         shouldRemoveSpaceBetweenEmotes())
     {

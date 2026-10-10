@@ -119,6 +119,7 @@ MessageElementFlags pinnedMessageFlags()
     setPinnedBadgeFlag(flags, wordFlags, MessageElementFlag::BadgeFfzAp);
     setPinnedBadgeFlag(flags, wordFlags, MessageElementFlag::BadgeDankChat);
     setPinnedBadgeFlag(flags, wordFlags, MessageElementFlag::BadgeChatsen);
+    setPinnedBadgeFlag(flags, wordFlags, MessageElementFlag::BadgeBluzyrino);
 
     return flags;
 }

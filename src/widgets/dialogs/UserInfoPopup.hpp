@@ -168,6 +168,8 @@ private:
     void refreshTargetModerationStatus();
     bool updateTargetModerationStatusFromMessage(const MessagePtr &message);
     bool shouldShowModerationActions() const;
+    bool crossActionAvailable() const;
+    void runCrossAction(const QString &command);
 
     enum class UsercardModerationAction { Ban, Unban, Timeout };
 
@@ -325,13 +327,25 @@ private:
         TimeoutWidget();
 
         pajlada::Signals::Signal<UsercardModerationRequest> buttonClicked;
+        pajlada::Signals::Signal<bool> crossActionClicked;
 
         void setMinTimeout(int minSecs);
+        void setModerationVisible(bool visible);
+        void setCrossVisible(bool visible);
 
     protected:
         void paintEvent(QPaintEvent *event) override;
 
     private:
+        void applyModerationVisibility();
+
+        QWidget *unbanButton_ = nullptr;
+        QWidget *banButton_ = nullptr;
+        QWidget *timeoutsColumn_ = nullptr;
+        QWidget *crossUnbanButton_ = nullptr;
+        QWidget *crossBanButton_ = nullptr;
+        bool moderationVisible_ = true;
+        int minTimeoutSecs_ = 0;
         std::vector<std::pair<QWidget *, int>> timeoutButtons;
     };
 };

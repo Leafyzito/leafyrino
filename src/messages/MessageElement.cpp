@@ -28,10 +28,12 @@
 #include <QJsonValue>
 #include <QLocale>
 #include <QTextLayout>
+#include <QVarLengthArray>
 
 #include <algorithm>
 #include <cmath>
 #include <memory>
+#include <ranges>
 
 #ifdef CHATTERINO_WITH_PRIVATE_QT_API
 #    include <QtGui/private/qtextengine_p.h>
@@ -356,10 +358,12 @@ std::string_view CircularImageElement::type() const
 
 // EMOTE
 EmoteElement::EmoteElement(const EmotePtr &emote, MessageElementFlags flags,
-                           const MessageColor &textElementColor)
+                           const MessageColor &textElementColor,
+                           bool gigantified)
     : MessageElement(flags)
     , textColor_(textElementColor)
     , emote_(emote)
+    , gigantified_(gigantified)
 {
     this->setTooltip(emote->tooltip.string);
 }
@@ -367,6 +371,11 @@ EmoteElement::EmoteElement(const EmotePtr &emote, MessageElementFlags flags,
 EmotePtr EmoteElement::getEmote() const
 {
     return this->emote_;
+}
+
+bool EmoteElement::isGigantified() const
+{
+    return this->gigantified_;
 }
 
 void EmoteElement::addToContainer(MessageLayoutContainer &container,
@@ -379,12 +388,56 @@ void EmoteElement::addToContainer(MessageLayoutContainer &container,
 
     if (ctx.flags.has(MessageElementFlag::EmoteImage))
     {
-        auto image =
-            this->emote_->images.getImageOrLoaded(container.getImageScale());
+        const bool renderGigantified =
+            this->gigantified_ && getSettings()->enableGigantifyEmotes;
+
+        ImagePtr image;
+        if (renderGigantified)
+        {
+            const ImagePtr *candidates[] = {
+                &this->emote_->images.getImage3(),
+                &this->emote_->images.getImage2(),
+                &this->emote_->images.getImage1(),
+            };
+            for (const auto *candidate : candidates)
+            {
+                if (*candidate && !(*candidate)->isEmpty())
+                {
+                    image = *candidate;
+                    image->load();
+                    break;
+                }
+            }
+            if (!image)
+            {
+                image = Image::getEmpty();
+            }
+        }
+        else
+        {
+            image = this->emote_->images.getImageOrLoaded(
+                container.getImageScale());
+        }
 
         if (image->isEmpty())
         {
             this->ensureText(true);
+        }
+        else if (renderGigantified)
+        {
+            if (!container.atStartOfLine())
+            {
+                container.breakLine();
+            }
+
+            constexpr qreal gigantifiedLogicalSize = 112;
+            const auto logicalSize = std::min<qreal>(
+                gigantifiedLogicalSize * container.getScale(),
+                std::max<qreal>(1.0, container.remainingWidth()));
+            const auto size = QSizeF(logicalSize, logicalSize);
+            container.addElementNoLineBreak(
+                this->makeImageLayoutElement(image, size));
+            return;
         }
         else
         {
@@ -416,8 +469,8 @@ MessageLayoutElement *EmoteElement::makeImageLayoutElement(
 
 std::unique_ptr<MessageElement> EmoteElement::clone() const
 {
-    auto el = std::make_unique<EmoteElement>(this->emote_, this->getFlags(),
-                                             this->textColor_);
+    auto el = std::make_unique<EmoteElement>(
+        this->emote_, this->getFlags(), this->textColor_, this->gigantified_);
     el->cloneFrom(*this);
     return el;
 }
@@ -448,6 +501,10 @@ QJsonObject EmoteElement::toJson() const
     {
         base["text"_L1] = this->textElement_->toJson();
     }
+    if (this->gigantified_)
+    {
+        base["gigantified"_L1] = true;
+    }
 
     return base;
 }
@@ -470,47 +527,183 @@ LayeredEmoteElement::LayeredEmoteElement(
 void LayeredEmoteElement::addEmoteLayer(const LayeredEmoteElement::Emote &emote)
 {
     this->emotes_.push_back(emote);
+    if (this->modifierData_)
+    {
+        this->modifierData_->copyTokens.push_back(emote.ptr);
+    }
+    this->updateTooltips();
+}
+
+void LayeredEmoteElement::addModifier(const EmotePtr &modifier)
+{
+    if (modifier == nullptr ||
+        modifier->modifierPlacement == EmoteModifierPlacement::None)
+    {
+        return;
+    }
+    if (!this->modifierData_)
+    {
+        this->modifierData_ = std::make_unique<ModifierData>();
+        this->modifierData_->copyTokens.reserve(this->emotes_.size() + 1);
+        for (const auto &emote : this->emotes_)
+        {
+            this->modifierData_->copyTokens.push_back(emote.ptr);
+        }
+    }
+
+    this->modifierData_->modifiers.push_back(modifier);
+    if (modifier->modifierPlacement == EmoteModifierPlacement::Prefix)
+    {
+        const auto firstBase = std::ranges::find_if(
+            this->modifierData_->copyTokens, [](const auto &token) {
+                return token->modifierPlacement !=
+                       EmoteModifierPlacement::Prefix;
+            });
+        this->modifierData_->copyTokens.insert(firstBase, modifier);
+    }
+    else
+    {
+        this->modifierData_->copyTokens.push_back(modifier);
+    }
     this->updateTooltips();
 }
 
 void LayeredEmoteElement::addToContainer(MessageLayoutContainer &container,
                                          const MessageLayoutContext &ctx)
 {
-    if (this->matchesFlags(ctx.flags))
+    if (!this->matchesFlags(ctx.flags))
     {
-        if (ctx.flags.has(MessageElementFlag::EmoteImage))
+        return;
+    }
+
+    if (ctx.flags.has(MessageElementFlag::EmoteImage))
+    {
+        auto images = this->getLoadedImages(container.getImageScale());
+        struct Part {
+            EmotePtr icon;
+            QString copyText;
+        };
+        QVarLengthArray<Part, 1> parts{
+            {nullptr, this->modifierData_ ? this->getCopyString() : QString{}}};
+        if (!images.empty() && this->modifierData_ &&
+            std::ranges::any_of(this->getModifiers(), [](const auto &emote) {
+                return !getSettings()->isEmoteModifierEnabled(
+                    emote->name.string);
+            }))
         {
-            auto images = this->getLoadedImages(container.getImageScale());
-            if (images.empty())
+            parts.clear();
+            QString prefix;
+            bool addedBase = false;
+            for (const auto &token : this->modifierData_->copyTokens)
             {
-                return;
+                const bool disabled =
+                    token->modifierPlacement != EmoteModifierPlacement::None &&
+                    !getSettings()->isEmoteModifierEnabled(token->name.string);
+                const bool isBase =
+                    !addedBase && token == this->emotes_.front().ptr;
+                if (isBase || disabled)
+                {
+                    parts.push_back({disabled ? token : nullptr, prefix});
+                    prefix.clear();
+                    addedBase |= isBase;
+                }
+                auto &copyText = parts.empty() ? prefix : parts.back().copyText;
+                if (!copyText.isEmpty())
+                {
+                    copyText += ' ';
+                }
+                copyText += token->getCopyString();
             }
-
-            auto emoteScale = getSettings()->emoteScale.getValue();
-            bool isBadge = this->getFlags().hasAny(MessageElementFlag::Badges);
-            auto scale =
-                isBadge ? container.getBadgeScale() : container.getEmoteScale();
-
-            auto largestSize = getBoundingBoxSize(images) * scale * emoteScale;
-            std::vector<QSizeF> individualSizes;
-            individualSizes.reserve(this->emotes_.size());
-            for (const auto &img : images)
-            {
-                individualSizes.push_back(img->size() * scale * emoteScale);
-            }
-
-            container.addElement(this->makeImageLayoutElement(
-                images, individualSizes, largestSize));
         }
-        else
+        if (images.empty())
         {
-            if (this->textElement_)
-            {
-                auto textCtx = ctx;
-                textCtx.flags = MessageElementFlag::Misc;
-                this->textElement_->addToContainer(container, textCtx);
-            }
+            return;
         }
+
+        auto emoteScale = getSettings()->emoteScale.getValue();
+        bool isBadge = this->getFlags().hasAny(MessageElementFlag::Badges);
+        auto scale =
+            isBadge ? container.getBadgeScale() : container.getEmoteScale();
+
+        auto largestSize = getBoundingBoxSize(images) * scale * emoteScale;
+        std::vector<QSizeF> individualSizes;
+        individualSizes.reserve(images.size());
+        for (const auto &img : images)
+        {
+            individualSizes.push_back(img->size() * scale * emoteScale);
+        }
+
+        for (qsizetype i = 0; i < parts.size(); ++i)
+        {
+            const auto &part = parts[i];
+            MessageLayoutElement *layoutElement = nullptr;
+            if (part.icon)
+            {
+                auto &data = *this->modifierData_;
+                data.icons.resize(data.modifiers.size());
+                const auto found = std::ranges::find(data.modifiers, part.icon);
+                if (found == data.modifiers.end())
+                {
+                    continue;
+                }
+                const auto index =
+                    static_cast<size_t>(found - data.modifiers.begin());
+                auto &icon = data.icons[index];
+                if (!icon)
+                {
+                    icon = std::make_shared<EmoteElement>(
+                        part.icon, this->getFlags(), this->textElementColor_);
+                }
+                const auto image = part.icon->images.getImageOrLoaded(
+                    container.getImageScale());
+                if (image->isEmpty())
+                {
+                    data.textFallbacks.resize(
+                        static_cast<size_t>(parts.size()));
+                    auto &text = data.textFallbacks[static_cast<size_t>(i)];
+                    if (!text)
+                    {
+                        text = std::make_unique<TextElement>(
+                            part.copyText, MessageElementFlag::Misc,
+                            this->textElementColor_);
+                    }
+                    else
+                    {
+                        text->setText(part.copyText);
+                    }
+                    text->setTrailingSpace(i + 1 < parts.size() ||
+                                           this->hasTrailingSpace());
+                    auto textCtx = ctx;
+                    textCtx.flags = MessageElementFlag::Misc;
+                    text->addToContainer(container, textCtx);
+                    continue;
+                }
+                layoutElement = new ImageLayoutElement(
+                    *icon, image, image->size() * scale * emoteScale);
+            }
+            else
+            {
+                layoutElement = this->makeImageLayoutElement(
+                    images, individualSizes, largestSize);
+            }
+
+            if (this->modifierData_)
+            {
+                layoutElement->setText(
+                    TwitchEmotes::cleanUpEmoteCode(part.copyText));
+            }
+            layoutElement->setTrailingSpace(i + 1 < parts.size() ||
+                                            this->hasTrailingSpace());
+            container.addElement(layoutElement);
+        }
+        return;
+    }
+
+    if (this->textElement_)
+    {
+        auto textCtx = ctx;
+        textCtx.flags = MessageElementFlag::Misc;
+        this->textElement_->addToContainer(container, textCtx);
     }
 }
 
@@ -535,7 +728,16 @@ MessageLayoutElement *LayeredEmoteElement::makeImageLayoutElement(
     const std::vector<ImagePtr> &images, const std::vector<QSizeF> &sizes,
     QSizeF largestSize)
 {
-    return new LayeredImageLayoutElement(*this, images, sizes, largestSize);
+    uint32_t flags = 0;
+    for (const auto &modifier : this->getModifiers())
+    {
+        if (getSettings()->isEmoteModifierEnabled(modifier->name.string))
+        {
+            flags |= modifier->modifierFlags;
+        }
+    }
+    return new LayeredImageLayoutElement(*this, images, sizes, largestSize,
+                                         flags);
 }
 
 void LayeredEmoteElement::updateTooltips()
@@ -567,14 +769,28 @@ const std::vector<QString> &LayeredEmoteElement::getEmoteTooltips() const
 QString LayeredEmoteElement::getCleanCopyString() const
 {
     QString result;
-    for (size_t i = 0; i < this->emotes_.size(); ++i)
-    {
-        if (i != 0)
+    bool first = true;
+    const auto append = [&result, &first](const EmotePtr &emote) {
+        if (!first)
         {
-            result += " ";
+            result += ' ';
         }
-        result += TwitchEmotes::cleanUpEmoteCode(
-            this->emotes_[i].ptr->getCopyString());
+        first = false;
+        result += TwitchEmotes::cleanUpEmoteCode(emote->getCopyString());
+    };
+    if (this->modifierData_)
+    {
+        for (const auto &token : this->modifierData_->copyTokens)
+        {
+            append(token);
+        }
+    }
+    else
+    {
+        for (const auto &emote : this->emotes_)
+        {
+            append(emote.ptr);
+        }
     }
     return result;
 }
@@ -582,13 +798,28 @@ QString LayeredEmoteElement::getCleanCopyString() const
 QString LayeredEmoteElement::getCopyString() const
 {
     QString result;
-    for (size_t i = 0; i < this->emotes_.size(); ++i)
-    {
-        if (i != 0)
+    bool first = true;
+    const auto append = [&result, &first](const EmotePtr &emote) {
+        if (!first)
         {
-            result += " ";
+            result += ' ';
         }
-        result += this->emotes_[i].ptr->getCopyString();
+        first = false;
+        result += emote->getCopyString();
+    };
+    if (this->modifierData_)
+    {
+        for (const auto &token : this->modifierData_->copyTokens)
+        {
+            append(token);
+        }
+    }
+    else
+    {
+        for (const auto &emote : this->emotes_)
+        {
+            append(emote.ptr);
+        }
     }
     return result;
 }
@@ -597,6 +828,12 @@ const std::vector<LayeredEmoteElement::Emote> &LayeredEmoteElement::getEmotes()
     const
 {
     return this->emotes_;
+}
+
+const std::vector<EmotePtr> &LayeredEmoteElement::getModifiers() const
+{
+    static const std::vector<EmotePtr> noModifiers;
+    return this->modifierData_ ? this->modifierData_->modifiers : noModifiers;
 }
 
 std::vector<LayeredEmoteElement::Emote> LayeredEmoteElement::getUniqueEmotes()
@@ -642,6 +879,16 @@ QJsonObject LayeredEmoteElement::toJson() const
     }
     base["emotes"_L1] = emotes;
 
+    QJsonArray modifiers;
+    for (const auto &modifier : this->getModifiers())
+    {
+        modifiers.append(modifier->toJson());
+    }
+    if (!modifiers.isEmpty())
+    {
+        base["modifiers"_L1] = modifiers;
+    }
+
     QJsonArray tooltips;
     for (const auto &tooltip : this->emoteTooltips_)
     {
@@ -669,6 +916,14 @@ std::unique_ptr<MessageElement> LayeredEmoteElement::clone() const
     std::vector<Emote> emotesCopy = this->emotes_;
     auto elem = std::make_unique<LayeredEmoteElement>(
         std::move(emotesCopy), this->getFlags(), this->textElementColor_);
+    if (this->modifierData_)
+    {
+        auto data = std::make_unique<ModifierData>();
+        data->modifiers = this->modifierData_->modifiers;
+        data->copyTokens = this->modifierData_->copyTokens;
+        elem->modifierData_ = std::move(data);
+        elem->updateTooltips();
+    }
     elem->cloneFrom(*this);
     return elem;
 }
@@ -1223,6 +1478,11 @@ void TextElement::appendText(QStringView text)
     {
         this->words_.append(word.toString());
     }
+}
+
+void TextElement::setText(const QString &text)
+{
+    this->words_ = text.split(' ');
 }
 
 void TextElement::appendText(const QString &text)

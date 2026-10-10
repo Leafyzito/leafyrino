@@ -8,6 +8,7 @@
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/completion/sources/Helpers.hpp"
 #include "controllers/emotes/EmoteController.hpp"
+#include "messages/Emote.hpp"
 #include "providers/bttv/BttvEmotes.hpp"
 #include "providers/emoji/Emojis.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
@@ -30,11 +31,21 @@ void addEmotes(std::vector<EmoteItem> &out, const EmoteMap &map,
 {
     for (auto &&emote : map)
     {
+        auto sourceName = providerName;
+        if (emote.second->modifierSource == EmoteModifierSource::BetterTTV)
+        {
+            sourceName = QStringLiteral("BetterTTV modifier");
+        }
+        else if (emote.second->modifierSource ==
+                 EmoteModifierSource::FrankerFaceZ)
+        {
+            sourceName = QStringLiteral("FrankerFaceZ modifier");
+        }
         out.push_back({.emote = emote.second,
                        .searchName = emote.first.string,
                        .tabCompletionName = emote.first.string,
                        .displayName = emote.second->name.string,
-                       .providerName = providerName,
+                       .providerName = std::move(sourceName),
                        .isEmoji = false});
     }
 }

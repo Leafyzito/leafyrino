@@ -14,6 +14,7 @@
 #include "controllers/notifications/NotificationController.hpp"
 #include "providers/kick/KickAccount.hpp"
 #include "providers/kick/KickChannel.hpp"
+#include "providers/twitch/ChannelManagement.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchBadges.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
@@ -77,6 +78,7 @@ using namespace Qt::Literals;
 namespace chatterino {
 namespace {
 constexpr int DEFERRED_TWITCH_FEATURE_REFRESH_DELAY_MS = 3500;
+constexpr int DEFERRED_TWITCH_EDITOR_REFRESH_OFFSET_MS = 375;
 constexpr int DEFERRED_TWITCH_POLL_REFRESH_OFFSET_MS = 250;
 constexpr int DEFERRED_TWITCH_POINTS_REFRESH_OFFSET_MS = 500;
 constexpr int DEFERRED_TWITCH_WARNING_REFRESH_OFFSET_MS = 650;
@@ -84,6 +86,7 @@ constexpr int DEFERRED_TWITCH_CHATTERS_REFRESH_OFFSET_MS = 750;
 constexpr int DEFERRED_TWITCH_ROOM_ID_RETRY_MS = 1000;
 constexpr int DEFERRED_TWITCH_ROOM_ID_MAX_RETRIES = 12;
 constexpr int INTERACTIVE_TWITCH_FEATURE_REFRESH_DELAY_MS = 75;
+constexpr int INTERACTIVE_TWITCH_EDITOR_REFRESH_OFFSET_MS = 90;
 constexpr int INTERACTIVE_TWITCH_POLL_REFRESH_OFFSET_MS = 60;
 constexpr int INTERACTIVE_TWITCH_POINTS_REFRESH_OFFSET_MS = 120;
 constexpr int INTERACTIVE_TWITCH_WARNING_REFRESH_OFFSET_MS = 180;
@@ -173,6 +176,18 @@ Split::Split(QWidget *parent)
     this->signalHolder_.managedConnect(this->channelChanged, [this] {
         this->updateInputPlaceholder();
     });
+    getSettings()->moltorinoAuthAccounts.connect(
+        [this](const QString &, auto) {
+            this->editorAccessProbedChannels_.clear();
+            this->scheduleDeferredTwitchRefresh(true);
+        },
+        this->signalHolder_);
+    getSettings()->showEditStreamInfoButtonInSplitHeader.connect(
+        [this](bool, auto) {
+            this->editorAccessProbedChannels_.clear();
+            this->scheduleDeferredTwitchRefresh(true);
+        },
+        this->signalHolder_);
     this->signalHolder_.managedConnect(
         getApp()->getAccounts()->kick.currentUserChanged, [this] {
             this->updateInputPlaceholder();
@@ -906,6 +921,9 @@ void Split::runDeferredTwitchRefresh()
     const bool forcePersonalRefresh = this->deferredTwitchForcePersonalRefresh_;
     this->deferredTwitchForcePersonalRefresh_ = false;
 
+    const int editorOffsetMs = interactive
+                                   ? INTERACTIVE_TWITCH_EDITOR_REFRESH_OFFSET_MS
+                                   : DEFERRED_TWITCH_EDITOR_REFRESH_OFFSET_MS;
     const int pollOffsetMs = interactive
                                  ? INTERACTIVE_TWITCH_POLL_REFRESH_OFFSET_MS
                                  : DEFERRED_TWITCH_POLL_REFRESH_OFFSET_MS;
@@ -946,6 +964,49 @@ void Split::runDeferredTwitchRefresh()
         interactive || this->deferredTwitchWarningStartupSeen_;
     this->deferredTwitchWarningStartupSeen_ = true;
 
+    if (getSettings()->showEditStreamInfoButtonInSplitHeader)
+    {
+        QTimer::singleShot(editorOffsetMs, this, [this, runIfStillActive] {
+            runIfStillActive([this](TwitchChannel *tc) {
+                const auto roomId = tc->roomId();
+                if (this->editorAccessProbedChannels_.contains(roomId))
+                {
+                    return;
+                }
+
+                const auto managedChannel =
+                    std::dynamic_pointer_cast<TwitchChannel>(
+                        tc->shared_from_this());
+                if (!managedChannel || managedChannel.get() != tc)
+                {
+                    return;
+                }
+
+                this->editorAccessProbedChannels_.insert(roomId);
+                const QPointer<Split> self(this);
+                const auto refreshHeader = [self, roomId] {
+                    if (!self)
+                    {
+                        return;
+                    }
+                    const auto *current = self->twitchOverlayChannel();
+                    if (current != nullptr && current->roomId() == roomId &&
+                        self->header_ != nullptr)
+                    {
+                        self->header_->updateIcons();
+                    }
+                };
+                ChannelManagement::verifyAccess(
+                    managedChannel, false,
+                    [refreshHeader](ChannelManagementAccess) {
+                        refreshHeader();
+                    },
+                    [refreshHeader](const QString &) {
+                        refreshHeader();
+                    });
+            });
+        });
+    }
     if (getSettings()->enablePredictions)
     {
         runIfStillActive([forcePersonalRefresh](TwitchChannel *tc) {
@@ -1886,6 +1947,7 @@ void Split::wireTwitchBanners(TwitchChannel *tc)
 
 void Split::setChannel(IndirectChannel newChannel)
 {
+    this->editorAccessProbedChannels_.clear();
     this->channelSignalHolder_.clear();
     this->input_->setSendWaitStatus("");
 
@@ -2500,7 +2562,7 @@ void Split::openWithCustomScheme()
 
 void Split::openChatterList()
 {
-    auto channel = this->getSelectedChannel();
+    auto channel = this->getChannel();
     if (!channel)
     {
         qCWarning(chatterinoWidget)
@@ -2508,24 +2570,41 @@ void Split::openChatterList()
         return;
     }
 
-    auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get());
-    if (twitchChannel == nullptr)
+    if (!ChatterListWidget::supportsChannel(channel.get()))
     {
         qCWarning(chatterinoWidget)
-            << "Chatter list opened in a non-Twitch channel";
+            << "Chatter list opened without a supported channel";
         return;
+    }
+
+    for (auto *window : this->findChildren<ChatterListWidget *>())
+    {
+        if (window->channelName().compare(channel->getName(),
+                                          Qt::CaseInsensitive) == 0)
+        {
+            window->showNormal();
+            window->raise();
+            window->activateWindow();
+            return;
+        }
     }
 
     const auto chatterListWidth = static_cast<int>(this->width() * 0.5);
     const auto chatterListHeight =
-        this->height() - this->header_->height() - this->input_->height();
+        this->height() - this->header_->height() -
+        (this->input_ != nullptr ? this->input_->height() : 0);
 
-    auto *chatterDock = new ChatterListWidget(twitchChannel, this);
+    auto *chatterDock = new ChatterListWidget(std::move(channel), this);
 
-    QObject::connect(chatterDock, &ChatterListWidget::userClicked,
-                     [this](const QString &userLogin) {
-                         this->view_->showUserInfoPopup(
-                             userLogin, MessagePlatform::AnyOrTwitch);
+    QObject::connect(chatterDock, &ChatterListWidget::userClicked, this,
+                     [this](const QString &userLogin, MessagePlatform platform,
+                            const QString &channelName, const QString &) {
+                         if (platform == MessagePlatform::YouTube)
+                         {
+                             return;
+                         }
+                         this->view_->showUserInfoPopup(userLogin, platform,
+                                                        channelName);
                      });
 
     chatterDock->resize(chatterListWidth, chatterListHeight);

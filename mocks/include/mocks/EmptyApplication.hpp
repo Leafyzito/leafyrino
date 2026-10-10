@@ -212,6 +212,11 @@ public:
         return nullptr;
     }
 
+    BluzyrinoBadges *getBluzyrinoBadges() override
+    {
+        return nullptr;
+    }
+
     MoltorinoSupporterBadges *getMoltorinoSupporterBadges() override
     {
         return nullptr;
@@ -365,6 +370,16 @@ public:
         assert(false &&
                "EmptyApplication::getYouTubeChatServer was called without "
                "being initialized");
+        return nullptr;
+    }
+
+    PotatCommands *getPotatCommands() override
+    {
+        return nullptr;
+    }
+
+    SupibotCommands *getSupibotCommands() override
+    {
         return nullptr;
     }
 
