@@ -72,6 +72,7 @@ private:
     void rebuildEventBadges();
     void rebuildColors();
     void clearContent();
+    void deselectGlobal();
     void deselectChannel();
     void setFlairHidden(bool hidden);
     void refreshStyle();

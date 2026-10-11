@@ -6209,6 +6209,41 @@ void TwitchGql::selectGlobalBadge(
         .execute();
 }
 
+void TwitchGql::deselectGlobalBadge(
+    const QString &oauthToken, std::function<void()> successCallback,
+    std::function<void(const QString &)> failureCallback)
+{
+    static constexpr auto MUTATION = R"(
+mutation ChatSettings_DeselectGlobalBadge {
+  deselectGlobalBadge { user { id } }
+}
+)";
+    makeInlineGqlRequest(MUTATION, QJsonObject{}, oauthToken)
+        .onSuccess(
+            [successCallback, failureCallback](const NetworkResult &result) {
+                const auto root = result.parseJsonValue();
+                const auto gqlError = extractFirstGqlErrorMessage(root);
+                if (!gqlError.isEmpty())
+                {
+                    failureCallback("Twitch API Error: " + gqlError);
+                    return;
+                }
+                if (payloadDataObject(root)
+                        .value("deselectGlobalBadge")
+                        .toObject()
+                        .isEmpty())
+                {
+                    failureCallback("Twitch did not confirm the global badge");
+                    return;
+                }
+                successCallback();
+            })
+        .onError([failureCallback](const NetworkResult &result) {
+            failureCallback("Network Error: " + result.formatError());
+        })
+        .execute();
+}
+
 void TwitchGql::selectChannelBadge(
     const QString &badgeSetID, const QString &badgeSetVersion,
     const QString &channelID, const QString &oauthToken,

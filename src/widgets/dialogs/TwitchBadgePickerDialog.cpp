@@ -1241,7 +1241,7 @@ void TwitchBadgePickerDialog::rebuildGlobalBadges()
         if (selected.setID.isEmpty())
             noBadgeTile->setSelected(true);
         QObject::connect(noBadgeTile, &QPushButton::clicked, this, [this] {
-            this->selectGlobal({});
+            this->deselectGlobal();
         });
         grid->addWidget(noBadgeTile, row, col);
         col = 1;
@@ -2094,13 +2094,18 @@ MessagePtr TwitchBadgePickerDialog::buildPreviewMessage() const
 
 void TwitchBadgePickerDialog::selectGlobal(const GqlBadge &badge)
 {
+    if (badge.setID.isEmpty())
+    {
+        this->deselectGlobal();
+        return;
+    }
+
     const auto token = this->authTokenOrMessage();
     if (token.isEmpty())
         return;
 
-    const bool clearing = badge.setID.isEmpty();
-
-    this->badges_.selectedGlobalBadge = clearing ? GqlBadge{} : badge;
+    const auto previous = this->badges_.selectedGlobalBadge;
+    this->badges_.selectedGlobalBadge = badge;
     this->actionInFlight_ = true;
     this->rebuildContent();
     this->updatePreview();
@@ -2108,23 +2113,61 @@ void TwitchBadgePickerDialog::selectGlobal(const GqlBadge &badge)
     QPointer<TwitchBadgePickerDialog> self = this;
     TwitchGql::selectGlobalBadge(
         badge.setID, badge.version, token,
-        [self, badge, clearing] {
+        [self, badge] {
             if (!self)
                 return;
             self->actionInFlight_ = false;
-            self->badges_.selectedGlobalBadge = clearing ? GqlBadge{} : badge;
+            self->badges_.selectedGlobalBadge = badge;
             self->channel_->addSystemMessage(
-                clearing ? QStringLiteral("Global badge cleared.")
-                         : QStringLiteral("Global badge set to: %1")
-                               .arg(badge.title));
+                QStringLiteral("Global badge set to: %1").arg(badge.title));
             self->rebuildContent();
         },
-        [self](const QString &error) {
+        [self, previous](const QString &error) {
             if (!self)
                 return;
             self->actionInFlight_ = false;
+            self->badges_.selectedGlobalBadge = previous;
             self->setStatus(
                 MoltorinoAuth::normalizeAuthError("selecting badge", error),
+                true);
+            self->rebuildContent();
+        });
+}
+
+void TwitchBadgePickerDialog::deselectGlobal()
+{
+    if (this->badges_.selectedGlobalBadge.setID.isEmpty())
+        return;
+
+    const auto token = this->authTokenOrMessage();
+    if (token.isEmpty())
+        return;
+
+    const auto previous = this->badges_.selectedGlobalBadge;
+    this->badges_.selectedGlobalBadge = {};
+    this->actionInFlight_ = true;
+    this->rebuildContent();
+    this->updatePreview();
+
+    QPointer<TwitchBadgePickerDialog> self = this;
+    TwitchGql::deselectGlobalBadge(
+        token,
+        [self] {
+            if (!self)
+                return;
+            self->actionInFlight_ = false;
+            self->badges_.selectedGlobalBadge = {};
+            self->channel_->addSystemMessage(
+                QStringLiteral("Global badge cleared."));
+            self->rebuildContent();
+        },
+        [self, previous](const QString &error) {
+            if (!self)
+                return;
+            self->actionInFlight_ = false;
+            self->badges_.selectedGlobalBadge = previous;
+            self->setStatus(
+                MoltorinoAuth::normalizeAuthError("deselecting badge", error),
                 true);
             self->rebuildContent();
         });
