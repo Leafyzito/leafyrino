@@ -565,9 +565,9 @@ void selectGlobalBadge(const QString &badgeSetID,
                        const QString &oauthToken,
                        std::function<void()> successCallback,
                        std::function<void(const QString &)> failureCallback);
-void deselectGlobalBadge(
-    const QString &oauthToken, std::function<void()> successCallback,
-    std::function<void(const QString &)> failureCallback);
+void deselectGlobalBadge(const QString &oauthToken,
+                         std::function<void()> successCallback,
+                         std::function<void(const QString &)> failureCallback);
 void selectChannelBadge(const QString &badgeSetID,
                         const QString &badgeSetVersion,
                         const QString &channelID, const QString &oauthToken,
