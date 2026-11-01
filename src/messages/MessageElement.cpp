@@ -86,6 +86,59 @@ QString timestampTooltip(const QDateTime &localTime,
                                QStringLiteral("dd/MM/yyyy ") + timestampFormat);
 }
 
+/// Finds `word` in `text` at or after `from`, only skipping whitespace, so
+/// the search can't jump ahead to an unrelated occurrence of the same word
+qsizetype findWordInMessageText(const QString &text, const QString &word,
+                                qsizetype from)
+{
+    if (word.isEmpty() || from < 0)
+    {
+        return -1;
+    }
+    const auto pos = text.indexOf(word, from, Qt::CaseInsensitive);
+    if (pos < 0)
+    {
+        return -1;
+    }
+    for (auto i = from; i < pos; ++i)
+    {
+        if (!text.at(i).isSpace())
+        {
+            return -1;
+        }
+    }
+    return pos;
+}
+
+/// Clips `matches` to the piece of message text [pieceStart, pieceStart +
+/// pieceLength), relative to the piece
+std::vector<FragmentHighlight> fragmentHighlightsFor(
+    const std::vector<HighlightMatch> &matches, qsizetype pieceStart,
+    qsizetype pieceLength, bool canConnect)
+{
+    std::vector<FragmentHighlight> result;
+    const auto pieceEnd = pieceStart + pieceLength;
+    for (const auto &match : matches)
+    {
+        const auto matchEnd = match.start + match.length;
+        const auto overlapStart = std::max(pieceStart, match.start);
+        const auto overlapEnd = std::min(pieceEnd, matchEnd);
+        if (overlapEnd <= overlapStart)
+        {
+            continue;
+        }
+        auto local = match;
+        local.start = overlapStart - pieceStart;
+        local.length = overlapEnd - overlapStart;
+        result.push_back({
+            .match = std::move(local),
+            .connectsBefore = canConnect && match.start < pieceStart,
+            .connectsAfter = canConnect && matchEnd > pieceEnd,
+        });
+    }
+    return result;
+}
+
 QSizeF textElementSize(const QString &text, const QFontMetricsF &metrics,
                        const QFont *layoutFont)
 {
@@ -234,6 +287,7 @@ void MessageElement::cloneFrom(const MessageElement &source)
     this->flags_ = source.flags_;
     this->trailingSpace = source.trailingSpace;
     this->exhaustiveFlags = source.exhaustiveFlags;
+    this->messageTextOffset = source.messageTextOffset;
 }
 
 bool MessageElement::matchesFlags(MessageElementFlags contextFlags) const
@@ -1248,12 +1302,33 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
         const QFont *layoutFont =
             measureUsernameWithLayout ? &usernameFont : nullptr;
 
+        // AutoMod held messages map their words back to the message text so
+        // the ranges Twitch flagged can be marked
+        const auto *matches = ctx.message.highlightMatches.get();
+        const bool tracksMessageText = this->messageTextOffset >= 0 &&
+                                       matches != nullptr && !matches->empty();
+        const bool canConnectMatches = !ctx.message.messageText.isRightToLeft();
+        qsizetype textCursor = this->messageTextOffset;
+
         for (qsizetype i = 0; i < this->words_.size(); i++)
         {
             const auto &word = this->words_.at(i);
             auto wordId = container.nextWordId();
             const bool hasTrailingSpace =
                 (i + 1 < this->words_.size()) ? true : this->hasTrailingSpace();
+
+            qsizetype matchedWordStart = -1;
+            if (tracksMessageText)
+            {
+                matchedWordStart = findWordInMessageText(
+                    ctx.message.messageText, word, textCursor);
+                if (matchedWordStart >= 0)
+                {
+                    textCursor = matchedWordStart + word.size();
+                }
+            }
+            // wrapped words are split into consecutive pieces
+            qsizetype pieceOffset = 0;
 
             auto getTextLayoutElement = [&](QString text, QSizeF size,
                                             bool hasTrailingSpace) {
@@ -1267,6 +1342,14 @@ void TextElement::addToContainer(MessageLayoutContainer &container,
                 e->setTrailingSpace(hasTrailingSpace);
                 e->setText(text);
                 e->setWordId(wordId);
+
+                if (matchedWordStart >= 0)
+                {
+                    e->setFragmentHighlights(fragmentHighlightsFor(
+                        *matches, matchedWordStart + pieceOffset, text.size(),
+                        canConnectMatches));
+                    pieceOffset += text.size();
+                }
 
                 return e;
             };
@@ -2220,6 +2303,73 @@ QJsonObject TwitchModerationElement::toJson() const
 }
 
 std::string_view TwitchModerationElement::type() const
+{
+    return std::remove_pointer_t<decltype(this)>::TYPE;
+}
+
+AutoModActionElement::AutoModActionElement(AutoModActionKind kind,
+                                           int timeoutSeconds,
+                                           MessageElementFlags flags)
+    : MessageElement(flags)
+    , kind_(kind)
+    , timeoutSeconds_(timeoutSeconds)
+{
+}
+
+void AutoModActionElement::addToContainer(MessageLayoutContainer &container,
+                                          const MessageLayoutContext &ctx)
+{
+    if (!this->matchesFlags(ctx.flags))
+    {
+        return;
+    }
+
+    const QSizeF size{container.getScale() * 16, container.getScale() * 16};
+    MessageLayoutElement *element = nullptr;
+    if (this->kind_ == AutoModActionKind::Ban)
+    {
+        const ModerationAction action(u"/ban {user.name}"_s);
+        if (const auto &image = action.getImage())
+        {
+            element = new ImageLayoutElement(*this, *image, size);
+        }
+    }
+    else
+    {
+        const ModerationAction action(
+            u"/timeout {user.name} %1"_s.arg(this->timeoutSeconds_));
+        element = new TextIconLayoutElement(*this, action.getLine1(),
+                                            action.getLine2(),
+                                            container.getScale(), size);
+    }
+    if (element == nullptr)
+    {
+        return;
+    }
+    element->setLink(this->getLink());
+    element->setTrailingSpace(this->hasTrailingSpace());
+    container.addElement(element);
+}
+
+std::unique_ptr<MessageElement> AutoModActionElement::clone() const
+{
+    auto el = std::make_unique<AutoModActionElement>(
+        this->kind_, this->timeoutSeconds_, this->getFlags());
+    el->cloneFrom(*this);
+    return el;
+}
+
+QJsonObject AutoModActionElement::toJson() const
+{
+    auto base = MessageElement::toJson();
+    base["type"_L1] = u"AutoModActionElement"_s;
+    base["kind"_L1] = this->kind_ == AutoModActionKind::Ban ? u"ban"_s
+                                                            : u"timeout"_s;
+    base["timeoutSeconds"_L1] = this->timeoutSeconds_;
+    return base;
+}
+
+std::string_view AutoModActionElement::type() const
 {
     return std::remove_pointer_t<decltype(this)>::TYPE;
 }

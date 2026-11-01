@@ -884,6 +884,7 @@ void SplitContainer::applyFromDescriptorRecursively(
 
         auto *split = new Split(this);
         split->setChannel(splitNode.decodeChannel());
+        split->setAutoModChannelFilter(splitNode.autoModChannelFilter_);
         split->setModerationMode(splitNode.moderationMode_);
         split->setFilters(splitNode.filters_);
         split->setCheckSpellingOverride(splitNode.spellCheckOverride);
@@ -924,6 +925,7 @@ void SplitContainer::applyFromDescriptorRecursively(
                 auto *split = new Split(this);
                 split->setFilters(splitNode.filters_);
                 split->setChannel(splitNode.decodeChannel());
+                split->setAutoModChannelFilter(splitNode.autoModChannelFilter_);
                 split->setModerationMode(splitNode.moderationMode_);
                 split->setCheckSpellingOverride(splitNode.spellCheckOverride);
                 split->loadPerSplitBannerHides(

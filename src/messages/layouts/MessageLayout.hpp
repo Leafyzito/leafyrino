@@ -29,12 +29,16 @@ enum class MessageElementFlag : int64_t;
 using MessageElementFlags = FlagsEnum<MessageElementFlag>;
 
 enum class MessageLayoutFlag : uint8_t {
+    /// The message is the selected review in the /automod queue
+    AutoModReviewSelected = 1 << 0,
     RequiresBufferUpdate = 1 << 1,
     RequiresLayout = 1 << 2,
     AlternateBackground = 1 << 3,
     Collapsed = 1 << 4,
     Expanded = 1 << 5,
     IgnoreHighlights = 1 << 6,
+    /// The message is laid out in the /automod queue
+    AutoModReviewChannel = 1 << 7,
 };
 using MessageLayoutFlags = FlagsEnum<MessageLayoutFlag>;
 

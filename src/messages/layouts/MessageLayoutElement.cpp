@@ -29,6 +29,7 @@
 #include <QPainterPath>
 #include <QPixmap>
 #include <QSet>
+#include <QTextLayout>
 #include <QThreadPool>
 
 #include <algorithm>
@@ -517,6 +518,114 @@ QPixmap filteredModifierPixmap(const QPixmap &source, uint32_t flags, int phase,
     return result;
 }
 
+using chatterino::FragmentHighlight;
+using chatterino::HighlightMatchStyle;
+
+void paintFragmentOutline(QPainter &painter, const QRectF &rect,
+                          const FragmentHighlight &highlight)
+{
+    const auto outline = rect.adjusted(0.75, 0.75, -0.75, -0.75);
+    if (!highlight.connectsBefore && !highlight.connectsAfter)
+    {
+        painter.drawRoundedRect(outline, 2.0, 2.0);
+        return;
+    }
+
+    // leave the connecting sides open so neighbouring pieces read as one
+    // marker
+    const auto radius =
+        std::min<qreal>(2.0, std::min(outline.width(), outline.height()) / 2.0);
+    QPainterPath path;
+    path.moveTo(outline.left() + (highlight.connectsBefore ? 0.0 : radius),
+                outline.top());
+    path.lineTo(outline.right() - (highlight.connectsAfter ? 0.0 : radius),
+                outline.top());
+    path.moveTo(outline.right() - (highlight.connectsAfter ? 0.0 : radius),
+                outline.bottom());
+    path.lineTo(outline.left() + (highlight.connectsBefore ? 0.0 : radius),
+                outline.bottom());
+
+    if (!highlight.connectsBefore)
+    {
+        path.moveTo(outline.left() + radius, outline.top());
+        path.quadTo(outline.topLeft(),
+                    QPointF(outline.left(), outline.top() + radius));
+        path.lineTo(outline.left(), outline.bottom() - radius);
+        path.quadTo(outline.bottomLeft(),
+                    QPointF(outline.left() + radius, outline.bottom()));
+    }
+    if (!highlight.connectsAfter)
+    {
+        path.moveTo(outline.right() - radius, outline.top());
+        path.quadTo(outline.topRight(),
+                    QPointF(outline.right(), outline.top() + radius));
+        path.lineTo(outline.right(), outline.bottom() - radius);
+        path.quadTo(outline.bottomRight(),
+                    QPointF(outline.right() - radius, outline.bottom()));
+    }
+    painter.drawPath(path);
+}
+
+void paintFragmentBackground(QPainter &painter, const QRectF &rect,
+                             const FragmentHighlight &highlight,
+                             HighlightMatchStyle style, const QColor &color)
+{
+    if (rect.isEmpty() || (style != HighlightMatchStyle::Fill &&
+                           style != HighlightMatchStyle::OutlineAndFill))
+    {
+        return;
+    }
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+
+    QPainterPath path;
+    path.setFillRule(Qt::WindingFill);
+    path.addRoundedRect(rect, 2.0, 2.0);
+    if (highlight.connectsBefore)
+    {
+        path.addRect(QRectF(rect.left(), rect.top(), 2.0, rect.height()));
+    }
+    if (highlight.connectsAfter)
+    {
+        path.addRect(QRectF(rect.right() - 2.0, rect.top(), 2.0, rect.height()));
+    }
+    painter.drawPath(path);
+    painter.restore();
+}
+
+void paintFragmentForeground(QPainter &painter, const QRectF &rect,
+                             const FragmentHighlight &highlight,
+                             HighlightMatchStyle style, const QColor &color)
+{
+    if (rect.isEmpty() || style == HighlightMatchStyle::None ||
+        style == HighlightMatchStyle::Fill)
+    {
+        return;
+    }
+
+    painter.save();
+    QPen pen(color, 1.5);
+    pen.setJoinStyle(Qt::RoundJoin);
+    pen.setCapStyle(Qt::RoundCap);
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+
+    if (style == HighlightMatchStyle::Underline)
+    {
+        const auto y = rect.bottom() - 1.0;
+        painter.drawLine(QPointF(rect.left(), y), QPointF(rect.right(), y));
+    }
+    else
+    {
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        paintFragmentOutline(painter, rect, highlight);
+    }
+    painter.restore();
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -609,6 +718,16 @@ int MessageLayoutElement::getWordId() const
 void MessageLayoutElement::setWordId(int wordId)
 {
     this->wordId_ = wordId;
+}
+
+void MessageLayoutElement::clearFragmentHighlightContinuity(bool /*before*/,
+                                                            bool /*after*/)
+{
+}
+
+QString MessageLayoutElement::getFragmentTooltip(QPointF /*point*/) const
+{
+    return {};
 }
 
 //
@@ -1231,6 +1350,140 @@ size_t TextLayoutElement::getSelectionIndexCount() const
     return this->getText().length() + (this->trailingSpace ? 1 : 0);
 }
 
+void TextLayoutElement::setFragmentHighlights(
+    std::vector<FragmentHighlight> highlights)
+{
+    if (highlights.empty())
+    {
+        this->fragmentHighlights_.reset();
+        return;
+    }
+    this->fragmentHighlights_ =
+        std::make_unique<std::vector<FragmentHighlight>>(std::move(highlights));
+}
+
+void TextLayoutElement::clearFragmentHighlightContinuity(bool before,
+                                                         bool after)
+{
+    if (this->fragmentHighlights_ == nullptr)
+    {
+        return;
+    }
+    for (auto &highlight : *this->fragmentHighlights_)
+    {
+        if (before)
+        {
+            highlight.connectsBefore = false;
+        }
+        if (after)
+        {
+            highlight.connectsAfter = false;
+        }
+    }
+}
+
+QString TextLayoutElement::getFragmentTooltip(QPointF point) const
+{
+    if (this->fragmentHighlights_ == nullptr)
+    {
+        return {};
+    }
+
+    for (const auto &highlight : *this->fragmentHighlights_)
+    {
+        if (highlight.match.ruleName.isEmpty())
+        {
+            continue;
+        }
+        const auto rect = this->fragmentRect(
+            highlight.match.start,
+            highlight.match.start + highlight.match.length);
+        if (rect.contains(point))
+        {
+            return highlight.match.ruleName;
+        }
+    }
+    return {};
+}
+
+QRectF TextLayoutElement::fragmentRect(qsizetype from, qsizetype to) const
+{
+    const auto &text = this->getText();
+    from = std::clamp<qsizetype>(from, 0, text.size());
+    to = std::clamp<qsizetype>(to, 0, text.size());
+    if (to <= from)
+    {
+        return {};
+    }
+
+    const auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
+    auto rect = this->getRect();
+    if (!text.isRightToLeft() && !this->reversedNeutral)
+    {
+        const QFontMetricsF metrics(font);
+        const auto left = rect.left();
+        rect.setLeft(left + metrics.horizontalAdvance(text.left(from)));
+        rect.setRight(left + metrics.horizontalAdvance(text.left(to)));
+        return rect;
+    }
+
+    // the text is drawn with an RTL embed in front, measure it the same way
+    QString embedded = text;
+    embedded.prepend(RTL_EMBED);
+    QTextLayout layout(embedded, font);
+    layout.beginLayout();
+    auto line = layout.createLine();
+    line.setLineWidth(rect.width());
+    layout.endLayout();
+    const auto start = line.cursorToX(static_cast<int>(from + 1));
+    const auto end = line.cursorToX(static_cast<int>(to + 1));
+    rect.setLeft(this->getRect().left() + std::min(start, end));
+    rect.setRight(this->getRect().left() + std::max(start, end));
+    return rect;
+}
+
+void TextLayoutElement::paintFragmentHighlights(QPainter &painter,
+                                                bool foreground) const
+{
+    if (this->fragmentHighlights_ == nullptr)
+    {
+        return;
+    }
+
+    const auto style = autoModMatchStyle();
+    if (style == HighlightMatchStyle::None)
+    {
+        return;
+    }
+    const auto color = autoModMatchColor();
+    const auto font = getApp()->getFonts()->getFont(this->style_, this->scale_);
+    const QFontMetricsF metrics(font);
+
+    for (const auto &highlight : *this->fragmentHighlights_)
+    {
+        auto rect =
+            this->fragmentRect(highlight.match.start,
+                               highlight.match.start + highlight.match.length);
+        if (rect.isEmpty())
+        {
+            continue;
+        }
+        // bridge the gap to the next word of the same match
+        if (highlight.connectsAfter && this->hasTrailingSpace())
+        {
+            rect.setRight(rect.right() + metrics.horizontalAdvance(u' '));
+        }
+        if (foreground)
+        {
+            paintFragmentForeground(painter, rect, highlight, style, color);
+        }
+        else
+        {
+            paintFragmentBackground(painter, rect, highlight, style, color);
+        }
+    }
+}
+
 void TextLayoutElement::paint(QPainter &painter,
                               const MessageColors & /*messageColors*/)
 {
@@ -1242,6 +1495,8 @@ void TextLayoutElement::paint(QPainter &painter,
     }
 
     auto font = app->getFonts()->getFont(this->style_, this->scale_);
+
+    this->paintFragmentHighlights(painter, false);
 
     bool isNametag = this->getLink().type == chatterino::Link::UserInfo ||
                      this->getLink().type == chatterino::Link::UserWhisper;
@@ -1257,6 +1512,7 @@ void TextLayoutElement::paint(QPainter &painter,
         {
             if (paint->animated())
             {
+                this->paintFragmentHighlights(painter, true);
                 return;
             }
 
@@ -1265,6 +1521,7 @@ void TextLayoutElement::paint(QPainter &painter,
                 this->scale_, this->dpr_);
 
             painter.drawPixmap(this->getRect().topLeft(), paintPixmap);
+            this->paintFragmentHighlights(painter, true);
             return;
         }
     }
@@ -1284,6 +1541,8 @@ void TextLayoutElement::paint(QPainter &painter,
             QRectF(this->getRect().x(), this->getRect().y(), 10000, 10000),
             text, QTextOption(Qt::AlignLeft | Qt::AlignTop));
     }
+
+    this->paintFragmentHighlights(painter, true);
 }
 
 QRegion TextLayoutElement::paintAnimated(QPainter &painter, const qreal yOffset)

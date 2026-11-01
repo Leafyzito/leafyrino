@@ -160,6 +160,11 @@ void setLinkOn(MessageElement *el, const Link &link)
         case Link::None:
         case Link::AutoModAllow:
         case Link::AutoModDeny:
+        case Link::AutoModReviewApprove:
+        case Link::AutoModReviewDeny:
+        case Link::AutoModReviewTimeout:
+        case Link::AutoModReviewBan:
+        case Link::AutoModReviewRetry:
         case Link::AcknowledgeChatWarning:
         case Link::JumpToOrCreateChannel:
         case Link::OpenAccountsPage:

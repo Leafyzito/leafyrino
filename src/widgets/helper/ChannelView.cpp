@@ -8,6 +8,7 @@
 #include "common/Common.hpp"
 #include "common/QLogging.hpp"
 #include "controllers/accounts/AccountController.hpp"
+#include "controllers/automod/AutoModReviewController.hpp"
 #include "controllers/commands/builtin/twitch/Pin.hpp"
 #include "controllers/commands/Command.hpp"
 #include "controllers/commands/CommandController.hpp"
@@ -73,9 +74,13 @@
 #include <QGestureEvent>
 #include <QGraphicsBlurEffect>
 #include <QHash>
+#include <QInputDialog>
 #include <QJsonDocument>
+#include <QKeyEvent>
+#include <QMenu>
 #include <QMessageBox>
 #include <QPainter>
+#include <QPointer>
 #include <QScreen>
 #include <QSet>
 #include <QStringBuilder>
@@ -1002,6 +1007,48 @@ float getTooltipScale(EmoteTooltipScale emoteTooltipScale)
     }
 }
 
+struct AutoModTimeoutLink {
+    QString key;
+    int seconds = 0;
+};
+
+/// Parses "<review key>\n<seconds>" from an AutoModReviewTimeout link
+std::optional<AutoModTimeoutLink> parseAutoModTimeoutLink(QStringView value)
+{
+    const auto separator = value.lastIndexOf(u'\n');
+    if (separator <= 0)
+    {
+        return std::nullopt;
+    }
+    bool ok = false;
+    const auto seconds = value.sliced(separator + 1).toInt(&ok);
+    if (!ok || seconds <= 0)
+    {
+        return std::nullopt;
+    }
+    return AutoModTimeoutLink{
+        .key = value.first(separator).toString(),
+        .seconds = seconds,
+    };
+}
+
+bool isAutoModReviewActionLink(Link::Type type)
+{
+    switch (type)
+    {
+        case Link::AutoModReviewApprove:
+        case Link::AutoModReviewDeny:
+        case Link::AutoModReviewTimeout:
+        case Link::AutoModReviewBan:
+        case Link::AutoModReviewRetry:
+            return true;
+        default:
+            return false;
+    }
+}
+
+const QString AUTOMOD_REVIEW_REASON = QStringLiteral("AutoMod review");
+
 }  // namespace
 
 namespace chatterino {
@@ -1091,6 +1138,95 @@ ChannelView::ChannelView(InternalCtor /*tag*/, QWidget *parent, Split *split,
                                     getSettings()->overlayBackgroundOpacity);
     this->messagePreferences_.connectSettings(getSettings(),
                                               this->signalHolder_);
+
+    if (auto *review = getApp()->getAutoModReview())
+    {
+        getSettings()->autoModReviewShowContext.connect(
+            [this](bool enabled, auto) {
+                if (!this->isAutoModReviewChannel())
+                {
+                    return;
+                }
+                if (enabled && !this->autoModReviewSelectedKey_.isEmpty())
+                {
+                    if (auto *review = getApp()->getAutoModReview())
+                    {
+                        review->ensureContext(this->autoModReviewSelectedKey_);
+                    }
+                }
+                this->queueLayout();
+            },
+            this->signalHolder_, false);
+
+        this->signalHolder_.managedConnect(
+            review->itemAdded, [this](const QString &) {
+                if (this->isAutoModReviewChannel() && this->isVisible() &&
+                    this->autoModReviewSelectedKey_.isEmpty())
+                {
+                    this->selectAutoModReview(1, true);
+                }
+            });
+        this->signalHolder_.managedConnect(
+            review->itemChanged, [this, review](const QString &key) {
+                if (!this->isAutoModReviewChannel())
+                {
+                    return;
+                }
+                if (!this->isVisible())
+                {
+                    this->autoModReviewDirty_ = true;
+                    return;
+                }
+                const auto *item = review->find(key);
+                if (item == nullptr)
+                {
+                    return;
+                }
+
+                // resolved reviews leave the queue
+                const auto current =
+                    this->underlyingChannel_->findMessageByID(
+                        QStringLiteral("automod_") + item->messageID);
+                const bool shouldBeVisible =
+                    current && this->shouldIncludeMessage(current);
+                if (this->isAutoModReviewVisible(key) != shouldBeVisible)
+                {
+                    this->refilterAutoModQueue();
+                }
+
+                if (this->autoModReviewSelectedKey_ == key &&
+                    item->state != automod::ReviewState::Approving &&
+                    item->state != automod::ReviewState::Denying &&
+                    !item->secondaryInProgress && !automod::isActionable(*item))
+                {
+                    if (!this->selectAutoModReview(1, true))
+                    {
+                        this->setAutoModReviewSelectedKey({});
+                    }
+                }
+            });
+        this->signalHolder_.managedConnect(
+            review->itemRemoved, [this](const QString &key) {
+                if (this->autoModReviewSelectedKey_ == key)
+                {
+                    this->autoModReviewSelectedKey_.clear();
+                }
+                if (!this->isAutoModReviewChannel())
+                {
+                    return;
+                }
+                if (!this->isVisible())
+                {
+                    this->autoModReviewDirty_ = true;
+                    return;
+                }
+                this->refilterAutoModQueue();
+                if (this->autoModReviewSelectedKey_.isEmpty())
+                {
+                    this->selectAutoModReview(1, true);
+                }
+            });
+    }
 }
 
 void ChannelView::initializeLayout()
@@ -1478,10 +1614,22 @@ void ChannelView::queueLayout(bool disableAnimation)
 
 void ChannelView::showEvent(QShowEvent * /*event*/)
 {
+    const bool isAutoMod = this->isAutoModReviewChannel();
+    if (isAutoMod && this->autoModReviewDirty_)
+    {
+        this->autoModReviewDirty_ = false;
+        this->refilterAutoModQueue();
+    }
+
     if (this->layoutQueued_)
     {
         this->performLayout(/*causedByScrollbar=*/false,
                             /*disableAnimation=*/true);
+    }
+
+    if (isAutoMod && this->autoModReviewSelectedKey_.isEmpty())
+    {
+        this->selectAutoModReview(1, true);
     }
 }
 
@@ -1546,6 +1694,9 @@ void ChannelView::layoutVisibleMessages(
                     .centerBadges = this->centerBadges_,
                     .selectedChannel = selectedChannel,
                     .message = *message->getMessage(),
+                    .autoModReviewExpanded =
+                        this->isSelectedAutoModReview(*message->getMessage()),
+                    .autoModReviewChannel = this->isAutoModReviewChannel(),
                 },
                 this->bufferInvalidationQueued_);
 
@@ -1601,6 +1752,9 @@ void ChannelView::updateScrollbar(const std::vector<MessageLayoutPtr> &messages,
                 .centerBadges = this->centerBadges_,
                 .selectedChannel = selectedChannel,
                 .message = *message->getMessage(),
+                .autoModReviewExpanded =
+                    this->isSelectedAutoModReview(*message->getMessage()),
+                .autoModReviewChannel = this->isAutoModReviewChannel(),
             },
             false);
 
@@ -2942,6 +3096,9 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                             .centerBadges = this->centerBadges_,
                             .selectedChannel = selectedChannel,
                             .message = *snapshot[i - 1]->getMessage(),
+                            .autoModReviewExpanded =
+                                this->isSelectedAutoModReview(*snapshot[i - 1]->getMessage()),
+                            .autoModReviewChannel = this->isAutoModReviewChannel(),
                         },
                         false);
                     scrollFactor = 1;
@@ -2992,6 +3149,9 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                             .centerBadges = this->centerBadges_,
                             .selectedChannel = selectedChannel,
                             .message = *snapshot[i + 1]->getMessage(),
+                            .autoModReviewExpanded =
+                                this->isSelectedAutoModReview(*snapshot[i + 1]->getMessage()),
+                            .autoModReviewChannel = this->isAutoModReviewChannel(),
                         },
                         false);
 
@@ -3020,8 +3180,25 @@ void ChannelView::leaveEvent(QEvent * /*event*/)
     this->unpause(PauseReason::Mouse);
 }
 
+void ChannelView::keyPressEvent(QKeyEvent *event)
+{
+    if (this->handleAutoModReviewKey(event))
+    {
+        event->accept();
+        return;
+    }
+    BaseWidget::keyPressEvent(event);
+}
+
 bool ChannelView::event(QEvent *event)
 {
+    if (event->type() == QEvent::ShortcutOverride &&
+        this->handleAutoModReviewKey(static_cast<QKeyEvent *>(event)))
+    {
+        event->accept();
+        return true;
+    }
+
     if (event->type() == QEvent::Gesture)
     {
         if (const auto *gestureEvent = dynamic_cast<QGestureEvent *>(event))
@@ -3164,8 +3341,23 @@ void ChannelView::mouseMoveEvent(QMouseEvent *event)
     bool isNotEmote = emoteElement == nullptr && emoteLinkElement == nullptr &&
                       layeredEmoteElement == nullptr;
 
-    if (element->getTooltip().isEmpty() ||
-        (isLinkValid && isNotEmote && !getSettings()->linkInfoTooltip))
+    // text flagged by AutoMod explains why it was flagged
+    const auto fragmentTooltip =
+        hoverLayoutElement->getFragmentTooltip(relativePos);
+    if (!fragmentTooltip.isEmpty())
+    {
+        this->tooltipWidget_->setOne(TooltipEntry{
+            .image = nullptr,
+            .text = fragmentTooltip,
+        });
+        this->tooltipWidget_->moveTo(
+            event->globalPosition().toPoint() + QPoint(16, 16),
+            widgets::BoundsChecking::CursorPosition);
+        this->tooltipWidget_->setWordWrap(true);
+        this->tooltipWidget_->show();
+    }
+    else if (element->getTooltip().isEmpty() ||
+             (isLinkValid && isNotEmote && !getSettings()->linkInfoTooltip))
     {
         this->tooltipWidget_->hide();
     }
@@ -3351,6 +3543,24 @@ void ChannelView::mousePressEvent(QMouseEvent *event)
             this->setSelection(selectionItem, selectionItem);
         }
         return;
+    }
+
+    // clicking a review in /automod selects it. Pressing one of its action
+    // links doesn't, selecting expands the review and would move the link
+    // away before the click is released.
+    if (event->button() == Qt::LeftButton && this->isAutoModReviewChannel() &&
+        layout->getMessage()->autoModReview)
+    {
+        const auto *pressed = layout->getElementAt(relativePos);
+        const bool pressedAction =
+            pressed != nullptr &&
+            isAutoModReviewActionLink(pressed->getLink().type) &&
+            !getSettings()->linksDoubleClickOnly;
+        if (!pressedAction)
+        {
+            this->setAutoModReviewSelectedKey(
+                layout->getMessage()->autoModReview->key);
+        }
     }
 
     // check if message is collapsed
@@ -4417,6 +4627,411 @@ void ChannelView::showUserInfoPopup(const QString &userName,
     userPopup->show();
 }
 
+bool ChannelView::isAutoModReviewChannel() const
+{
+    return this->underlyingChannel_ != nullptr &&
+           this->underlyingChannel_->getType() == Channel::Type::TwitchAutomod;
+}
+
+bool ChannelView::isSelectedAutoModReview(const Message &message) const
+{
+    return message.autoModReview != nullptr &&
+           !this->autoModReviewSelectedKey_.isEmpty() &&
+           message.autoModReview->key == this->autoModReviewSelectedKey_ &&
+           this->isAutoModReviewChannel();
+}
+
+bool ChannelView::isAutoModReviewVisible(const QString &key)
+{
+    const auto &snapshot = this->getMessagesSnapshot();
+    return std::ranges::any_of(snapshot, [&key](const auto &layout) {
+        const auto *message = layout->getMessage();
+        return message != nullptr && message->autoModReview &&
+               message->autoModReview->key == key;
+    });
+}
+
+void ChannelView::refilterAutoModQueue()
+{
+    if (this->underlyingChannel_ == nullptr)
+    {
+        return;
+    }
+    // replaying the channel runs every message through the predicate again
+    auto underlying = this->underlyingChannel_;
+    this->setChannel(underlying);
+    if (!this->autoModReviewSelectedKey_.isEmpty() &&
+        !this->isAutoModReviewVisible(this->autoModReviewSelectedKey_))
+    {
+        this->setAutoModReviewSelectedKey({});
+    }
+}
+
+const QString &ChannelView::autoModReviewSelectedKey() const
+{
+    return this->autoModReviewSelectedKey_;
+}
+
+void ChannelView::setAutoModReviewSelectedKey(QString key)
+{
+    if (this->autoModReviewSelectedKey_ == key)
+    {
+        return;
+    }
+    this->autoModReviewSelectedKey_ = std::move(key);
+    this->queueLayout();
+    this->update();
+
+    if (this->autoModReviewSelectedKey_.isEmpty())
+    {
+        return;
+    }
+
+    // earlier messages are only looked up once a review is looked at
+    const auto selectedKey = this->autoModReviewSelectedKey_;
+    QTimer::singleShot(0, this, [this, selectedKey] {
+        if (this->autoModReviewSelectedKey_ != selectedKey ||
+            !getSettings()->autoModReviewShowContext)
+        {
+            return;
+        }
+        if (auto *review = getApp()->getAutoModReview())
+        {
+            review->ensureContext(selectedKey);
+        }
+    });
+
+    if (!this->scrollBar_->isVisible())
+    {
+        return;
+    }
+
+    // keep the selection on screen without jumping when it already is
+    const auto &snapshot = this->getMessagesSnapshot();
+    for (size_t index = 0; index < snapshot.size(); ++index)
+    {
+        const auto *message = snapshot[index]->getMessage();
+        if (message == nullptr || !message->autoModReview ||
+            message->autoModReview->key != selectedKey)
+        {
+            continue;
+        }
+
+        const auto minimum = this->scrollBar_->getMinimum();
+        const auto top = this->scrollBar_->getDesiredValue() - minimum;
+        const auto page = this->scrollBar_->getPageSize();
+        const auto position = static_cast<qreal>(index);
+        if (position < top)
+        {
+            this->scrollBar_->setDesiredValue(minimum + position);
+        }
+        else if (position + 1 > top + page)
+        {
+            this->scrollBar_->setDesiredValue(minimum + position + 1 - page);
+        }
+        break;
+    }
+}
+
+bool ChannelView::selectAutoModReview(int direction, bool actionableOnly)
+{
+    if (!this->isAutoModReviewChannel())
+    {
+        return false;
+    }
+
+    auto *review = getApp()->getAutoModReview();
+    const auto &snapshot = this->getMessagesSnapshot();
+    QVector<QString> keys;
+    QSet<QString> seenKeys;
+    for (const auto &layout : snapshot)
+    {
+        const auto *message = layout->getMessage();
+        if (message == nullptr || !message->autoModReview ||
+            seenKeys.contains(message->autoModReview->key))
+        {
+            continue;
+        }
+        const auto *item = review != nullptr
+                               ? review->find(message->autoModReview->key)
+                               : nullptr;
+        if (actionableOnly &&
+            (item == nullptr || !automod::isActionable(*item)))
+        {
+            continue;
+        }
+        seenKeys.insert(message->autoModReview->key);
+        keys.push_back(message->autoModReview->key);
+    }
+    if (keys.isEmpty())
+    {
+        return false;
+    }
+
+    auto index = keys.indexOf(this->autoModReviewSelectedKey_);
+    if (index < 0 && actionableOnly)
+    {
+        // the newest review sits next to where the view follows chat
+        this->setAutoModReviewSelectedKey(keys.back());
+        return true;
+    }
+    if (index < 0)
+    {
+        index = direction < 0 ? 0 : -1;
+    }
+    const auto count = keys.size();
+    index = (index + (direction < 0 ? -1 : 1) + count) % count;
+    this->setAutoModReviewSelectedKey(keys.at(index));
+    return true;
+}
+
+bool ChannelView::handleAutoModReviewKey(QKeyEvent *event)
+{
+    if (event == nullptr || !this->isAutoModReviewChannel())
+    {
+        return false;
+    }
+    const auto modifiers = event->modifiers() & ~Qt::KeypadModifier;
+    if (modifiers != Qt::NoModifier)
+    {
+        return false;
+    }
+
+    // ShortcutOverride only claims the key, the action runs on the KeyPress
+    const bool shortcutOverride = event->type() == QEvent::ShortcutOverride;
+    switch (event->key())
+    {
+        case Qt::Key_Up:
+            return shortcutOverride || this->selectAutoModReview(-1, false);
+        case Qt::Key_Down:
+            return shortcutOverride || this->selectAutoModReview(1, false);
+        case Qt::Key_Return:
+        case Qt::Key_Enter:
+            if (this->autoModReviewSelectedKey_.isEmpty())
+            {
+                return false;
+            }
+            return shortcutOverride || this->openSelectedAutoModUsercard();
+        case Qt::Key_A:
+            return shortcutOverride || this->approveSelectedAutoMod();
+        case Qt::Key_D:
+            return shortcutOverride || this->denySelectedAutoMod();
+        case Qt::Key_T:
+            return shortcutOverride || this->timeoutSelectedAutoMod();
+        case Qt::Key_B:
+            return shortcutOverride || this->banSelectedAutoMod();
+        case Qt::Key_Escape:
+            if (this->autoModReviewSelectedKey_.isEmpty())
+            {
+                return false;
+            }
+            if (!shortcutOverride)
+            {
+                this->setAutoModReviewSelectedKey({});
+            }
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool ChannelView::approveSelectedAutoMod()
+{
+    auto *review = getApp()->getAutoModReview();
+    const auto *item = review != nullptr
+                           ? review->find(this->autoModReviewSelectedKey_)
+                           : nullptr;
+    if (item == nullptr || !item->actionsAllowed ||
+        item->state != automod::ReviewState::Open)
+    {
+        return false;
+    }
+    review->approve(this->autoModReviewSelectedKey_);
+    return true;
+}
+
+bool ChannelView::denySelectedAutoMod()
+{
+    auto *review = getApp()->getAutoModReview();
+    const auto *item = review != nullptr
+                           ? review->find(this->autoModReviewSelectedKey_)
+                           : nullptr;
+    if (item == nullptr || !item->actionsAllowed ||
+        item->state != automod::ReviewState::Open)
+    {
+        return false;
+    }
+    review->deny(this->autoModReviewSelectedKey_);
+    return true;
+}
+
+bool ChannelView::retrySelectedAutoMod()
+{
+    auto *review = getApp()->getAutoModReview();
+    const auto *item = review != nullptr
+                           ? review->find(this->autoModReviewSelectedKey_)
+                           : nullptr;
+    if (item == nullptr || (item->failedAction == automod::ReviewAction::None &&
+                            !item->secondaryFailed))
+    {
+        return false;
+    }
+    review->retry(item->key);
+    return true;
+}
+
+bool ChannelView::openSelectedAutoModUsercard()
+{
+    auto *review = getApp()->getAutoModReview();
+    const auto *item = review != nullptr
+                           ? review->find(this->autoModReviewSelectedKey_)
+                           : nullptr;
+    if (item == nullptr)
+    {
+        return false;
+    }
+    this->showUserInfoPopup(item->userLogin, MessagePlatform::AnyOrTwitch,
+                            item->broadcasterLogin);
+    return true;
+}
+
+QString ChannelView::autoModReviewDetails(const QString &key) const
+{
+    auto *review = getApp()->getAutoModReview();
+    const auto *item = review != nullptr ? review->find(key) : nullptr;
+    if (item == nullptr)
+    {
+        return {};
+    }
+    QString details = QStringLiteral("AutoMod Review\nChannel: #") %
+                      item->broadcasterLogin % u"\nUser: " % item->userLogin %
+                      u"\nState: " % automod::reviewStateLabel(*item) %
+                      u"\nWhy held: " % item->reasonSummary;
+    if (!item->matchedFragments.isEmpty())
+    {
+        details += u"\nMatched by Twitch: " %
+                   item->matchedFragments.join(QStringLiteral(", "));
+    }
+    if (!item->statusDetail.isEmpty())
+    {
+        details += u"\nResult: " % item->statusDetail;
+    }
+    details += u"\n\n" % item->messageText;
+    return details;
+}
+
+bool ChannelView::copySelectedAutoModDetails()
+{
+    const auto details =
+        this->autoModReviewDetails(this->autoModReviewSelectedKey_);
+    if (details.isEmpty())
+    {
+        return false;
+    }
+    crossPlatformCopy(details);
+    return true;
+}
+
+bool ChannelView::timeoutSelectedAutoMod()
+{
+    auto *review = getApp()->getAutoModReview();
+    const auto *item = review != nullptr
+                           ? review->find(this->autoModReviewSelectedKey_)
+                           : nullptr;
+    if (item == nullptr || !item->actionsAllowed ||
+        item->state != automod::ReviewState::Open)
+    {
+        return false;
+    }
+    auto menuPosition = QCursor::pos();
+    if (!this->rect().contains(this->mapFromGlobal(menuPosition)))
+    {
+        menuPosition = this->mapToGlobal(this->rect().center());
+    }
+    this->showAutoModTimeoutMenu(this->autoModReviewSelectedKey_, menuPosition);
+    return true;
+}
+
+bool ChannelView::banSelectedAutoMod()
+{
+    return this->confirmAutoModBan(this->autoModReviewSelectedKey_);
+}
+
+void ChannelView::showAutoModTimeoutMenu(const QString &key,
+                                         const QPoint &globalPos)
+{
+    auto *review = getApp()->getAutoModReview();
+    const auto *item = review != nullptr ? review->find(key) : nullptr;
+    if (item == nullptr || !item->actionsAllowed ||
+        item->state != automod::ReviewState::Open)
+    {
+        return;
+    }
+
+    auto *menu = new QMenu(this);
+    menu->setAttribute(Qt::WA_DeleteOnClose);
+    const auto addTimeout = [&](const QString &label, int seconds) {
+        menu->addAction(label, [key, seconds] {
+            if (auto *review = getApp()->getAutoModReview())
+            {
+                review->denyAndTimeout(key, seconds, AUTOMOD_REVIEW_REASON);
+            }
+        });
+    };
+    addTimeout(QStringLiteral("30 seconds"), 30);
+    addTimeout(QStringLiteral("1 minute"), 60);
+    addTimeout(QStringLiteral("5 minutes"), 5 * 60);
+    addTimeout(QStringLiteral("10 minutes"), 10 * 60);
+    addTimeout(QStringLiteral("1 hour"), 60 * 60);
+    addTimeout(QStringLiteral("1 day"), 24 * 60 * 60);
+    menu->addSeparator();
+    const QPointer<ChannelView> self(this);
+    menu->addAction(QStringLiteral("Custom duration…"), [self, key] {
+        if (!self)
+        {
+            return;
+        }
+        bool ok = false;
+        const auto minutes = QInputDialog::getInt(
+            self, QStringLiteral("Deny and timeout"),
+            QStringLiteral("Timeout length in minutes:"), 10, 1, 14 * 24 * 60,
+            1, &ok);
+        if (!ok)
+        {
+            return;
+        }
+        if (auto *review = getApp()->getAutoModReview())
+        {
+            review->denyAndTimeout(key, minutes * 60, AUTOMOD_REVIEW_REASON);
+        }
+    });
+
+    menu->popup(globalPos);
+}
+
+bool ChannelView::confirmAutoModBan(const QString &key)
+{
+    auto *review = getApp()->getAutoModReview();
+    const auto *item = review != nullptr ? review->find(key) : nullptr;
+    if (item == nullptr || !item->actionsAllowed ||
+        item->state != automod::ReviewState::Open)
+    {
+        return false;
+    }
+
+    const auto answer = QMessageBox::question(
+        this, QStringLiteral("Deny and ban"),
+        QStringLiteral("Deny this message and permanently ban %1 from #%2?")
+            .arg(item->userLogin, item->broadcasterLogin),
+        QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel);
+    // the review can change while the dialog is open
+    if (answer == QMessageBox::Yes)
+    {
+        review->denyAndBan(key, AUTOMOD_REVIEW_REASON);
+    }
+    return true;
+}
+
 bool ChannelView::mayContainMessage(const MessagePtr &message)
 {
     switch (this->channel()->getType())
@@ -4539,6 +5154,71 @@ void ChannelView::handleLinkClick(QMouseEvent *event, const Link &link,
         case Link::AutoModDeny: {
             getApp()->getAccounts()->twitch.getCurrent()->autoModDeny(
                 link.value, this->channel());
+        }
+        break;
+
+        case Link::AutoModReviewApprove: {
+            if (this->isAutoModReviewChannel())
+            {
+                this->setAutoModReviewSelectedKey(link.value);
+            }
+            if (auto *review = getApp()->getAutoModReview())
+            {
+                review->approve(link.value);
+            }
+        }
+        break;
+
+        case Link::AutoModReviewDeny: {
+            if (this->isAutoModReviewChannel())
+            {
+                this->setAutoModReviewSelectedKey(link.value);
+            }
+            if (auto *review = getApp()->getAutoModReview())
+            {
+                review->deny(link.value);
+            }
+        }
+        break;
+
+        case Link::AutoModReviewRetry: {
+            if (this->isAutoModReviewChannel())
+            {
+                this->setAutoModReviewSelectedKey(link.value);
+            }
+            if (auto *review = getApp()->getAutoModReview())
+            {
+                review->retry(link.value);
+            }
+        }
+        break;
+
+        case Link::AutoModReviewTimeout: {
+            const auto direct = parseAutoModTimeoutLink(link.value);
+            const auto key = direct ? direct->key : link.value;
+            if (this->isAutoModReviewChannel())
+            {
+                this->setAutoModReviewSelectedKey(key);
+            }
+            if (!direct)
+            {
+                this->showAutoModTimeoutMenu(key,
+                                             event->globalPosition().toPoint());
+            }
+            else if (auto *review = getApp()->getAutoModReview())
+            {
+                review->denyAndTimeout(key, direct->seconds,
+                                       AUTOMOD_REVIEW_REASON);
+            }
+        }
+        break;
+
+        case Link::AutoModReviewBan: {
+            if (this->isAutoModReviewChannel())
+            {
+                this->setAutoModReviewSelectedKey(link.value);
+            }
+            this->confirmAutoModBan(link.value);
         }
         break;
 

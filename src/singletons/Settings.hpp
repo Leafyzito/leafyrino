@@ -1190,6 +1190,26 @@ public:
     BoolSetting showRaidStatusAboveInput{
         "/moltorino/moderation/raid/showStatusAboveInput", true};
 
+    /// AutoMod review
+    BoolSetting advancedAutoModInChat{
+        "/moltorino/moderation/advancedAutoModInChat", true};
+    BoolSetting autoModReviewShowReason{
+        "/moltorino/moderation/autoModReview/showReason", true};
+    BoolSetting autoModReviewShowContext{
+        "/moltorino/moderation/autoModReview/showContext", true};
+    BoolSetting autoModReviewShowShortcutHints{
+        "/moltorino/moderation/autoModReview/showShortcutHints", false};
+    /// 0 = Newest at top, 1 = Oldest at top
+    IntSetting autoModReviewContextOrder{
+        "/moltorino/moderation/autoModReview/contextOrder", 0};
+    /// Color of the text Twitch flagged in a held message
+    QStringSetting automodMatchHighlightColor{
+        "/highlighting/automod/matchedFragment/color", "#80ffb140"};
+    /// See HighlightMatchStyle: 0 = None, 1 = Outline, 2 = Fill,
+    /// 3 = Outline and fill, 4 = Underline
+    IntSetting automodMatchHighlightStyle{
+        "/highlighting/automod/matchedFragment/style", 2};
+
     /// Client
     BoolSetting showTranslateMessageContextAction{
         "/moltorino/client/showTranslateMessageContextAction", true};

@@ -242,6 +242,11 @@ public:
         return nullptr;
     }
 
+    automod::AutoModReviewController *getAutoModReview() override
+    {
+        return nullptr;
+    }
+
     IUserDataController *getUserData() override
     {
         assert(false && "EmptyApplication::getUserData was called without "

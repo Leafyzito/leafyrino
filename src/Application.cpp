@@ -5,6 +5,7 @@
 #include "common/Modes.hpp"
 #include "common/Version.hpp"
 #include "controllers/accounts/AccountController.hpp"
+#include "controllers/automod/AutoModReviewController.hpp"
 #include "controllers/commands/Command.hpp"
 #include "controllers/commands/CommandController.hpp"
 #include "controllers/highlights/HighlightController.hpp"
@@ -221,6 +222,7 @@ Application::Application(Settings &_settings, const Paths &paths,
     , badgeHQBadges(new BadgeHQBadges)
     , moltorinoSupporterBadges(new MoltorinoSupporterBadges)
     , repeatedMessageDetector(new RepeatedMessageDetector)
+    , autoModReview(new automod::AutoModReviewController)
     , seventvPaints(new SeventvPaints)
     , seventvPersonalEmotes(new SeventvPersonalEmotes)
     , userData(new UserDataController(paths))
@@ -303,6 +305,8 @@ void Application::initialize(Settings &settings, const Paths &paths)
     this->youTubeChatServer->initialize();
 
     this->notifications->initialize();
+
+    this->autoModReview->initialize();
 
     this->twitchBadges->loadTwitchBadges();
 
@@ -618,6 +622,14 @@ RepeatedMessageDetector *Application::getRepeatedMessageDetector()
     assert(this->repeatedMessageDetector);
 
     return this->repeatedMessageDetector.get();
+}
+
+automod::AutoModReviewController *Application::getAutoModReview()
+{
+    assertInGuiThread();
+    assert(this->autoModReview);
+
+    return this->autoModReview.get();
 }
 
 IUserDataController *Application::getUserData()

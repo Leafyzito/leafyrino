@@ -124,6 +124,8 @@ SplitDescriptor SplitDescriptor::loadFromJSON(const QJsonObject &root)
     descriptor.server_ = data.value("server").toInt(-1);
     descriptor.anonymous_ = data.value("anonymous").toBool(false);
     descriptor.moderationMode_ = root.value("moderationMode").toBool();
+    descriptor.autoModChannelFilter_ =
+        data.value("autoModChannel").toString().trimmed().toLower();
     if (data.contains("channel"))
     {
         descriptor.channelName_ = data.value("channel").toString();
@@ -188,6 +190,10 @@ QJsonObject SplitDescriptor::toJson() const
     if (this->anonymous_)
     {
         data.insert("anonymous"_L1, true);
+    }
+    if (!this->autoModChannelFilter_.isEmpty())
+    {
+        data.insert("autoModChannel"_L1, this->autoModChannelFilter_);
     }
     if (this->type_ == u"kick")
     {

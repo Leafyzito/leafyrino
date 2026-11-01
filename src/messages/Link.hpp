@@ -28,6 +28,17 @@ public:
         ViewThread,
         JumpToMessage,
         AcknowledgeChatWarning,
+        /// value is the review key
+        AutoModReviewApprove,
+        /// value is the review key
+        AutoModReviewDeny,
+        /// value is "<review key>\n<seconds>", or just the review key to ask
+        /// for a duration
+        AutoModReviewTimeout,
+        /// value is the review key
+        AutoModReviewBan,
+        /// value is the review key
+        AutoModReviewRetry,
     };
 
     Link();

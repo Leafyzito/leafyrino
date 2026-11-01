@@ -253,6 +253,23 @@ public:
     void showUserInfoPopup(const QString &userName, MessagePlatform platform,
                            const QString &alternativePopoutChannel = {});
 
+    /// The selected review in the /automod queue, empty if none
+    const QString &autoModReviewSelectedKey() const;
+    void setAutoModReviewSelectedKey(QString key);
+    /// Moves the /automod selection up (direction < 0) or down. Returns false
+    /// if there's nothing to select.
+    bool selectAutoModReview(int direction, bool actionableOnly = false);
+    bool approveSelectedAutoMod();
+    bool denySelectedAutoMod();
+    bool retrySelectedAutoMod();
+    bool openSelectedAutoModUsercard();
+    bool copySelectedAutoModDetails();
+    bool timeoutSelectedAutoMod();
+    bool banSelectedAutoMod();
+    /// Handles the /automod keyboard shortcuts. Returns true if the key was
+    /// used (or would be, for a ShortcutOverride event).
+    bool handleAutoModReviewKey(QKeyEvent *event);
+
     /**
      * @brief This method is meant to be used when filtering out channels.
      *        It <b>must</b> return true if a message belongs in this channel.
@@ -322,6 +339,7 @@ protected:
 
     void hideEvent(QHideEvent * /*event*/) override;
     void showEvent(QShowEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
     void handleLinkClick(QMouseEvent *event, const Link &link,
                          MessageLayout *layout);
@@ -458,6 +476,19 @@ private:
 
     FilterSetPtr channelFilters_;
     std::function<bool(const MessagePtr &)> messagePredicate_;
+
+    bool isAutoModReviewChannel() const;
+    bool isSelectedAutoModReview(const Message &message) const;
+    bool isAutoModReviewVisible(const QString &key);
+    /// Replays the /automod queue so resolved reviews drop out
+    void refilterAutoModQueue();
+    void showAutoModTimeoutMenu(const QString &key, const QPoint &globalPos);
+    bool confirmAutoModBan(const QString &key);
+    QString autoModReviewDetails(const QString &key) const;
+
+    QString autoModReviewSelectedKey_;
+    // a review changed while hidden, refilter when shown again
+    bool autoModReviewDirty_ = false;
 
     // Returns true if message should be included
     bool shouldIncludeMessage(const MessagePtr &message) const;

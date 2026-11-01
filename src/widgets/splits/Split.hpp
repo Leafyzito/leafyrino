@@ -24,6 +24,7 @@
 
 namespace chatterino {
 
+class AutoModReviewBar;
 class ChannelView;
 class MessageView;
 class SplitHeader;
@@ -82,6 +83,10 @@ public:
 
     void setModerationMode(bool value);
     bool getModerationMode() const;
+
+    /// Channel login the /automod queue is filtered to, empty for all
+    void setAutoModChannelFilter(QString channel);
+    QString getAutoModChannelFilter() const;
 
     std::optional<bool> checkSpellingOverride() const;
     void setCheckSpellingOverride(std::optional<bool> override);
@@ -228,6 +233,9 @@ private:
     PollBanner *const pollBanner_;
     ChannelView *const view_;
     SplitInput *const input_;
+    // created the first time this split shows /automod
+    AutoModReviewBar *autoModReviewBar_{};
+    QString autoModChannelFilter_;
     SplitOverlay *const overlay_;
     SplitMpsOverlay *mpsOverlay_{};
 

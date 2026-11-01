@@ -42,6 +42,7 @@
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/dialogs/ChannelManagementDialog.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
+#include "widgets/helper/AutoModReviewBar.hpp"
 #include "widgets/helper/ChannelView.hpp"
 #include "widgets/helper/CommonTexts.hpp"
 #include "widgets/Label.hpp"
@@ -1127,6 +1128,20 @@ void SplitHeader::initializeLayout()
     this->setAddButtonVisible(false);
 }
 
+void SplitHeader::setAutoModReviewBar(AutoModReviewBar *bar)
+{
+    assert(this->autoModReviewBar_ == nullptr);
+    assert(bar != nullptr);
+
+    this->autoModReviewBar_ = bar;
+    auto *layout = qobject_cast<QHBoxLayout *>(this->layout());
+    assert(layout != nullptr);
+    layout->insertWidget(layout->indexOf(this->dropdownButton_), bar);
+    bar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+    bar->setVisible(this->split_->getIndirectChannel().getType() ==
+                    Channel::Type::TwitchAutomod);
+}
+
 std::unique_ptr<QMenu> SplitHeader::createMainMenu()
 {
     // top level menu
@@ -1688,6 +1703,13 @@ void SplitHeader::handleChannelChanged()
 
     this->updateChannelText();
 
+    if (this->autoModReviewBar_ != nullptr)
+    {
+        this->autoModReviewBar_->setVisible(
+            this->split_->getIndirectChannel().getType() ==
+            Channel::Type::TwitchAutomod);
+    }
+
     this->channelConnections_.clear();
     this->resetSharedChatFilter();
     auto channel = this->split_->getChannel();
@@ -1800,6 +1822,11 @@ void SplitHeader::handleChannelChanged()
         }
 
         this->applySharedChatFilter();
+    }
+    else if (splitChannel->getType() == Channel::Type::TwitchAutomod)
+    {
+        // the /automod queue sets its own predicate, leave it alone
+        this->sharedChatFilterActive_ = false;
     }
     else if (this->sharedChatFilterActive_)
     {

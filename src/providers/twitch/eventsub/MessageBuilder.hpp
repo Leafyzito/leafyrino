@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include "controllers/automod/AutoModReviewController.hpp"
 #include "messages/MessageBuilder.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "twitch-eventsub-ws/payloads/automod-message-hold-v2.hpp"
+#include "twitch-eventsub-ws/payloads/automod-message-update-v2.hpp"
 #include "twitch-eventsub-ws/payloads/channel-chat-user-message-hold-v1.hpp"
 #include "twitch-eventsub-ws/payloads/channel-chat-user-message-update-v1.hpp"
 #include "twitch-eventsub-ws/payloads/channel-follow-v2.hpp"
@@ -167,9 +169,29 @@ void makeModerateMessage(
     const lib::payload::channel_moderate::v2::Event &event,
     const lib::payload::channel_moderate::v2::UnbanRequest &action);
 
-std::pair<MessagePtr, HighlightAlert> makeAutomodHoldMessage(
-    TwitchChannel *channel, const QDateTime &time,
+automod::HoldData makeAutoModReviewHoldData(
+    QString notificationID, const QDateTime &time,
     const lib::payload::automod_message_hold::v2::Event &event);
+
+automod::UpdateData makeAutoModReviewUpdateData(
+    QString notificationID, const QDateTime &time,
+    const lib::payload::automod_message_update::v2::Event &event);
+
+enum class AutoModReviewPresentation : std::uint8_t {
+    /// Full review with reason, earlier messages and timeout/ban buttons
+    ChatAdvanced,
+    /// The classic "Held a message … Allow Deny" layout
+    ChatLegacy,
+    /// The /automod queue
+    ReviewQueue,
+};
+
+/// Builds the message shown for an AutoMod review. Highlights are parsed but
+/// not triggered, the returned alert is for the caller to trigger.
+std::pair<MessagePtr, HighlightAlert> makeAutoModReviewMessage(
+    TwitchChannel *channel, const automod::ReviewItem &item,
+    AutoModReviewPresentation presentation =
+        AutoModReviewPresentation::ChatAdvanced);
 
 std::pair<MessagePtr, HighlightAlert> makeSuspiciousUserMessage(
     TwitchChannel *channel, const QDateTime &time,

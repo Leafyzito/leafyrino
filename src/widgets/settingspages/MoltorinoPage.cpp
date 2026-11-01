@@ -1031,6 +1031,101 @@ MoltorinoPage::MoltorinoPage()
         ->setToolTip("Used when /commercial has no duration. An explicit "
                      "duration, such as /commercial 60, overrides this.");
 
+    view->addTitle("AutoMod");
+    view->addDescription(
+        "Choose how held messages appear in chat and in the /automod review "
+        "tab. Background color, sound and taskbar flashing are set by the "
+        "AutoMod row in Highlights.");
+
+    SettingWidget::checkbox("Use the advanced AutoMod layout in chat",
+                            s.advancedAutoModInChat)
+        ->setTooltip("Show the reason and timeout/ban buttons on held "
+                     "messages. Turn this off for the compact \"Allow Deny\" "
+                     "layout. The /automod tab always shows every control.")
+        ->addTo(*view);
+
+    SettingWidget::checkbox("Show the AutoMod reason", s.autoModReviewShowReason)
+        ->setTooltip("Show the AutoMod category and level, or the blocked "
+                     "term, on each held message.")
+        ->addTo(*view);
+
+    SettingWidget::checkbox("Show keyboard shortcuts in /automod",
+                            s.autoModReviewShowShortcutHints)
+        ->setTooltip("Show the keyboard guide beneath the selected review. "
+                     "Shortcuts work while the input box is empty.")
+        ->addTo(*view);
+
+    view->addSubtitle("Flagged text");
+    SettingWidget::colorButton("Flagged text color",
+                               s.automodMatchHighlightColor)
+        ->setTooltip("Color used to mark the part of a held message that "
+                     "Twitch flagged.")
+        ->addTo(*view);
+
+    view->addDropdown<int>(
+            "Flagged text style",
+            {"None", "Outline", "Fill", "Outline and fill", "Underline"},
+            s.automodMatchHighlightStyle,
+            [](int value) {
+                switch (value)
+                {
+                    case 0:
+                        return QString("None");
+                    case 1:
+                        return QString("Outline");
+                    case 3:
+                        return QString("Outline and fill");
+                    case 4:
+                        return QString("Underline");
+                    case 2:
+                    default:
+                        return QString("Fill");
+                }
+            },
+            [](auto args) {
+                if (args.value == "None")
+                {
+                    return 0;
+                }
+                if (args.value == "Outline")
+                {
+                    return 1;
+                }
+                if (args.value == "Outline and fill")
+                {
+                    return 3;
+                }
+                if (args.value == "Underline")
+                {
+                    return 4;
+                }
+                return 2;
+            },
+            false)
+        ->setToolTip("How the part of a held message that Twitch flagged is "
+                     "marked.");
+
+    view->addSubtitle("User history");
+    SettingWidget::checkbox("Show earlier messages from the same user",
+                            s.autoModReviewShowContext)
+        ->setTooltip("Show up to three earlier messages from the sender when "
+                     "a review is selected in /automod, if they are still in "
+                     "the loaded chat.")
+        ->addTo(*view);
+
+    view->addDropdown<int>(
+            "User history order", {"Newest at top", "Oldest at top"},
+            s.autoModReviewContextOrder,
+            [](int value) {
+                return value == 1 ? QString("Oldest at top")
+                                  : QString("Newest at top");
+            },
+            [](auto args) {
+                return args.value == "Oldest at top" ? 1 : 0;
+            },
+            false)
+        ->setToolTip("Order of the sender's earlier messages within a review.");
+
     view->addTitle("Client");
     view->addDescription(
         "Twitch chat behavior, compatibility, and client experience options.");

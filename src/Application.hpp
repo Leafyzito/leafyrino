@@ -66,6 +66,9 @@ class LimerinoBadges;
 class BadgeHQBadges;
 class MoltorinoSupporterBadges;
 class RepeatedMessageDetector;
+namespace automod {
+class AutoModReviewController;
+}  // namespace automod
 class IStreamerMode;
 class ITwitchUsers;
 class NativeMessagingServer;
@@ -130,6 +133,7 @@ public:
     virtual BadgeHQBadges *getBadgeHQBadges() = 0;
     virtual MoltorinoSupporterBadges *getMoltorinoSupporterBadges() = 0;
     virtual RepeatedMessageDetector *getRepeatedMessageDetector() = 0;
+    virtual automod::AutoModReviewController *getAutoModReview() = 0;
     virtual IUserDataController *getUserData() = 0;
     virtual ISoundController *getSound() = 0;
     virtual ITwitchLiveController *getTwitchLiveController() = 0;
@@ -227,6 +231,7 @@ private:
     std::unique_ptr<BadgeHQBadges> badgeHQBadges;
     std::unique_ptr<MoltorinoSupporterBadges> moltorinoSupporterBadges;
     std::unique_ptr<RepeatedMessageDetector> repeatedMessageDetector;
+    std::unique_ptr<automod::AutoModReviewController> autoModReview;
     std::unique_ptr<SeventvPaints> seventvPaints;
     std::unique_ptr<SeventvPersonalEmotes> seventvPersonalEmotes;
     std::unique_ptr<UserDataController> userData;
@@ -294,6 +299,7 @@ public:
     BadgeHQBadges *getBadgeHQBadges() override;
     MoltorinoSupporterBadges *getMoltorinoSupporterBadges() override;
     RepeatedMessageDetector *getRepeatedMessageDetector() override;
+    automod::AutoModReviewController *getAutoModReview() override;
     IUserDataController *getUserData() override;
     ISoundController *getSound() override;
     ITwitchLiveController *getTwitchLiveController() override;

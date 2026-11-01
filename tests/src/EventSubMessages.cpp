@@ -5,6 +5,7 @@
 #include "common/Env.hpp"
 #include "common/Literals.hpp"
 #include "controllers/accounts/AccountController.hpp"
+#include "controllers/automod/AutoModReviewController.hpp"
 #include "controllers/highlights/HighlightController.hpp"
 #include "lib/Snapshot.hpp"
 #include "messages/Message.hpp"
@@ -210,6 +211,7 @@ public:
     MockApplication()
         : highlights(this->settings, &this->accounts)
     {
+        this->autoModReview.initialize();
     }
 
     ILogging *getChatLogger() override
@@ -232,10 +234,16 @@ public:
         return &this->highlights;
     }
 
+    automod::AutoModReviewController *getAutoModReview() override
+    {
+        return &this->autoModReview;
+    }
+
     mock::EmptyLogging logging;
     mock::MockTwitchIrcServer twitch;
     AccountController accounts;
     HighlightController highlights;
+    automod::AutoModReviewController autoModReview;
 };
 
 std::shared_ptr<TwitchChannel> makeMockTwitchChannel(const QString &name)

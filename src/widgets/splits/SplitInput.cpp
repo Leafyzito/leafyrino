@@ -2158,6 +2158,17 @@ bool SplitInput::eventFilter(QObject *obj, QEvent *event)
         }
     }
 
+    // the /automod shortcuts are single keys, they only apply while there's
+    // nothing typed
+    if (isTextEditObject && event->type() == QEvent::ShortcutOverride &&
+        this->ui_.textEdit->document()->isEmpty() &&
+        this->channelView_->handleAutoModReviewKey(
+            static_cast<QKeyEvent *>(event)))
+    {
+        event->accept();
+        return true;
+    }
+
     if (event->type() == QEvent::ShortcutOverride ||
         event->type() == QEvent::Shortcut)
     {
@@ -2318,6 +2329,13 @@ void SplitInput::installTextEditEvents()
                         return;
                     }
                 }
+            }
+
+            if (this->ui_.textEdit->document()->isEmpty() &&
+                this->channelView_->handleAutoModReviewKey(event))
+            {
+                event->accept();
+                return;
             }
 
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS

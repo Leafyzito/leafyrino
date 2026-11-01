@@ -23,6 +23,11 @@ class MessageElement;
 class MessageThread;
 class TwitchBadge;
 class ScrollbarHighlight;
+struct HighlightMatch;
+
+namespace automod {
+struct ReviewItem;
+}  // namespace automod
 
 enum class MessagePlatform : uint8_t {
     AnyOrTwitch,
@@ -66,6 +71,13 @@ struct Message {
     QStringList externalBadges;
 
     std::shared_ptr<QColor> highlightColor;
+
+    /// Ranges of messageText to mark when painted, only set for AutoMod
+    /// held messages
+    std::shared_ptr<const std::vector<HighlightMatch>> highlightMatches;
+
+    /// Snapshot of the AutoMod review this message was built from
+    std::shared_ptr<const automod::ReviewItem> autoModReview;
 
     std::shared_ptr<MessageThread> replyThread;
     MessagePtr replyParent;

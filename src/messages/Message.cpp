@@ -2,6 +2,7 @@
 
 #include "Application.hpp"
 #include "common/Literals.hpp"
+#include "controllers/highlights/HighlightMatch.hpp"
 #include "messages/MessageThread.hpp"
 #include "providers/twitch/TwitchBadge.hpp"
 #include "singletons/Settings.hpp"
@@ -74,6 +75,8 @@ std::shared_ptr<Message> Message::clone() const
     cloned->twitchBadgeInfos = this->twitchBadgeInfos;
     cloned->externalBadges = this->externalBadges;
     cloned->highlightColor = this->highlightColor;
+    cloned->highlightMatches = this->highlightMatches;
+    cloned->autoModReview = this->autoModReview;
     cloned->replyThread = this->replyThread;
     cloned->replyParent = this->replyParent;
     cloned->translatedFrom = this->translatedFrom;
@@ -129,6 +132,21 @@ QJsonObject Message::toJson() const
     if (this->highlightColor)
     {
         msg["highlightColor"_L1] = this->highlightColor->name(QColor::HexArgb);
+    }
+
+    if (this->highlightMatches && !this->highlightMatches->empty())
+    {
+        QJsonArray matches;
+        for (const auto &match : *this->highlightMatches)
+        {
+            matches.append(QJsonObject{
+                {"start"_L1, static_cast<qint64>(match.start)},
+                {"length"_L1, static_cast<qint64>(match.length)},
+                {"pattern"_L1, match.pattern},
+                {"ruleName"_L1, match.ruleName},
+            });
+        }
+        msg["highlightMatches"_L1] = matches;
     }
 
     if (this->replyThread)

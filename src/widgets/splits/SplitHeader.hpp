@@ -22,6 +22,7 @@ class SvgButton;
 class DrawnButton;
 class LabelButton;
 class Label;
+class AutoModReviewBar;
 class Split;
 struct Message;
 struct TwitchUser;
@@ -34,6 +35,10 @@ public:
     explicit SplitHeader(Split *split);
 
     void setAddButtonVisible(bool value);
+
+    /// Shows the /automod channel filter in the header. Only called once, by
+    /// the split that owns the bar.
+    void setAutoModReviewBar(AutoModReviewBar *bar);
 
     void updateChannelText();
     void updateIcons();
@@ -103,6 +108,7 @@ private:
     LabelButton *sendTargetButton_{};
     LabelButton *sharedChatButton_{};
     DrawnButton *addButton_{};
+    AutoModReviewBar *autoModReviewBar_{};
 
     QPoint dragStart_{};
     bool dragging_{false};

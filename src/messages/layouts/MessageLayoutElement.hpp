@@ -5,6 +5,7 @@
 #pragma once
 
 #include "common/FlagsEnum.hpp"
+#include "controllers/highlights/HighlightMatch.hpp"
 #include "messages/Link.hpp"
 #include "messages/MessageColor.hpp"
 
@@ -17,6 +18,8 @@
 
 #include <climits>
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 class QPainter;
 
@@ -27,6 +30,17 @@ using ImagePtr = std::shared_ptr<Image>;
 enum class FontStyle : uint8_t;
 enum class MessageElementFlag : int64_t;
 struct MessageColors;
+
+/// A HighlightMatch clipped to one layout element. `match.start` and
+/// `match.length` are relative to the element's text.
+struct FragmentHighlight {
+    HighlightMatch match;
+
+    /// The match continues in the previous/next element on the same line, so
+    /// the marker is drawn without a rounded edge on that side
+    bool connectsBefore = false;
+    bool connectsAfter = false;
+};
 
 class MessageLayoutElement
 {
@@ -71,6 +85,13 @@ public:
 
     int getWordId() const;
     void setWordId(int wordId);
+
+    /// Called when this element and its neighbour end up on different lines,
+    /// so markers don't try to connect across the line break
+    virtual void clearFragmentHighlightContinuity(bool before, bool after);
+
+    /// Tooltip for the marked text under `point`, empty if there's none
+    virtual QString getFragmentTooltip(QPointF point) const;
 
 protected:
     bool trailingSpace = true;
@@ -170,6 +191,10 @@ public:
                       MessageColor::Type messageColor, float scale_,
                       float dpr = 1.0F);
 
+    void setFragmentHighlights(std::vector<FragmentHighlight> highlights);
+    void clearFragmentHighlightContinuity(bool before, bool after) override;
+    QString getFragmentTooltip(QPointF point) const override;
+
 protected:
     void addCopyTextToString(QString &str, uint32_t from = 0,
                              uint32_t to = UINT32_MAX) const override;
@@ -186,6 +211,14 @@ protected:
     MessageColor::Type messageColor_;
     float scale_;
     float dpr_ = 1.0F;  // for 7tv paints
+
+private:
+    /// Rect covering characters [from, to) of this element's text
+    QRectF fragmentRect(qsizetype from, qsizetype to) const;
+    void paintFragmentHighlights(QPainter &painter, bool foreground) const;
+
+    // only allocated for elements that have marked text
+    std::unique_ptr<std::vector<FragmentHighlight>> fragmentHighlights_;
 };
 
 class TextIconLayoutElement : public MessageLayoutElement

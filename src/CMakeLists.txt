@@ -79,6 +79,9 @@ set(SOURCE_FILES
         controllers/accounts/AccountModel.cpp
         controllers/accounts/AccountModel.hpp
 
+        controllers/automod/AutoModReviewController.cpp
+        controllers/automod/AutoModReviewController.hpp
+
         controllers/commands/builtin/chatterino/Debugging.cpp
         controllers/commands/builtin/chatterino/Debugging.hpp
         controllers/commands/builtin/Misc.cpp
@@ -228,6 +231,8 @@ set(SOURCE_FILES
         controllers/highlights/HighlightCheck.hpp
         controllers/highlights/HighlightController.cpp
         controllers/highlights/HighlightController.hpp
+        controllers/highlights/HighlightMatch.cpp
+        controllers/highlights/HighlightMatch.hpp
         controllers/highlights/HighlightResult.cpp
         controllers/highlights/HighlightResult.hpp
         controllers/highlights/Legacy.hpp
@@ -1014,6 +1019,8 @@ set(SOURCE_FILES
         widgets/helper/color/SBCanvas.cpp
         widgets/helper/color/SBCanvas.hpp
 
+        widgets/helper/AutoModReviewBar.cpp
+        widgets/helper/AutoModReviewBar.hpp
         widgets/helper/ChannelCategoryPicker.cpp
         widgets/helper/ChannelCategoryPicker.hpp
         widgets/helper/ChannelView.cpp

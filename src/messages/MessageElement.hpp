@@ -135,7 +135,8 @@ enum class MessageElementFlag : int64_t {
 
     // used to check if links should be lowercased
     LowercaseLinks = (1LL << 29),
-    // Unused = (1LL << 30)
+    // only shown while the AutoMod review this element belongs to is selected
+    AutoModReviewExpanded = (1LL << 30),
     // Unused: (1LL << 31)
 
     // for elements of the message reply
@@ -211,6 +212,10 @@ public:
     /// should require the context flags to contain all flags of this element (true), as opposed
     /// to the context flag containing at least one of the flags of this element (false).
     bool exhaustiveFlags = false;
+
+    /// Offset of this element's text in Message::messageText, or -1 if the
+    /// element doesn't map to it. Used to paint Message::highlightMatches.
+    qsizetype messageTextOffset = -1;
 
 protected:
     MessageElement(MessageElementFlags flags);
@@ -785,6 +790,32 @@ private:
     bool canModerateUser_ = true;
     bool targetIsModOrBroadcaster_ = false;
     bool targetIsCurrentUser_ = false;
+};
+
+enum class AutoModActionKind : std::uint8_t {
+    Timeout,
+    Ban,
+};
+
+/// A timeout or ban button on an AutoMod review, drawn like the inline
+/// moderation buttons
+class AutoModActionElement : public MessageElement
+{
+public:
+    static constexpr std::string_view TYPE = "automod-action";
+
+    AutoModActionElement(AutoModActionKind kind, int timeoutSeconds = 0,
+                         MessageElementFlags flags = MessageElementFlag::Text);
+
+    void addToContainer(MessageLayoutContainer &container,
+                        const MessageLayoutContext &ctx) override;
+    std::unique_ptr<MessageElement> clone() const override;
+    QJsonObject toJson() const override;
+    std::string_view type() const override;
+
+private:
+    AutoModActionKind kind_;
+    int timeoutSeconds_ = 0;
 };
 
 // Forces a linebreak

@@ -240,6 +240,10 @@ WindowManager::WindowManager(const Args &appArgs_, const Paths &paths,
     this->forceLayoutChannelViewsListener.add(settings.boldUsernames);
     this->forceLayoutChannelViewsListener.add(
         settings.showBlockedTermAutomodMessages);
+    this->forceLayoutChannelViewsListener.add(
+        settings.automodMatchHighlightColor);
+    this->forceLayoutChannelViewsListener.add(
+        settings.automodMatchHighlightStyle);
     this->forceLayoutChannelViewsListener.add(settings.hideModerated);
     this->forceLayoutChannelViewsListener.add(
         settings.streamerModeHideModActions);

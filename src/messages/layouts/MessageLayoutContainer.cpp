@@ -904,6 +904,17 @@ void MessageLayoutContainer::addElement(MessageLayoutElement *element,
 
     element->setLine(this->line_);
 
+    // marked text shouldn't look connected across a line break
+    if (isAddingMode && !this->elements_.empty())
+    {
+        auto *previous = this->elements_.back().get();
+        if (previous->getLine() != element->getLine())
+        {
+            previous->clearFragmentHighlightContinuity(false, true);
+            element->clearFragmentHighlightContinuity(true, false);
+        }
+    }
+
     // add element
     if (isAddingMode)
     {
