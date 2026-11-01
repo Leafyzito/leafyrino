@@ -12,6 +12,7 @@
 #include "controllers/accounts/AccountController.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "messages/Message.hpp"
+#include "providers/IvrApi.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchBadge.hpp"
@@ -753,6 +754,7 @@ public:
     {
         this->beginResetModel();
         this->chatters_.clear();
+        this->knownRoles_.clear();
         this->rows_.clear();
         this->endResetModel();
     }
@@ -764,8 +766,8 @@ public:
                        CHATTER_LIMIT));
     }
 
-    bool add(const QString &login, const QString &displayName,
-             std::uint8_t roles, int displayPriority, MessagePlatform platform,
+    bool add(const QString &login, QString displayName, std::uint8_t roles,
+             int displayPriority, MessagePlatform platform,
              const QString &channelName, const QString &channelDisplayName,
              const QString &userId = {})
     {
@@ -773,6 +775,18 @@ public:
         if (key.isEmpty())
         {
             return false;
+        }
+
+        if (const auto known = this->knownRoles_.constFind(key);
+            known != this->knownRoles_.cend())
+        {
+            roles |= known->roles;
+            if (known->displayPriority > displayPriority &&
+                !known->displayName.isEmpty())
+            {
+                displayName = known->displayName;
+                displayPriority = known->displayPriority;
+            }
         }
 
         auto it = this->chatters_.find(key);
@@ -844,6 +858,37 @@ public:
             changed = true;
         }
         return changed;
+    }
+
+    /// Records roles for a user without adding them to the list, so role
+    /// lists (e.g. moderators) don't pull in people who aren't in chat.
+    bool addKnownRoles(const QString &login, const QString &displayName,
+                       std::uint8_t roles, int displayPriority,
+                       MessagePlatform platform, const QString &channelName)
+    {
+        auto key = chatterKey(login, platform, channelName);
+        if (key.isEmpty())
+        {
+            return false;
+        }
+
+        auto &known = this->knownRoles_[key];
+        known.roles |= roles;
+        if (displayPriority > known.displayPriority &&
+            !displayName.trimmed().isEmpty())
+        {
+            known.displayName = displayName.trimmed();
+            known.displayPriority = displayPriority;
+        }
+
+        const auto it = this->chatters_.constFind(key);
+        if (it == this->chatters_.cend())
+        {
+            return false;
+        }
+        // The entry exists, so this only merges the known roles into it
+        return this->add(login, it->displayName, NoRole, 0, platform,
+                         channelName, it->channelDisplayName);
     }
 
     bool setQuery(QString query)
@@ -1034,7 +1079,14 @@ public:
     }
 
 private:
+    struct KnownRoles {
+        std::uint8_t roles = NoRole;
+        QString displayName;
+        int displayPriority = 0;
+    };
+
     QHash<QString, ChatterRecord> chatters_;
+    QHash<QString, KnownRoles> knownRoles_;
     QVector<ChatterRow> rows_;
     QString query_;
 };
@@ -1544,6 +1596,10 @@ public:
         this->communityLimitedByCapacity = false;
         this->twitchState = SourceState::Skipped;
         this->communityState = SourceState::Skipped;
+        this->ivrState = SourceState::Skipped;
+        this->ivrPending = 0;
+        this->ivrSuccesses = 0;
+        this->ivrFailures = 0;
         this->model->clear();
         this->addLocalData();
 
@@ -1555,9 +1611,14 @@ public:
         {
             mode = QStringLiteral("best");
         }
+        this->helixRoleChannels.clear();
         if (mode == QStringLiteral("best") || mode == QStringLiteral("twitch"))
         {
             this->requestTwitch(currentGeneration);
+        }
+        if (mode != QStringLiteral("local"))
+        {
+            this->requestIvrRoles(currentGeneration);
         }
         if (mode == QStringLiteral("best") ||
             mode == QStringLiteral("community"))
@@ -1737,6 +1798,7 @@ public:
                 continue;
             }
 
+            this->helixRoleChannels.insert(channelName.toCaseFolded());
             this->queueTwitchRequest([this, guard, requestGeneration,
                                       channelName, roomId] {
                 getHelix()->getModerators(
@@ -1749,12 +1811,10 @@ public:
                         }
                         for (const auto &moderator : moderators)
                         {
-                            this->model->add(
+                            this->model->addKnownRoles(
                                 moderator.userLogin, moderator.userName,
                                 ModeratorRole, 3, MessagePlatform::AnyOrTwitch,
-                                channelName,
-                                this->channelDisplayName(
-                                    MessagePlatform::AnyOrTwitch, channelName));
+                                channelName);
                         }
                         this->finishTwitchRequest(requestGeneration, true);
                     },
@@ -1779,11 +1839,9 @@ public:
                         }
                         for (const auto &vip : vips)
                         {
-                            this->model->add(
+                            this->model->addKnownRoles(
                                 vip.userLogin, vip.userName, VipRole, 3,
-                                MessagePlatform::AnyOrTwitch, channelName,
-                                this->channelDisplayName(
-                                    MessagePlatform::AnyOrTwitch, channelName));
+                                MessagePlatform::AnyOrTwitch, channelName);
                         }
                         this->finishTwitchRequest(requestGeneration, true);
                     },
@@ -1797,6 +1855,110 @@ public:
             });
         }
         this->pumpTwitchRequests(requestGeneration);
+    }
+
+    /// Fetches mod/VIP lists from IVR (like /mods and /vips) for channels not
+    /// covered by Helix, so roles show up for people who haven't chatted.
+    void requestIvrRoles(int requestGeneration)
+    {
+        QStringList channelNames;
+        for (const auto &channel : this->twitchChannels)
+        {
+            const auto channelName = channel->getName();
+            if (!channelName.isEmpty() &&
+                !this->helixRoleChannels.contains(channelName.toCaseFolded()))
+            {
+                channelNames.push_back(channelName);
+            }
+        }
+        if (channelNames.isEmpty())
+        {
+            return;
+        }
+
+        this->ivrPending = static_cast<int>(channelNames.size());
+        this->ivrState = SourceState::Pending;
+
+        const QPointer<ChatterListWidget> guard(this->q);
+        for (const auto &channelName : channelNames)
+        {
+            getIvr()->getModVip(
+                channelName,
+                [this, guard, requestGeneration, channelName](
+                    const std::vector<HelixModerator> &mods,
+                    const std::vector<HelixVip> &vips) {
+                    if (!guard || requestGeneration != this->generation)
+                    {
+                        return;
+                    }
+                    bool changed = false;
+                    for (const auto &mod : mods)
+                    {
+                        changed |= this->model->addKnownRoles(
+                            mod.userLogin, mod.userName, ModeratorRole, 3,
+                            MessagePlatform::AnyOrTwitch, channelName);
+                    }
+                    for (const auto &vip : vips)
+                    {
+                        changed |= this->model->addKnownRoles(
+                            vip.userLogin, vip.userName, VipRole, 3,
+                            MessagePlatform::AnyOrTwitch, channelName);
+                    }
+                    this->finishIvrRequest(true);
+                    // Also rebuild once the last request is done, so the
+                    // loading state clears
+                    if (changed || this->ivrPending == 0)
+                    {
+                        this->refreshModelPreservingView();
+                    }
+                    this->updateSummary();
+                },
+                [this, guard, requestGeneration, channelName] {
+                    qCDebug(chatterinoWidget)
+                        << "Chatter list: failed to fetch mods/VIPs for"
+                        << channelName;
+                    if (!guard || requestGeneration != this->generation)
+                    {
+                        return;
+                    }
+                    this->finishIvrRequest(false);
+                    if (this->ivrPending == 0)
+                    {
+                        this->refreshModelPreservingView();
+                    }
+                    this->updateSummary();
+                });
+        }
+    }
+
+    void finishIvrRequest(bool success)
+    {
+        this->ivrPending = std::max(0, this->ivrPending - 1);
+        if (success)
+        {
+            ++this->ivrSuccesses;
+        }
+        else
+        {
+            ++this->ivrFailures;
+        }
+
+        if (this->ivrPending > 0)
+        {
+            return;
+        }
+        if (this->ivrSuccesses == 0)
+        {
+            this->ivrState = SourceState::Failed;
+        }
+        else if (this->ivrFailures > 0)
+        {
+            this->ivrState = SourceState::Partial;
+        }
+        else
+        {
+            this->ivrState = SourceState::Ready;
+        }
     }
 
     void pumpCommunityRequests(int requestGeneration, bool force)
@@ -1978,10 +2140,13 @@ public:
         int sourceCount = 1;
         sourceCount += sourceIsReady(this->twitchState);
         sourceCount += sourceIsReady(this->communityState);
+        sourceCount += sourceIsReady(this->ivrState);
         const auto partial = this->twitchState == SourceState::Partial ||
                              this->twitchState == SourceState::Failed ||
                              this->communityState == SourceState::Partial ||
-                             this->communityState == SourceState::Failed;
+                             this->communityState == SourceState::Failed ||
+                             this->ivrState == SourceState::Partial ||
+                             this->ivrState == SourceState::Failed;
         auto status = QStringLiteral("Updated now");
         if (this->pendingRequests() > 0)
         {
@@ -2013,16 +2178,17 @@ public:
                                             : QStringLiteral("sources"))
                                    .arg(status));
         this->sources->setToolTip(
-            QStringLiteral("Chat session: %1\nTwitch: %2\nTackling: %3")
+            QStringLiteral("Chat session: %1\nTwitch: %2\nTackling: %3\nIVR: %4")
                 .arg(QStringLiteral("ready"),
                      sourceStateText(this->twitchState),
-                     sourceStateText(this->communityState)));
+                     sourceStateText(this->communityState),
+                     sourceStateText(this->ivrState)));
         this->refresh->setEnabled(this->pendingRequests() == 0);
     }
 
     int pendingRequests() const
     {
-        return this->twitchPending + this->communityPending;
+        return this->twitchPending + this->communityPending + this->ivrPending;
     }
 
     void applyTheme(float scale)
@@ -2088,6 +2254,8 @@ public:
     std::shared_ptr<Channel> channel;
     std::vector<ChannelPtr> localChannels;
     std::vector<std::shared_ptr<TwitchChannel>> twitchChannels;
+    // Case-folded names of channels whose mod/VIP lists come from Helix
+    QSet<QString> helixRoleChannels;
     QHash<QString, QString> channelDisplayNames;
     bool showPlatforms = false;
     bool showChannels = false;
@@ -2104,6 +2272,10 @@ public:
     pajlada::Signals::ScopedConnection messageConnection;
     SourceState twitchState = SourceState::Skipped;
     SourceState communityState = SourceState::Skipped;
+    SourceState ivrState = SourceState::Skipped;
+    int ivrPending = 0;
+    int ivrSuccesses = 0;
+    int ivrFailures = 0;
     int generation = 0;
     int twitchPending = 0;
     int twitchSuccesses = 0;
