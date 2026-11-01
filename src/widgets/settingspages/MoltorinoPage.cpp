@@ -1354,6 +1354,13 @@ MoltorinoPage::MoltorinoPage()
                      "without a prompt.")
         ->addTo(*view);
 
+    SettingWidget::checkbox("Show the Shared Chat channel selector",
+                            s.showSharedChatChannelSelector)
+        ->setTooltip(
+            "Show a channel picker in the chat header when Shared Chat "
+            "includes more than one channel.")
+        ->addTo(*view);
+
     SettingWidget::checkbox("Hide mod actions on moderator usercards",
                             s.hideModActionsOnModUsercards)
         ->setTooltip(

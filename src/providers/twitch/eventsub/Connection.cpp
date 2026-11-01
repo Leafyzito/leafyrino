@@ -313,6 +313,12 @@ void Connection::onChannelModerate(
                 }
                 EventSubMessageBuilder builder(channel, now);
                 builder->loginName = payload.event.moderatorUserLogin.qt();
+                if (payload.event.isFromSharedChat() &&
+                    payload.event.sourceBroadcasterUserID)
+                {
+                    builder->sharedChatSourceId =
+                        payload.event.sourceBroadcasterUserID->qt();
+                }
                 makeModerateMessage(builder, payload.event, action);
                 auto msg = builder.release();
                 if constexpr (std::is_same_v<Action, channel_moderate::Mod>)

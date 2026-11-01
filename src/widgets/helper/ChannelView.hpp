@@ -211,6 +211,7 @@ public:
     void setChannel(const ChannelPtr &underlyingChannel);
 
     void setFilters(const QList<QUuid> &ids);
+    void setMessagePredicate(std::function<bool(const MessagePtr &)> predicate);
     QList<QUuid> getFilterIds() const;
     FilterSetPtr getFilterSet() const;
 
@@ -456,6 +457,7 @@ private:
     bool showScrollBar_ = false;
 
     FilterSetPtr channelFilters_;
+    std::function<bool(const MessagePtr &)> messagePredicate_;
 
     // Returns true if message should be included
     bool shouldIncludeMessage(const MessagePtr &message) const;

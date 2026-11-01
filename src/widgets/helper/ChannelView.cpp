@@ -2156,6 +2156,18 @@ void ChannelView::setFilters(const QList<QUuid> &ids)
     this->updateID();
 }
 
+void ChannelView::setMessagePredicate(
+    std::function<bool(const MessagePtr &)> predicate)
+{
+    this->messagePredicate_ = std::move(predicate);
+
+    // replay the underlying channel so already shown messages get refiltered
+    if (auto underlying = this->underlyingChannel_)
+    {
+        this->setChannel(underlying);
+    }
+}
+
 QList<QUuid> ChannelView::getFilterIds() const
 {
     if (!this->channelFilters_)
@@ -2173,6 +2185,10 @@ FilterSetPtr ChannelView::getFilterSet() const
 
 bool ChannelView::shouldIncludeMessage(const MessagePtr &m) const
 {
+    if (this->messagePredicate_ && !this->messagePredicate_(m))
+    {
+        return false;
+    }
     if (this->channelFilters_)
     {
         if (getSettings()->excludeUserMessagesFromFilter &&

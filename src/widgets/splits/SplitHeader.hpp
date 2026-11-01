@@ -8,8 +8,10 @@
 #include <pajlada/signals/connection.hpp>
 #include <pajlada/signals/signalholder.hpp>
 #include <QElapsedTimer>
+#include <QHash>
 #include <QMenu>
 #include <QPoint>
+#include <QSet>
 
 #include <memory>
 #include <vector>
@@ -21,6 +23,8 @@ class DrawnButton;
 class LabelButton;
 class Label;
 class Split;
+struct Message;
+struct TwitchUser;
 
 class SplitHeader final : public BaseWidget
 {
@@ -65,6 +69,12 @@ private:
     void handleChannelChanged();
     void toggleFollow();
 
+    void resetSharedChatFilter();
+    void recordSharedChatSource(const std::shared_ptr<const Message> &message);
+    void updateSharedChatButton();
+    void applySharedChatFilter();
+    std::unique_ptr<QMenu> createSharedChatMenu();
+
     Split *const split_{};
     QString tooltipText_{};
     TooltipWidget *const tooltipWidget_{};
@@ -91,12 +101,17 @@ private:
     SvgButton *chattersButton_{};
     SvgButton *youtubeRefreshButton_{};
     LabelButton *sendTargetButton_{};
+    LabelButton *sharedChatButton_{};
     DrawnButton *addButton_{};
 
     QPoint dragStart_{};
     bool dragging_{false};
     bool doubleClicked_{false};
     bool menuVisible_{false};
+
+    QHash<QString, std::shared_ptr<TwitchUser>> sharedChatSources_;
+    QSet<QString> hiddenSharedChatSources_;
+    bool sharedChatFilterActive_ = false;
 
     pajlada::Signals::SignalHolder managedConnections_;
     pajlada::Signals::SignalHolder channelConnections_;

@@ -2952,7 +2952,17 @@ TwitchChannel *MessageBuilder::parseSharedChatInfo(Communi::TagsRef tags,
         return twitchChannel;
     }
 
-    if (auto optSourceRoom = tags.get("source-room-id"))
+    auto optSourceRoom = tags.get("source-room-id");
+    if (optSourceRoom && !optSourceRoom->isEmpty())
+    {
+        this->message().sharedChatSourceId = *optSourceRoom;
+    }
+    else if (!twitchChannel->roomId().isEmpty())
+    {
+        this->message().sharedChatSourceId = twitchChannel->roomId();
+    }
+
+    if (optSourceRoom)
     {
         const auto &sourceRoom = *optSourceRoom;
         if (twitchChannel->roomId() != sourceRoom)

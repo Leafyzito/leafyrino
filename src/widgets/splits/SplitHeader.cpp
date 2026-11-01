@@ -16,6 +16,8 @@
 #include "controllers/hotkeys/HotkeyCategory.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "controllers/notifications/NotificationController.hpp"
+#include "messages/Image.hpp"
+#include "messages/Message.hpp"
 #include "providers/kick/KickChannel.hpp"
 #include "providers/moltorino/MoltorinoAuth.hpp"
 #include "providers/twitch/api/Helix.hpp"
@@ -23,6 +25,8 @@
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
+#include "providers/twitch/TwitchUser.hpp"
+#include "providers/twitch/TwitchUsers.hpp"
 #include "providers/youtube/YouTubeChannel.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
@@ -38,6 +42,7 @@
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/dialogs/ChannelManagementDialog.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
+#include "widgets/helper/ChannelView.hpp"
 #include "widgets/helper/CommonTexts.hpp"
 #include "widgets/Label.hpp"
 #include "widgets/splits/Split.hpp"
@@ -45,6 +50,7 @@
 #include "widgets/TooltipWidget.hpp"
 
 #include <QDrag>
+#include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QMenu>
@@ -53,6 +59,7 @@
 #include <QPainter>
 #include <QPointer>
 
+#include <algorithm>
 #include <cmath>
 #include <ranges>
 
@@ -854,6 +861,16 @@ SplitHeader::SplitHeader(Split *split)
             this->updateIcons();
         },
         this->managedConnections_);
+    getSettings()->showSharedChatChannelSelector.connect(
+        [this](bool enabled, auto) {
+            if (!enabled && !this->hiddenSharedChatSources_.isEmpty())
+            {
+                this->hiddenSharedChatSources_.clear();
+                this->applySharedChatFilter();
+            }
+            this->updateSharedChatButton();
+        },
+        this->managedConnections_);
 
     auto *window = dynamic_cast<BaseWindow *>(this->window());
     if (window)
@@ -957,6 +974,13 @@ void SplitHeader::initializeLayout()
             w->hide();
             w->setMenu(this->createChatModeMenu());
         }),
+        this->sharedChatButton_ = makeWidget<LabelButton>([&](auto w) {
+            w->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+            w->setPadding({5, 0});
+            w->setToolTip("Choose which Shared Chat channels to show");
+            w->setAccessibleName("Shared Chat channels");
+            w->hide();
+        }),
         this->manageChannelButton_,
         // moderator
         this->moderationButton_,
@@ -1048,6 +1072,11 @@ void SplitHeader::initializeLayout()
                      [this]() {
                          this->split_->openChatterList();
                      });
+
+    QObject::connect(
+        this->sharedChatButton_, &Button::leftMousePress, this, [this] {
+            this->sharedChatButton_->setMenu(this->createSharedChatMenu());
+        });
 
     QObject::connect(
         this->youtubeRefreshButton_, &Button::leftClicked, this, [this]() {
@@ -1660,6 +1689,7 @@ void SplitHeader::handleChannelChanged()
     this->updateChannelText();
 
     this->channelConnections_.clear();
+    this->resetSharedChatFilter();
     auto channel = this->split_->getChannel();
     if (auto *multiChannel = dynamic_cast<MultiChannel *>(channel.get()))
     {
@@ -1753,6 +1783,31 @@ void SplitHeader::handleChannelChanged()
     {
         this->youtubeRefreshButton_->setVisible(hasYouTube);
     }
+
+    // multi channel splits show every child at once, so the selector only
+    // applies to plain twitch splits
+    if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(splitChannel.get()))
+    {
+        this->channelConnections_.managedConnect(
+            twitchChannel->messageAppended,
+            [this](const MessagePtr &message, const auto &) {
+                this->recordSharedChatSource(message);
+            });
+
+        for (const auto &message : twitchChannel->getMessageSnapshot())
+        {
+            this->recordSharedChatSource(message);
+        }
+
+        this->applySharedChatFilter();
+    }
+    else if (this->sharedChatFilterActive_)
+    {
+        this->split_->getChannelView().setMessagePredicate({});
+        this->sharedChatFilterActive_ = false;
+    }
+
+    this->updateSharedChatButton();
 
     this->updateSendTargetButton();
 }
@@ -1861,8 +1916,233 @@ void SplitHeader::scaleChangedEvent(float scale)
     this->moderationButton_->setFixedWidth(w);
     this->chattersButton_->setFixedWidth(w);
     this->youtubeRefreshButton_->setFixedWidth(w);
+    this->sharedChatButton_->setMaximumWidth(int(104 * scale));
 
     this->addButton_->setFixedWidth(addSplitWidth);
+}
+
+void SplitHeader::resetSharedChatFilter()
+{
+    this->sharedChatSources_.clear();
+    this->hiddenSharedChatSources_.clear();
+
+    auto channel = this->split_->getChannel();
+    auto *twitchChannel = dynamic_cast<TwitchChannel *>(channel.get());
+    if (twitchChannel == nullptr || twitchChannel->isEmpty() ||
+        twitchChannel->roomId().isEmpty())
+    {
+        this->sharedChatButton_->hide();
+        return;
+    }
+
+    const auto user =
+        getApp()->getTwitchUsers()->resolveID({twitchChannel->roomId()});
+    this->sharedChatSources_.insert(twitchChannel->roomId(), user);
+}
+
+void SplitHeader::recordSharedChatSource(const MessagePtr &message)
+{
+    if (!message || message->sharedChatSourceId.isEmpty())
+    {
+        return;
+    }
+
+    const auto &sourceId = message->sharedChatSourceId;
+    if (this->sharedChatSources_.contains(sourceId))
+    {
+        return;
+    }
+
+    const auto source = getApp()->getTwitchUsers()->resolveID({sourceId});
+    this->sharedChatSources_.insert(sourceId, source);
+    this->updateSharedChatButton();
+}
+
+void SplitHeader::applySharedChatFilter()
+{
+    if (this->hiddenSharedChatSources_.isEmpty())
+    {
+        if (this->sharedChatFilterActive_)
+        {
+            this->split_->getChannelView().setMessagePredicate({});
+            this->sharedChatFilterActive_ = false;
+        }
+        return;
+    }
+
+    const QPointer<SplitHeader> self(this);
+    this->split_->getChannelView().setMessagePredicate(
+        [self](const MessagePtr &message) {
+            if (!self || !message || message->sharedChatSourceId.isEmpty())
+            {
+                return true;
+            }
+            return !self->hiddenSharedChatSources_.contains(
+                message->sharedChatSourceId);
+        });
+    this->sharedChatFilterActive_ = true;
+}
+
+void SplitHeader::updateSharedChatButton()
+{
+    if (!getSettings()->showSharedChatChannelSelector ||
+        this->sharedChatSources_.size() < 2)
+    {
+        this->sharedChatButton_->hide();
+        return;
+    }
+
+    const auto visible =
+        this->sharedChatSources_.size() - this->hiddenSharedChatSources_.size();
+    QString text;
+    if (this->hiddenSharedChatSources_.isEmpty())
+    {
+        text = QStringLiteral("All chats");
+    }
+    else if (visible == 1)
+    {
+        for (auto it = this->sharedChatSources_.cbegin();
+             it != this->sharedChatSources_.cend(); ++it)
+        {
+            if (this->hiddenSharedChatSources_.contains(it.key()))
+            {
+                continue;
+            }
+            const auto &user = it.value();
+            text = QStringLiteral("One chat");
+            if (user && !user->displayName.trimmed().isEmpty())
+            {
+                text = user->displayName.trimmed();
+            }
+            else if (user && !user->name.trimmed().isEmpty())
+            {
+                text = user->name.trimmed();
+            }
+            break;
+        }
+    }
+    else
+    {
+        text = QStringLiteral("%1 chats").arg(visible);
+    }
+
+    const auto maxTextWidth = std::max(24, int(78 * this->scale()));
+    text = QFontMetrics(this->font())
+               .elidedText(text, Qt::ElideRight, maxTextWidth);
+    this->sharedChatButton_->setText(text + QStringLiteral(" ▾"));
+    this->sharedChatButton_->show();
+}
+
+std::unique_ptr<QMenu> SplitHeader::createSharedChatMenu()
+{
+    auto menu = std::make_unique<QMenu>();
+    menu->setToolTipsVisible(true);
+    const auto weakChannel = std::weak_ptr<Channel>(this->split_->getChannel());
+
+    auto *showAll = menu->addAction("Show all channels");
+    showAll->setCheckable(true);
+    showAll->setChecked(this->hiddenSharedChatSources_.isEmpty());
+    showAll->setEnabled(!this->hiddenSharedChatSources_.isEmpty());
+    QObject::connect(showAll, &QAction::triggered, this, [this, weakChannel] {
+        if (weakChannel.lock() != this->split_->getChannel())
+        {
+            return;
+        }
+        this->hiddenSharedChatSources_.clear();
+        this->applySharedChatFilter();
+        this->updateSharedChatButton();
+    });
+    menu->addSeparator();
+
+    struct SourceRow {
+        QString id;
+        QString label;
+        std::shared_ptr<TwitchUser> user;
+        bool home = false;
+    };
+    std::vector<SourceRow> rows;
+    rows.reserve(this->sharedChatSources_.size());
+
+    QString homeId;
+    if (auto *home =
+            dynamic_cast<TwitchChannel *>(this->split_->getChannel().get()))
+    {
+        homeId = home->roomId();
+    }
+
+    for (auto it = this->sharedChatSources_.cbegin();
+         it != this->sharedChatSources_.cend(); ++it)
+    {
+        const auto &user = it.value();
+        QString label;
+        if (user && !user->displayName.trimmed().isEmpty())
+        {
+            label = user->displayName.trimmed();
+        }
+        else if (user && !user->name.trimmed().isEmpty())
+        {
+            label = user->name.trimmed();
+        }
+        else
+        {
+            label = QStringLiteral("Channel %1").arg(it.key().right(6));
+        }
+        rows.push_back({it.key(), label, user, it.key() == homeId});
+    }
+    std::ranges::sort(rows, [](const SourceRow &a, const SourceRow &b) {
+        if (a.home != b.home)
+        {
+            return a.home;
+        }
+        return a.label.compare(b.label, Qt::CaseInsensitive) < 0;
+    });
+
+    const auto visibleCount =
+        this->sharedChatSources_.size() - this->hiddenSharedChatSources_.size();
+    for (const auto &row : rows)
+    {
+        auto *action = menu->addAction(row.label);
+        action->setCheckable(true);
+        const bool checked = !this->hiddenSharedChatSources_.contains(row.id);
+        action->setChecked(checked);
+        action->setEnabled(!checked || visibleCount > 1);
+        action->setToolTip(
+            row.home ? QStringLiteral("This channel")
+                     : QStringLiteral("Shared from %1")
+                           .arg(row.user ? row.user->name : row.label));
+
+        if (row.user && !row.user->profilePictureUrl.isEmpty())
+        {
+            const auto image =
+                Image::fromUrl(Url{row.user->profilePictureUrl}, 1, {32, 32});
+            if (const auto pixmap = image->pixmapOrLoad())
+            {
+                action->setIcon(QIcon(*pixmap));
+            }
+        }
+
+        QObject::connect(
+            action, &QAction::triggered, this,
+            [this, weakChannel, id = row.id](bool show) {
+                if (weakChannel.lock() != this->split_->getChannel() ||
+                    !this->sharedChatSources_.contains(id))
+                {
+                    return;
+                }
+                if (show)
+                {
+                    this->hiddenSharedChatSources_.remove(id);
+                }
+                else if (this->hiddenSharedChatSources_.size() + 1 <
+                         this->sharedChatSources_.size())
+                {
+                    this->hiddenSharedChatSources_.insert(id);
+                }
+                this->applySharedChatFilter();
+                this->updateSharedChatButton();
+            });
+    }
+    return menu;
 }
 
 void SplitHeader::setAddButtonVisible(bool value)

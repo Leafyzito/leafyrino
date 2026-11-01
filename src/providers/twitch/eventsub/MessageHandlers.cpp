@@ -75,6 +75,10 @@ void handleModerateMessage(
             ->setLink({Link::UserInfo, event.sourceBroadcasterUserLogin->qt()})
             ->setTrailingSpace(false);
         builder->flags.set(MessageFlag::SharedMessage);
+        if (event.sourceBroadcasterUserID)
+        {
+            builder->sharedChatSourceId = event.sourceBroadcasterUserID->qt();
+        }
         builder->channelName = event.sourceBroadcasterUserLogin->qt();
     }
 
@@ -124,6 +128,10 @@ void handleModerateMessage(
         builder.appendUser(*event.sourceBroadcasterUserName,
                            *event.sourceBroadcasterUserLogin, text, false);
         builder->flags.set(MessageFlag::SharedMessage);
+        if (event.sourceBroadcasterUserID)
+        {
+            builder->sharedChatSourceId = event.sourceBroadcasterUserID->qt();
+        }
         builder->channelName = event.sourceBroadcasterUserLogin->qt();
     }
 

@@ -67,6 +67,7 @@ std::shared_ptr<Message> Message::clone() const
     cloned->userID = this->userID;
     cloned->timeoutUser = this->timeoutUser;
     cloned->channelName = this->channelName;
+    cloned->sharedChatSourceId = this->sharedChatSourceId;
     cloned->usernameColor = this->usernameColor;
     cloned->serverReceivedTime = this->serverReceivedTime;
     cloned->twitchBadges = this->twitchBadges;

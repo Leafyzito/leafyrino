@@ -1237,6 +1237,8 @@ public:
         "/moltorino/hideUnavailableModCommands", true};
     BoolSetting showFollowButtonInSplitHeader{
         "/moltorino/showFollowButtonInSplitHeader", true};
+    BoolSetting showSharedChatChannelSelector{
+        "/moltorino/showSharedChatChannelSelector", true};
     BoolSetting showFollowEventsInChat{"/moltorino/showFollowEventsInChat",
                                        false};
     BoolSetting confirmUnfollowFromSplitHeader{
