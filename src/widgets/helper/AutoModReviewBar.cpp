@@ -228,4 +228,4 @@ void AutoModReviewBar::showEvent(QShowEvent *event)
     }
 }
 
-}
+}  // namespace chatterino

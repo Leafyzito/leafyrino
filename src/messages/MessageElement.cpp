@@ -2363,8 +2363,8 @@ QJsonObject AutoModActionElement::toJson() const
 {
     auto base = MessageElement::toJson();
     base["type"_L1] = u"AutoModActionElement"_s;
-    base["kind"_L1] = this->kind_ == AutoModActionKind::Ban ? u"ban"_s
-                                                            : u"timeout"_s;
+    base["kind"_L1] =
+        this->kind_ == AutoModActionKind::Ban ? u"ban"_s : u"timeout"_s;
     base["timeoutSeconds"_L1] = this->timeoutSeconds_;
     return base;
 }

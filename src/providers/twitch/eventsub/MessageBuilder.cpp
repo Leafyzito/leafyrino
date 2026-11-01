@@ -121,10 +121,9 @@ void appendHeldMessageText(EventSubMessageBuilder &builder,
                 }
                 const auto words = text->words();
                 const auto first = words.isEmpty() ? QString{} : words.front();
-                auto pos = first.isEmpty()
-                               ? -1
-                               : word.indexOf(first, consumed,
-                                              Qt::CaseInsensitive);
+                auto pos = first.isEmpty() ? -1
+                                           : word.indexOf(first, consumed,
+                                                          Qt::CaseInsensitive);
                 if (pos < 0)
                 {
                     pos = consumed;
@@ -400,8 +399,9 @@ void appendAutoModReviewActions(EventSubMessageBuilder &builder,
         return;
     }
 
-    if (item.actionsAllowed && (item.failedAction != automod::ReviewAction::None ||
-                                item.secondaryFailed))
+    if (item.actionsAllowed &&
+        (item.failedAction != automod::ReviewAction::None ||
+         item.secondaryFailed))
     {
         const auto failedAction =
             item.secondaryFailed ? item.secondaryAction : item.failedAction;
@@ -450,10 +450,10 @@ void appendAutoModReviewActions(EventSubMessageBuilder &builder,
         return;
     }
 
-    const auto status = item.statusDetail.isEmpty()
-                            ? automod::reviewStateLabel(item)
-                            : automod::reviewStateLabel(item) % u" · " %
-                                  item.statusDetail;
+    const auto status =
+        item.statusDetail.isEmpty()
+            ? automod::reviewStateLabel(item)
+            : automod::reviewStateLabel(item) % u" · " % item.statusDetail;
     builder.emplace<TextElement>(status, flags, MessageColor::System,
                                  statusStyle);
 }
@@ -490,8 +490,7 @@ void appendAutoModReviewContext(EventSubMessageBuilder &builder,
     // 0 = newest at top
     if (getSettings()->autoModReviewContextOrder != 1)
     {
-        for (auto it = item.context.crbegin(); it != item.context.crend();
-             ++it)
+        for (auto it = item.context.crbegin(); it != item.context.crend(); ++it)
         {
             addContext(*it);
         }
@@ -515,9 +514,8 @@ void appendAutoModShortcutHints(EventSubMessageBuilder &builder,
                              bool separator) {
         builder.emplace<TextElement>(key, expandedFlags, MessageColor::Link,
                                      FontStyle::ChatSmall);
-        builder.emplace<TextElement>(action, expandedFlags,
-                                     MessageColor::System,
-                                     FontStyle::ChatSmall);
+        builder.emplace<TextElement>(
+            action, expandedFlags, MessageColor::System, FontStyle::ChatSmall);
         if (separator)
         {
             builder.emplace<TextElement>(u"·"_s, expandedFlags,
@@ -1076,9 +1074,8 @@ std::pair<MessagePtr, HighlightAlert> makeAutoModReviewMessage(
     }
 
     const MessageElementFlags textFlags{MessageElementFlag::Text};
-    const auto userColor = channel != nullptr
-                               ? channel->getUserColor(item.userLogin)
-                               : QColor{};
+    const auto userColor =
+        channel != nullptr ? channel->getUserColor(item.userLogin) : QColor{};
     const auto appendChannelName = [&](FontStyle style) {
         builder
             .emplace<TextElement>(u'#' + item.broadcasterLogin,
@@ -1104,10 +1101,10 @@ std::pair<MessagePtr, HighlightAlert> makeAutoModReviewMessage(
             builder.emplace<TextElement>(u"AutoMod:"_s, textFlags,
                                          QColor(0, 0, 255),
                                          FontStyle::ChatMediumBold);
-            builder.emplace<TextElement>(
-                u"Held a message for reason: "_s % reasonText %
-                    u". Allow will post it in chat.",
-                textFlags, MessageColor::Text);
+            builder.emplace<TextElement>(u"Held a message for reason: "_s %
+                                             reasonText %
+                                             u". Allow will post it in chat.",
+                                         textFlags, MessageColor::Text);
             appendAutoModReviewActions(builder, item, false,
                                        FontStyle::ChatMedium);
             builder.emplace<LinebreakElement>(textFlags);
@@ -1177,8 +1174,8 @@ std::pair<MessagePtr, HighlightAlert> makeAutoModReviewMessage(
     }
 
     builder->messageText = messageTextPrefix % item.messageText;
-    builder->searchText = item.broadcasterLogin % u' ' % item.userLogin %
-                          u' ' % item.messageText % u' ' % reasonText % u' ' %
+    builder->searchText = item.broadcasterLogin % u' ' % item.userLogin % u' ' %
+                          item.messageText % u' ' % reasonText % u' ' %
                           automod::reviewStateLabel(item);
 
     // a review without a channel (e.g. left since) only lives in /automod

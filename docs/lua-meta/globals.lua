@@ -893,6 +893,7 @@ c2.MessageElementFlag = {
     Mention = 0,
     RepeatedMessageCounter = 0,
     LowercaseLinks = 0,
+    AutoModReviewExpanded = 0,
     RepliedMessage = 0,
     ReplyButton = 0,
     HeaderTimestamp = 0,

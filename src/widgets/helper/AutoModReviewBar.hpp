@@ -36,4 +36,4 @@ private:
     pajlada::Signals::SignalHolder signalHolder_;
 };
 
-}
+}  // namespace chatterino

@@ -1044,7 +1044,8 @@ MoltorinoPage::MoltorinoPage()
                      "layout. The /automod tab always shows every control.")
         ->addTo(*view);
 
-    SettingWidget::checkbox("Show the AutoMod reason", s.autoModReviewShowReason)
+    SettingWidget::checkbox("Show the AutoMod reason",
+                            s.autoModReviewShowReason)
         ->setTooltip("Show the AutoMod category and level, or the blocked "
                      "term, on each held message.")
         ->addTo(*view);

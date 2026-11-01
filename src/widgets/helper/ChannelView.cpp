@@ -1184,9 +1184,8 @@ ChannelView::ChannelView(InternalCtor /*tag*/, QWidget *parent, Split *split,
                 }
 
                 // resolved reviews leave the queue
-                const auto current =
-                    this->underlyingChannel_->findMessageByID(
-                        QStringLiteral("automod_") + item->messageID);
+                const auto current = this->underlyingChannel_->findMessageByID(
+                    QStringLiteral("automod_") + item->messageID);
                 const bool shouldBeVisible =
                     current && this->shouldIncludeMessage(current);
                 if (this->isAutoModReviewVisible(key) != shouldBeVisible)
@@ -3097,8 +3096,10 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                             .selectedChannel = selectedChannel,
                             .message = *snapshot[i - 1]->getMessage(),
                             .autoModReviewExpanded =
-                                this->isSelectedAutoModReview(*snapshot[i - 1]->getMessage()),
-                            .autoModReviewChannel = this->isAutoModReviewChannel(),
+                                this->isSelectedAutoModReview(
+                                    *snapshot[i - 1]->getMessage()),
+                            .autoModReviewChannel =
+                                this->isAutoModReviewChannel(),
                         },
                         false);
                     scrollFactor = 1;
@@ -3150,8 +3151,10 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                             .selectedChannel = selectedChannel,
                             .message = *snapshot[i + 1]->getMessage(),
                             .autoModReviewExpanded =
-                                this->isSelectedAutoModReview(*snapshot[i + 1]->getMessage()),
-                            .autoModReviewChannel = this->isAutoModReviewChannel(),
+                                this->isSelectedAutoModReview(
+                                    *snapshot[i + 1]->getMessage()),
+                            .autoModReviewChannel =
+                                this->isAutoModReviewChannel(),
                         },
                         false);
 
@@ -4992,10 +4995,10 @@ void ChannelView::showAutoModTimeoutMenu(const QString &key,
             return;
         }
         bool ok = false;
-        const auto minutes = QInputDialog::getInt(
-            self, QStringLiteral("Deny and timeout"),
-            QStringLiteral("Timeout length in minutes:"), 10, 1, 14 * 24 * 60,
-            1, &ok);
+        const auto minutes =
+            QInputDialog::getInt(self, QStringLiteral("Deny and timeout"),
+                                 QStringLiteral("Timeout length in minutes:"),
+                                 10, 1, 14 * 24 * 60, 1, &ok);
         if (!ok)
         {
             return;

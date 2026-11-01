@@ -590,7 +590,8 @@ void paintFragmentBackground(QPainter &painter, const QRectF &rect,
     }
     if (highlight.connectsAfter)
     {
-        path.addRect(QRectF(rect.right() - 2.0, rect.top(), 2.0, rect.height()));
+        path.addRect(
+            QRectF(rect.right() - 2.0, rect.top(), 2.0, rect.height()));
     }
     painter.drawPath(path);
     painter.restore();
@@ -1395,9 +1396,9 @@ QString TextLayoutElement::getFragmentTooltip(QPointF point) const
         {
             continue;
         }
-        const auto rect = this->fragmentRect(
-            highlight.match.start,
-            highlight.match.start + highlight.match.length);
+        const auto rect =
+            this->fragmentRect(highlight.match.start,
+                               highlight.match.start + highlight.match.length);
         if (rect.contains(point))
         {
             return highlight.match.ruleName;

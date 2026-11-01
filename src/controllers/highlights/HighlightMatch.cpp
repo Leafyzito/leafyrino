@@ -11,7 +11,8 @@ QColor defaultAutoModMatchColor()
 
 HighlightMatchStyle autoModMatchStyle()
 {
-    const auto configured = getSettings()->automodMatchHighlightStyle.getValue();
+    const auto configured =
+        getSettings()->automodMatchHighlightStyle.getValue();
     if (configured < static_cast<int>(HighlightMatchStyle::None) ||
         configured > static_cast<int>(HighlightMatchStyle::Underline))
     {
