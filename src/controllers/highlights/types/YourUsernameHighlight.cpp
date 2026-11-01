@@ -79,6 +79,18 @@ HighlightCheck YourUsernameHighlight::buildCheck() const
                     }
                 }
                 break;
+                // no youtube account, match either twitch or kick name
+                case MessagePlatform::YouTube: {
+                    bool matched =
+                        (twitchRe &&
+                         twitchRe->match(p.originalMessage).hasMatch()) ||
+                        (kickRe && kickRe->match(p.originalMessage).hasMatch());
+                    if (!matched)
+                    {
+                        return std::nullopt;
+                    }
+                }
+                break;
             }
 
             return highlight.outcome.makeSimpleResult<H>();
