@@ -2979,6 +2979,15 @@ void SplitInput::updateCompletionPopup()
     auto &edit = *this->ui_.textEdit;
     const auto text = edit.toPlainText();
     const auto cursorPosition = edit.textCursor().position();
+    // Potat channel records are only fetched once the user types in a channel.
+    if (!text.isEmpty() && channel != nullptr &&
+        channel->getType() == Channel::Type::Twitch)
+    {
+        if (auto *potat = getApp()->getPotatCommands())
+        {
+            potat->ensureChannel(channel->getName());
+        }
+    }
     this->updateCommandArgumentHint(text, cursorPosition);
     if (!showEmoteCompletion && !showUsernameCompletion &&
         !showCommandCompletion)
@@ -3049,10 +3058,6 @@ void SplitInput::updateCompletionPopup()
                 selectedChannel != nullptr &&
                 selectedChannel->getType() == Channel::Type::Twitch;
             auto *potat = potatChannel ? getApp()->getPotatCommands() : nullptr;
-            if (potat != nullptr)
-            {
-                potat->ensureChannel(selectedChannel->getName());
-            }
             const auto isBot =
                 queryPreview.startsWith('$') ||
                 (potatChannel &&
@@ -4690,13 +4695,6 @@ void SplitInput::updateChannel()
         this->commandHintChannel_.reset();
         this->resolvedCommandHint_.reset();
         this->resolvedSupibotDescription_.clear();
-        if (selected->getType() == Channel::Type::Twitch)
-        {
-            if (auto *potat = getApp()->getPotatCommands())
-            {
-                potat->ensureChannel(selected->getName());
-            }
-        }
         this->updateCommandArgumentHint(
             this->ui_.textEdit->toPlainText(),
             this->ui_.textEdit->textCursor().position());

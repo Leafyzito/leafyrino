@@ -625,6 +625,10 @@ std::optional<PotatChannelRecord> parseChannel(const QByteArray &payload)
 
 void PotatCommands::ensureLoaded()
 {
+    if (!getSettings()->includePotatCommands)
+    {
+        return;
+    }
     if (!this->cacheChecked_)
     {
         this->loadCache();
@@ -800,6 +804,10 @@ const PotatCommands::ChannelState *PotatCommands::channelState(
 
 void PotatCommands::ensureChannel(const QString &channelLogin)
 {
+    if (!getSettings()->includePotatCommands)
+    {
+        return;
+    }
     auto *state = this->channelState(channelLogin);
     if (state == nullptr)
     {
