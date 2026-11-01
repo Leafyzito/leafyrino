@@ -437,8 +437,7 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
     }
     else if (this->message_->flags.has(MessageFlag::ChatWarning))
     {
-        backgroundColor =
-            blendColors(backgroundColor, QColor(64, 64, 64, 127));
+        backgroundColor = blendColors(backgroundColor, QColor(64, 64, 64, 127));
     }
     else if (this->message_->flags.has(MessageFlag::Debug))
     {

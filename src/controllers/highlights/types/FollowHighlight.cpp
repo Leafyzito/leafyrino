@@ -29,10 +29,10 @@ HighlightCheck FollowHighlight::buildCheck() const
 
 QDebug operator<<(QDebug dbg, const FollowHighlight &v)
 {
-    dbg.nospace() << "FollowHighlight("               //
-                  << "name:" << v.name                //
-                  << ',' << "enabled:" << v.enabled   //
-                  << ',' << "outcome:" << v.outcome   //
+    dbg.nospace() << "FollowHighlight("              //
+                  << "name:" << v.name               //
+                  << ',' << "enabled:" << v.enabled  //
+                  << ',' << "outcome:" << v.outcome  //
                   << ')';
 
     return dbg;

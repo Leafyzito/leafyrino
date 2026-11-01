@@ -33,7 +33,8 @@ struct FollowHighlight {
     static constexpr bool ENABLED_BY_DEFAULT = true;
     static constexpr bool SHOW_IN_MENTIONS_DEFAULT = false;
     static constexpr bool ALERT_DEFAULT = false;
-    static constexpr QColor BACKGROUND_COLOR_DEFAULT = QColor(102, 160, 255, 100);
+    static constexpr QColor BACKGROUND_COLOR_DEFAULT =
+        QColor(102, 160, 255, 100);
 
     QString name;
     std::optional<bool> enabled;

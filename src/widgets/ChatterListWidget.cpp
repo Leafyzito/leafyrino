@@ -2178,7 +2178,8 @@ public:
                                             : QStringLiteral("sources"))
                                    .arg(status));
         this->sources->setToolTip(
-            QStringLiteral("Chat session: %1\nTwitch: %2\nTackling: %3\nIVR: %4")
+            QStringLiteral(
+                "Chat session: %1\nTwitch: %2\nTackling: %3\nIVR: %4")
                 .arg(QStringLiteral("ready"),
                      sourceStateText(this->twitchState),
                      sourceStateText(this->communityState),

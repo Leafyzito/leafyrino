@@ -263,8 +263,7 @@ TEST(Filters, TypeSynthesis)
         T type = filter.returnType();
         EXPECT_EQ(type, expected)
             << "Filter{ " << input << " } has type " << type << " instead of "
-            << expected
-            << ".\nDebug: " << filter.debugString();
+            << expected << ".\nDebug: " << filter.debugString();
     }
 }
 
@@ -469,16 +468,16 @@ TEST_F(FiltersF, ClientDetectionContextChecks)
             .message = message,
             .channel = &channel,
         };
-        EXPECT_EQ(std::get<Filter>(
-                      Filter::fromString("leafyrino.client_detection"))
-                      .execute(ctx)
-                      .toString(),
-                  test.expectedDetection);
-        EXPECT_EQ(std::get<Filter>(
-                      Filter::fromString("moltorino.client_detection"))
-                      .execute(ctx)
-                      .toString(),
-                  test.expectedDetection);
+        EXPECT_EQ(
+            std::get<Filter>(Filter::fromString("leafyrino.client_detection"))
+                .execute(ctx)
+                .toString(),
+            test.expectedDetection);
+        EXPECT_EQ(
+            std::get<Filter>(Filter::fromString("moltorino.client_detection"))
+                .execute(ctx)
+                .toString(),
+            test.expectedDetection);
         EXPECT_EQ(std::get<Filter>(Filter::fromString("flags.webchat_detected"))
                       .execute(ctx)
                       .toBool(),
@@ -556,8 +555,7 @@ TEST_F(FiltersF, ExpressionDebug)
         EXPECT_NE(filter, nullptr) << "Filter::fromString(" << input
                                    << ") did not build a proper filter";
 
-        const auto actualDebugString =
-            filter->debugString();
+        const auto actualDebugString = filter->debugString();
         EXPECT_EQ(actualDebugString, debugString)
             << "filter->debugString() on '" << input << "' should be '"
             << debugString << "', but got '" << actualDebugString << "'";

@@ -71,11 +71,12 @@ HighlightController::HighlightController(Settings &settings,
 
     // currentUserChanged is boost::signals2 in leafyrino, not a pajlada signal.
     this->bConnections.emplace_back(
-        accounts->twitch.currentUserChanged.connect([this, &settings] {
-            qCDebug(LOG)
-                << "Rebuild checks because Twitch user swapped accounts";
-            this->rebuildChecks(settings);
-        }));
+        accounts->twitch.currentUserChanged.connect(
+            [this, &settings] {
+                qCDebug(LOG)
+                    << "Rebuild checks because Twitch user swapped accounts";
+                this->rebuildChecks(settings);
+            }));
 
     this->signalHolder_.managedConnect(
         accounts->twitch.currentUserNameChanged, [this, &settings] {
