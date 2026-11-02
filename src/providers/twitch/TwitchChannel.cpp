@@ -610,9 +610,9 @@ MessagePtr makeChatWarningMessage(const TwitchChannel &channel,
     builder.message().displayName = QStringLiteral("Leafyrino");
     builder.message().localizedName = QStringLiteral("Leafyrino");
     builder.message().usernameColor = QColor("#FFA500");
-    builder.message().timestamp =
-        warning.createdAt.isValid() ? warning.createdAt
-                                    : QDateTime::currentDateTimeUtc();
+    builder.message().timestamp = warning.createdAt.isValid()
+                                      ? warning.createdAt
+                                      : QDateTime::currentDateTimeUtc();
     builder.message().messageText = text;
     builder.message().searchText = text;
     builder.message().flags.set(MessageFlag::System);

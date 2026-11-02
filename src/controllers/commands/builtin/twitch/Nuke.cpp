@@ -602,8 +602,7 @@ NukeMatches collectPastMatches(const ParseResult &plan,
         {
             continue;
         }
-        if (message->timestamp.isValid() &&
-            message->timestamp < cutoff)
+        if (message->timestamp.isValid() && message->timestamp < cutoff)
         {
             break;
         }

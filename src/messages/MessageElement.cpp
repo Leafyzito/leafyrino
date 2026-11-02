@@ -2093,8 +2093,7 @@ void TimestampElement::addToContainer(MessageLayoutContainer &container,
         {
             if (ctx.message.timestamp.isValid())
             {
-                const auto localTime =
-                    ctx.message.timestamp.toLocalTime();
+                const auto localTime = ctx.message.timestamp.toLocalTime();
                 this->setTooltip(timestampTooltip(localTime, timestampFormat));
             }
             else

@@ -2090,8 +2090,7 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
         {
             auto link = linkparser::parse(nonceString);
 
-            builder.emplace<TimestampElement>(
-                builder->timestamp.time());
+            builder.emplace<TimestampElement>(builder->timestamp.time());
             builder.emplace<TextElement>(
                 "Abnormal nonce:", MessageElementFlag::ChannelPointReward,
                 MessageColor::System);
