@@ -71,6 +71,7 @@ public:
     void setData(const QString &name, const ChannelPtr &channel);
     void setData(const QString &name, const ChannelPtr &contextChannel,
                  const ChannelPtr &openingChannel);
+    Split *getSplit() const;
 
     void setYouTubeContext();
 
@@ -293,6 +294,7 @@ private:
         ChannelView *latestMessages = nullptr;
         LabelButton *loadMoreMessages = nullptr;
 
+        LabelButton *whisperLabel = nullptr;
         LabelButton *usercardLabel = nullptr;
         LabelButton *userlogsLabel = nullptr;
         LabelButton *badgesLabel = nullptr;

@@ -69,7 +69,7 @@ void addOrReplaceChannelTimeout(const Buf &buffer, MessagePtr message,
     {
         const MessagePtr &s = buffer[i];
 
-        if (s->serverReceivedTime < minimumTime)
+        if (s->timestamp < minimumTime)
         {
             break;
         }
@@ -126,7 +126,7 @@ void addOrReplaceChannelTimeout(const Buf &buffer, MessagePtr message,
             MessageBuilder replacement(timeoutMessage, message->timeoutUser,
                                        message->loginName, message->channelName,
                                        message->searchText, count,
-                                       message->serverReceivedTime);
+                                       message->timestamp);
 
             replacement->timeoutUser = message->timeoutUser;
             replacement->channelName = message->channelName;
@@ -183,7 +183,7 @@ void addOrReplaceChannelClear(const Buffer &buffer, MessagePtr message,
     {
         const MessagePtr &s = buffer[i];
 
-        if (s->serverReceivedTime < minimumTime)
+        if (s->timestamp < minimumTime)
         {
             break;
         }
@@ -214,8 +214,8 @@ void addOrReplaceChannelClear(const Buffer &buffer, MessagePtr message,
         uint32_t count = s->count + 1;
 
         auto replacement = MessageBuilder::makeClearChatMessage(
-            message->serverReceivedTime, message->timeoutUser,
-            message->channelName, count);
+            message->timestamp, message->timeoutUser, message->channelName,
+            count);
         replacement->flags = message->flags;
 
         replaceMessage(i, s, replacement);

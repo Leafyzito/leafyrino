@@ -26,6 +26,7 @@
 #include "widgets/settingspages/GeneralPageView.hpp"
 #include "widgets/settingspages/SettingWidget.hpp"
 
+#include <QCompleter>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QFontDialog>
@@ -541,7 +542,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                      "match the width of Twitch web chat.")
         ->addTo(layout);
 
-    layout.addDropdown<QString>(
+    auto *timestampFormatDropdown = layout.addDropdown<QString>(
         "Message timestamp format",
         {"Disable", "h:mm", "hh:mm", "h:mm a", "hh:mm a", "h:mm:ss", "hh:mm:ss",
          "h:mm:ss a", "hh:mm:ss a", "h:mm:ss.zzz", "h:mm:ss.zzz a",
@@ -559,6 +560,7 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                                    : args.value;
         },
         true, "a = am/pm, zzz = milliseconds");
+    timestampFormatDropdown->completer()->setCaseSensitivity(Qt::CaseSensitive);
 
     SettingWidget::checkbox("Show header timestamps", s.showHeaderTimestamps)
         ->addTo(layout);
@@ -972,15 +974,18 @@ void GeneralPage::initLayout(GeneralPageView &layout)
             "to point your browser extension to this copy of Chatterino. "
             "You may manually register it below.");
         layout.addButton("Register browser integration", [this] {
-            if (registerNmHost(getApp()->getPaths()))
+            const auto result = registerNmHost(getApp()->getPaths());
+            if (result)
             {
                 QMessageBox::information(this, "Registration Successful",
                                          "Browser integration registered.");
             }
             else
             {
-                QMessageBox::warning(this, "Registration Failed",
-                                     "Failed to register browser integration.");
+                QMessageBox::warning(
+                    this, "Registration Failed",
+                    "Failed to register browser integration:\n" +
+                        result.error());
             }
         });
     }
@@ -1014,6 +1019,33 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                                 "Extension;IDs;separated;by;semicolons")
             ->addTo(layout, form);
     }
+
+#ifndef Q_OS_WIN
+    {
+        auto *note = layout.addDescription(
+            "A path to write the native messaging manifest to. The manifest is "
+            "already automatically created for Firefox and Google Chrome if "
+            "they are installed."
+#    ifdef Q_OS_LINUX
+            "\nYou may use $XDG_CONFIG_HOME or $XDG_DATA_HOME in the path."
+#    endif
+        );
+        note->setWordWrap(true);
+        note->setStyleSheet("color: #bbb");
+        layout.addWidget(note);
+
+        auto *form = new QFormLayout();
+        layout.addLayout(form);
+        SettingWidget::lineEdit("Custom manifest path",
+                                s.customNativeMessagingManifestPath,
+                                "/full/path/to/native/messaging/manifest.json")
+            ->addTo(layout, form);
+
+        SettingWidget::dropdown("Custom manifest format",
+                                s.customNativeMessagingManifestFormat)
+            ->addTo(layout);
+    }
+#endif
 
     layout.addTitle("AppData & Cache");
 

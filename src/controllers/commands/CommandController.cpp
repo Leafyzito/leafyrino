@@ -626,6 +626,8 @@ CommandController::CommandController(const Paths &paths)
     });
 }
 
+CommandController::~CommandController() = default;
+
 void CommandController::save()
 {
     this->sm_->save();

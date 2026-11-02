@@ -2091,10 +2091,10 @@ void TimestampElement::addToContainer(MessageLayoutContainer &container,
 
         if (getSettings()->showTimestampDateTooltip)
         {
-            if (ctx.message.serverReceivedTime.isValid())
+            if (ctx.message.timestamp.isValid())
             {
                 const auto localTime =
-                    ctx.message.serverReceivedTime.toLocalTime();
+                    ctx.message.timestamp.toLocalTime();
                 this->setTooltip(timestampTooltip(localTime, timestampFormat));
             }
             else
@@ -2554,6 +2554,46 @@ QJsonObject ScalingImageElement::toJson() const
 std::string_view ScalingImageElement::type() const
 {
     return std::remove_pointer_t<decltype(this)>::TYPE;
+}
+
+TwitchGifElement::TwitchGifElement(ImageSet images, QString copyText)
+    : ScalingImageElement(std::move(images), MessageElementFlag::TwitchGif,
+                          std::move(copyText))
+{
+}
+
+void TwitchGifElement::addToContainer(MessageLayoutContainer &container,
+                                      const MessageLayoutContext &ctx)
+{
+    if (!this->matchesFlags(ctx.flags))
+    {
+        return;
+    }
+
+    const auto scale = getSettings()->twitchGifScale.getValue();
+    const auto &image =
+        this->images().getImageOrLoaded(container.getImageScale() * scale);
+    if (image->isEmpty())
+    {
+        return;
+    }
+
+    auto size = image->size() * container.getScale() * scale;
+    // Scale down to fit within the split
+    if (size.width() > container.remainingWidth())
+    {
+        size *= container.remainingWidth() / size.width();
+    }
+
+    container.addElement(new ImageLayoutElement(*this, image, size));
+}
+
+std::unique_ptr<MessageElement> TwitchGifElement::clone() const
+{
+    auto elem =
+        std::make_unique<TwitchGifElement>(this->images(), this->copyText());
+    elem->cloneFrom(*this);
+    return elem;
 }
 
 ReplyCurveElement::ReplyCurveElement()

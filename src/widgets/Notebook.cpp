@@ -26,7 +26,6 @@
 #include "widgets/splits/SplitContainer.hpp"
 #include "widgets/Window.hpp"
 
-#include <boost/foreach.hpp>
 #include <QActionGroup>
 #include <QDebug>
 #include <QFile>
@@ -78,10 +77,6 @@ Notebook::Notebook(QWidget *parent)
         });
 
     this->lockNotebookLayoutAction_ = new QAction("Lock Tab Layout", this);
-
-    // Load lock notebook layout state from settings
-    this->setLockNotebookLayout(getSettings()->lockNotebookLayout.getValue());
-
     this->lockNotebookLayoutAction_->setCheckable(true);
     this->lockNotebookLayoutAction_->setChecked(this->lockNotebookLayout_);
 
@@ -719,12 +714,6 @@ void Notebook::setShowTabs(bool value)
     this->performLayout();
 
     this->updateTabVisibility();
-
-    // show a popup upon hiding tabs
-    if (!value && getSettings()->informOnTabVisibilityToggle.getValue())
-    {
-        this->showTabVisibilityInfoPopup();
-    }
 }
 
 void Notebook::setGrowWrappedNotebookLines(bool value)
@@ -733,48 +722,6 @@ void Notebook::setGrowWrappedNotebookLines(bool value)
     {
         this->growWrappedNotebookLines = value;
         this->performLayout();
-    }
-}
-
-void Notebook::showTabVisibilityInfoPopup()
-{
-    auto unhideSeq = getApp()->getHotkeys()->getDisplaySequence(
-        HotkeyCategory::Window, "setTabVisibility", {std::vector<QString>()});
-    if (unhideSeq.isEmpty())
-    {
-        unhideSeq = getApp()->getHotkeys()->getDisplaySequence(
-            HotkeyCategory::Window, "setTabVisibility", {{"toggle"}});
-    }
-    if (unhideSeq.isEmpty())
-    {
-        unhideSeq = getApp()->getHotkeys()->getDisplaySequence(
-            HotkeyCategory::Window, "setTabVisibility", {{"on"}});
-    }
-    QString hotkeyInfo = "(currently unbound)";
-    if (!unhideSeq.isEmpty())
-    {
-        hotkeyInfo =
-            "(" + unhideSeq.toString(QKeySequence::SequenceFormat::NativeText) +
-            ")";
-    }
-    QMessageBox msgBox(this->window());
-    msgBox.window()->setWindowTitle("Leafyrino - hidden tabs");
-    msgBox.setText("You've just hidden your tabs.");
-    msgBox.setInformativeText(
-        "You can toggle tabs by using the keyboard shortcut " + hotkeyInfo +
-        " or right-clicking the tab area and selecting \"Toggle "
-        "visibility of tabs\".");
-    msgBox.addButton(QMessageBox::Ok);
-    auto *dsaButton =
-        msgBox.addButton("Don't show again", QMessageBox::YesRole);
-
-    msgBox.setDefaultButton(QMessageBox::Ok);
-
-    msgBox.exec();
-
-    if (msgBox.clickedButton() == dsaButton)
-    {
-        getSettings()->informOnTabVisibilityToggle.setValue(false);
     }
 }
 
@@ -1356,7 +1303,6 @@ void Notebook::setLockNotebookLayout(bool value)
 {
     this->lockNotebookLayout_ = value;
     this->lockNotebookLayoutAction_->setChecked(value);
-    getSettings()->lockNotebookLayout.setValue(value);
 }
 
 void Notebook::addNotebookActionsToMenu(QMenu *menu)
@@ -1597,6 +1543,9 @@ SplitNotebook::SplitNotebook(Window *parent)
             this->setGrowWrappedNotebookLines(value);
         },
         this->signalHolder_, true);
+
+    // Load lock notebook layout state from settings
+    this->setLockNotebookLayout(getSettings()->lockNotebookLayout.getValue());
 }
 
 void SplitNotebook::addNotebookActionsToMenu(QMenu *menu)
@@ -1735,7 +1684,10 @@ void SplitNotebook::addCustomButtons()
     });
 
     // updates
-    // auto *updateBtn = this->addCustomButton<PixmapButton>();
+    // auto *updateBtn = this->addCustomButton<SvgButton>(SvgButton::Src{
+    //     .dark = ":/buttons/update-darkMode.svg",
+    //     .light = ":/buttons/update-lightMode.svg",
+    // });
     //
     // initMoltorinoUpdateButton(
     //     *updateBtn,
@@ -1870,7 +1822,19 @@ void SplitNotebook::forEachSplit(const std::function<void(Split *)> &cb)
 void SplitNotebook::setLockNotebookLayout(bool value)
 {
     Notebook::setLockNotebookLayout(value);
+    getSettings()->lockNotebookLayout.setValue(value);
     this->sortTabsAlphabeticallyAction_->setEnabled(!value);
+}
+
+void SplitNotebook::setShowTabs(bool value)
+{
+    Notebook::setShowTabs(value);
+
+    // show a popup upon hiding tabs
+    if (!value && getSettings()->informOnTabVisibilityToggle.getValue())
+    {
+        this->showTabVisibilityInfoPopup();
+    }
 }
 
 void SplitNotebook::afterPageAdded()
@@ -1886,6 +1850,48 @@ void SplitNotebook::afterPageRemoved()
 void SplitNotebook::afterPageMoved()
 {
     getApp()->getWindows()->queueSave();
+}
+
+void SplitNotebook::showTabVisibilityInfoPopup()
+{
+    auto unhideSeq = getApp()->getHotkeys()->getDisplaySequence(
+        HotkeyCategory::Window, "setTabVisibility", {std::vector<QString>()});
+    if (unhideSeq.isEmpty())
+    {
+        unhideSeq = getApp()->getHotkeys()->getDisplaySequence(
+            HotkeyCategory::Window, "setTabVisibility", {{"toggle"}});
+    }
+    if (unhideSeq.isEmpty())
+    {
+        unhideSeq = getApp()->getHotkeys()->getDisplaySequence(
+            HotkeyCategory::Window, "setTabVisibility", {{"on"}});
+    }
+    QString hotkeyInfo = "(currently unbound)";
+    if (!unhideSeq.isEmpty())
+    {
+        hotkeyInfo =
+            "(" + unhideSeq.toString(QKeySequence::SequenceFormat::NativeText) +
+            ")";
+    }
+    QMessageBox msgBox(this->window());
+    msgBox.window()->setWindowTitle("Leafyrino - hidden tabs");
+    msgBox.setText("You've just hidden your tabs.");
+    msgBox.setInformativeText(
+        "You can toggle tabs by using the keyboard shortcut " + hotkeyInfo +
+        " or right-clicking the tab area and selecting \"Toggle "
+        "visibility of tabs\".");
+    msgBox.addButton(QMessageBox::Ok);
+    auto *dsaButton =
+        msgBox.addButton("Don't show again", QMessageBox::YesRole);
+
+    msgBox.setDefaultButton(QMessageBox::Ok);
+
+    msgBox.exec();
+
+    if (msgBox.clickedButton() == dsaButton)
+    {
+        getSettings()->informOnTabVisibilityToggle.setValue(false);
+    }
 }
 
 }  // namespace chatterino

@@ -610,7 +610,7 @@ MessagePtr makeChatWarningMessage(const TwitchChannel &channel,
     builder.message().displayName = QStringLiteral("Leafyrino");
     builder.message().localizedName = QStringLiteral("Leafyrino");
     builder.message().usernameColor = QColor("#FFA500");
-    builder.message().serverReceivedTime =
+    builder.message().timestamp =
         warning.createdAt.isValid() ? warning.createdAt
                                     : QDateTime::currentDateTimeUtc();
     builder.message().messageText = text;
@@ -3151,8 +3151,8 @@ bool TwitchChannel::tryReplaceLastLiveUpdateAddOrRemove(
         return false;
     }
     auto last = this->lastLiveUpdateMessage_.lock();
-    if (!last || !last->flags.has(op) ||
-        last->serverReceivedTime < now.addSecs(-5) || last->loginName != actor)
+    if (!last || !last->flags.has(op) || last->timestamp < now.addSecs(-5) ||
+        last->loginName != actor)
     {
         return false;
     }

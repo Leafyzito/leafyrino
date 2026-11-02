@@ -1279,7 +1279,7 @@ void IrcMessageHandler::addMessage(Communi::IrcMessage *message,
 
             MessageBuilder builder;
             builder.message().channelName = chan->getName();
-            builder.message().serverReceivedTime = time;
+            builder.message().timestamp = time;
             builder.message().flags.set(MessageFlag::System);
             builder.message().flags.set(MessageFlag::DoNotTriggerNotification);
 

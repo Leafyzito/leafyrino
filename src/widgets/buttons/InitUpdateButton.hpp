@@ -8,14 +8,16 @@
 
 namespace pajlada::Signals {
 class SignalHolder;
-}
+}  // namespace pajlada::Signals
 
 namespace chatterino {
 
-class PixmapButton;
+class SvgButton;
 
-void initUpdateButton(PixmapButton &button,
-                      const std::function<void()> &relayout,
+/// Initializes the update button
+///
+/// The `relayout` function gets called whenever the button visibility changes
+void initUpdateButton(SvgButton &button, const std::function<void()> &relayout,
                       pajlada::Signals::SignalHolder &signalHolder);
 
 }  // namespace chatterino

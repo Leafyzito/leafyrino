@@ -21,11 +21,12 @@
 // #include "widgets/buttons/InitMoltorinoUpdateButton.hpp"
 #include "widgets/buttons/LabelButton.hpp"
 #include "widgets/buttons/PixmapButton.hpp"
-#include "widgets/buttons/TitlebarButton.hpp"
+#include "widgets/buttons/SvgButton.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
 #include "widgets/dialogs/switcher/QuickSwitcherPopup.hpp"
 #include "widgets/dialogs/UpdateDialog.hpp"
 #include "widgets/dialogs/WelcomeDialog.hpp"
+#include "widgets/FollowedChannelsWindow.hpp"
 #include "widgets/helper/NotebookTab.hpp"
 #include "widgets/Notebook.hpp"
 #include "widgets/splits/ClosedSplits.hpp"
@@ -116,6 +117,18 @@ WindowType Window::getType()
 SplitNotebook &Window::getNotebook()
 {
     return *this->notebook_;
+}
+
+void Window::showFollowedChannels()
+{
+    auto *window = this->findChild<FollowedChannelsWindow *>();
+    if (window == nullptr)
+    {
+        window = new FollowedChannelsWindow(this);
+    }
+    window->show();
+    window->raise();
+    window->activateWindow();
 }
 
 void Window::setPopupID(size_t id)
@@ -224,13 +237,22 @@ void Window::addCustomTitlebarButtons()
         return;
     }
 
-    this->addTitleBarButton<TitleBarButton>(
+    // settings
+    auto *settings = this->addTitleBarButton<SvgButton>(
         [this] {
             getApp()->getWindows()->showSettingsDialog(this);
         },
-        TitleBarButtonStyle::Settings);
+        SvgButton::Src{
+            .dark = ":/buttons/settings-darkMode.svg",
+            .light = ":/buttons/settings-lightMode.svg",
+        });
+    settings->setPadding({3, 3});
 
-    // auto *update = this->addTitleBarButton<PixmapButton>([] {});
+    // auto *update = this->addTitleBarButton<SvgButton>(
+    //     [] {}, SvgButton::Src{
+    //                .dark = ":/buttons/update-darkMode.svg",
+    //                .light = ":/buttons/update-lightMode.svg",
+    //            });
     //
     // initMoltorinoUpdateButton(*update, [] {}, this->signalHolder_);
 
@@ -552,6 +574,11 @@ void Window::addShortcuts()
          [this](std::vector<QString>) -> QString {
              auto *quickSwitcher = new QuickSwitcherPopup(this);
              quickSwitcher->show();
+             return "";
+         }},
+        {"openFollowedChannels",
+         [this](const std::vector<QString> &) -> QString {
+             this->showFollowedChannels();
              return "";
          }},
         {"quit",

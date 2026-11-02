@@ -70,10 +70,14 @@ struct HelixMinimalUser {
         switch (mode)
         {
             case UsernameDisplayMode::Username:
-                return this->login;
+                if (hasLocalizedName)
+                {
+                    return this->login;
+                }
+                return this->displayName;
 
             case UsernameDisplayMode::LocalizedName:
-                return hasLocalizedName ? this->displayName : this->login;
+                return this->displayName;
 
             default:
             case UsernameDisplayMode::UsernameAndLocalizedName:
@@ -82,7 +86,7 @@ struct HelixMinimalUser {
                     return this->login + QStringLiteral(" (") +
                            this->displayName + QStringLiteral(")");
                 }
-                return this->login;
+                return this->displayName;
         }
     }
 };
@@ -1122,6 +1126,23 @@ public:
         ResultCallback<std::optional<HelixFollowedChannel>> successCallback,
         FailureCallback<QString> failureCallback) = 0;
 
+    /// https://dev.twitch.tv/docs/api/reference/#get-followed-channels
+    virtual void getFollowedChannels(
+        QString userID,
+        const ResultCallback<std::vector<HelixFollowedChannel>,
+                             HelixPaginationState> &pageCallback,
+        const FailureCallback<QString> &failureCallback,
+        CancellationToken &&token) = 0;
+
+    /// https://dev.twitch.tv/docs/api/reference/#get-followed-streams
+    virtual void getFollowedStreams(
+        QString userID,
+        const ResultCallback<std::vector<HelixStream>, HelixPaginationState>
+            &pageCallback,
+        const FailureCallback<QString> &failureCallback,
+        CancellationToken &&token) = 0;
+
+    /// https://dev.twitch.tv/docs/api/reference#create-poll
     virtual void createPoll(QString broadcasterID, QString title,
                             QStringList choices, std::chrono::seconds duration,
                             int pointsPerVote, ResultCallback<> successCallback,
@@ -1178,6 +1199,11 @@ public:
         ResultCallback<QSet</* logins */ QString>> successCallback,
         FailureCallback<QString> failureCallback,
         CancellationToken &&token) = 0;
+
+    /// Technically not a helix request >:-)
+    /// https://dev.twitch.tv/docs/authentication/validate-tokens#validating-tokens
+    virtual void validateToken(NetworkSuccessCallback successCallback,
+                               NetworkErrorCallback errorCallback) = 0;
 
     virtual void update(QString clientId, QString oauthToken) = 0;
 
@@ -1464,6 +1490,21 @@ public:
         ResultCallback<std::optional<HelixFollowedChannel>> successCallback,
         FailureCallback<QString> failureCallback) final;
 
+    void getFollowedChannels(
+        QString userID,
+        const ResultCallback<std::vector<HelixFollowedChannel>,
+                             HelixPaginationState> &pageCallback,
+        const FailureCallback<QString> &failureCallback,
+        CancellationToken &&token) final;
+
+    void getFollowedStreams(
+        QString userID,
+        const ResultCallback<std::vector<HelixStream>, HelixPaginationState>
+            &pageCallback,
+        const FailureCallback<QString> &failureCallback,
+        CancellationToken &&token) final;
+
+    /// https://dev.twitch.tv/docs/api/reference#create-poll
     void createPoll(QString broadcasterID, QString title, QStringList choices,
                     std::chrono::seconds duration, int pointsPerVote,
                     ResultCallback<> successCallback,
@@ -1517,6 +1558,11 @@ public:
         ResultCallback<QSet</* logins */ QString>> successCallback,
         FailureCallback<QString> failureCallback,
         CancellationToken &&token) final;
+
+    /// Technically not a helix request >:-)
+    /// https://dev.twitch.tv/docs/authentication/validate-tokens#validating-tokens
+    void validateToken(NetworkSuccessCallback successCallback,
+                       NetworkErrorCallback errorCallback) final;
 
     void update(QString clientId, QString oauthToken) final;
 

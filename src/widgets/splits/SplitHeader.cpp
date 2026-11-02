@@ -49,6 +49,7 @@
 #include "widgets/splits/Split.hpp"
 #include "widgets/splits/SplitContainer.hpp"
 #include "widgets/TooltipWidget.hpp"
+#include "widgets/Window.hpp"
 
 #include <QDrag>
 #include <QFontMetrics>
@@ -1327,6 +1328,18 @@ std::unique_ptr<QMenu> SplitHeader::createMainMenu()
 
         menu->addSeparator();
     }
+
+    menu->addAction(
+        "Followed channels",
+        h->getDisplaySequence(HotkeyCategory::Window, "openFollowedChannels"),
+        this, [this] {
+            auto *window = dynamic_cast<Window *>(this->window());
+            if (window != nullptr)
+            {
+                window->showFollowedChannels();
+            }
+        });
+    menu->addSeparator();
 
     if (this->split_->getSelectedChannel()->getType() ==
         Channel::Type::TwitchWhispers)

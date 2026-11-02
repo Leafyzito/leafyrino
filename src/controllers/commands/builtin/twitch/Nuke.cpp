@@ -484,12 +484,12 @@ std::optional<NukeTarget> makeTarget(const MessagePtr &message)
 
 bool inRange(const MessagePtr &message, const QDateTime &cutoff)
 {
-    if (message == nullptr || !message->serverReceivedTime.isValid())
+    if (message == nullptr || !message->timestamp.isValid())
     {
         return false;
     }
 
-    return message->serverReceivedTime >= cutoff;
+    return message->timestamp >= cutoff;
 }
 
 bool isFatalForwardedModerationError(const QString &message)
@@ -602,8 +602,8 @@ NukeMatches collectPastMatches(const ParseResult &plan,
         {
             continue;
         }
-        if (message->serverReceivedTime.isValid() &&
-            message->serverReceivedTime < cutoff)
+        if (message->timestamp.isValid() &&
+            message->timestamp < cutoff)
         {
             break;
         }

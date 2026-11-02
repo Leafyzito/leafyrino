@@ -144,7 +144,7 @@
             "loginName": "",
             "messageText": "A message from testaccount_420 was deleted: asd",
             "searchText": "A message from testaccount_420 was deleted: asd",
-            "serverReceivedTime": "2024-05-14T12:31:47Z",
+            "timestamp": "2024-05-14T12:31:47Z",
             "timeoutUser": "testaccount_420",
             "twitchBadgeInfos": {
             },

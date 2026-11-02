@@ -13,7 +13,7 @@
 #include "util/Backup.hpp"
 #include "util/Expected.hpp"
 #include "util/MultiChannel.hpp"
-#include "util/QMagicEnum.hpp"
+#include "util/QMagicEnumTagged.hpp"
 #include "widgets/Window.hpp"
 
 #include <QFile>
@@ -255,7 +255,8 @@ IndirectChannel SplitDescriptor::decodeChannel() const
         return getApp()->getTwitch()->getOrAddChannel(this->channelName_);
     };
 
-    auto type = qmagicenum::enumCast<Channel::Type>(this->type_);
+    auto type =
+        qmagicenum::SerializedName::enumCast<Channel::Type>(this->type_);
     if (!type)
     {
         return twitchChannel();

@@ -9,7 +9,6 @@
 #include "common/QLogging.hpp"
 #include "singletons/Paths.hpp"
 #include "singletons/Resources.hpp"
-#include "singletons/WindowManager.hpp"
 
 #include <QColor>
 #include <QDir>
@@ -396,7 +395,6 @@ Theme::Theme(const Paths &paths)
                          if (this->isSystemTheme())
                          {
                              this->update();
-                             getApp()->getWindows()->forceLayoutChannelViews();
                          }
                      });
 #endif

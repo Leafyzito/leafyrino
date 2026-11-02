@@ -14,6 +14,7 @@
 #include "singletons/Settings.hpp"
 #include "util/IpcQueue.hpp"
 #include "util/PostToThread.hpp"
+#include "util/XDGDirectory.hpp"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -80,6 +81,16 @@ const Config CHROME{
 #endif
 };
 
+// Edge is Chromium-based and uses the same native messaging manifest format
+// as Chrome. The registration path below is Windows-specific.
+#ifdef Q_OS_WIN
+const Config EDGE{
+    .fileName = u"native-messaging-manifest-edge.json"_s,
+    .registryKey =
+        u"HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.chatterino.chatterino"_s,
+};
+#endif
+
 ExpectedStr<void> registerNmManifest([[maybe_unused]] const Paths &paths,
                                      const Config &config,
                                      const QJsonDocument &document)
@@ -108,6 +119,79 @@ ExpectedStr<void> registerNmManifest([[maybe_unused]] const Paths &paths,
 #endif
     return {};
 }
+
+QJsonObject buildBaseDocument()
+{
+    return QJsonObject{
+        {u"name"_s, "com.chatterino.chatterino"_L1},
+        {u"description"_s, "Browser interaction with chatterino."_L1},
+        {u"path"_s, QCoreApplication::applicationFilePath()},
+        {u"type"_s, "stdio"_L1},
+    };
+}
+
+QJsonDocument buildChromeManifest(const QStringList &extensionIDs)
+{
+    auto obj = buildBaseDocument();
+    QJsonArray allowedOriginsArr = {
+        u"chrome-extension://%1/"_s.arg(EXTENSION_ID)};
+
+    for (const auto &id : extensionIDs)
+    {
+        QString trimmedID = id.trimmed();
+        if (!trimmedID.isEmpty())
+        {
+            allowedOriginsArr.append(
+                u"chrome-extension://%1/"_s.arg(trimmedID));
+        }
+    }
+
+    obj.insert("allowed_origins", allowedOriginsArr);
+
+    return QJsonDocument{obj};
+}
+
+QJsonDocument buildFirefoxManifest(const QStringList &extensionIDs)
+{
+    auto obj = buildBaseDocument();
+    QJsonArray allowedExtensions = {"chatterino_native@chatterino.com"};
+
+    for (const auto &id : extensionIDs)
+    {
+        QString trimmedID = id.trimmed();
+        if (!trimmedID.isEmpty())
+        {
+            allowedExtensions.append(trimmedID);
+        }
+    }
+
+    obj.insert("allowed_extensions", allowedExtensions);
+
+    return QJsonDocument{obj};
+}
+
+#ifndef Q_OS_WIN
+void writeManifestToCustomPath(const QJsonDocument &manifest)
+{
+    auto customPath = parseCustomPath(
+        getSettings()->customNativeMessagingManifestPath.getValue());
+    if (!customPath.has_value())
+    {
+        return;
+    }
+
+    QFile file(customPath.value());
+    if (!file.open(QFile::WriteOnly | QFile::Truncate))
+    {
+        qCWarning(chatterinoNativeMessage)
+            << "Failed to open" << customPath.value();
+    }
+    else
+    {
+        file.write(manifest.toJson());
+    }
+}
+#endif
 
 }  // namespace
 
@@ -146,6 +230,35 @@ ExpectedStr<void> writeManifestTo(QString directory, const QString &nmDirectory,
     return {};
 }
 
+#ifndef Q_OS_WIN
+std::optional<QString> parseCustomPath(QString path)
+{
+    if (path.isEmpty())
+    {
+        return {};
+    }
+
+#    ifdef Q_OS_LINUX
+    path = path.replace("$XDG_CONFIG_HOME",
+                        getXDGUserDirectories(XDGDirectoryType::Config).at(0))
+               .replace("$XDG_DATA_HOME",
+                        getXDGUserDirectories(XDGDirectoryType::Data).at(0));
+#    endif
+
+    if (path.startsWith('~'))
+    {
+        path = QDir::homePath() % QStringView{path}.sliced(1);
+    }
+
+    if (!path.startsWith('/'))
+    {
+        return {};
+    }
+
+    return path;
+}
+#endif
+
 }  // namespace chatterino::nm::detail
 
 namespace chatterino {
@@ -153,72 +266,62 @@ namespace chatterino {
 using namespace chatterino::nm::detail;
 using namespace literals;
 
-bool registerNmHost(const Paths &paths)
+ExpectedStr<void> registerNmHost(const Paths &paths)
 {
-    auto getBaseDocument = [] {
-        return QJsonObject{
-            {u"name"_s, "com.chatterino.chatterino"_L1},
-            {u"description"_s, "Browser interaction with chatterino."_L1},
-            {u"path"_s, QCoreApplication::applicationFilePath()},
-            {u"type"_s, "stdio"_L1},
-        };
-    };
-
     QStringList extensionIDs =
         getSettings()->additionalExtensionIDs.getValue().split(
             ';', Qt::SkipEmptyParts);
 
-    const auto chromeRegistered = [&] {
-        auto obj = getBaseDocument();
-        QJsonArray allowedOriginsArr = {
-            u"chrome-extension://%1/"_s.arg(EXTENSION_ID)};
+    QJsonDocument chromeManifest = buildChromeManifest(extensionIDs);
+    QJsonDocument firefoxManifest = buildFirefoxManifest(extensionIDs);
 
-        for (const auto &id : extensionIDs)
-        {
-            QString trimmedID = id.trimmed();
-            if (!trimmedID.isEmpty())
-            {
-                allowedOriginsArr.append(
-                    u"chrome-extension://%1/"_s.arg(trimmedID));
-            }
-        }
+    QStringList errors;
 
-        obj.insert("allowed_origins", allowedOriginsArr);
-
-        return registerNmManifest(paths, CHROME, QJsonDocument{obj});
-    }();
+    const auto chromeRegistered =
+        registerNmManifest(paths, CHROME, chromeManifest);
     if (!chromeRegistered)
     {
         qCDebug(chatterinoNativeMessage)
             << "Chrome native messaging registration:"
             << chromeRegistered.error();
+        errors.append(u"Chrome: "_s % chromeRegistered.error());
     }
-
-    const auto firefoxRegistered = [&] {
-        auto obj = getBaseDocument();
-        QJsonArray allowedExtensions = {"chatterino_native@chatterino.com"};
-
-        for (const auto &id : extensionIDs)
-        {
-            QString trimmedID = id.trimmed();
-            if (!trimmedID.isEmpty())
-            {
-                allowedExtensions.append(trimmedID);
-            }
-        }
-
-        obj.insert("allowed_extensions", allowedExtensions);
-
-        return registerNmManifest(paths, FIREFOX, QJsonDocument{obj});
-    }();
+    const auto firefoxRegistered =
+        registerNmManifest(paths, FIREFOX, firefoxManifest);
     if (!firefoxRegistered)
     {
         qCDebug(chatterinoNativeMessage)
             << "Firefox native messaging registration:"
             << firefoxRegistered.error();
+        errors.append(u"Firefox: "_s % firefoxRegistered.error());
     }
 
-    return bool(chromeRegistered) && bool(firefoxRegistered);
+#ifdef Q_OS_WIN
+    const auto edgeRegistered = registerNmManifest(paths, EDGE, chromeManifest);
+    if (!edgeRegistered)
+    {
+        qCDebug(chatterinoNativeMessage)
+            << "Edge native messaging registration:" << edgeRegistered.error();
+        errors.append(u"Edge: "_s % edgeRegistered.error());
+    }
+#endif
+
+#ifndef Q_OS_WIN
+    switch (getSettings()->customNativeMessagingManifestFormat.getEnum())
+    {
+        case BrowserManifestFormat::Chrome:
+            writeManifestToCustomPath(chromeManifest);
+            break;
+        case BrowserManifestFormat::Firefox:
+            writeManifestToCustomPath(firefoxManifest);
+            break;
+    }
+#endif
+    if (!errors.isEmpty())
+    {
+        return makeUnexpected(errors.join('\n'));
+    }
+    return {};
 }
 
 void registerNmHost(Modes modes, const Paths &paths)
@@ -238,6 +341,8 @@ std::string &getNmQueueName(const Paths &paths)
     return name;
 }
 
+// CLIENT
+
 namespace nm::client {
 
 void sendMessage(const QByteArray &array)
@@ -250,6 +355,8 @@ void writeToCout(const QByteArray &array)
     const auto *data = array.data();
     auto size = uint32_t(array.size());
 
+    // We're writing the raw bytes to cout.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     std::cout.write(reinterpret_cast<char *>(&size), 4);
     std::cout.write(data, size);
     std::cout.flush();
@@ -257,6 +364,7 @@ void writeToCout(const QByteArray &array)
 
 }  // namespace nm::client
 
+// SERVER
 NativeMessagingServer::NativeMessagingServer()
     : thread(new ReceiverThread(*this))
 {
@@ -277,7 +385,7 @@ NativeMessagingServer::~NativeMessagingServer()
     }
     this->thread->requestInterruption();
     this->thread->quit();
-
+    // Most likely, the receiver thread will still wait for a message
     if (!this->thread->wait(100))
     {
         this->thread->terminate();
@@ -400,6 +508,7 @@ void NativeMessagingServer::ReceiverThread::handleMessage(
     qCDebug(chatterinoNativeMessage) << "NM unknown action" << action;
 }
 
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void NativeMessagingServer::ReceiverThread::handleSelect(
     const QJsonObject &root)
 {
@@ -478,9 +587,12 @@ void NativeMessagingServer::ReceiverThread::handleDetach(
     });
 #endif
 }
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 void NativeMessagingServer::ReceiverThread::handleSync(const QJsonObject &root)
 {
+    // Structure:
+    // { action: 'sync', twitchChannels?: string[] }
     postToThread([&parent = this->parent_,
                   twitch = root["twitchChannels"_L1].toArray()] {
         parent.syncChannels(twitch);
@@ -500,10 +612,11 @@ void NativeMessagingServer::syncChannels(const QJsonArray &twitchChannels)
         {
             continue;
         }
-
+        // the deduping is done on the extension side
         updated.emplace_back(getApp()->getTwitch()->getOrAddChannel(name));
     }
 
+    // This will destroy channels that aren't used anymore.
     this->channelWarmer_ = std::move(updated);
 }
 

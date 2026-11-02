@@ -62,7 +62,7 @@ struct Message {
     QString channelName;
     QString sharedChatSourceId;
     QColor usernameColor;
-    QDateTime serverReceivedTime;
+    QDateTime timestamp;
 
     std::vector<TwitchBadge> twitchBadges;
 

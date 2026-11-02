@@ -65,6 +65,7 @@
 #include "widgets/Notebook.hpp"
 #include "widgets/Scrollbar.hpp"
 #include "widgets/splits/Split.hpp"
+#include "widgets/splits/SplitInput.hpp"
 #include "widgets/Window.hpp"
 
 #include <IrcMessage>
@@ -812,7 +813,7 @@ MessagePtr makeUsercardModLogMessage(const GqlUsercardMessage &message,
     builder->messageText = body;
     builder->searchText = displayName + QStringLiteral(": ") + body;
     builder->channelName = channelName;
-    builder->serverReceivedTime = sentAt;
+    builder->timestamp = sentAt;
     builder->usernameColor = color;
     builder->flags.set(MessageFlag::DoNotLog,
                        MessageFlag::DoNotTriggerNotification);
@@ -843,14 +844,14 @@ QDateTime oldestUsercardMessageTime(const ChannelPtr &channel)
 
     for (const auto &message : channel->getMessageSnapshot())
     {
-        if (message == nullptr || !message->serverReceivedTime.isValid())
+        if (message == nullptr || !message->timestamp.isValid())
         {
             continue;
         }
 
-        if (!oldest.isValid() || message->serverReceivedTime < oldest)
+        if (!oldest.isValid() || message->timestamp < oldest)
         {
-            oldest = message->serverReceivedTime;
+            oldest = message->timestamp;
         }
     }
 
@@ -1596,6 +1597,8 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
         // visibility of this is updated in setData
 
         user.emplace<LabelButton>("&Notes", this).assign(&this->ui_.notesAdd);
+        auto whisper = user.emplace<LabelButton>("&Whisper", this)
+                           .assign(&this->ui_.whisperLabel);
         auto usercard = user.emplace<LabelButton>("&Usercard", this)
                             .assign(&this->ui_.usercardLabel);
         auto userlogs = user.emplace<LabelButton>("&Logs", this)
@@ -1624,6 +1627,22 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
         unvip->setScaleIndependentSize(30, 30);
 
         user->addStretch(1);
+
+        auto openWhisper = [this] {
+            if (this->userName_.isEmpty() || this->split_ == nullptr ||
+                this->isYouTube_ || this->isKick_)
+            {
+                return;
+            }
+
+            this->split_->getInput().setWhisperTarget(this->userName_);
+            this->split_->window()->activateWindow();
+            this->split_->setFocus(Qt::MouseFocusReason);
+        };
+        QObject::connect(whisper.getElement(), &Button::leftClicked, this,
+                         openWhisper);
+        this->registerMnemonicButton(this->ui_.whisperLabel, Qt::Key_W,
+                                     openWhisper);
 
         auto openUsercard = [this] {
             MessagePlatform platform =
@@ -2504,6 +2523,7 @@ void UserInfoPopup::setData(const QString &name,
     {
         this->ui_.usercardLabel->setText("Open channel on &YouTube");
         this->ui_.usercardLabel->setVisible(!this->youtubeChannelId_.isEmpty());
+        this->ui_.whisperLabel->hide();
         this->ui_.userlogsLabel->hide();
     }
     else if (type == Channel::Type::TwitchLive ||
@@ -2513,11 +2533,13 @@ void UserInfoPopup::setData(const QString &name,
         // not a normal twitch channel, the url opened by the button will be invalid, so hide the button
         this->ui_.usercardLabel->hide();
         this->ui_.userlogsLabel->hide();
+        this->ui_.whisperLabel->setVisible(!this->isKick_);
     }
     else
     {
         this->ui_.usercardLabel->setText("&Usercard");
         this->ui_.usercardLabel->show();
+        this->ui_.whisperLabel->show();
         this->ui_.userlogsLabel->show();
     }
 
@@ -2736,6 +2758,11 @@ void UserInfoPopup::updateYouTubeLatestMessages()
                         }
                     }));
     }
+}
+
+Split *UserInfoPopup::getSplit() const
+{
+    return this->split_;
 }
 
 void UserInfoPopup::updateLatestMessages()

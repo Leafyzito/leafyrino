@@ -509,7 +509,7 @@ KickMessageBuilder::KickMessageBuilder(SystemMessageTag, KickChannel *channel,
     this->emplace<TimestampElement>(time.time());
     this->message().flags.set(MessageFlag::System);
     this->message().platform = MessagePlatform::Kick;
-    this->message().serverReceivedTime = time;
+    this->message().timestamp = time;
 }
 
 KickMessageBuilder::KickMessageBuilder(KickChannel *channel,
@@ -518,7 +518,7 @@ KickMessageBuilder::KickMessageBuilder(KickChannel *channel,
 {
     this->emplace<TimestampElement>(time.time());
     this->message().platform = MessagePlatform::Kick;
-    this->message().serverReceivedTime = time;
+    this->message().timestamp = time;
 }
 
 KickMessageBuilder::KickMessageBuilder(KickChannel *channel)
@@ -540,7 +540,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
     KickMessageBuilder builder(kickChannel);
     builder->channelName = kickChannel->getName();
     builder->id = id;
-    builder->serverReceivedTime =
+    builder->timestamp =
         QDateTime::fromString(createdAt, Qt::DateFormat::ISODate).toLocalTime();
     builder->displayName = sender["username"].toQString();
     builder->loginName = builder->displayName.toLower();
@@ -554,7 +554,7 @@ std::pair<MessagePtrMut, HighlightAlert> KickMessageBuilder::makeChatMessage(
 
     builder.appendChannelName();
 
-    builder.emplace<TimestampElement>(builder->serverReceivedTime.time());
+    builder.emplace<TimestampElement>(builder->timestamp.time());
     builder.emplace<TwitchModerationElement>();
 
     appendKickV2Badges(builder, identity["badges_v2"].toArray());
@@ -790,7 +790,7 @@ std::tuple<MessagePtrMut, MessagePtrMut, HighlightAlert>
     if (!customMessageText.isEmpty())
     {
         KickMessageBuilder builder(channel);
-        builder->serverReceivedTime = now;
+        builder->timestamp = now;
         builder->flags.set(MessageFlag::Subscription);
         builder->loginName = username;
 

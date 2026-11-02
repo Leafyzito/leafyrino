@@ -1326,11 +1326,25 @@ Split *ChannelView::findParentSplit() const
     }
 
     auto *searchPopup = dynamic_cast<SearchPopup *>(this->parentWidget());
-    if (!searchPopup)
+    if (searchPopup)
     {
-        return nullptr;
+        return dynamic_cast<Split *>(searchPopup->parentWidget());
     }
-    return dynamic_cast<Split *>(searchPopup->parentWidget());
+
+    if (this->parentWidget() != nullptr)
+    {
+        if (this->parentWidget()->parentWidget() != nullptr)
+        {
+            auto *userInfoPopup = dynamic_cast<UserInfoPopup *>(
+                this->parentWidget()->parentWidget()->parentWidget());
+            if (userInfoPopup != nullptr)
+            {
+                split = userInfoPopup->getSplit();
+            }
+        }
+    }
+
+    return split;
 }
 
 bool ChannelView::pausable() const
@@ -3341,8 +3355,13 @@ void ChannelView::mouseMoveEvent(QMouseEvent *event)
         dynamic_cast<const EmoteLinkElement *>(element);
     const auto *layeredEmoteElement =
         dynamic_cast<const LayeredEmoteElement *>(element);
-    bool isNotEmote = emoteElement == nullptr && emoteLinkElement == nullptr &&
-                      layeredEmoteElement == nullptr;
+    const auto *scalingImageElement =
+        dynamic_cast<const ScalingImageElement *>(element);
+    bool isEmoteOrTwitchGif =
+        emoteElement != nullptr || emoteLinkElement != nullptr ||
+        layeredEmoteElement != nullptr ||
+        (scalingImageElement != nullptr &&
+         element->getFlags().has(MessageElementFlag::TwitchGif));
 
     // text flagged by AutoMod explains why it was flagged
     const auto fragmentTooltip =
@@ -3360,7 +3379,8 @@ void ChannelView::mouseMoveEvent(QMouseEvent *event)
         this->tooltipWidget_->show();
     }
     else if (element->getTooltip().isEmpty() ||
-             (isLinkValid && isNotEmote && !getSettings()->linkInfoTooltip))
+             (isLinkValid && !isEmoteOrTwitchGif &&
+              !getSettings()->linkInfoTooltip))
     {
         this->tooltipWidget_->hide();
     }
@@ -4309,7 +4329,7 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
         menu->addAction(
             "Open in &logs",
             [messageID = msg->id, channelName = msg->channelName,
-             dateTime = QDateTime(msg->serverReceivedTime).toUTC()] {
+             dateTime = QDateTime(msg->timestamp).toUTC()] {
                 QString logsDate = dateTime.toString("yyyy-MM-dd");
                 QString logsJumpHash =
                     messageID.isEmpty()
