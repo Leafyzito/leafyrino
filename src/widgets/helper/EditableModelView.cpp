@@ -45,6 +45,7 @@ EditableModelView::EditableModelView(QAbstractTableModel *model, bool movable)
     vbox->addLayout(buttons);
 
     QPushButton *add = new QPushButton("Add");
+    this->addButton_ = add;
     buttons->addWidget(add);
     QObject::connect(add, &QPushButton::clicked, [this] {
         this->addButtonPressed.invoke();
@@ -134,6 +135,11 @@ QAbstractTableModel *EditableModelView::getModel()
 void EditableModelView::addCustomButton(QWidget *widget)
 {
     this->buttons_->addWidget(widget);
+}
+
+void EditableModelView::setAddButtonVisible(bool visible)
+{
+    this->addButton_->setVisible(visible);
 }
 
 void EditableModelView::addRegexHelpLink()

@@ -21,6 +21,7 @@
 #include "controllers/nicknames/Nickname.hpp"
 #include "controllers/sound/ISoundController.hpp"
 #include "providers/emoji/EmojiStyle.hpp"
+#include "providers/seventv/SeventvHiddenPaint.hpp"
 #include "singletons/Toasts.hpp"
 #include "util/RapidJsonSerializeQString.hpp"  // IWYU pragma: keep
 #include "util/serialize/List.hpp"             // IWYU pragma: keep
@@ -1303,6 +1304,8 @@ private:
         {"/moderation/actions"};
     ChatterinoSetting<std::vector<ChannelLog>> loggedChannelsSetting = {
         "/logging/channels"};
+    ChatterinoSetting<std::vector<SeventvHiddenPaint>>
+        hiddenSevenTVPaintsSetting = {"/seventv/hiddenPaints"};
     SignalVector<QString> mutedChannels;
     SignalVector<QString> autoTranslateChannels;
 
@@ -1345,6 +1348,7 @@ public:
     SignalVector<Nickname> nicknames;
     SignalVector<ModerationAction> moderationActions;
     SignalVector<ChannelLog> loggedChannels;
+    SignalVector<SeventvHiddenPaint> hiddenSevenTVPaints;
 
     bool isEmoteModifierEnabled(const QString &name) const;
     bool isBlacklistedUser(const QString &username);

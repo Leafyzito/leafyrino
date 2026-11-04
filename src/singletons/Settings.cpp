@@ -1467,6 +1467,8 @@ Settings::Settings(const Modes &modes, const Args &args,
                            this->moderationActions);
     initializeSignalVector(this->signalHolder, this->loggedChannelsSetting,
                            this->loggedChannels);
+    initializeSignalVector(this->signalHolder, this->hiddenSevenTVPaintsSetting,
+                           this->hiddenSevenTVPaints);
 
     instance_ = this;
 

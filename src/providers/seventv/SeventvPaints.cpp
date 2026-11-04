@@ -7,6 +7,7 @@
 #include "providers/seventv/paints/PaintDropShadow.hpp"
 #include "providers/seventv/paints/RadialGradientPaint.hpp"
 #include "providers/seventv/paints/UrlPaint.hpp"
+#include "singletons/Settings.hpp"
 #include "singletons/WindowManager.hpp"
 #include "util/DebugCount.hpp"
 #include "util/PostToThread.hpp"
@@ -132,30 +133,102 @@ std::optional<std::shared_ptr<Paint>> parsePaint(const QJsonObject &paintJson)
 
 namespace chatterino {
 
-SeventvPaints::SeventvPaints() = default;
+SeventvPaints::SeventvPaints()
+{
+    this->updateHiddenPaints();
+    this->signalHolder_.managedConnect(
+        getSettings()->hiddenSevenTVPaints.delayedItemsChanged, [this] {
+            this->updateHiddenPaints();
+        });
+}
 
 std::shared_ptr<Paint> SeventvPaints::getPaint(const QString &userName,
-                                               bool kick) const
+                                               bool kick,
+                                               bool includeHidden) const
 {
     std::shared_lock lock(this->mutex_);
 
-    if (kick)
+    const auto &map = kick ? this->kickPaintMap_ : this->twitchPaintMap_;
+    const auto it = map.find(userName);
+    if (it == map.end())
     {
-        const auto it = this->kickPaintMap_.find(userName);
-        if (it != this->kickPaintMap_.end())
+        return nullptr;
+    }
+
+    if (!includeHidden && this->hiddenPaintIDs_.contains(it->second->id))
+    {
+        return nullptr;
+    }
+
+    return it->second;
+}
+
+bool SeventvPaints::isPaintHidden(const QString &paintID) const
+{
+    std::shared_lock lock(this->mutex_);
+
+    return this->hiddenPaintIDs_.contains(paintID);
+}
+
+void SeventvPaints::hidePaint(const QString &paintID, const QString &paintName)
+{
+    if (paintID.isEmpty())
+    {
+        return;
+    }
+
+    // Check the vector itself: hiddenPaintIDs_ only catches up once
+    // delayedItemsChanged fires.
+    auto &hidden = getSettings()->hiddenSevenTVPaints;
+    for (const auto &paint : hidden.raw())
+    {
+        if (paint.id == paintID)
         {
-            return it->second;
+            return;
         }
     }
-    else
+
+    hidden.append({
+        .id = paintID,
+        .name = paintName,
+    });
+}
+
+void SeventvPaints::unhidePaint(const QString &paintID)
+{
+    auto &hidden = getSettings()->hiddenSevenTVPaints;
+    // Walk backwards so duplicates (e.g. from a hand-edited settings file) are
+    // all removed.
+    for (auto i = static_cast<int>(hidden.raw().size()) - 1; i >= 0; i--)
     {
-        const auto it = this->twitchPaintMap_.find(userName);
-        if (it != this->twitchPaintMap_.end())
+        if (hidden.raw()[i].id == paintID)
         {
-            return it->second;
+            hidden.removeAt(i);
         }
     }
-    return nullptr;
+}
+
+void SeventvPaints::updateHiddenPaints()
+{
+    std::unordered_set<QString> ids;
+    for (const auto &paint : *getSettings()->hiddenSevenTVPaints.readOnly())
+    {
+        ids.insert(paint.id);
+    }
+
+    {
+        std::unique_lock lock(this->mutex_);
+        if (ids == this->hiddenPaintIDs_)
+        {
+            return;
+        }
+        this->hiddenPaintIDs_ = std::move(ids);
+    }
+
+    // Deferred since this also runs while Application is being constructed.
+    postToThread([] {
+        getApp()->getWindows()->invalidateChannelViewBuffers();
+    });
 }
 
 void SeventvPaints::addPaint(const QJsonObject &paintJson)

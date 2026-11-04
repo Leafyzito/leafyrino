@@ -30,6 +30,7 @@ public:
     pajlada::Signals::NoArgSignal addButtonPressed;
 
     void addCustomButton(QWidget *widget);
+    void setAddButtonVisible(bool visible);
     void addRegexHelpLink();
 
     bool filterSearchResults(const QString &query,
@@ -40,6 +41,7 @@ private:
     QTableView *tableView_{};
     QAbstractTableModel *model_{};
     QHBoxLayout *buttons_{};
+    QWidget *addButton_{};
 
     void moveRow(int dir);
 };

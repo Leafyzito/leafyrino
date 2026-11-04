@@ -620,6 +620,9 @@ set(SOURCE_FILES
         providers/seventv/SeventvEmotes.hpp
         providers/seventv/SeventvEventAPI.cpp
         providers/seventv/SeventvEventAPI.hpp
+        providers/seventv/SeventvHiddenPaint.hpp
+        providers/seventv/SeventvHiddenPaintModel.cpp
+        providers/seventv/SeventvHiddenPaintModel.hpp
         providers/seventv/SeventvPaints.cpp
         providers/seventv/SeventvPaints.hpp
         providers/seventv/SeventvPersonalEmotes.cpp
@@ -961,6 +964,8 @@ set(SOURCE_FILES
 
         widgets/dialogs/KickLoginPage.cpp
         widgets/dialogs/KickLoginPage.hpp
+        widgets/dialogs/HiddenSeventvPaintsDialog.cpp
+        widgets/dialogs/HiddenSeventvPaintsDialog.hpp
         widgets/dialogs/LastRunCrashDialog.cpp
         widgets/dialogs/LastRunCrashDialog.hpp
         widgets/dialogs/LoginDialog.cpp
