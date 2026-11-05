@@ -17,6 +17,7 @@ struct ChannelPointReward {
     QString redemptionKey;
     QString channelId;
     QString title;
+    QString prompt;
     int cost;
     ImageSet image;
     bool isUserInputRequired = false;
@@ -29,6 +30,10 @@ struct ChannelPointReward {
         QString login;
         QString displayName;
     } user;
+
+    /// Whether FFZ treats this reward as a giant emote reward (FFZ:GE in its
+    /// title or prompt).
+    bool isFfzGiantEmote() const;
 
     QJsonObject toJson() const;
 };

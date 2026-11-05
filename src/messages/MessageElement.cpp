@@ -413,11 +413,11 @@ std::string_view CircularImageElement::type() const
 // EMOTE
 EmoteElement::EmoteElement(const EmotePtr &emote, MessageElementFlags flags,
                            const MessageColor &textElementColor,
-                           bool gigantified)
+                           GiantEmoteKind giant)
     : MessageElement(flags)
     , textColor_(textElementColor)
     , emote_(emote)
-    , gigantified_(gigantified)
+    , giant_(giant)
 {
     this->setTooltip(emote->tooltip.string);
 }
@@ -429,7 +429,26 @@ EmotePtr EmoteElement::getEmote() const
 
 bool EmoteElement::isGigantified() const
 {
-    return this->gigantified_;
+    return this->giant_ != GiantEmoteKind::None;
+}
+
+void EmoteElement::setGiantEmoteKind(GiantEmoteKind giant)
+{
+    this->giant_ = giant;
+}
+
+bool EmoteElement::rendersGigantified() const
+{
+    switch (this->giant_)
+    {
+        case GiantEmoteKind::Twitch:
+            return getSettings()->enableGigantifyEmotes;
+        case GiantEmoteKind::Ffz:
+            return getSettings()->enableFfzGiantEmotes;
+        case GiantEmoteKind::None:
+            break;
+    }
+    return false;
 }
 
 void EmoteElement::addToContainer(MessageLayoutContainer &container,
@@ -442,8 +461,7 @@ void EmoteElement::addToContainer(MessageLayoutContainer &container,
 
     if (ctx.flags.has(MessageElementFlag::EmoteImage))
     {
-        const bool renderGigantified =
-            this->gigantified_ && getSettings()->enableGigantifyEmotes;
+        const bool renderGigantified = this->rendersGigantified();
 
         ImagePtr image;
         if (renderGigantified)
@@ -484,11 +502,23 @@ void EmoteElement::addToContainer(MessageLayoutContainer &container,
                 container.breakLine();
             }
 
-            constexpr qreal gigantifiedLogicalSize = 112;
-            const auto logicalSize = std::min<qreal>(
-                gigantifiedLogicalSize * container.getScale(),
-                std::max<qreal>(1.0, container.remainingWidth()));
-            const auto size = QSizeF(logicalSize, logicalSize);
+            // fixed height for every provider, width follows the emote's
+            // aspect ratio and is shrunk (never stretched) to fit the line
+            constexpr qreal gigantifiedLogicalHeight = 112;
+            const auto imageSize = image->size();
+            const qreal aspectRatio =
+                imageSize.width() > 0 && imageSize.height() > 0
+                    ? imageSize.width() / imageSize.height()
+                    : 1.0;
+            auto size = QSizeF(
+                gigantifiedLogicalHeight * container.getScale() * aspectRatio,
+                gigantifiedLogicalHeight * container.getScale());
+            const auto maxWidth =
+                std::max<qreal>(1.0, container.remainingWidth());
+            if (size.width() > maxWidth)
+            {
+                size *= maxWidth / size.width();
+            }
             container.addElementNoLineBreak(
                 this->makeImageLayoutElement(image, size));
             return;
@@ -523,8 +553,8 @@ MessageLayoutElement *EmoteElement::makeImageLayoutElement(
 
 std::unique_ptr<MessageElement> EmoteElement::clone() const
 {
-    auto el = std::make_unique<EmoteElement>(
-        this->emote_, this->getFlags(), this->textColor_, this->gigantified_);
+    auto el = std::make_unique<EmoteElement>(this->emote_, this->getFlags(),
+                                             this->textColor_, this->giant_);
     el->cloneFrom(*this);
     return el;
 }
@@ -555,9 +585,9 @@ QJsonObject EmoteElement::toJson() const
     {
         base["text"_L1] = this->textElement_->toJson();
     }
-    if (this->gigantified_)
+    if (this->giant_ != GiantEmoteKind::None)
     {
-        base["gigantified"_L1] = true;
+        base["gigantified"_L1] = qmagicenum::enumNameString(this->giant_);
     }
 
     return base;

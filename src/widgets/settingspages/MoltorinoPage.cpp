@@ -709,6 +709,13 @@ MoltorinoPage::MoltorinoPage()
             "chat. The /gigantify command still works when this is off.")
         ->addTo(*view);
 
+    SettingWidget::checkbox("Show FFZ giant emotes (FFZ:GE) in chat",
+                            s.enableFfzGiantEmotes)
+        ->setTooltip("Enlarge the last emote of channel point redemptions "
+                     "whose reward has FFZ:GE in its title or prompt, like "
+                     "FrankerFaceZ does.")
+        ->addTo(*view);
+
     view->addDropdown<float>(
             "Twitch GIF size", {"0.5x", "Default", "1x", "1.25x", "1.5x", "2x"},
             s.twitchGifScale,

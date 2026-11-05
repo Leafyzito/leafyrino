@@ -33,8 +33,7 @@ constexpr qreal COMPACT_EMOTES_OFFSET = 4;
 bool isRenderedGigantifiedEmote(const MessageElement &element)
 {
     const auto *emote = dynamic_cast<const EmoteElement *>(&element);
-    return emote != nullptr && emote->isGigantified() &&
-           getSettings()->enableGigantifyEmotes;
+    return emote != nullptr && emote->rendersGigantified();
 }
 /// Target width used to match Twitch's desktop chat layout.
 constexpr qreal ASCII_ART_WIDTH = 300.0;
