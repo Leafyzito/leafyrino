@@ -225,8 +225,17 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->addTo(layout);
 
     layout.addTitle("Events");
+
+    SettingWidget::checkbox("Show stream change notifications in chat",
+                            s.showStreamChangeMessages)
+        ->setTooltip("Show a chat message when the streamer changes the title "
+                     "or game, or when their shared chat session changes.")
+        ->addKeywords({"title", "game", "category", "shared chat", "events",
+                       "stream", "chat"})
+        ->addTo(layout);
+
     layout.addDescription(
-        "Channel event messages in chat. Requires Moltorino auth "
+        "Follow notifications require Moltorino auth "
         "(Settings → Moltorino → Authentication), experimental EventSub "
         "enabled under Settings → General, and an app restart after turning "
         "EventSub on.");

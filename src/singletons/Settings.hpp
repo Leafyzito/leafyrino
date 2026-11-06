@@ -952,6 +952,10 @@ public:
         "/extraChannels/live/showTitle",
         false,
     };
+    BoolSetting showStreamChangeMessages = {
+        "/leafyrino/showStreamChangeMessages",
+        true,
+    };
 
     /// UI
 

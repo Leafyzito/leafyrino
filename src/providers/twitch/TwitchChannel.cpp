@@ -1460,6 +1460,63 @@ void TwitchChannel::onLiveStatusChanged(bool isLive, bool isInitialUpdate)
     }
 };
 
+void TwitchChannel::updateChannelInfo(const HelixChannel &info)
+{
+    this->updateStreamGame(info.gameName, info.gameId);
+
+    const auto previous = this->lastChannelInfo_;
+    this->lastChannelInfo_ = {
+        .title = info.title,
+        .gameId = info.gameId,
+    };
+
+    // the first poll only tells us the starting values
+    if (!previous || !getSettings()->showStreamChangeMessages)
+    {
+        return;
+    }
+
+    const HelixMinimalUser channel{
+        .id = this->roomId(),
+        .login = this->getName(),
+        .displayName = this->nameOptions.actualDisplayName,
+    };
+
+    if (info.title != previous->title)
+    {
+        this->addMessage(MessageBuilder::makeStreamTitleChangedSystemMessage(
+                             channel, info.title),
+                         MessageContext::Original);
+    }
+    if (info.gameId != previous->gameId)
+    {
+        this->addMessage(MessageBuilder::makeStreamGameChangedSystemMessage(
+                             channel, info.gameName),
+                         MessageContext::Original);
+    }
+}
+
+void TwitchChannel::announceSharedChatParticipants()
+{
+    if (!getSettings()->showStreamChangeMessages)
+    {
+        return;
+    }
+
+    const HelixMinimalUser channel{
+        .id = this->roomId(),
+        .login = this->getName(),
+        .displayName = this->nameOptions.actualDisplayName,
+    };
+
+    this->addMessage(
+        this->sharedChatSessionParticipants_.empty()
+            ? MessageBuilder::makeSharedChatEndedSystemMessage(channel)
+            : MessageBuilder::makeSharedChatSystemMessage(
+                  channel, this->sharedChatSessionParticipants_),
+        MessageContext::Original);
+}
+
 void TwitchChannel::updateStreamTitle(const QString &title)
 {
     {
@@ -6016,8 +6073,16 @@ void TwitchChannel::refreshSharedChatSessionState()
                     QDateTime::currentDateTime();
                 this->nextSharedChatSessionUpdateTimer_.stop();
 
+                const bool wasInSession =
+                    !this->sharedChatSessionParticipantIds_.isEmpty();
+
                 this->sharedChatSessionParticipants_.clear();
                 this->sharedChatSessionParticipantIds_.clear();
+
+                if (wasInSession)
+                {
+                    this->announceSharedChatParticipants();
+                }
 
                 this->sharedChatStatusChanged.invoke({});
 
@@ -6059,6 +6124,9 @@ void TwitchChannel::refreshSharedChatSessionState()
                         return;
                     }
 
+                    const auto previousIds =
+                        this->sharedChatSessionParticipantIds_;
+
                     this->sharedChatSessionParticipants_.clear();
                     this->sharedChatSessionParticipantIds_.clear();
 
@@ -6074,6 +6142,11 @@ void TwitchChannel::refreshSharedChatSessionState()
                     }
 
                     this->nextSharedChatSessionUpdateTimer_.start();
+
+                    if (this->sharedChatSessionParticipantIds_ != previousIds)
+                    {
+                        this->announceSharedChatParticipants();
+                    }
 
                     this->sharedChatStatusChanged.invoke(
                         this->sharedChatSessionParticipants_);
