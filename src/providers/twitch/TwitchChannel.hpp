@@ -543,6 +543,8 @@ public:
                             bool isInitialUpdate);
     void updateStreamTitle(const QString &title);
     void updateStreamGame(const QString &gameName, const QString &gameId);
+    /// Post messages for the title or game changes since the last channel poll
+    void announceChannelInfoChanges(const HelixChannel &info);
 
     /**
      * Returns the display name of the user
@@ -639,6 +641,11 @@ private:
     void onLiveStatusChanged(bool isLive, bool isInitialUpdate);
 
     /**
+     * Post a message with the current shared chat session participants
+     **/
+    void announceSharedChatParticipants();
+
+    /**
      * Returns the localized name of the user
      **/
     const QString &getLocalizedName() const override;
@@ -702,6 +709,13 @@ private:
     QDateTime lastChatterRefreshAt_;
 
     UniqueAccess<StreamStatus> streamStatus_;
+    // updateStreamTitle & updateStreamGame also write to streamStatus_, so
+    // comparing against it would swallow changes they saw first
+    struct LastChannelInfo {
+        QString title;
+        QString gameId;
+    };
+    std::optional<LastChannelInfo> lastChannelInfo_;
     UniqueAccess<RoomModes> roomModes;
     UniqueAccess<std::optional<PinnedMessage>> currentPin_;
     std::atomic<int> pinnedMessageRefreshFailures_{0};

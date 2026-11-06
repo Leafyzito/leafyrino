@@ -204,6 +204,22 @@ public:
 
     // Messages in normal chat for channel stuff
     static MessagePtr makeOfflineSystemMessage(const HelixMinimalUser &channel);
+    /// Make a "CHANNEL_NAME changed title to "TITLE"" message
+    ///
+    /// An empty title makes a "CHANNEL_NAME cleared title" message
+    static MessagePtr makeStreamTitleChangedSystemMessage(
+        const HelixMinimalUser &channel, const QString &newTitle);
+    /// Make a "CHANNEL_NAME changed game to GAME" message
+    ///
+    /// An empty game makes a "CHANNEL_NAME cleared game" message
+    static MessagePtr makeStreamGameChangedSystemMessage(
+        const HelixMinimalUser &channel, const QString &newGame);
+    /// Make a "CHANNEL_NAME is in shared chat with USER1, USER2" message
+    ///
+    /// No participants makes a "CHANNEL_NAME is no longer in shared chat" message
+    static MessagePtr makeSharedChatSystemMessage(
+        const HelixMinimalUser &channel,
+        const std::vector<HelixMinimalUser> &participants);
     static MessagePtr makeHostingSystemMessage(const QString &channelName,
                                                bool hostOn);
     static MessagePtr makeDeletionMessageFromIRC(
@@ -278,6 +294,10 @@ public:
         const std::vector<BadgePreviewFallback> &badgeFallbacks);
 
 private:
+    /// Make a "CHANNEL_NAME ACTION" system message
+    static MessagePtr makeStreamActionSystemMessage(
+        const HelixMinimalUser &channel, const QString &action);
+
     struct TextState {
         TwitchChannel *twitchChannel = nullptr;
         QString userID;  // 7TV: used for personal emotes
