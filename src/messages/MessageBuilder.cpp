@@ -905,6 +905,44 @@ void tokenizeWordsWithEmoji(QStringView text,
             }});
 }
 
+/// Moves the last emote (not emoji) after `contentStart` to the end of the
+/// message and makes it giant, like FFZ does for FFZ:GE rewards.
+void appendFfzGiantEmote(std::vector<std::unique_ptr<MessageElement>> &elements,
+                         size_t contentStart)
+{
+    for (auto i = elements.size(); i > contentStart; i--)
+    {
+        auto it = elements.begin() + static_cast<std::ptrdiff_t>(i - 1);
+        if (!(*it)->getFlags().has(MessageElementFlag::EmoteImage))
+        {
+            continue;
+        }
+
+        std::unique_ptr<MessageElement> giant;
+        if (auto *emote = dynamic_cast<EmoteElement *>(it->get()))
+        {
+            emote->setGiantEmoteKind(GiantEmoteKind::Ffz);
+            giant = std::move(*it);
+        }
+        else if (auto *layered = dynamic_cast<LayeredEmoteElement *>(it->get());
+                 layered != nullptr && !layered->getEmotes().empty())
+        {
+            // like FFZ, only the base emote becomes giant
+            giant = std::make_unique<EmoteElement>(
+                layered->getEmotes().front().ptr, layered->getFlags(),
+                layered->textElementColor(), GiantEmoteKind::Ffz);
+        }
+        else
+        {
+            continue;
+        }
+
+        elements.erase(it);
+        elements.push_back(std::move(giant));
+        return;
+    }
+}
+
 }  // namespace
 
 namespace chatterino {
@@ -2152,6 +2190,7 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
     MessageBuilder::parseRoomID(tags, twitchChannel);
     twitchChannel = builder.parseSharedChatInfo(tags, twitchChannel);
 
+    bool isFfzGiantEmote = false;
     // If it is a reward it has to be appended first
     if (!args.channelPointRewardId.isEmpty())
     {
@@ -2162,6 +2201,8 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
         {
             builder.appendChannelPointRewardMessage(*reward, channel->isMod(),
                                                     channel->isBroadcaster());
+            isFfzGiantEmote =
+                !args.isGigantifiedEmote && reward->isFfzGiantEmote();
         }
         builder->flags.set(MessageFlag::RedeemedChannelPointReward);
     }
@@ -2346,6 +2387,8 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
             }
         }
 
+        const auto contentStart = builder->elements.size();
+
         bool traditionalParsing = true;
         if (getSettings()->markdownParsing && !hasGif)
         {
@@ -2379,6 +2422,11 @@ std::pair<MessagePtrMut, HighlightAlert> MessageBuilder::makeIrcMessage(
         {
             builder.addWords(content, twitchSpecials, textState,
                              gigantifiedEmoteStart);
+        }
+
+        if (isFfzGiantEmote)
+        {
+            appendFfzGiantEmote(builder->elements, contentStart);
         }
 
         appendRepeatedMessageCounter(builder, channel, tags, content,
@@ -3429,7 +3477,8 @@ MessageElement *MessageBuilder::appendParsedEmote(const EmotePtr &emote,
         if (gigantified)
         {
             return this->emplace<EmoteElement>(emote, MessageElementFlag::Emote,
-                                               this->textColor_, true);
+                                               this->textColor_,
+                                               GiantEmoteKind::Twitch);
         }
         this->appendEmote(emote);
         return &this->back();

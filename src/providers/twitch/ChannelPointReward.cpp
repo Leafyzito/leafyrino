@@ -64,6 +64,7 @@ ChannelPointReward::ChannelPointReward(const QJsonObject &redemption)
     this->id = reward.value("id").toString();
     this->channelId = reward.value("channel_id").toString();
     this->title = reward.value("title").toString();
+    this->prompt = reward.value("prompt").toString();
     this->cost = reward.value("cost").toInt();
     this->isUserInputRequired = reward.value("is_user_input_required").toBool();
     this->isBits = reward.value("pricing_type").toString() == "BITS";
@@ -153,6 +154,13 @@ ChannelPointReward::ChannelPointReward(const QJsonObject &redemption)
                            baseSize * 4)};
         this->image = *defaultImage;
     }
+}
+
+bool ChannelPointReward::isFfzGiantEmote() const
+{
+    // case-sensitive, like FFZ
+    return this->title.contains(u"FFZ:GE"_s) ||
+           this->prompt.contains(u"FFZ:GE"_s);
 }
 
 QJsonObject ChannelPointReward::toJson() const
