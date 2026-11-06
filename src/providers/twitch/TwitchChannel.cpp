@@ -1460,8 +1460,10 @@ void TwitchChannel::onLiveStatusChanged(bool isLive, bool isInitialUpdate)
     }
 };
 
-void TwitchChannel::announceChannelInfoChanges(const HelixChannel &info)
+void TwitchChannel::updateChannelInfo(const HelixChannel &info)
 {
+    this->updateStreamGame(info.gameName, info.gameId);
+
     const auto previous = this->lastChannelInfo_;
     this->lastChannelInfo_ = {
         .title = info.title,
@@ -1501,14 +1503,18 @@ void TwitchChannel::announceSharedChatParticipants()
         return;
     }
 
-    this->addMessage(MessageBuilder::makeSharedChatSystemMessage(
-                         {
-                             .id = this->roomId(),
-                             .login = this->getName(),
-                             .displayName = this->nameOptions.actualDisplayName,
-                         },
-                         this->sharedChatSessionParticipants_),
-                     MessageContext::Original);
+    const HelixMinimalUser channel{
+        .id = this->roomId(),
+        .login = this->getName(),
+        .displayName = this->nameOptions.actualDisplayName,
+    };
+
+    this->addMessage(
+        this->sharedChatSessionParticipants_.empty()
+            ? MessageBuilder::makeSharedChatEndedSystemMessage(channel)
+            : MessageBuilder::makeSharedChatSystemMessage(
+                  channel, this->sharedChatSessionParticipants_),
+        MessageContext::Original);
 }
 
 void TwitchChannel::updateStreamTitle(const QString &title)

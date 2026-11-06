@@ -1761,25 +1761,13 @@ MessagePtr MessageBuilder::makeSharedChatSystemMessage(
     const HelixMinimalUser &channel,
     const std::vector<HelixMinimalUser> &participants)
 {
-    if (participants.empty())
-    {
-        return makeStreamActionSystemMessage(channel,
-                                             "is no longer in shared chat");
-    }
-
     MessageBuilder builder;
-    const auto displayMode = getSettings()->usernameDisplayMode.getEnum();
-    const auto channelName = channel.formatted(displayMode);
-    builder.emplace<TimestampElement>();
-    builder.message().flags.set(MessageFlag::System);
-    builder.message().flags.set(MessageFlag::DoNotTriggerNotification);
-    builder.emplace<MentionElement>(channelName, channel.login,
-                                    MessageColor::System, MessageColor::System,
-                                    MessageElementFlag::Username);
+    const auto channelName = addStreamSystemMessageStart(builder, channel);
     builder.emplace<TextElement>("is in shared chat with",
                                  MessageElementFlag::Text,
                                  MessageColor::System);
 
+    const auto displayMode = getSettings()->usernameDisplayMode.getEnum();
     QStringList names;
     for (const auto &participant : participants)
     {
@@ -1804,10 +1792,30 @@ MessagePtr MessageBuilder::makeSharedChatSystemMessage(
     return builder.release();
 }
 
+MessagePtr MessageBuilder::makeSharedChatEndedSystemMessage(
+    const HelixMinimalUser &channel)
+{
+    return makeStreamActionSystemMessage(channel,
+                                         "is no longer in shared chat");
+}
+
 MessagePtr MessageBuilder::makeStreamActionSystemMessage(
     const HelixMinimalUser &channel, const QString &action)
 {
     MessageBuilder builder;
+    const auto channelName = addStreamSystemMessageStart(builder, channel);
+    builder.emplace<TextElement>(action, MessageElementFlag::Text,
+                                 MessageColor::System);
+    const auto text = channelName + ' ' + action;
+    builder.message().messageText = text;
+    builder.message().searchText = text;
+
+    return builder.release();
+}
+
+QString MessageBuilder::addStreamSystemMessageStart(
+    MessageBuilder &builder, const HelixMinimalUser &channel)
+{
     const auto channelName =
         channel.formatted(getSettings()->usernameDisplayMode.getEnum());
     builder.emplace<TimestampElement>();
@@ -1816,13 +1824,7 @@ MessagePtr MessageBuilder::makeStreamActionSystemMessage(
     builder.emplace<MentionElement>(channelName, channel.login,
                                     MessageColor::System, MessageColor::System,
                                     MessageElementFlag::Username);
-    builder.emplace<TextElement>(action, MessageElementFlag::Text,
-                                 MessageColor::System);
-    const auto text = channelName + ' ' + action;
-    builder.message().messageText = text;
-    builder.message().searchText = text;
-
-    return builder.release();
+    return channelName;
 }
 
 MessagePtr MessageBuilder::makeHostingSystemMessage(const QString &channelName,

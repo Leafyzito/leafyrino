@@ -215,11 +215,12 @@ public:
     static MessagePtr makeStreamGameChangedSystemMessage(
         const HelixMinimalUser &channel, const QString &newGame);
     /// Make a "CHANNEL_NAME is in shared chat with USER1, USER2" message
-    ///
-    /// No participants makes a "CHANNEL_NAME is no longer in shared chat" message
     static MessagePtr makeSharedChatSystemMessage(
         const HelixMinimalUser &channel,
         const std::vector<HelixMinimalUser> &participants);
+    /// Make a "CHANNEL_NAME is no longer in shared chat" message
+    static MessagePtr makeSharedChatEndedSystemMessage(
+        const HelixMinimalUser &channel);
     static MessagePtr makeHostingSystemMessage(const QString &channelName,
                                                bool hostOn);
     static MessagePtr makeDeletionMessageFromIRC(
@@ -297,6 +298,11 @@ private:
     /// Make a "CHANNEL_NAME ACTION" system message
     static MessagePtr makeStreamActionSystemMessage(
         const HelixMinimalUser &channel, const QString &action);
+    /// Add the timestamp, flags and name shared by stream system messages
+    ///
+    /// Returns the name as it was added to the message
+    static QString addStreamSystemMessageStart(MessageBuilder &builder,
+                                               const HelixMinimalUser &channel);
 
     struct TextState {
         TwitchChannel *twitchChannel = nullptr;

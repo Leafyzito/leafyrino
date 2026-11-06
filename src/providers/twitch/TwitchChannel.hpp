@@ -543,8 +543,9 @@ public:
                             bool isInitialUpdate);
     void updateStreamTitle(const QString &title);
     void updateStreamGame(const QString &gameName, const QString &gameId);
-    /// Post messages for the title or game changes since the last channel poll
-    void announceChannelInfoChanges(const HelixChannel &info);
+    /// Update the game and post messages for the title or game changes since
+    /// the last channel poll
+    void updateChannelInfo(const HelixChannel &info);
 
     /**
      * Returns the display name of the user
