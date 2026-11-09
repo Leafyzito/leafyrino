@@ -61,21 +61,24 @@ public:
         builder.append(
             std::make_unique<TextElement>(text, MessageElementFlag::Text));
         this->layout = std::make_unique<MessageLayout>(builder.release());
-        MessageColors colors;
-        this->layout->layout(
-            {
-                .messageColors = colors,
-                .flags = MessageElementFlag::Text,
-                .width = WIDTH,
-                .scale = 1,
-                .imageScale = 1,
-                .selectedChannel = nullptr,
-                .message = *this->layout->getMessage(),
-            },
-            false);
+        this->layout->layout(this->context(), false);
+    }
+
+    MessageLayoutContext context(int width = WIDTH)
+    {
+        return {
+            .messageColors = this->colors,
+            .flags = MessageElementFlag::Text,
+            .width = width,
+            .scale = 1,
+            .imageScale = 1,
+            .selectedChannel = nullptr,
+            .message = *this->layout->getMessage(),
+        };
     }
 
     MockApplication mockApplication;
+    MessageColors colors;
     std::unique_ptr<MessageLayout> layout;
 };
 
@@ -96,4 +99,77 @@ TEST(TextElement, BasicCase)
 
     EXPECT_EQ(wordStart, 0);
     EXPECT_EQ(wordEnd, 3);
+}
+
+TEST(MessageLayout, DeleteCacheKeepsMetrics)
+{
+    auto test = MessageLayoutTest("aaaaaaaa bbbbbbbb cccccccc");
+    auto &layout = *test.layout;
+    ASSERT_TRUE(layout.hasCache());
+
+    const auto height = layout.getHeight();
+    const auto width = layout.getWidth();
+    const auto lineCount = layout.getLineCount();
+    const auto lastCharacterIndex = layout.getLastCharacterIndex();
+    const auto point = QPointF(WIDTH / 20, height / 2);
+    ASSERT_GT(height, 0);
+    ASSERT_NE(layout.getElementAt(point), nullptr);
+
+    QString textBefore;
+    layout.addSelectionText(textBefore);
+    ASSERT_FALSE(textBefore.isEmpty());
+
+    layout.deleteCache();
+
+    EXPECT_FALSE(layout.hasCache());
+    EXPECT_EQ(layout.getHeight(), height);
+    EXPECT_EQ(layout.getWidth(), width);
+    EXPECT_EQ(layout.getLineCount(), lineCount);
+    EXPECT_EQ(layout.getLastCharacterIndex(), lastCharacterIndex);
+    EXPECT_EQ(layout.getElementAt(point), nullptr);
+    EXPECT_EQ(layout.getSelectionIndex(point), 0);
+
+    QString textWithoutCache;
+    layout.addSelectionText(textWithoutCache);
+    EXPECT_TRUE(textWithoutCache.isEmpty());
+
+    // nothing changed, but the elements have to be recreated
+    EXPECT_TRUE(layout.layout(test.context(), false));
+    EXPECT_TRUE(layout.hasCache());
+    EXPECT_EQ(layout.getHeight(), height);
+    EXPECT_NE(layout.getElementAt(point), nullptr);
+
+    QString textAfter;
+    layout.addSelectionText(textAfter);
+    EXPECT_EQ(textAfter, textBefore);
+}
+
+TEST(MessageLayout, MeasurementDoesNotKeepFreedElements)
+{
+    auto test = MessageLayoutTest("aaaaaaaa bbbbbbbb cccccccc");
+    auto &layout = *test.layout;
+    const auto wideHeight = layout.getHeight();
+    const auto wideLineCount = layout.getLineCount();
+
+    // elements that exist are kept
+    EXPECT_FALSE(layout.layoutForMeasurement(test.context()));
+    EXPECT_TRUE(layout.hasCache());
+
+    layout.deleteCache();
+
+    // nothing changed, the cached size is still valid
+    EXPECT_FALSE(layout.layoutForMeasurement(test.context()));
+    EXPECT_FALSE(layout.hasCache());
+
+    // a narrower view wraps the text, the size is updated without keeping
+    // the elements
+    EXPECT_TRUE(layout.layoutForMeasurement(test.context(WIDTH / 6)));
+    EXPECT_FALSE(layout.hasCache());
+    EXPECT_GT(layout.getHeight(), wideHeight);
+    EXPECT_GT(layout.getLineCount(), wideLineCount);
+    const auto narrowHeight = layout.getHeight();
+
+    EXPECT_TRUE(layout.layout(test.context(WIDTH / 6), false));
+    EXPECT_TRUE(layout.hasCache());
+    EXPECT_EQ(layout.getHeight(), narrowHeight);
 }
