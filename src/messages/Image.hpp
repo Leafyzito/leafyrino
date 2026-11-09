@@ -68,6 +68,22 @@ QList<Frame> readFrames(QImageReader &reader, const Url &url,
                         std::optional<QSize> rescale = std::nullopt);
 void assignFrames(std::weak_ptr<Image> weak, QList<Frame> parsed);
 
+struct ImageBudgetEntry {
+    int64_t bytes = 0;
+    std::chrono::steady_clock::time_point lastUsed;
+    /// Whether the image may be evicted to get back under the budget
+    bool evictable = false;
+};
+
+/// Picks the entries to evict, least recently used first, once the total
+/// exceeds maxBytes. Evicts until the total fits in targetBytes or no
+/// evictable entries are left.
+///
+/// @returns The indices of the entries to evict
+std::vector<size_t> pickImageBudgetEvictions(
+    const std::vector<ImageBudgetEntry> &entries, int64_t maxBytes,
+    int64_t targetBytes);
+
 }  // namespace chatterino::detail
 
 namespace chatterino {
@@ -174,6 +190,10 @@ public:
 
     void freeOld();
 
+    /// Evicts the least recently used animated images if the decoded frames
+    /// of all images use more memory than the budget allows
+    void requestBudgetCheck();
+
     std::vector<ProviderUsage> getProviderUsageSnapshot();
 
     void freeAll();
@@ -181,6 +201,16 @@ public:
     QTimer *freeTimer_;
     std::map<Image *, std::weak_ptr<Image>> allImages_;
     std::mutex mutex_;
+
+private:
+    /// Returns strong references to all tracked images. Images must not be
+    /// released while mutex_ is held, since ~Image() locks it too.
+    std::vector<ImagePtr> snapshotImages();
+    void runBudgetCheck();
+    /// @returns true if the images are still over the budget
+    bool enforceBudget();
+
+    bool budgetCheckQueued_ = false;
 };
 
 #endif
