@@ -100,3 +100,51 @@ TEST(Image, CachedFramesClearDisconnectsTimer)
     }
     timer->signal.invoke();
 }
+
+TEST(Image, BudgetKeepsImagesWithinLimit)
+{
+    const auto now = std::chrono::steady_clock::now();
+    const std::vector<detail::ImageBudgetEntry> entries{
+        {.bytes = 50, .lastUsed = now, .evictable = true},
+        {.bytes = 50, .lastUsed = now, .evictable = true},
+    };
+
+    EXPECT_TRUE(detail::pickImageBudgetEvictions(entries, 100, 50).empty());
+}
+
+TEST(Image, BudgetEvictsLeastRecentlyUsedFirst)
+{
+    using std::chrono::seconds;
+    const auto now = std::chrono::steady_clock::now();
+    const std::vector<detail::ImageBudgetEntry> entries{
+        {.bytes = 40, .lastUsed = now - seconds(10), .evictable = true},
+        {.bytes = 40, .lastUsed = now - seconds(30), .evictable = true},
+        {.bytes = 40, .lastUsed = now - seconds(60), .evictable = false},
+        {.bytes = 40, .lastUsed = now - seconds(20), .evictable = true},
+    };
+
+    // 160 bytes are over the limit, the two oldest evictable entries bring
+    // it down to the target
+    EXPECT_EQ(detail::pickImageBudgetEvictions(entries, 100, 80),
+              (std::vector<size_t>{1, 3}));
+}
+
+TEST(Image, BudgetOnlyEvictsEvictableImages)
+{
+    using std::chrono::seconds;
+    const auto now = std::chrono::steady_clock::now();
+    const std::vector<detail::ImageBudgetEntry> entries{
+        {.bytes = 100, .lastUsed = now - seconds(60), .evictable = false},
+        {.bytes = 40, .lastUsed = now - seconds(10), .evictable = true},
+        {.bytes = 100, .lastUsed = now - seconds(30), .evictable = false},
+    };
+
+    // the target can't be reached, everything that may go is evicted
+    EXPECT_EQ(detail::pickImageBudgetEvictions(entries, 200, 100),
+              (std::vector<size_t>{1}));
+
+    const std::vector<detail::ImageBudgetEntry> pinned{
+        {.bytes = 300, .lastUsed = now - seconds(60), .evictable = false},
+    };
+    EXPECT_TRUE(detail::pickImageBudgetEvictions(pinned, 200, 100).empty());
+}

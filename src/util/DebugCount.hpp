@@ -59,6 +59,7 @@ enum class DebugObject : size_t {
 class DebugCount
 {
 public:
+    static int64_t get(DebugObject target);
     static void set(DebugObject target, int64_t amount);
 
     static void increase(DebugObject target, int64_t amount);
