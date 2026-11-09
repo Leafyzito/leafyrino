@@ -1,6 +1,7 @@
 #pragma once
 
 #include "twitch-eventsub-ws/logger.hpp"
+#include "twitch-eventsub-ws/proxy.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -30,7 +31,8 @@ public:
 
     // Start the asynchronous operation
     void run(std::string _host, std::string _port, std::string _path,
-             std::string _userAgent);
+             std::string _userAgent,
+             std::optional<ProxyConfig> _proxy = std::nullopt);
 
     void close();
 
@@ -47,6 +49,11 @@ private:
     void onConnect(
         boost::beast::error_code ec,
         const boost::asio::ip::tcp::resolver::results_type::endpoint_type &ep);
+
+    void onProxyHandshake(std::uint16_t targetPort,
+                          boost::beast::error_code ec);
+
+    void startSSLHandshake(std::uint16_t targetPort);
 
     void onSSLHandshake(boost::beast::error_code ec);
 
@@ -76,6 +83,7 @@ private:
     std::string port;
     std::string path;
     std::string userAgent;
+    std::optional<ProxyConfig> proxy;
     std::unique_ptr<Listener> listener;
 
     std::chrono::seconds keepaliveTimeout{0};

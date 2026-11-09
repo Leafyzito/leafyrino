@@ -14,6 +14,7 @@
 #include <boost/container_hash/hash.hpp>
 #include <boost/json.hpp>
 
+#include <charconv>
 #include <chrono>
 #include <memory>
 #include <unordered_map>
@@ -268,13 +269,23 @@ Session::Session(boost::asio::io_context &ioc, boost::asio::ssl::context &ctx,
 
 // Start the asynchronous operation
 void Session::run(std::string _host, std::string _port, std::string _path,
-                  std::string _userAgent)
+                  std::string _userAgent, std::optional<ProxyConfig> _proxy)
 {
     // Save these for later
     this->host = std::move(_host);
     this->port = std::move(_port);
     this->path = std::move(_path);
     this->userAgent = std::move(_userAgent);
+    this->proxy = std::move(_proxy);
+
+    if (this->proxy)
+    {
+        // The target host is resolved by the proxy
+        this->resolver.async_resolve(
+            this->proxy->host, std::to_string(this->proxy->port),
+            beast::bind_front_handler(&Session::onResolve, shared_from_this()));
+        return;
+    }
 
     // Look up the domain name
     this->resolver.async_resolve(
@@ -349,6 +360,47 @@ void Session::onConnect(
     // Set a timeout on the operation
     beast::get_lowest_layer(this->ws).expires_after(std::chrono::seconds(30));
 
+    if (this->proxy)
+    {
+        std::uint16_t targetPort = 0;
+        auto [ptr, err] =
+            std::from_chars(this->port.data(),
+                            this->port.data() + this->port.size(), targetPort);
+        if (err != std::errc{} || ptr != this->port.data() + this->port.size())
+        {
+            this->fail(boost::asio::error::invalid_argument, "proxy");
+            return;
+        }
+
+        asyncProxyHandshake(
+            beast::get_lowest_layer(this->ws), *this->proxy, this->host,
+            targetPort,
+            beast::bind_front_handler(&Session::onProxyHandshake,
+                                      shared_from_this(), targetPort));
+        return;
+    }
+
+    this->startSSLHandshake(ep.port());
+}
+
+void Session::onProxyHandshake(std::uint16_t targetPort, beast::error_code ec)
+{
+    if (ec)
+    {
+        this->fail(ec, "proxy");
+        return;
+    }
+
+    beast::get_lowest_layer(this->ws).expires_after(std::chrono::seconds(30));
+
+    // we're connected to the proxy, so ep.port() isn't the target's port
+    this->startSSLHandshake(targetPort);
+}
+
+void Session::startSSLHandshake(std::uint16_t targetPort)
+{
+    beast::error_code ec;
+
     // Set SNI Hostname (many hosts need this to handshake successfully)
     if (!SSL_set_tlsext_host_name(this->ws.next_layer().native_handle(),
                                   this->host.c_str()))
@@ -362,7 +414,7 @@ void Session::onConnect(
     // Update the host_ string. This will provide the value of the
     // Host HTTP header during the WebSocket handshake.
     // See https://tools.ietf.org/html/rfc7230#section-5.4
-    host += ':' + std::to_string(ep.port());
+    host += ':' + std::to_string(targetPort);
 
     // Perform the SSL handshake
     this->ws.next_layer().async_handshake(
