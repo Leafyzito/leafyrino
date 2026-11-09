@@ -371,6 +371,11 @@ private:
     void updateScrollWidgetGeometries();
 
     void drawMessages(QPainter &painter, const QRegion &area);
+    /// Frees the buffers and layout elements of the messages that were on
+    /// screen during the last paint
+    void clearMessageCaches();
+    /// Lays out a single message with the settings used for visible messages
+    void relayoutMessage(MessageLayout &layout);
     void setSelection(const SelectionItem &start, const SelectionItem &end);
     void setSelection(const Selection &newSelection);
     void selectWholeMessage(MessageLayout *layout, int &messageIndex);
@@ -391,6 +396,10 @@ private:
     void maybeAutoTranslateMessage(const MessagePtr &message);
 
     int getLayoutWidth() const;
+    MessageLayoutContext makeLayoutContext(const Message &message,
+                                           MessageElementFlags flags,
+                                           Channel *selectedChannel,
+                                           int width) const;
     void updatePauses();
     void unpaused();
 

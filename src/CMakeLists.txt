@@ -807,6 +807,8 @@ set(SOURCE_FILES
         util/LayoutHelper.hpp
         util/LoadPixmap.cpp
         util/LoadPixmap.hpp
+        util/MemoryReclaimer.cpp
+        util/MemoryReclaimer.hpp
         util/MultiChannel.cpp
         util/MultiChannel.hpp
         util/OnceFlag.cpp

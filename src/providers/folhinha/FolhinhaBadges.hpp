@@ -19,6 +19,7 @@
 
 #ifdef FRIEND_TEST
 class FolhinhaBadges_PriorityResolution_Test;
+class FolhinhaBadges_TierResolution_Test;
 #endif
 
 namespace chatterino {
@@ -61,6 +62,8 @@ private:
 #ifdef FRIEND_TEST
     FRIEND_TEST(FolhinhaBadges, PriorityResolution);
     friend class ::FolhinhaBadges_PriorityResolution_Test;
+    FRIEND_TEST(FolhinhaBadges, TierResolution);
+    friend class ::FolhinhaBadges_TierResolution_Test;
 #endif
 };
 

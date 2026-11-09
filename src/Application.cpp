@@ -80,6 +80,7 @@
 #include "singletons/Updates.hpp"
 #include "singletons/WindowManager.hpp"
 #include "util/Helpers.hpp"
+#include "util/MemoryReclaimer.hpp"
 #include "util/PostToThread.hpp"
 #include "widgets/Notebook.hpp"
 #include "widgets/splits/Split.hpp"
@@ -100,6 +101,9 @@ using namespace chatterino;
 
 const QString BTTV_LIVE_UPDATES_URL = "wss://sockets.betterttv.net/ws";
 const QString SEVENTV_EVENTAPI_URL = "wss://events.7tv.io/v3";
+
+// startup parses a lot of emote sets and message history that are freed again
+constexpr auto STARTUP_MEMORY_RELIEF_DELAY = std::chrono::seconds{30};
 
 std::atomic<bool> STOPPED{false};
 std::atomic<bool> ABOUT_TO_QUIT{false};
@@ -436,6 +440,10 @@ int Application::run()
     }
 
     MoltorinoAuth::scheduleStartupRefresh();
+
+    QTimer::singleShot(STARTUP_MEMORY_RELIEF_DELAY, qApp, [] {
+        requestMemoryPressureRelief();
+    });
 
     return QApplication::exec();
 }
