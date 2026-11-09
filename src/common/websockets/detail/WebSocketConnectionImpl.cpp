@@ -6,6 +6,7 @@
 
 #include "common/QLogging.hpp"
 #include "common/Version.hpp"
+#include "providers/NetworkConfigurationProvider.hpp"
 
 #include <boost/asio/strand.hpp>
 #include <boost/beast/core/bind_handler.hpp>
@@ -37,6 +38,7 @@ WebSocketConnectionHelper<Derived, Inner>::WebSocketConnectionHelper(
     : WebSocketConnection(std::move(options), id, std::move(listener), pool,
                           ioc)
     , stream(std::move(stream))
+    , proxy(NetworkConfigurationProvider::webSocketProxy())
     , healthCheckTimer(this->stream.get_executor())
 {
 }
@@ -57,6 +59,19 @@ void WebSocketConnectionHelper<Derived, Inner>::run()
         {
             return;
         }
+    }
+
+    if (this->proxy)
+    {
+        // the target host is resolved by the proxy
+        qCDebug(chatterinoWebsocket)
+            << *this << "using proxy" << QUtf8StringView(this->proxy->host)
+            << this->proxy->port;
+        this->resolver.async_resolve(
+            this->proxy->host, std::to_string(this->proxy->port),
+            beast::bind_front_handler(&WebSocketConnectionHelper::onResolve,
+                                      this->shared_from_this()));
+        return;
     }
 
     this->resolver.async_resolve(
@@ -164,9 +179,45 @@ void WebSocketConnectionHelper<Derived, Inner>::onTcpHandshake(
 
     qCDebug(chatterinoWebsocket)
         << *this << "TCP handshake done" << ep.address().to_string();
-    this->options.url.setPort(ep.port());
 
     this->resolvedEndpoints = {};
+
+    if (this->proxy)
+    {
+        // ep is the proxy, so keep the port from the url
+        beast::get_lowest_layer(this->stream)
+            .expires_after(std::chrono::seconds{30});
+        eventsub::lib::asyncProxyHandshake(
+            beast::get_lowest_layer(this->stream), *this->proxy,
+            this->options.url.host(QUrl::FullyEncoded).toStdString(),
+            static_cast<uint16_t>(
+                this->options.url.port(Derived::DEFAULT_PORT)),
+            beast::bind_front_handler(
+                &WebSocketConnectionHelper::onProxyHandshake,
+                this->shared_from_this()));
+        return;
+    }
+
+    this->options.url.setPort(ep.port());
+
+    this->derived()->afterTcpHandshake();
+}
+
+template <typename Derived, typename Inner>
+void WebSocketConnectionHelper<Derived, Inner>::onProxyHandshake(
+    boost::system::error_code ec)
+{
+    if (this->isClosing)
+    {
+        return;
+    }
+    if (ec)
+    {
+        this->fail(ec, u"proxy handshake");
+        return;
+    }
+
+    qCDebug(chatterinoWebsocket) << *this << "proxy handshake done";
 
     this->derived()->afterTcpHandshake();
 }

@@ -8,6 +8,7 @@
 #include "common/Args.hpp"
 #include "common/QLogging.hpp"
 #include "common/Version.hpp"
+#include "providers/NetworkConfigurationProvider.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/eventsub/Connection.hpp"
 #include "util/QMagicEnum.hpp"
@@ -579,7 +580,8 @@ void Controller::createConnection(std::string host, std::string port,
         this->registerConnection(connection);
 
         connection->run(std::move(host), std::move(port), std::move(path),
-                        this->userAgent);
+                        this->userAgent,
+                        NetworkConfigurationProvider::webSocketProxy());
     }
     catch (std::exception &e)
     {
