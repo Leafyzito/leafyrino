@@ -129,7 +129,7 @@ Page parsePage(const QJsonArray &data, const QString &maximumRating)
         {
             page.gifs.push_back(std::move(gif));
         }
-        if (page.gifs.size() == PAGE_SIZE)
+        if (page.gifs.size() == GIF_PAGE_SIZE)
         {
             break;
         }
@@ -195,7 +195,7 @@ void loadPage(const Config &config, const QString &search,
     QUrlQuery query;
     query.addQueryItem("api_key", config.apiKey);
     query.addQueryItem("rating", config.rating);
-    query.addQueryItem("limit", QString::number(PAGE_SIZE));
+    query.addQueryItem("limit", QString::number(GIF_PAGE_SIZE));
     query.addQueryItem("offset", QString::number(std::clamp(offset, 0, 4999)));
     if (!search.isEmpty())
     {
@@ -203,7 +203,7 @@ void loadPage(const Config &config, const QString &search,
     }
     if (!ids.isEmpty())
     {
-        query.addQueryItem("ids", ids.mid(offset, PAGE_SIZE).join(','));
+        query.addQueryItem("ids", ids.mid(offset, GIF_PAGE_SIZE).join(','));
     }
     url.setQuery(query);
     NetworkRequest(url)
@@ -223,7 +223,7 @@ void loadPage(const Config &config, const QString &search,
             if (!ids.isEmpty())
             {
                 QVector<Gif> ordered;
-                for (const auto &id : ids.mid(offset, PAGE_SIZE))
+                for (const auto &id : ids.mid(offset, GIF_PAGE_SIZE))
                 {
                     const auto found =
                         std::ranges::find(page.gifs, id, &Gif::id);
@@ -236,8 +236,8 @@ void loadPage(const Config &config, const QString &search,
             }
             const auto pagination = root.value("pagination").toObject();
             const int count =
-                std::clamp(pagination.value("count").toInt(), 0, PAGE_SIZE);
-            const int next = offset + (ids.isEmpty() ? count : PAGE_SIZE);
+                std::clamp(pagination.value("count").toInt(), 0, GIF_PAGE_SIZE);
+            const int next = offset + (ids.isEmpty() ? count : GIF_PAGE_SIZE);
             const int total = ids.isEmpty()
                                   ? pagination.value("total_count").toInt()
                                   : int(ids.size());
