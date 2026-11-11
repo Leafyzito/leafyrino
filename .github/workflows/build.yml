@@ -246,7 +246,10 @@ jobs:
       - name: Prepare Flatpak repo
         if: env.PUBLISH_FLATPAK_REPO == 'true'
         run: |
-          flatpak build-update-repo --gpg-sign="$GPG_FINGERPRINT" --title=Leafyrino --default-branch=master repo
+          # GitHub Pages sometimes answers 503 for missing files, which breaks
+          # installs when the delta index Flatpak asks for doesn't exist
+          flatpak build-update-repo --gpg-sign="$GPG_FINGERPRINT" --title=Leafyrino --default-branch=master \
+            --generate-static-deltas repo
           key=$(base64 -w0 leafyrino.gpg)
           cat > repo/leafyrino.flatpakref <<EOF
           [Flatpak Ref]
