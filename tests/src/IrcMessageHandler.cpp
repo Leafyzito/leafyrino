@@ -23,13 +23,17 @@
 #include "mocks/TwitchIrcServer.hpp"
 #include "mocks/UserData.hpp"
 #include "providers/bttv/BttvBadges.hpp"
+#include "providers/chatsen/ChatsenBadges.hpp"
+#include "providers/dankchat/DankChatBadges.hpp"
 #include "providers/ffz/FfzBadges.hpp"
+#include "providers/ffzap/FfzApBadges.hpp"
 #include "providers/folhinha/FolhinhaBadges.hpp"
 #include "providers/homies/HomiesBadges.hpp"
 #include "providers/seventv/SeventvBadges.hpp"
 #include "providers/seventv/SeventvPersonalEmotes.hpp"
 #include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/ChannelPointReward.hpp"
+#include "providers/twitch/PubSubManager.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchBadge.hpp"
 #include "providers/twitch/TwitchBadges.hpp"
@@ -178,6 +182,26 @@ public:
         return &this->sound;
     }
 
+    PubSub *getTwitchPubSub() override
+    {
+        return &this->pubSub;
+    }
+
+    FfzApBadges *getFfzApBadges() override
+    {
+        return &this->ffzApBadges;
+    }
+
+    DankChatBadges *getDankChatBadges() override
+    {
+        return &this->dankChatBadges;
+    }
+
+    ChatsenBadges *getChatsenBadges() override
+    {
+        return &this->chatsenBadges;
+    }
+
     mock::EmptyLogging logging;
     AccountController accounts;
     mock::EmoteController emotes;
@@ -198,6 +222,10 @@ public:
     TwitchBadges twitchBadges;
     mock::EmptyLinkResolver linkResolver;
     NullBackend sound;
+    PubSub pubSub{u"wss://127.0.0.1:9050"_s};
+    FfzApBadges ffzApBadges;
+    DankChatBadges dankChatBadges;
+    ChatsenBadges chatsenBadges;
 };
 
 std::pair<const EmoteName, EmotePtr> makeEmote(Emote &&emote)
@@ -440,6 +468,49 @@ std::shared_ptr<TwitchChannel> makeMockTwitchChannel(
                    }}},
               }},
          }},
+    }});
+
+    chan->addKnownChannelPointReward({{
+        {u"channel_id"_s, u"11148817"_s},
+        {u"id"_s, u"unused"_s},
+        {u"reward"_s,
+         {{
+             {u"channel_id"_s, u"11148817"_s},
+             {u"cost"_s, 1},
+             {u"id"_s, u"ffzge-title"_s},
+             {u"is_user_input_required"_s, true},
+             {u"title"_s, u"Giant FFZ:GE"_s},
+             {u"prompt"_s, u"Send an emote"_s},
+             {u"image"_s, defaultImage},
+         }}},
+    }});
+    chan->addKnownChannelPointReward({{
+        {u"channel_id"_s, u"11148817"_s},
+        {u"id"_s, u"unused"_s},
+        {u"reward"_s,
+         {{
+             {u"channel_id"_s, u"11148817"_s},
+             {u"cost"_s, 1},
+             {u"id"_s, u"ffzge-prompt"_s},
+             {u"is_user_input_required"_s, true},
+             {u"title"_s, u"Giant emote"_s},
+             {u"prompt"_s, u"Your last emote gets big FFZ:GE"_s},
+             {u"image"_s, defaultImage},
+         }}},
+    }});
+    chan->addKnownChannelPointReward({{
+        {u"channel_id"_s, u"11148817"_s},
+        {u"id"_s, u"unused"_s},
+        {u"reward"_s,
+         {{
+             {u"channel_id"_s, u"11148817"_s},
+             {u"cost"_s, 1},
+             {u"id"_s, u"ffzge-lowercase"_s},
+             {u"is_user_input_required"_s, true},
+             {u"title"_s, u"Giant ffz:ge"_s},
+             {u"prompt"_s, u"lowercase ffz:ge"_s},
+             {u"image"_s, defaultImage},
+         }}},
     }});
 
     chan->setUserColor("UserColor", {1, 2, 3, 4});

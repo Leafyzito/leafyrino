@@ -546,6 +546,15 @@ private:
     EmotePtr emote_;
 };
 
+/// What made an emote giant.
+enum class GiantEmoteKind : std::uint8_t {
+    None,
+    /// Twitch's "Gigantify an Emote" power-up
+    Twitch,
+    /// A channel point reward with FFZ:GE in its title or prompt
+    Ffz,
+};
+
 // contains emote data and will pick the emote based on :
 //   a) are images for the emote type enabled
 //   b) which size it wants
@@ -556,12 +565,15 @@ public:
 
     EmoteElement(const EmotePtr &data, MessageElementFlags flags_,
                  const MessageColor &textElementColor = MessageColor::Text,
-                 bool gigantified = false);
+                 GiantEmoteKind giant = GiantEmoteKind::None);
 
     void addToContainer(MessageLayoutContainer &container,
                         const MessageLayoutContext &ctx) override;
     EmotePtr getEmote() const;
     bool isGigantified() const;
+    void setGiantEmoteKind(GiantEmoteKind giant);
+    /// Whether this emote is giant and the setting for its kind is enabled.
+    bool rendersGigantified() const;
 
     std::unique_ptr<MessageElement> clone() const override;
 
@@ -580,7 +592,7 @@ private:
     bool usingFallbackColor_ = false;
 
     EmotePtr emote_;
-    bool gigantified_ = false;
+    GiantEmoteKind giant_ = GiantEmoteKind::None;
 };
 
 // A LayeredEmoteElement represents multiple Emotes layered on top of each other.

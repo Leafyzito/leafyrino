@@ -1,0 +1,283 @@
+{
+    "input": "@tmi-sent-ts=1726662938032;subscriber=1;id=87af876f-5591-4a63-924f-46f465ecd3c4;room-id=11148817;user-id=129546453;display-name=nerixyz;badges=subscriber/24;badge-info=subscriber/27;color=#FF0000;flags=;user-type=;emotes=1234:9-16;custom-reward-id=ffzge-title :nerixyz!nerixyz@nerixyz.tmi.twitch.tv PRIVMSG #pajlada :7TVEmote TwitchGE more text",
+    "output": [
+        {
+            "channelName": "pajlada",
+            "count": 1,
+            "displayName": "nerixyz",
+            "elements": [
+                {
+                    "element": {
+                        "color": "System",
+                        "flags": "Timestamp",
+                        "link": {
+                            "type": "None",
+                            "value": ""
+                        },
+                        "style": "TimestampMedium",
+                        "tooltip": "",
+                        "trailingSpace": true,
+                        "type": "TextElement",
+                        "words": [
+                            "0:00"
+                        ]
+                    },
+                    "flags": "Timestamp",
+                    "format": "",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "time": "00:00:00",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TimestampElement"
+                },
+                {
+                    "color": "Text",
+                    "flags": "ChannelPointReward",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "style": "ChatMedium",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TextElement",
+                    "words": [
+                        "Redeemed"
+                    ]
+                },
+                {
+                    "color": "Text",
+                    "flags": "ChannelPointReward",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "style": "ChatMediumBold",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TextElement",
+                    "words": [
+                        "Giant",
+                        "FFZ:GE"
+                    ]
+                },
+                {
+                    "flags": "EmoteImage|ChannelPointReward",
+                    "image": "https://chatterino.com/reward1x.png",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "ScalingImageElement"
+                },
+                {
+                    "color": "Text",
+                    "flags": "ChannelPointReward",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "style": "ChatMediumBold",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TextElement",
+                    "words": [
+                        "1"
+                    ]
+                },
+                {
+                    "flags": "ChannelPointReward",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "LinebreakElement"
+                },
+                {
+                    "color": "System",
+                    "flags": "ChannelName",
+                    "link": {
+                        "type": "JumpToChannel",
+                        "value": "pajlada"
+                    },
+                    "style": "ChatMedium",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TextElement",
+                    "words": [
+                        "#pajlada"
+                    ]
+                },
+                {
+                    "element": {
+                        "color": "System",
+                        "flags": "Timestamp",
+                        "link": {
+                            "type": "None",
+                            "value": ""
+                        },
+                        "style": "TimestampMedium",
+                        "tooltip": "",
+                        "trailingSpace": true,
+                        "type": "TextElement",
+                        "words": [
+                            "12:35"
+                        ]
+                    },
+                    "flags": "Timestamp",
+                    "format": "",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "time": "12:35:38",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TimestampElement"
+                },
+                {
+                    "flags": "ModeratorTools",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TwitchModerationElement"
+                },
+                {
+                    "color": "#ffff0000",
+                    "flags": "Username",
+                    "link": {
+                        "type": "UserInfo",
+                        "value": "nerixyz"
+                    },
+                    "style": "ChatMediumBold",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TextElement",
+                    "words": [
+                        "nerixyz:"
+                    ]
+                },
+                {
+                    "emote": {
+                        "author": "Chatterino",
+                        "homePage": "https://chatterino.com/7TVEmote",
+                        "id": "1",
+                        "images": {
+                            "1x": "https://chatterino.com/7TVEmote.png"
+                        },
+                        "name": "7TVEmote",
+                        "tooltip": "7TVEmote Tooltip"
+                    },
+                    "flags": "EmoteImage|EmoteText",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "tooltip": "7TVEmote Tooltip",
+                    "trailingSpace": true,
+                    "type": "EmoteElement"
+                },
+                {
+                    "color": "Text",
+                    "flags": "Text",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "style": "ChatMedium",
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "TextElement",
+                    "words": [
+                        "more",
+                        "text"
+                    ]
+                },
+                {
+                    "emote": {
+                        "homePage": "https://chatvau.lt/emote/twitch/1234",
+                        "images": {
+                            "1x": "https://static-cdn.jtvnw.net/emoticons/v2/1234/default/dark/1.0",
+                            "2x": "https://static-cdn.jtvnw.net/emoticons/v2/1234/default/dark/2.0",
+                            "3x": "https://static-cdn.jtvnw.net/emoticons/v2/1234/default/dark/3.0"
+                        },
+                        "name": "TwitchGE",
+                        "tooltip": "TwitchGE<br>Twitch Emote"
+                    },
+                    "flags": "EmoteImage|EmoteText",
+                    "gigantified": "Ffz",
+                    "link": {
+                        "type": "None",
+                        "value": ""
+                    },
+                    "tooltip": "TwitchGE<br>Twitch Emote",
+                    "trailingSpace": true,
+                    "type": "EmoteElement"
+                },
+                {
+                    "background": "#ffa0a0a4",
+                    "flags": "ReplyButton",
+                    "link": {
+                        "type": "ReplyToMessage",
+                        "value": "87af876f-5591-4a63-924f-46f465ecd3c4"
+                    },
+                    "padding": 2,
+                    "tooltip": "",
+                    "trailingSpace": true,
+                    "type": "CircularImageElement",
+                    "url": ""
+                }
+            ],
+            "externalBadges": [
+            ],
+            "flags": "Highlighted|Collapsed|RedeemedChannelPointReward",
+            "frozen": false,
+            "highlightColor": "#3c1c7e8d",
+            "id": "87af876f-5591-4a63-924f-46f465ecd3c4",
+            "localizedName": "",
+            "loginName": "nerixyz",
+            "messageText": "7TVEmote TwitchGE more text",
+            "reward": {
+                "channelId": "11148817",
+                "cost": 1,
+                "emoteId": "",
+                "emoteName": "",
+                "id": "ffzge-title",
+                "image": {
+                    "1x": "https://chatterino.com/reward1x.png",
+                    "2x": "https://chatterino.com/reward2x.png",
+                    "3x": "https://chatterino.com/reward4x.png"
+                },
+                "isBits": false,
+                "isUserInputRequired": true,
+                "title": "Giant FFZ:GE",
+                "user": {
+                    "displayName": "",
+                    "id": "",
+                    "login": ""
+                }
+            },
+            "searchText": "nerixyz  nerixyz: 7TVEmote TwitchGE more text Redeemed Giant FFZ:GE 1",
+            "timeoutUser": "",
+            "timestamp": "2024-09-18T12:35:38Z",
+            "twitchBadgeInfos": {
+                "subscriber": "27"
+            },
+            "twitchBadges": [
+                "subscriber"
+            ],
+            "userID": "129546453",
+            "usernameColor": "#ffff0000"
+        }
+    ]
+}
