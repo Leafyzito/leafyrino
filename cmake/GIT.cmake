@@ -11,6 +11,10 @@
 # GIT_MODIFIED
 #   If the git binary is found and the git work tree is intact, GIT_MODIFIED is worked out by checking if output of `git status --porcelain -z` command is empty
 #   The value of GIT_MODIFIED cannot be overriden
+# GIT_BUILD_NUMBER
+#   If the git binary is found and the git work tree is intact and not shallow, GIT_BUILD_NUMBER is worked out using the `git rev-list --count HEAD` command
+#   It is 0 if the build number is unknown
+#   The value of GIT_BUILD_NUMBER can be overriden by defining the GIT_BUILD_NUMBER environment variable
 
 find_package(Git)
 
@@ -18,6 +22,7 @@ set(GIT_HASH "GIT-REPOSITORY-NOT-FOUND")
 set(GIT_COMMIT "GIT-REPOSITORY-NOT-FOUND")
 set(GIT_RELEASE "${PROJECT_VERSION}")
 set(GIT_MODIFIED 0)
+set(GIT_BUILD_NUMBER 0)
 
 if(DEFINED ENV{CHATTERINO_SKIP_GIT_GEN})
     return()
@@ -60,6 +65,22 @@ if(GIT_EXECUTABLE)
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
 
+        # a shallow clone only counts the fetched commits
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} rev-parse --is-shallow-repository
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_IS_SHALLOW
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if(GIT_IS_SHALLOW STREQUAL "false")
+            execute_process(
+                COMMAND ${GIT_EXECUTABLE} rev-list --count HEAD
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                OUTPUT_VARIABLE GIT_BUILD_NUMBER
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+        endif()
+
         execute_process(
             COMMAND ${GIT_EXECUTABLE} status --porcelain -z
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -90,4 +111,12 @@ if(DEFINED ENV{GIT_RELEASE})
     set(GIT_RELEASE "$ENV{GIT_RELEASE}")
 endif()
 
-message(STATUS "Injected git values: ${GIT_COMMIT} (${GIT_RELEASE}) modified: ${GIT_MODIFIED}")
+if(DEFINED ENV{GIT_BUILD_NUMBER})
+    set(GIT_BUILD_NUMBER "$ENV{GIT_BUILD_NUMBER}")
+endif()
+
+if(NOT GIT_BUILD_NUMBER MATCHES "^[0-9]+$")
+    set(GIT_BUILD_NUMBER 0)
+endif()
+
+message(STATUS "Injected git values: ${GIT_COMMIT} (${GIT_RELEASE}) modified: ${GIT_MODIFIED} build: ${GIT_BUILD_NUMBER}")

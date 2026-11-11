@@ -5,7 +5,6 @@
 #include "widgets/dialogs/UpdateDialog.hpp"
 
 #include "Application.hpp"
-#include "common/Version.hpp"
 #include "singletons/Updates.hpp"
 #include "util/LayoutCreator.hpp"
 #include "widgets/Label.hpp"
@@ -32,9 +31,10 @@ UpdateDialog::UpdateDialog()
     auto buttons = layout.emplace<QDialogButtonBox>();
 
     const auto *installText = [] {
-        if (Version::instance().isNightly())
+        if (getApp()->getUpdates().installMethod() ==
+            Updates::InstallMethod::Manual)
         {
-            return "Yes";
+            return "Download";
         }
 
         return "Install";
@@ -65,7 +65,8 @@ UpdateDialog::UpdateDialog()
 
 void UpdateDialog::updateStatusChanged(Updates::Status status)
 {
-    this->ui_.installButton->setVisible(status == Updates::UpdateAvailable);
+    // also offer to retry after a failed install
+    this->ui_.installButton->setVisible(getApp()->getUpdates().canInstall());
 
     switch (status)
     {
@@ -91,16 +92,15 @@ void UpdateDialog::updateStatusChanged(Updates::Status status)
         }
         break;
 
-        case Updates::WriteFileFailed: {
-            this->ui_.label->setText("Failed to write update to disk.");
+        case Updates::VerifyFailed: {
+            this->ui_.label->setText(
+                "The downloaded update is damaged or outdated. Try again in a "
+                "few minutes.");
         }
         break;
 
-        case Updates::MissingPortableUpdater: {
-            this->ui_.label->setText(
-                "The portable updater (expected in " %
-                Updates::portableUpdaterPath(getApp()->getPaths()) %
-                ") was not found.");
+        case Updates::WriteFileFailed: {
+            this->ui_.label->setText("Failed to write update to disk.");
         }
         break;
 

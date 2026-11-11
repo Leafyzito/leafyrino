@@ -4,17 +4,18 @@
 
 #pragma once
 
-#include <pajlada/signals/scoped-connection.hpp>
 #include <pajlada/signals/signal.hpp>
 #include <QString>
 
 #include <memory>
-#include <vector>
+#include <optional>
+
+class QJsonObject;
+class QTimer;
 
 namespace chatterino {
 
 class Paths;
-class Settings;
 class Modes;
 
 class Updates
@@ -23,7 +24,13 @@ class Updates
     const Modes &modes;
 
 public:
-    Updates(const Modes &modes_, const Paths &paths_, Settings &settings);
+    Updates(const Modes &modes_, const Paths &paths_);
+    ~Updates();
+
+    Updates(const Updates &) = delete;
+    Updates &operator=(const Updates &) = delete;
+    Updates(Updates &&) = delete;
+    Updates &operator=(Updates &&) = delete;
 
     enum Status {
         None,
@@ -33,26 +40,57 @@ public:
         SearchFailed,
         Downloading,
         DownloadFailed,
+        VerifyFailed,
         WriteFileFailed,
-        MissingPortableUpdater,
         RunUpdaterFailed,
     };
 
-    static bool isDowngradeOf(const QString &online, const QString &current);
+    /// How an update gets installed on this system
+    enum class InstallMethod {
+        /// Download the Windows installer and run it silently
+        Installer,
+        /// Download the portable zip and extract it with the portable updater
+        Portable,
+        /// Open the release page so the user can download the update
+        Manual,
+    };
+
+    struct Download {
+        QString url;
+        QString sha256;
+    };
+
+    /// The contents of version.json on the nightly release
+    struct BuildInfo {
+        int build = 0;
+        QString commit;
+        std::optional<Download> installer;
+        std::optional<Download> portable;
+    };
+
+    /// Parses version.json. `arch` picks the Windows downloads ("x86-64" or
+    /// "arm64"). Returns nothing if the build number is missing.
+    static std::optional<BuildInfo> parseBuildInfo(const QJsonObject &root,
+                                                   const QString &arch);
 
     void deleteOldFiles();
 
+    /// Checks for updates now and then every few hours
+    void startPeriodicChecks();
     void checkForUpdates();
-    const QString &getCurrentVersion() const;
-    const QString &getOnlineVersion() const;
+
+    int getCurrentBuild() const;
+    int getOnlineBuild() const;
+    InstallMethod installMethod() const;
     void installUpdates();
     Status getStatus() const;
 
     static QString portableUpdaterPath(const Paths &paths);
+    static const QString &releasePageUrl();
 
     bool shouldShowUpdateButton() const;
     bool isError() const;
-    bool isDowngrade() const;
+    bool canInstall() const;
 
     /// Generates the string that the update dialog will show.
     QString buildUpdateAvailableText() const;
@@ -60,19 +98,20 @@ public:
     pajlada::Signals::Signal<Status> statusUpdated;
 
 private:
-    QString currentVersion_;
-    QString onlineVersion_;
+    int currentBuild_;
+    std::optional<BuildInfo> online_;
     Status status_ = None;
-    bool isDowngrade_{};
 
-    QString updateExe_;
-    QString updatePortable_;
-    QString updateGuideLink_;
+    std::unique_ptr<QTimer> checkTimer_;
 
-    void setStatus_(Status status);
+    bool checksEnabled() const;
+    bool hasUpdate() const;
+    void handleBuildInfo(BuildInfo info);
+    void handleSearchFailed();
+    void downloadAndRun(const Download &download, InstallMethod method);
+    void runDownloaded(const QString &filePath, InstallMethod method);
 
-    std::vector<std::unique_ptr<pajlada::Signals::ScopedConnection>>
-        managedConnections;
+    void setStatus_(Status status, bool force = false);
 };
 
 }  // namespace chatterino

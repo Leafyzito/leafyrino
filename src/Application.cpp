@@ -267,24 +267,25 @@ void Application::initialize(Settings &settings, const Paths &paths)
     assert(!this->initialized);
 
     // Show changelog
-    if (!this->args_.isFramelessEmbed &&
-        getSettings()->currentVersion.getValue() != "" &&
-        getSettings()->currentVersion.getValue() != CHATTERINO_VERSION)
+    const auto currentBuild = Version::instance().buildNumber();
+    if (!this->args_.isFramelessEmbed && currentBuild > 0)
     {
-        auto *box = new QMessageBox(QMessageBox::Information, "Leafyrino",
-                                    "Show changelog?",
-                                    QMessageBox::Yes | QMessageBox::No);
-        box->setAttribute(Qt::WA_DeleteOnClose);
-        if (box->exec() == QMessageBox::Yes)
+        const auto lastSeenBuild = getSettings()->lastSeenBuild.getValue();
+        if (lastSeenBuild > 0 && lastSeenBuild < currentBuild)
         {
-            QDesktopServices::openUrl(
-                QUrl("https://www.chatterino.com/changelog"));
+            auto *box = new QMessageBox(
+                QMessageBox::Information, "Leafyrino",
+                QString("Leafyrino was updated to build %1. Show changelog?")
+                    .arg(currentBuild),
+                QMessageBox::Yes | QMessageBox::No);
+            box->setAttribute(Qt::WA_DeleteOnClose);
+            if (box->exec() == QMessageBox::Yes)
+            {
+                QDesktopServices::openUrl(QUrl(Updates::releasePageUrl()));
+            }
         }
-    }
 
-    if (!this->args_.isFramelessEmbed)
-    {
-        getSettings()->currentVersion.setValue(CHATTERINO_VERSION);
+        getSettings()->lastSeenBuild.setValue(currentBuild);
     }
     this->emotes->initialize();
 

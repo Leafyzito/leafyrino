@@ -846,7 +846,6 @@ public:
     BoolSetting watchingTabLiveSound = {"/misc/watchingTabLiveSound", false};
     BoolSetting useBotLimitsMessage = {"/misc/botLimitsMessage", false};
     BoolSetting useBotLimitsJoin = {"/misc/botLimitsJoin", false};
-    BoolSetting betaUpdates = {"/misc/beta", false};
     BoolSetting abnormalNonceDetection = {"/misc/abnormalNonceDetection",
                                           false};
     BoolSetting normalNonceDetection = {"/misc/normalNonceDetection", false};
@@ -861,7 +860,8 @@ public:
     BoolSetting useKeyring = {"/misc/useKeyring", true};
 #endif
 
-    QStringSetting currentVersion = {"/misc/currentVersion", ""};
+    /// Used to offer the changelog after an update
+    IntSetting lastSeenBuild = {"/leafyrino/lastSeenBuild", 0};
     IntSetting overlayKnowledgeLevel = {"/misc/overlayKnowledgeLevel", 0};
 
     BoolSetting loadTwitchMessageHistoryOnConnect = {

@@ -18,7 +18,7 @@
 #include "singletons/WindowManager.hpp"
 #include "util/RapidJsonSerializeQSize.hpp"
 #include "widgets/AccountSwitchPopup.hpp"
-// #include "widgets/buttons/InitMoltorinoUpdateButton.hpp"
+#include "widgets/buttons/InitUpdateButton.hpp"
 #include "widgets/buttons/LabelButton.hpp"
 #include "widgets/buttons/PixmapButton.hpp"
 #include "widgets/buttons/SvgButton.hpp"
@@ -248,13 +248,13 @@ void Window::addCustomTitlebarButtons()
         });
     settings->setPadding({3, 3});
 
-    // auto *update = this->addTitleBarButton<SvgButton>(
-    //     [] {}, SvgButton::Src{
-    //                .dark = ":/buttons/update-darkMode.svg",
-    //                .light = ":/buttons/update-lightMode.svg",
-    //            });
-    //
-    // initMoltorinoUpdateButton(*update, [] {}, this->signalHolder_);
+    auto *update = this->addTitleBarButton<SvgButton>(
+        [] {}, SvgButton::Src{
+                   .dark = ":/buttons/update-darkMode.svg",
+                   .light = ":/buttons/update-lightMode.svg",
+               });
+
+    initUpdateButton(*update, [] {}, this->signalHolder_);
 
     this->userLabel_ = this->addTitleBarLabel([this] {
         getApp()->getWindows()->showAccountSelectPopup(

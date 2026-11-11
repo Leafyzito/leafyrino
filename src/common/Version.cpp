@@ -18,6 +18,7 @@ using namespace Qt::Literals;
 Version::Version()
     : version_(CHATTERINO_VERSION)
     , commitHash_(QStringLiteral(CHATTERINO_GIT_HASH))
+    , buildNumber_(CHATTERINO_BUILD_NUMBER)
     , isModified_(CHATTERINO_GIT_MODIFIED == 1)
     , dateOfBuild_(QStringLiteral(CHATTERINO_CMAKE_GEN_DATE))
     , isNightly_(CHATTERINO_NIGHTLY_BUILD == 1)
@@ -28,7 +29,14 @@ Version::Version()
         this->fullVersion_ += "Nightly ";
     }
 
-    this->fullVersion_ += this->version_;
+    if (this->buildNumber_ > 0)
+    {
+        this->fullVersion_ += "build " + QString::number(this->buildNumber_);
+    }
+    else
+    {
+        this->fullVersion_ += this->version_;
+    }
 
 #ifndef NDEBUG
     this->fullVersion_ += " DEBUG";
@@ -69,6 +77,11 @@ const QString &Version::fullVersion() const
 const QString &Version::commitHash() const
 {
     return this->commitHash_;
+}
+
+int Version::buildNumber() const
+{
+    return this->buildNumber_;
 }
 
 const bool &Version::isModified() const
@@ -161,6 +174,11 @@ void Version::generateBuildString()
     }
 
     s += " with " + this->buildTags().join(", ");
+
+    if (this->buildNumber_ > 0)
+    {
+        s += ", based on Chatterino " + this->version_;
+    }
 
     this->buildString_ = s;
 }

@@ -7,7 +7,6 @@
 #include "Application.hpp"
 #include "common/Literals.hpp"  // IWYU pragma: keep
 #include "common/Modes.hpp"
-#include "common/Version.hpp"
 #include "controllers/hotkeys/HotkeyCategory.hpp"
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "providers/twitch/TwitchChannel.hpp"
@@ -921,24 +920,6 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         });
 
     layout.addNavigationSpacing();
-    layout.addTitle("Beta");
-    if (Version::instance().isSupportedOS())
-    {
-        layout.addDescription(
-            "You can receive updates earlier by ticking the box below. Report "
-            "issues <a href='https://chatterino.com/link/issues'>here</a>.");
-
-        SettingWidget::checkbox("Receive beta updates", s.betaUpdates)
-            ->addTo(layout);
-    }
-    else
-    {
-        layout.addDescription(
-            "Your operating system is not officially supplied with builds. For "
-            "updates, please rebuild Chatterino from sources. Report "
-            "issues <a href='https://chatterino.com/link/issues'>here</a>.");
-    }
-
     layout.addTitle("Browser Integration");
 #ifdef Q_OS_WIN
     layout.addDescription(
