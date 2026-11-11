@@ -266,27 +266,27 @@ void Application::initialize(Settings &settings, const Paths &paths)
 {
     assert(!this->initialized);
 
-    // Show changelog
-    const auto currentBuild = Version::instance().buildNumber();
-    if (!this->args_.isFramelessEmbed && currentBuild > 0)
-    {
-        const auto lastSeenBuild = getSettings()->lastSeenBuild.getValue();
-        if (lastSeenBuild > 0 && lastSeenBuild < currentBuild)
-        {
-            auto *box = new QMessageBox(
-                QMessageBox::Information, "Leafyrino",
-                QString("Leafyrino was updated to build %1. Show changelog?")
-                    .arg(currentBuild),
-                QMessageBox::Yes | QMessageBox::No);
-            box->setAttribute(Qt::WA_DeleteOnClose);
-            if (box->exec() == QMessageBox::Yes)
-            {
-                QDesktopServices::openUrl(QUrl(Updates::releasePageUrl()));
-            }
-        }
-
-        getSettings()->lastSeenBuild.setValue(currentBuild);
-    }
+    // Show changelog (disabled, a popup after every nightly is too much)
+    // const auto currentBuild = Version::instance().buildNumber();
+    // if (!this->args_.isFramelessEmbed && currentBuild > 0)
+    // {
+    //     const auto lastSeenBuild = getSettings()->lastSeenBuild.getValue();
+    //     if (lastSeenBuild > 0 && lastSeenBuild < currentBuild)
+    //     {
+    //         auto *box = new QMessageBox(
+    //             QMessageBox::Information, "Leafyrino",
+    //             QString("Leafyrino was updated to build %1. Show changelog?")
+    //                 .arg(currentBuild),
+    //             QMessageBox::Yes | QMessageBox::No);
+    //         box->setAttribute(Qt::WA_DeleteOnClose);
+    //         if (box->exec() == QMessageBox::Yes)
+    //         {
+    //             QDesktopServices::openUrl(QUrl(Updates::releasePageUrl()));
+    //         }
+    //     }
+    //
+    //     getSettings()->lastSeenBuild.setValue(currentBuild);
+    // }
     this->emotes->initialize();
 
     this->accounts->load();
