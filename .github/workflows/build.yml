@@ -189,17 +189,91 @@ jobs:
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
       options: --privileged
+    env:
+      FLATPAK_APP_ID: com.leafyzito.leafyrino
+      FLATPAK_REPO_URL: https://leafyzito.github.io/leafyrino/
+      FLATPAK_RUNTIME_REPO: https://dl.flathub.org/repo/flathub.flatpakrepo
+      # nightlies are signed and published to the Flatpak repo on GitHub Pages
+      PUBLISH_FLATPAK_REPO: ${{ github.event_name == 'push' && github.ref == 'refs/heads/leafyrino' }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           submodules: recursive
           fetch-depth: 0 # tag access
           persist-credentials: false
+
+      - name: Import signing key
+        id: gpg
+        if: env.PUBLISH_FLATPAK_REPO == 'true'
+        run: |
+          if [ -z "$FLATPAK_GPG_KEY" ]; then
+            echo "::error::The FLATPAK_GPG_KEY secret is missing"
+            exit 1
+          fi
+          gpg --batch --import <<< "$FLATPAK_GPG_KEY"
+          fingerprint=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/ { print $10; exit }')
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+        env:
+          FLATPAK_GPG_KEY: ${{ secrets.FLATPAK_GPG_KEY }}
+        shell: bash
+
       - uses: flatpak/flatpak-github-actions/flatpak-builder@79327416609af08178ad73b352877e51450790b3 # v6.8
         with:
-          bundle: chatterino.flatpak
           manifest-path: .CI/com.chatterino.chatterino.yml
           cache-key: flatpak-builder-${{ github.sha }}
+          gpg-sign: ${{ steps.gpg.outputs.fingerprint }}
+          # bundled below, so the bundle can point at the Flatpak repo
+          build-bundle: false
+
+      - name: Bundle
+        run: |
+          args=(--arch=x86_64 --runtime-repo="$FLATPAK_RUNTIME_REPO")
+          if [ -n "$GPG_FINGERPRINT" ]; then
+            # lets `flatpak update` update installs made from the bundle
+            gpg --export "$GPG_FINGERPRINT" > leafyrino.gpg
+            args+=(--repo-url="$FLATPAK_REPO_URL" --gpg-keys=leafyrino.gpg)
+          fi
+          flatpak build-bundle "${args[@]}" repo leafyrino.flatpak "$FLATPAK_APP_ID" master
+        env:
+          GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
+        shell: bash
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Leafyrino-x86_64.flatpak
+          path: leafyrino.flatpak
+
+      - name: Prepare Flatpak repo
+        if: env.PUBLISH_FLATPAK_REPO == 'true'
+        run: |
+          flatpak build-update-repo --gpg-sign="$GPG_FINGERPRINT" --title=Leafyrino --default-branch=master repo
+          key=$(base64 -w0 leafyrino.gpg)
+          cat > repo/leafyrino.flatpakref <<EOF
+          [Flatpak Ref]
+          Name=$FLATPAK_APP_ID
+          Branch=master
+          Title=Leafyrino
+          Url=$FLATPAK_REPO_URL
+          SuggestRemoteName=leafyrino
+          RuntimeRepo=$FLATPAK_RUNTIME_REPO
+          IsRuntime=false
+          GPGKey=$key
+          EOF
+          cat > repo/leafyrino.flatpakrepo <<EOF
+          [Flatpak Repo]
+          Title=Leafyrino
+          Url=$FLATPAK_REPO_URL
+          GPGKey=$key
+          EOF
+        env:
+          GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
+        shell: bash
+
+      # deployed by deploy-flatpak-repo once the release is out
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: env.PUBLISH_FLATPAK_REPO == 'true'
+        with:
+          path: repo/
 
   # MARK: Main build
   build:
@@ -516,6 +590,8 @@ jobs:
         name: Download artifacts
         with:
           path: release-artifacts/
+          # the Flatpak repo goes to GitHub Pages, not the release
+          pattern: "!github-pages"
           merge-multiple: true
 
       - name: Rename artifacts
@@ -561,6 +637,21 @@ jobs:
           git tag -f nightly-build
           git push -f origin nightly-build
         shell: bash
+
+  # MARK: Flatpak repo
+  deploy-flatpak-repo:
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/leafyrino')
+    permissions:
+      pages: write # deploy the repo
+      id-token: write # required by deploy-pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        id: deployment
 
   # MARK: Collect
   collect:
