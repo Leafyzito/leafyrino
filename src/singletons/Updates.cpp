@@ -11,111 +11,171 @@
 #include "common/QLogging.hpp"
 #include "common/Version.hpp"
 #include "singletons/Paths.hpp"
-#include "singletons/Settings.hpp"
 #include "util/CombinePath.hpp"
 #include "util/PostToThread.hpp"
 
 #include <QApplication>
+#include <QCryptographicHash>
 #include <QDesktopServices>
-#include <QMessageBox>
+#include <QDir>
+#include <QFile>
+#include <QJsonObject>
 #include <QProcess>
 #include <QRegularExpression>
+#include <QSettings>
 #include <QStringBuilder>
 #include <QtConcurrent>
-#include <semver/semver.hpp>
+#include <QTimer>
+#include <QUrl>
+
+#ifdef Q_OS_WIN
+#    include <Windows.h>
+#endif
+
+#include <chrono>
 
 namespace {
 
 using namespace chatterino;
 using namespace literals;
 
-QString currentBranch()
-{
-    return getSettings()->betaUpdates ? "beta" : "stable";
-}
+// published by .github/workflows/create-installer.yml
+const QString VERSION_INFO_URL =
+    u"https://github.com/leafyzito/leafyrino/releases/download/nightly-build/version.json"_s;
+const QString RELEASE_PAGE_URL =
+    u"https://github.com/leafyzito/leafyrino/releases/tag/nightly-build"_s;
 
-#if defined(Q_OS_WIN)
-const QString CHATTERINO_OS = u"win"_s;
-#elif defined(Q_OS_MACOS)
-const QString CHATTERINO_OS = u"macos"_s;
-#elif defined(Q_OS_LINUX)
-const QString CHATTERINO_OS = u"linux"_s;
-#elif defined(Q_OS_FREEBSD)
-const QString CHATTERINO_OS = u"freebsd"_s;
+constexpr auto CHECK_INTERVAL = std::chrono::hours(4);
+
+#ifdef Q_PROCESSOR_ARM_64
+const QString CURRENT_ARCH = u"arm64"_s;
 #else
-const QString CHATTERINO_OS = u"unknown"_s;
+const QString CURRENT_ARCH = u"x86-64"_s;
 #endif
 
-QJsonValue getForArchitecture(const QJsonObject &obj, const QString &key)
+std::optional<Updates::Download> parseDownload(const QJsonValue &value)
 {
-    auto val = obj[key];
+    static const QRegularExpression sha256Regex(u"^[0-9a-f]{64}$"_s);
 
-#ifdef Q_PROCESSOR_ARM
-    QString armKey = key % u"_arm";
-    if (obj[armKey].isString())
-    {
-        val = obj[armKey];
-    }
-#elif defined(Q_PROCESSOR_X86)
-    QString x86Key = key % u"_x86";
-    if (obj[x86Key].isString())
-    {
-        val = obj[x86Key];
-    }
-#endif
+    const auto obj = value.toObject();
+    Updates::Download download{
+        .url = obj["url"_L1].toString(),
+        .sha256 = obj["sha256"_L1].toString().toLower(),
+    };
 
-    return val;
+    const QUrl url(download.url);
+    if (!url.isValid() || url.scheme() != u"https"_s ||
+        !sha256Regex.match(download.sha256).hasMatch())
+    {
+        return std::nullopt;
+    }
+
+    return download;
 }
+
+#ifdef Q_OS_WIN
+
+// keep in sync with the AppId in .CI/chatterino-installer.iss
+const QString PER_USER_UNINSTALL_KEY =
+    uR"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall\{F5FE6614-04D4-4D32-8600-0ABA0AC113A4}_is1)"_s;
+
+/// Whether this copy was installed by the installer (and not unpacked from a zip)
+bool isInstalled()
+{
+    return !QDir(QCoreApplication::applicationDirPath())
+                .entryList({u"unins*.exe"_s}, QDir::Files)
+                .isEmpty();
+}
+
+/// Whether the installer was run for the current user only, so updating
+/// doesn't need admin rights
+bool isPerUserInstall()
+{
+    QSettings key(PER_USER_UNINSTALL_KEY, QSettings::NativeFormat);
+    const auto location = key.value(u"InstallLocation"_s).toString();
+    return !location.isEmpty() &&
+           QDir(location) == QDir(QCoreApplication::applicationDirPath());
+}
+
+bool startInstaller(const QString &installerPath)
+{
+    QProcess process;
+    process.setProgram(installerPath);
+    process.setArguments({
+        u"/SILENT"_s,
+        u"/SUPPRESSMSGBOXES"_s,
+        u"/NORESTART"_s,
+        u"/SP-"_s,
+        // we exit right away, but close us if we're still around. The
+        // installer starts the new version once it's done.
+        u"/CLOSEAPPLICATIONS"_s,
+        u"/NORESTARTAPPLICATIONS"_s,
+        isPerUserInstall() ? u"/CURRENTUSER"_s : u"/ALLUSERS"_s,
+        u"/DIR="_s %
+            QDir::toNativeSeparators(QCoreApplication::applicationDirPath()),
+    });
+    return process.startDetached();
+}
+
+bool startPortableUpdater(const QString &updaterPath, const QString &zipPath)
+{
+    // The portable updater can only restart "chatterino.exe", so cmd runs it
+    // and starts us again once it succeeded. It waits for us to exit on its own.
+    const auto command = uR"(/d /s /c ""%1" "%2" && start "" "%3"")"_s.arg(
+        QDir::toNativeSeparators(updaterPath),
+        QDir::toNativeSeparators(zipPath),
+        QDir::toNativeSeparators(QCoreApplication::applicationFilePath()));
+
+    auto cmd = qEnvironmentVariable("ComSpec");
+    if (cmd.isEmpty())
+    {
+        cmd = u"cmd.exe"_s;
+    }
+
+    QProcess process;
+    process.setProgram(cmd);
+    process.setNativeArguments(command);
+    process.setWorkingDirectory(QCoreApplication::applicationDirPath());
+    process.setCreateProcessArgumentsModifier(
+        [](QProcess::CreateProcessArguments *args) {
+            args->flags |= CREATE_NO_WINDOW;
+        });
+    return process.startDetached();
+}
+
+#endif
 
 }  // namespace
 
 namespace chatterino {
 
-Updates::Updates(const Modes &modes_, const Paths &paths_, Settings &settings)
+Updates::Updates(const Modes &modes_, const Paths &paths_)
     : paths(paths_)
     , modes(modes_)
-    , currentVersion_(CHATTERINO_VERSION)
-    , updateGuideLink_("https://chatterino.com")
+    , currentBuild_(Version::instance().buildNumber())
 {
     qCDebug(chatterinoUpdate) << "init UpdateManager";
-
-    settings.betaUpdates.connect(
-        [this] {
-            this->checkForUpdates();
-        },
-        this->managedConnections, false);
 }
 
-bool Updates::isDowngradeOf(const QString &online, const QString &current)
+Updates::~Updates() = default;
+
+std::optional<Updates::BuildInfo> Updates::parseBuildInfo(
+    const QJsonObject &root, const QString &arch)
 {
-    semver::version onlineVersion;
-    if (!onlineVersion.from_string_noexcept(online.toStdString()))
+    BuildInfo info{
+        .build = root["build"_L1].toInt(),
+        .commit = root["commit"_L1].toString(),
+    };
+    if (info.build <= 0)
     {
-        qCWarning(chatterinoUpdate) << "Unable to parse online version"
-                                    << online << "into a proper semver string";
-        return false;
+        return std::nullopt;
     }
 
-    semver::version currentVersion;
-    if (!currentVersion.from_string_noexcept(current.toStdString()))
-    {
-        qCWarning(chatterinoUpdate) << "Unable to parse current version"
-                                    << current << "into a proper semver string";
-        return false;
-    }
+    const auto windows = root["windows"_L1].toObject().value(arch).toObject();
+    info.installer = parseDownload(windows["installer"_L1]);
+    info.portable = parseDownload(windows["portable"_L1]);
 
-    if (onlineVersion.major == 7)
-    {
-        onlineVersion.major = 2;
-    }
-    else if (currentVersion.major == 7 && onlineVersion.major == 2)
-    {
-        currentVersion = {2, currentVersion.minor, currentVersion.patch,
-                          currentVersion.prerelease_type,
-                          currentVersion.prerelease_number};
-    }
-
-    return onlineVersion < currentVersion;
+    return info;
 }
 
 void Updates::deleteOldFiles()
@@ -138,343 +198,253 @@ void Updates::deleteOldFiles()
     });
 }
 
-const QString &Updates::getCurrentVersion() const
+bool Updates::checksEnabled() const
 {
-    return this->currentVersion_;
-}
-
-const QString &Updates::getOnlineVersion() const
-{
-    return this->onlineVersion_;
-}
-
-void Updates::installUpdates()
-{
-    if (this->status_ != UpdateAvailable)
-    {
-        assert(false);
-        return;
-    }
-
-    if (Version::instance().isNightly())
-    {
-        // Since Nightly builds can be installed in many different ways, we ask the user to download the update manually.
-        QDesktopServices::openUrl(
-            QUrl("https://github.com/leafyzito/leafyrino/releases"));
-        return;
-    }
-
-#ifdef Q_OS_MACOS
-    QMessageBox *box = new QMessageBox(
-        QMessageBox::Information, "Chatterino Update",
-        "A link will open in your browser. Download and install to update.");
-    box->setAttribute(Qt::WA_DeleteOnClose);
-    box->open();
-    QDesktopServices::openUrl(this->updateExe_);
-#elif defined Q_OS_LINUX
-    QMessageBox *box =
-        new QMessageBox(QMessageBox::Information, "Chatterino Update",
-                        "Automatic updates are currently not available on "
-                        "Linux. Please redownload the app to update.");
-    box->setAttribute(Qt::WA_DeleteOnClose);
-    box->open();
-    QDesktopServices::openUrl(this->updateGuideLink_);
-#elif defined Q_OS_WIN
-    if (this->modes.isPortable)
-    {
-        QMessageBox *box =
-            new QMessageBox(QMessageBox::Information, "Chatterino Update",
-                            "Chatterino is downloading the update "
-                            "in the background and will run the "
-                            "updater once it is finished.");
-        box->setAttribute(Qt::WA_DeleteOnClose);
-        box->show();
-
-        NetworkRequest(this->updatePortable_)
-            .timeout(600000)
-            .followRedirects(true)
-            .onError([this](NetworkResult) {
-                this->setStatus_(DownloadFailed);
-
-                postToThread([] {
-                    QMessageBox *box = new QMessageBox(
-                        QMessageBox::Information, "Chatterino Update",
-                        "Failed while trying to download the update.");
-                    box->setAttribute(Qt::WA_DeleteOnClose);
-                    box->show();
-                    box->raise();
-                });
-            })
-            .onSuccess([this](auto result) {
-                if (result.status() != 200)
-                {
-                    auto *box = new QMessageBox(
-                        QMessageBox::Information, "Chatterino Update",
-                        QStringLiteral("The update couldn't be downloaded "
-                                       "(Error: %1).")
-                            .arg(result.formatError()));
-                    box->setAttribute(Qt::WA_DeleteOnClose);
-                    box->exec();
-                    return;
-                }
-
-                QByteArray object = result.getData();
-                auto filename =
-                    combinePath(this->paths.miscDirectory, "update.zip");
-
-                QFile file(filename);
-                if (!file.open(QIODevice::Truncate | QIODevice::WriteOnly))
-                {
-                    qCWarning(chatterinoUpdate)
-                        << "Failed to save update.zip" << file.errorString();
-                    this->setStatus_(WriteFileFailed);
-                    return;
-                }
-
-                if (file.write(object) == -1)
-                {
-                    this->setStatus_(WriteFileFailed);
-                    return;
-                }
-                file.flush();
-                file.close();
-
-                auto updaterPath = Updates::portableUpdaterPath(this->paths);
-                if (!QFile::exists(updaterPath))
-                {
-                    this->setStatus_(MissingPortableUpdater);
-                    return;
-                }
-                bool ok =
-                    QProcess::startDetached(updaterPath, {filename, "restart"});
-                if (!ok)
-                {
-                    this->setStatus_(RunUpdaterFailed);
-                    return;
-                }
-
-                QApplication::exit(0);
-            })
-            .execute();
-        this->setStatus_(Downloading);
-    }
-    else
-    {
-        QMessageBox *box =
-            new QMessageBox(QMessageBox::Information, "Chatterino Update",
-                            "Chatterino is downloading the update "
-                            "in the background and will run the "
-                            "updater once it is finished.");
-        box->setAttribute(Qt::WA_DeleteOnClose);
-        box->show();
-
-        NetworkRequest(this->updateExe_)
-            .timeout(600000)
-            .followRedirects(true)
-            .onError([this](NetworkResult) {
-                this->setStatus_(DownloadFailed);
-
-                QMessageBox *box = new QMessageBox(
-                    QMessageBox::Information, "Chatterino Update",
-                    "Failed to download the update. \n\nTry manually "
-                    "downloading the update.");
-                box->setAttribute(Qt::WA_DeleteOnClose);
-                box->exec();
-            })
-            .onSuccess([this](auto result) {
-                if (result.status() != 200)
-                {
-                    auto *box = new QMessageBox(
-                        QMessageBox::Information, "Chatterino Update",
-                        QStringLiteral("The update couldn't be downloaded "
-                                       "(Error: %1).")
-                            .arg(result.formatError()));
-                    box->setAttribute(Qt::WA_DeleteOnClose);
-                    box->exec();
-                    return;
-                }
-
-                QByteArray object = result.getData();
-                auto filePath =
-                    combinePath(this->paths.miscDirectory, "Update.exe");
-
-                QFile file(filePath);
-
-                std::ignore =
-                    file.open(QIODevice::Truncate | QIODevice::WriteOnly);
-
-                if (file.write(object) == -1)
-                {
-                    this->setStatus_(WriteFileFailed);
-                    QMessageBox *box = new QMessageBox(
-                        QMessageBox::Information, "Chatterino Update",
-                        "Failed to save the update file. This could be due to "
-                        "window settings or antivirus software.\n\nTry "
-                        "manually "
-                        "downloading the update.");
-                    box->setAttribute(Qt::WA_DeleteOnClose);
-                    box->exec();
-
-                    QDesktopServices::openUrl(this->updateExe_);
-                    return;
-                }
-                file.flush();
-                file.close();
-
-                if (QProcess::startDetached(filePath, {}))
-                {
-                    QApplication::exit(0);
-                }
-                else
-                {
-                    QMessageBox *box = new QMessageBox(
-                        QMessageBox::Information, "Chatterino Update",
-                        "Failed to execute update binary. This could be due to "
-                        "window "
-                        "settings or antivirus software.\n\nTry manually "
-                        "downloading "
-                        "the update.");
-                    box->setAttribute(Qt::WA_DeleteOnClose);
-                    box->exec();
-
-                    QDesktopServices::openUrl(this->updateExe_);
-                }
-            })
-            .execute();
-        this->setStatus_(Downloading);
-    }
+#ifdef CHATTERINO_DISABLE_UPDATER
+    return false;
+#else
+    const auto &version = Version::instance();
+    return version.isSupportedOS() && !version.isFlatpak() &&
+           !this->modes.isExternallyPackaged && this->currentBuild_ > 0;
 #endif
+}
+
+void Updates::startPeriodicChecks()
+{
+    if (!this->checksEnabled())
+    {
+        qCDebug(chatterinoUpdate)
+            << "Update checks are disabled for this build (build number:"
+            << this->currentBuild_ << ")";
+        return;
+    }
+
+    this->checkForUpdates();
+
+    if (!this->checkTimer_)
+    {
+        this->checkTimer_ = std::make_unique<QTimer>();
+        QObject::connect(this->checkTimer_.get(), &QTimer::timeout, [this] {
+            this->checkForUpdates();
+        });
+        this->checkTimer_->start(CHECK_INTERVAL);
+    }
 }
 
 void Updates::checkForUpdates()
 {
-#ifndef CHATTERINO_DISABLE_UPDATER
-    auto version = Version::instance();
+    if (!this->checksEnabled())
+    {
+        return;
+    }
 
-    if (!version.isSupportedOS())
+    // don't get in the way of an update that's being downloaded
+    if (this->status_ == Downloading)
+    {
+        return;
+    }
+
+    // keep offering an update we already know about while we look for a newer one
+    if (!this->hasUpdate())
+    {
+        this->setStatus_(Searching);
+    }
+
+    qCDebug(chatterinoUpdate) << "Requesting updates from" << VERSION_INFO_URL;
+    NetworkRequest(VERSION_INFO_URL)
+        .timeout(60000)
+        .followRedirects(true)
+        .onSuccess([this](const NetworkResult &result) {
+            auto info =
+                Updates::parseBuildInfo(result.parseJson(), CURRENT_ARCH);
+            if (!info)
+            {
+                qCWarning(chatterinoUpdate)
+                    << "Invalid version info:" << result.getData();
+                this->handleSearchFailed();
+                return;
+            }
+            this->handleBuildInfo(std::move(*info));
+        })
+        .onError([this](const NetworkResult &result) {
+            qCWarning(chatterinoUpdate)
+                << "Failed to check for updates:" << result.formatError();
+            this->handleSearchFailed();
+        })
+        .execute();
+}
+
+void Updates::handleBuildInfo(BuildInfo info)
+{
+    const bool buildChanged =
+        !this->online_ || this->online_->build != info.build;
+    this->online_ = std::move(info);
+
+    if (this->status_ == Downloading)
+    {
+        return;
+    }
+
+    if (this->hasUpdate())
     {
         qCDebug(chatterinoUpdate)
-            << "Update checking disabled because OS doesn't appear to be one "
-               "of Windows, GNU/Linux or macOS.";
-        return;
+            << "Build" << this->online_->build << "(" << this->online_->commit
+            << ") is available, current build is" << this->currentBuild_;
+        // a newer build brings the update button back even if it was dismissed
+        this->setStatus_(UpdateAvailable, buildChanged);
     }
+    else
+    {
+        this->setStatus_(NoUpdateAvailable);
+    }
+}
 
-    if (version.isFlatpak())
+void Updates::handleSearchFailed()
+{
+    if (this->status_ == Downloading)
     {
         return;
     }
 
-    // See https://github.com/SevenTV/SevenTV/issues/48#issue-2193272289
-    // for the proposed structure of the response.
-    auto onSuccess = [this](const NetworkResult &result) {
-        const auto object = result.parseJson();
-        if (object.empty())
+    this->setStatus_(this->hasUpdate() ? UpdateAvailable : SearchFailed);
+}
+
+int Updates::getCurrentBuild() const
+{
+    return this->currentBuild_;
+}
+
+int Updates::getOnlineBuild() const
+{
+    return this->online_ ? this->online_->build : 0;
+}
+
+bool Updates::hasUpdate() const
+{
+    return this->online_ && this->online_->build > this->currentBuild_;
+}
+
+Updates::InstallMethod Updates::installMethod() const
+{
+    if (!this->online_)
+    {
+        return InstallMethod::Manual;
+    }
+
+#ifdef Q_OS_WIN
+    if (this->modes.isPortable)
+    {
+        if (this->online_->portable &&
+            QFile::exists(Updates::portableUpdaterPath(this->paths)))
         {
-            return;
+            return InstallMethod::Portable;
         }
+        return InstallMethod::Manual;
+    }
 
-        auto version = object["version"];
-        if (object["v2_version"_L1].isString())
-        {
-            version = object["v2_version"_L1].toString();
-        }
+    if (this->online_->installer && isInstalled())
+    {
+        return InstallMethod::Installer;
+    }
+#endif
 
-        if (!version.isString())
-        {
-            this->setStatus_(SearchFailed);
-            qCDebug(chatterinoUpdate)
-                << "error checking version - missing 'version'" << object;
-            return;
-        }
+    return InstallMethod::Manual;
+}
 
-#    if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
-
-        auto updateExeUrl = getForArchitecture(object, u"updateexe"_s);
-        if (!updateExeUrl.isString())
-        {
-            this->setStatus_(SearchFailed);
-            qCDebug(chatterinoUpdate)
-                << "error checking version - missing 'updateexe'" << object;
-            return;
-        }
-
-        this->updateExe_ = updateExeUrl.toString();
-
-#        ifdef Q_OS_WIN
-
-        auto portableUrl = getForArchitecture(object, "portable_download");
-        if (!portableUrl.isString())
-        {
-            this->setStatus_(SearchFailed);
-            qCDebug(chatterinoUpdate)
-                << "error checking version - missing 'portable_download'"
-                << object;
-            return;
-        }
-        this->updatePortable_ = portableUrl.toString();
-#        endif
-
-#    elif defined(Q_OS_LINUX)
-        QJsonValue updateGuide = object.value("updateguide");
-        if (updateGuide.isString())
-        {
-            this->updateGuideLink_ = updateGuide.toString();
-        }
-#    else
+void Updates::installUpdates()
+{
+    if (!this->canInstall())
+    {
         return;
-#    endif
+    }
 
-        this->onlineVersion_ = version.toString();
+    switch (this->installMethod())
+    {
+        case InstallMethod::Installer:
+            this->downloadAndRun(*this->online_->installer,
+                                 InstallMethod::Installer);
+            break;
 
-        if (this->currentVersion_ != this->onlineVersion_ &&
-            !Updates::isDowngradeOf(this->onlineVersion_,
-                                    this->currentVersion_))
-        {
-            this->setStatus_(UpdateAvailable);
-        }
-        else
-        {
-            this->setStatus_(NoUpdateAvailable);
-        }
-    };
+        case InstallMethod::Portable:
+            this->downloadAndRun(*this->online_->portable,
+                                 InstallMethod::Portable);
+            break;
 
-    auto apiVersion = std::make_shared<uint8_t>(3);
-    constexpr auto maxApiVersion = 3;
-    auto fmtUrl = [apiVersion]() -> QString {
-        return u"https://7tv.io/v" % QString::number(*apiVersion) %
-               "/chatterino/version/" % CHATTERINO_OS % "/" % currentBranch();
-    };
+        case InstallMethod::Manual:
+            QDesktopServices::openUrl(QUrl(RELEASE_PAGE_URL));
+            break;
+    }
+}
 
-    auto onError = std::make_shared<std::function<void(NetworkResult)>>();
+void Updates::downloadAndRun(const Download &download, InstallMethod method)
+{
+    qCDebug(chatterinoUpdate) << "Downloading update from" << download.url;
+    this->setStatus_(Downloading);
 
-    auto makeRequest = [onSuccess,
-                        onErrorWeak = std::weak_ptr(onError)](auto url) {
-        auto onError = onErrorWeak.lock();
-        if (!onError)
-        {
-            return;
-        }
-        qCDebug(chatterinoUpdate) << "Requesting updates from" << url;
-        NetworkRequest(url)
-            .timeout(60000)
-            .followRedirects(true)
-            .onSuccess(onSuccess)
-            .onError(*onError)
-            .finally([onError]() {})
-            .execute();
-    };
+    NetworkRequest(download.url)
+        .timeout(600000)
+        .followRedirects(true)
+        .onError([this](const NetworkResult &result) {
+            qCWarning(chatterinoUpdate)
+                << "Failed to download the update:" << result.formatError();
+            this->setStatus_(DownloadFailed);
+        })
+        .onSuccess([this, download, method](const NetworkResult &result) {
+            const auto &data = result.getData();
 
-    *onError = [apiVersion, fmtUrl, makeRequest](const auto &) mutable {
-        if (*apiVersion >= maxApiVersion)
-        {
-            return;
-        }
-        (*apiVersion)++;
-        makeRequest(fmtUrl());
-    };
-    makeRequest(fmtUrl());
+            const auto hash = QString::fromLatin1(
+                QCryptographicHash::hash(data, QCryptographicHash::Sha256)
+                    .toHex());
+            if (hash != download.sha256)
+            {
+                qCWarning(chatterinoUpdate)
+                    << "Update checksum mismatch - expected" << download.sha256
+                    << "got" << hash;
+                this->setStatus_(VerifyFailed);
+                return;
+            }
 
-    this->setStatus_(Searching);
+            const auto filePath =
+                combinePath(this->paths.miscDirectory,
+                            method == InstallMethod::Portable ? "update.zip"
+                                                              : "Update.exe");
+            QFile file(filePath);
+            if (!file.open(QIODevice::Truncate | QIODevice::WriteOnly) ||
+                file.write(data) != data.size())
+            {
+                qCWarning(chatterinoUpdate)
+                    << "Failed to write" << filePath << file.errorString();
+                this->setStatus_(WriteFileFailed);
+                return;
+            }
+            file.close();
+
+            this->runDownloaded(filePath, method);
+        })
+        .execute();
+}
+
+void Updates::runDownloaded(const QString &filePath, InstallMethod method)
+{
+#ifdef Q_OS_WIN
+    const bool started =
+        method == InstallMethod::Portable
+            ? startPortableUpdater(Updates::portableUpdaterPath(this->paths),
+                                   filePath)
+            : startInstaller(filePath);
+    if (!started)
+    {
+        qCWarning(chatterinoUpdate) << "Failed to start the updater";
+        this->setStatus_(RunUpdaterFailed);
+        return;
+    }
+
+    QApplication::exit(0);
+#else
+    // only Windows downloads updates
+    (void)filePath;
+    (void)method;
+    this->setStatus_(RunUpdaterFailed);
 #endif
 }
 
@@ -489,15 +459,21 @@ QString Updates::portableUpdaterPath(const Paths &paths)
                        "updater.1/ChatterinoUpdater.exe");
 }
 
+const QString &Updates::releasePageUrl()
+{
+    return RELEASE_PAGE_URL;
+}
+
 bool Updates::shouldShowUpdateButton() const
 {
     switch (this->getStatus())
     {
         case UpdateAvailable:
-        case SearchFailed:
         case Downloading:
         case DownloadFailed:
+        case VerifyFailed:
         case WriteFileFailed:
+        case RunUpdaterFailed:
             return true;
 
         default:
@@ -511,8 +487,8 @@ bool Updates::isError() const
     {
         case SearchFailed:
         case DownloadFailed:
+        case VerifyFailed:
         case WriteFileFailed:
-        case MissingPortableUpdater:
         case RunUpdaterFailed:
             return true;
 
@@ -521,51 +497,28 @@ bool Updates::isError() const
     }
 }
 
-bool Updates::isDowngrade() const
+bool Updates::canInstall() const
 {
-    return this->isDowngrade_;
+    return this->hasUpdate() && this->status_ != Downloading;
 }
 
 QString Updates::buildUpdateAvailableText() const
 {
-    const auto &version = Version::instance();
+    auto text = QString("Build %1 is available (you have build %2).")
+                    .arg(this->getOnlineBuild())
+                    .arg(this->currentBuild_);
 
-    if (version.isNightly())
+    if (this->installMethod() == InstallMethod::Manual)
     {
-        // Since Nightly builds can be installed in many different ways, we ask the user to download the update manually.
-        if (this->isDowngrade())
-        {
-            return QString(
-                       "The version online (%1) seems to be lower than the "
-                       "current (%2).\nEither a version was reverted or "
-                       "you are running a newer build.\n\nDo you want to "
-                       "head to github.com/leafyzito/leafyrino to download it?")
-                .arg(this->getOnlineVersion(), this->getCurrentVersion());
-        }
-
-        return QString(
-                   "An update (%1) is available.\n\nDo you want to head to "
-                   "github.com/leafyzito/leafyrino to download the new update?")
-            .arg(this->getOnlineVersion());
+        return text % "\n\nDo you want to open the download page?";
     }
 
-    if (this->isDowngrade())
-    {
-        return QString("The version online (%1) seems to be lower than the "
-                       "current (%2).\nEither a version was reverted or "
-                       "you are running a newer build.\n\nDo you want to "
-                       "download and install it?")
-            .arg(this->getOnlineVersion(), this->getCurrentVersion());
-    }
-
-    return QString("An update (%1) is available.\n\nDo you want to "
-                   "download and install it?")
-        .arg(this->getOnlineVersion());
+    return text % "\n\nInstall it now? Leafyrino will restart.";
 }
 
-void Updates::setStatus_(Status status)
+void Updates::setStatus_(Status status, bool force)
 {
-    if (this->status_ != status)
+    if (this->status_ != status || force)
     {
         this->status_ = status;
         postToThread([this, status] {

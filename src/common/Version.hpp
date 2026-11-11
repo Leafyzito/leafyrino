@@ -43,6 +43,10 @@ public:
     const QString &version() const;
     const QString &commitHash() const;
 
+    /// Number of commits in the history this build was made from, or 0 if
+    /// unknown. Always increases with every Leafyrino build.
+    int buildNumber() const;
+
     const bool &isModified() const;
 
     const QString &dateOfBuild() const;
@@ -71,6 +75,7 @@ private:
 
     QString version_;
     QString commitHash_;
+    int buildNumber_{};
     bool isModified_{false};
     QString dateOfBuild_;
     QString fullVersion_;

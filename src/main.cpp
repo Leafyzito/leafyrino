@@ -267,7 +267,7 @@ int main(int argc, char **argv)
         }
 #endif
 
-        Updates updates(modes, *paths, settings);
+        Updates updates(modes, *paths);
 
         NetworkConfigurationProvider::applyFromEnv(Env::get());
 

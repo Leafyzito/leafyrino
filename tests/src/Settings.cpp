@@ -47,7 +47,7 @@ public:
                        .runMigrations = true,
                        .runCleanup = false,
                    })
-        , updates(this->modes_, this->paths_, this->settings)
+        , updates(this->modes_, this->paths_)
     {
     }
 
@@ -71,7 +71,7 @@ public:
                        .runMigrations = runMigrations,
                        .runCleanup = true,
                    })
-        , updates(this->modes_, this->paths_, this->settings)
+        , updates(this->modes_, this->paths_)
     {
     }
 

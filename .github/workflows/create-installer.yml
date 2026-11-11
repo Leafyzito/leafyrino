@@ -132,6 +132,48 @@ jobs:
           name: Nightly Release
           tag: nightly-build
 
+  # version.json tells the in-app updater about the new build. It's uploaded
+  # after the installers, so it never points at files that aren't there yet.
+  publish-version-info:
+    runs-on: ubuntu-latest
+    needs: create-installer
+    if: ${{ github.event.workflow_run.head_branch == 'leafyrino' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/leafyrino') }}
+    permissions:
+      contents: write # upload version.json to the nightly release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # the build number has to match the commit that was built
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0 # build number
+          persist-credentials: false
+
+      - name: Download installers
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: "*Leafyrino.Nightly.*"
+          path: installers/
+          merge-multiple: true
+
+      - name: Generate version.json
+        run: python3 ./.CI/generate-version-info.py --artifacts installers --output version.json
+
+      - name: Upload version.json
+        if: ${{ env.RELEASE_NIGHTLY_INSTALLER == 'ON' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          build=$(jq -r .build version.json)
+          # runs can finish out of order, never replace a newer build
+          published=$(curl -fsSL "https://github.com/$GITHUB_REPOSITORY/releases/download/nightly-build/version.json" | jq -r '.build // 0' 2>/dev/null || true)
+          published=${published:-0}
+          if [ "$build" -le "$published" ]; then
+            echo "The release already has build $published, not replacing it with build $build."
+            exit 0
+          fi
+          gh release upload nightly-build version.json --clobber --repo "$GITHUB_REPOSITORY"
+        shell: bash
+
   check-release:
     runs-on: ubuntu-latest
     needs: create-installer

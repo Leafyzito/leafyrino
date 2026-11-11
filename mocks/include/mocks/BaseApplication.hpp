@@ -25,7 +25,7 @@ public:
                        .isTest = true,
                        .runMigrations = runMigrations,
                    })
-        , updates(this->modes_, this->paths_, this->settings)
+        , updates(this->modes_, this->paths_)
         , theme(this->paths_)
         , fonts(this->settings)
     {
@@ -38,7 +38,7 @@ public:
                        .isTest = true,
                        .runMigrations = runMigrations,
                    })
-        , updates(this->modes_, this->paths_, this->settings)
+        , updates(this->modes_, this->paths_)
         , theme(this->paths_)
         , fonts(this->settings)
     {
@@ -53,7 +53,7 @@ public:
                        .runMigrations = runMigrations,
                        .runCleanup = runCleanup,
                    })
-        , updates(this->modes_, this->paths_, this->settings)
+        , updates(this->modes_, this->paths_)
         , theme(this->paths_)
         , fonts(this->settings)
     {

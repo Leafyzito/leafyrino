@@ -16,7 +16,7 @@
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
 #include "widgets/buttons/DrawnButton.hpp"
-// #include "widgets/buttons/InitMoltorinoUpdateButton.hpp"
+#include "widgets/buttons/InitUpdateButton.hpp"
 #include "widgets/buttons/PixmapButton.hpp"
 #include "widgets/buttons/SvgButton.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
@@ -1684,17 +1684,17 @@ void SplitNotebook::addCustomButtons()
     });
 
     // updates
-    // auto *updateBtn = this->addCustomButton<SvgButton>(SvgButton::Src{
-    //     .dark = ":/buttons/update-darkMode.svg",
-    //     .light = ":/buttons/update-lightMode.svg",
-    // });
-    //
-    // initMoltorinoUpdateButton(
-    //     *updateBtn,
-    //     [this] {
-    //         this->performLayout(false);
-    //     },
-    //     this->signalHolder_);
+    auto *updateBtn = this->addCustomButton<SvgButton>(SvgButton::Src{
+        .dark = ":/buttons/update-darkMode.svg",
+        .light = ":/buttons/update-lightMode.svg",
+    });
+
+    initUpdateButton(
+        *updateBtn,
+        [this] {
+            this->performLayout(false);
+        },
+        this->signalHolder_);
 
     // streamer mode
     this->streamerModeIcon_ = this->addCustomButton<PixmapButton>();

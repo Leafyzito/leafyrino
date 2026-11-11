@@ -339,6 +339,8 @@ void runGui(QApplication &a, const Modes &modes, const Paths &paths,
 
     selfcheck::checkWebp();
 
+    updates.deleteOldFiles();
+
     QTimer::singleShot(60 * 1000, [cachePath = paths.cacheDirectory(),
                                    crashDirectory = paths.crashdumpDirectory,
                                    avatarPath = paths.twitchProfileAvatars] {
@@ -354,6 +356,7 @@ void runGui(QApplication &a, const Modes &modes, const Paths &paths,
     });
 
     chatterino::NetworkManager::init();
+    updates.startPeriodicChecks();
 
     QObject::connect(qApp, &QApplication::aboutToQuit, [] {
         auto *app = dynamic_cast<Application *>(tryGetApp());
