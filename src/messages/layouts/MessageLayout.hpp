@@ -70,11 +70,17 @@ public:
     MessageLayoutFlags flags;
 
     bool layout(const MessageLayoutContext &ctx, bool shouldInvalidateBuffer);
+    /// Updates the cached size of the message without keeping its layout
+    /// elements around if they were freed
+    bool layoutForMeasurement(const MessageLayoutContext &ctx);
 
     MessagePaintResult paint(const MessagePaintContext &ctx);
     void invalidateBuffer();
     void deleteBuffer();
+    /// Frees the drawing buffer and the layout elements. The cached size is
+    /// kept, the elements are recreated by the next call to layout().
     void deleteCache();
+    bool hasCache() const;
 
     const MessageLayoutElement *getElementAt(QPointF point) const;
 
@@ -93,17 +99,26 @@ public:
     bool isDisabled() const;
 
 private:
+    bool layoutImpl(const MessageLayoutContext &ctx,
+                    bool shouldInvalidateBuffer, bool retainContainer);
     void actuallyLayout(const MessageLayoutContext &ctx);
     void updateBuffer(QPixmap *buffer, const MessagePaintContext &ctx);
 
     QPixmap *ensureBuffer(QPainter &painter, qreal width, bool clear);
 
     const MessagePtr message_;
-    MessageLayoutContainer container_;
+    std::unique_ptr<MessageLayoutContainer> container_;
     std::unique_ptr<QPixmap> buffer_;
     bool bufferValid_ = false;
 
+    // cached from the container so they stay valid after deleteCache()
     qreal height_ = 0;
+    int firstLineHeight_ = 0;
+    int width_ = 0;
+    int layoutContentWidth_ = 0;
+    size_t lineCount_ = 0;
+    size_t firstMessageCharacterIndex_ = 0;
+    size_t lastCharacterIndex_ = 0;
     int currentLayoutWidth_ = -1;
     int layoutState_ = -1;
     float scale_ = -1;

@@ -1692,25 +1692,8 @@ void ChannelView::layoutVisibleMessages(
             const auto &message = messages[i];
 
             redrawRequired |= message->layout(
-                {
-                    .messageColors = this->messageColors_,
-                    .flags = layoutFlags,
-                    .width = layoutWidth,
-                    .scale = this->scale(),
-                    .imageScale = this->overrideImageScale_.value_or(
-                        this->scale() *
-                        static_cast<float>(this->devicePixelRatio())),
-                    .emoteScale =
-                        this->overrideEmoteScale_.value_or(this->scale()),
-                    .badgeScale =
-                        this->overrideBadgeScale_.value_or(this->scale()),
-                    .centerBadges = this->centerBadges_,
-                    .selectedChannel = selectedChannel,
-                    .message = *message->getMessage(),
-                    .autoModReviewExpanded =
-                        this->isSelectedAutoModReview(*message->getMessage()),
-                    .autoModReviewChannel = this->isAutoModReviewChannel(),
-                },
+                this->makeLayoutContext(*message->getMessage(), layoutFlags,
+                                        selectedChannel, layoutWidth),
                 this->bufferInvalidationQueued_);
 
             y += message->getHeight();
@@ -1751,25 +1734,8 @@ void ChannelView::updateScrollbar(const std::vector<MessageLayoutPtr> &messages,
     {
         auto *message = messages[i].get();
 
-        message->layout(
-            {
-                .messageColors = this->messageColors_,
-                .flags = flags,
-                .width = layoutWidth,
-                .scale = this->scale(),
-                .imageScale = this->overrideImageScale_.value_or(
-                    this->scale() *
-                    static_cast<float>(this->devicePixelRatio())),
-                .emoteScale = this->overrideEmoteScale_.value_or(this->scale()),
-                .badgeScale = this->overrideBadgeScale_.value_or(this->scale()),
-                .centerBadges = this->centerBadges_,
-                .selectedChannel = selectedChannel,
-                .message = *message->getMessage(),
-                .autoModReviewExpanded =
-                    this->isSelectedAutoModReview(*message->getMessage()),
-                .autoModReviewChannel = this->isAutoModReviewChannel(),
-            },
-            false);
+        message->layoutForMeasurement(this->makeLayoutContext(
+            *message->getMessage(), flags, selectedChannel, layoutWidth));
 
         h -= message->getHeight();
 
@@ -1861,6 +1827,13 @@ QString ChannelView::getSelectedText()
     for (auto msg = indexStart; msg <= indexEnd; msg++)
     {
         MessageLayoutPtr layout = messagesSnapshot[msg];
+        // messages that left the screen don't keep their elements around
+        const bool hadCache = layout->hasCache();
+        if (!hadCache)
+        {
+            this->relayoutMessage(*layout);
+        }
+
         auto from = msg == selection.selectionMin.messageIndex
                         ? selection.selectionMin.charIndex
                         : 0;
@@ -1869,6 +1842,11 @@ QString ChannelView::getSelectedText()
                       : layout->getLastCharacterIndex() + 1;
 
         layout->addSelectionText(result, from, to);
+
+        if (!hadCache)
+        {
+            layout->deleteCache();
+        }
 
         if (msg != indexEnd)
         {
@@ -2877,6 +2855,7 @@ void ChannelView::drawMessages(QPainter &painter, const QRegion &area)
     if (start >= messagesSnapshot.size())
     {
         this->animationRegion_ = {};
+        this->clearMessageCaches();
         return;
     }
 
@@ -2930,6 +2909,13 @@ void ChannelView::drawMessages(QPainter &painter, const QRegion &area)
         else
         {
             ctx.isLastReadMessage = false;
+        }
+
+        if (!layout->hasCache())
+        {
+            // visible messages are laid out before painting, this only
+            // catches paths that paint a freed message without doing so
+            this->relayoutMessage(*layout);
         }
 
         const QRect messageRect{0, ctx.y, layout->getWidth(),
@@ -3004,7 +2990,7 @@ void ChannelView::drawMessages(QPainter &painter, const QRegion &area)
     }
 
     // remove messages that are on screen
-    // the messages that are left at the end get their buffers reset
+    // the messages that are left at the end get their caches freed
     for (size_t i = start; i < messagesSnapshot.size(); ++i)
     {
         auto it = this->messagesOnScreen_.find(messagesSnapshot[i]);
@@ -3012,15 +2998,16 @@ void ChannelView::drawMessages(QPainter &painter, const QRegion &area)
         {
             this->messagesOnScreen_.erase(it);
         }
+
+        // stop at the last visible message, so messages that scrolled out
+        // at the bottom are freed too
+        if (messagesSnapshot[i].get() == end)
+        {
+            break;
+        }
     }
 
-    // delete the message buffers that aren't on screen
-    for (const std::shared_ptr<MessageLayout> &item : this->messagesOnScreen_)
-    {
-        item->deleteBuffer();
-    }
-
-    this->messagesOnScreen_.clear();
+    this->clearMessageCaches();
 
     // add all messages on screen to the map
     for (size_t i = start; i < messagesSnapshot.size(); ++i)
@@ -3093,29 +3080,10 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                 }
                 else
                 {
-                    snapshot[i - 1]->layout(
-                        {
-                            .messageColors = this->messageColors_,
-                            .flags = flags,
-                            .width = this->getLayoutWidth(),
-                            .scale = this->scale(),
-                            .imageScale = this->overrideImageScale_.value_or(
-                                this->scale() *
-                                static_cast<float>(this->devicePixelRatio())),
-                            .emoteScale = this->overrideEmoteScale_.value_or(
-                                this->scale()),
-                            .badgeScale = this->overrideBadgeScale_.value_or(
-                                this->scale()),
-                            .centerBadges = this->centerBadges_,
-                            .selectedChannel = selectedChannel,
-                            .message = *snapshot[i - 1]->getMessage(),
-                            .autoModReviewExpanded =
-                                this->isSelectedAutoModReview(
-                                    *snapshot[i - 1]->getMessage()),
-                            .autoModReviewChannel =
-                                this->isAutoModReviewChannel(),
-                        },
-                        false);
+                    snapshot[i - 1]->layoutForMeasurement(
+                        this->makeLayoutContext(*snapshot[i - 1]->getMessage(),
+                                                flags, selectedChannel,
+                                                this->getLayoutWidth()));
                     scrollFactor = 1;
                     currentScrollLeft = snapshot[i - 1]->getHeight();
                 }
@@ -3148,29 +3116,10 @@ void ChannelView::wheelEvent(QWheelEvent *event)
                 }
                 else
                 {
-                    snapshot[i + 1]->layout(
-                        {
-                            .messageColors = this->messageColors_,
-                            .flags = flags,
-                            .width = this->getLayoutWidth(),
-                            .scale = this->scale(),
-                            .imageScale = this->overrideImageScale_.value_or(
-                                this->scale() *
-                                static_cast<float>(this->devicePixelRatio())),
-                            .emoteScale = this->overrideEmoteScale_.value_or(
-                                this->scale()),
-                            .badgeScale = this->overrideBadgeScale_.value_or(
-                                this->scale()),
-                            .centerBadges = this->centerBadges_,
-                            .selectedChannel = selectedChannel,
-                            .message = *snapshot[i + 1]->getMessage(),
-                            .autoModReviewExpanded =
-                                this->isSelectedAutoModReview(
-                                    *snapshot[i + 1]->getMessage()),
-                            .autoModReviewChannel =
-                                this->isAutoModReviewChannel(),
-                        },
-                        false);
+                    snapshot[i + 1]->layoutForMeasurement(
+                        this->makeLayoutContext(*snapshot[i + 1]->getMessage(),
+                                                flags, selectedChannel,
+                                                this->getLayoutWidth()));
 
                     scrollFactor = 1;
                     currentScrollLeft = snapshot[i + 1]->getHeight();
@@ -4058,21 +4007,23 @@ void ChannelView::addMessageContextMenuItems(QMenu *menu,
         });
     }
 
-    menu->addAction("Copy &message", [layout] {
-        QString copyString;
-        layout->addSelectionText(copyString, 0, INT_MAX,
-                                 CopyMode::OnlyTextAndEmotes);
+    // build the text now, the message may have left the screen and freed its
+    // elements by the time an action is picked
+    QString messageCopyString;
+    layout->addSelectionText(messageCopyString, 0, INT_MAX,
+                             CopyMode::OnlyTextAndEmotes);
+    menu->addAction("Copy &message",
+                    [copyString = std::move(messageCopyString)] {
+                        crossPlatformCopy(copyString);
+                    });
 
-        crossPlatformCopy(copyString);
-    });
-
-    menu->addAction("Copy &full message", [layout] {
-        QString copyString;
-        layout->addSelectionText(copyString, 0, INT_MAX,
-                                 CopyMode::EverythingButReplies);
-
-        crossPlatformCopy(copyString);
-    });
+    QString fullMessageCopyString;
+    layout->addSelectionText(fullMessageCopyString, 0, INT_MAX,
+                             CopyMode::EverythingButReplies);
+    menu->addAction("Copy &full message",
+                    [copyString = std::move(fullMessageCopyString)] {
+                        crossPlatformCopy(copyString);
+                    });
 
     auto contextMessage = layout->getMessagePtr();
     if (contextMessage->translatedFrom != nullptr)
@@ -4592,12 +4543,28 @@ void ChannelView::mouseDoubleClickEvent(QMouseEvent *event)
 
 void ChannelView::hideEvent(QHideEvent * /*event*/)
 {
+    this->clearMessageCaches();
+    // showEvent lays the visible messages out again
+    this->layoutQueued_ = true;
+}
+
+void ChannelView::clearMessageCaches()
+{
     for (const auto &layout : this->messagesOnScreen_)
     {
-        layout->deleteBuffer();
+        layout->deleteCache();
     }
 
     this->messagesOnScreen_.clear();
+}
+
+void ChannelView::relayoutMessage(MessageLayout &layout)
+{
+    auto [selectedChannel, mcFlags] = this->getMultiChannelInfo();
+    layout.layout(this->makeLayoutContext(
+                      *layout.getMessage(), this->getFlags() | mcFlags,
+                      selectedChannel, this->getLayoutWidth()),
+                  false);
 }
 
 void ChannelView::showUserInfoPopup(const QString &userName,
@@ -5411,6 +5378,28 @@ int ChannelView::getLayoutWidth() const
     }
 
     return this->width();
+}
+
+MessageLayoutContext ChannelView::makeLayoutContext(const Message &message,
+                                                    MessageElementFlags flags,
+                                                    Channel *selectedChannel,
+                                                    int width) const
+{
+    return {
+        .messageColors = this->messageColors_,
+        .flags = flags,
+        .width = width,
+        .scale = this->scale(),
+        .imageScale = this->overrideImageScale_.value_or(
+            this->scale() * static_cast<float>(this->devicePixelRatio())),
+        .emoteScale = this->overrideEmoteScale_.value_or(this->scale()),
+        .badgeScale = this->overrideBadgeScale_.value_or(this->scale()),
+        .centerBadges = this->centerBadges_,
+        .selectedChannel = selectedChannel,
+        .message = message,
+        .autoModReviewExpanded = this->isSelectedAutoModReview(message),
+        .autoModReviewChannel = this->isAutoModReviewChannel(),
+    };
 }
 
 void ChannelView::selectWholeMessage(MessageLayout *layout, int &messageIndex)

@@ -7,6 +7,7 @@
 #include "common/Aliases.hpp"
 #include "common/Literals.hpp"
 #include "messages/Emote.hpp"
+#include "messages/Image.hpp"
 #include "Test.hpp"
 
 #include <QJsonArray>

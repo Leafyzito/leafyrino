@@ -10,6 +10,7 @@ set(test_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/ChannelChatters.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/AccessGuard.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/NetworkCommon.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/NetworkConfigurationProvider.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/NetworkRequest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/NetworkResult.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ChatterSet.cpp
@@ -44,6 +45,7 @@ set(test_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/SplitInput.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/LinkInfo.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/MessageLayout.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/MemoryReclaimer.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/MessageSimilarity.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/QMagicEnum.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ModerationAction.cpp

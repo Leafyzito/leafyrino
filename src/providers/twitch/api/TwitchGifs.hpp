@@ -10,7 +10,7 @@ class QObject;
 
 namespace chatterino::twitchgifs {
 
-inline constexpr int PAGE_SIZE = 12;
+inline constexpr int GIF_PAGE_SIZE = 12;
 inline constexpr int MAX_FAVORITES = 120;
 inline constexpr int MAX_SEARCH_LENGTH = 50;
 

@@ -4,6 +4,7 @@ set(SOURCES
     src/parse.cpp
     src/string.cpp
     src/chrono.cpp
+    src/proxy.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

@@ -12,6 +12,9 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/websocket/stream.hpp>
+#include <twitch-eventsub-ws/proxy.hpp>
+
+#include <optional>
 
 namespace chatterino::ws::detail {
 
@@ -55,6 +58,7 @@ private:
     void tryConnect(std::optional<BalancedResolverResults::Entry> entry);
     void onTcpHandshake(const BalancedResolverResults::Entry &entry,
                         boost::system::error_code ec);
+    void onProxyHandshake(boost::system::error_code ec);
     void onWsHandshake(boost::system::error_code ec);
 
     void onReadDone(boost::system::error_code ec, size_t bytesRead);
@@ -68,6 +72,9 @@ private:
     friend Derived;
 
     BalancedResolverResults resolvedEndpoints;
+
+    /// If set, we connect to this proxy instead of the target
+    std::optional<eventsub::lib::ProxyConfig> proxy;
 
     boost::asio::steady_timer healthCheckTimer;
     unsigned int pingProbesTried = 0;
