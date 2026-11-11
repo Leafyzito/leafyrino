@@ -203,8 +203,9 @@ bool Updates::checksEnabled() const
 #ifdef CHATTERINO_DISABLE_UPDATER
     return false;
 #else
-    const auto &version = Version::instance();
-    return version.isSupportedOS() && !version.isFlatpak() &&
+    // Flatpak is included because the bundle on the release has no repository
+    // to update from
+    return Version::instance().isSupportedOS() &&
            !this->modes.isExternallyPackaged && this->currentBuild_ > 0;
 #endif
 }
