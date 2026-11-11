@@ -6008,15 +6008,15 @@ bool TwitchChannel::isChannelPointsFetchInFlight() const
     return this->channelPointsFetchInFlight_.load();
 }
 
-bool TwitchChannel::shouldShowChannelPoints() const
+bool TwitchChannel::hasUnlimitedChannelPoints() const
 {
     const auto auth = MoltorinoAuth::resolveCurrentUserToken();
     if (auth.hasToken() && authTokenHasKnownIdentity(auth))
     {
-        return !authTokenBelongsToChannel(auth, *this);
+        return authTokenBelongsToChannel(auth, *this);
     }
 
-    return !this->isBroadcaster();
+    return this->isBroadcaster();
 }
 
 void TwitchChannel::setChannelPointBalance(qint64 balance)

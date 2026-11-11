@@ -354,7 +354,8 @@ public:
     void tryEmitPollCreatedSystemMessage(const PollEvent &poll);
     qint64 channelPointBalance() const;
     bool isChannelPointsFetchInFlight() const;
-    bool shouldShowChannelPoints() const;
+    /// Broadcasters have no balance in their own channel and redeem for free.
+    bool hasUnlimitedChannelPoints() const;
     void setChannelPointBalance(qint64 balance);
     void handleChatWarningPubSub(const QJsonObject &payload);
     void handleChatWarningNotice();

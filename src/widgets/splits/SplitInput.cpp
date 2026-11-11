@@ -2190,7 +2190,7 @@ bool SplitInput::eventFilter(QObject *obj, QEvent *event)
     {
         auto *tc = dynamic_cast<TwitchChannel *>(
             this->split_->getSelectedChannel().get());
-        if (!tc || !tc->shouldShowChannelPoints() ||
+        if (!tc || tc->hasUnlimitedChannelPoints() ||
             !this->channelPointsLabelWanted_)
         {
             return true;
@@ -2215,14 +2215,14 @@ bool SplitInput::eventFilter(QObject *obj, QEvent *event)
         {
             auto *tc = dynamic_cast<TwitchChannel *>(
                 this->split_->getSelectedChannel().get());
-            if (!tc || !tc->shouldShowChannelPoints() ||
-                !this->channelPointsLabelWanted_)
+            if (!tc || !this->channelPointsLabelWanted_)
             {
                 return true;
             }
 
 #if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
-            if (getSettings()->openRewardsWithChannelPointsClick)
+            if (tc->hasUnlimitedChannelPoints() ||
+                getSettings()->openRewardsWithChannelPointsClick)
             {
                 ChannelPointsDialog::showDialog(tc, this, this->split_);
                 return true;
@@ -4376,11 +4376,13 @@ void SplitInput::bindChannelPoints(TwitchChannel *channel)
         return;
     }
 
-    if (!channel->shouldShowChannelPoints())
+#if !MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
+    if (channel->hasUnlimitedChannelPoints())
     {
         this->clearChannelPointsDisplay();
         return;
     }
+#endif
 
     this->channelPointsLabelWanted_ = true;
     if (this->ui_.channelPointsLabel->text().isEmpty())
@@ -4426,9 +4428,32 @@ void SplitInput::clearChannelPointsDisplay()
 
 void SplitInput::updateChannelPointsDisplay(TwitchChannel *channel)
 {
-    if (!channel || !channel->shouldShowChannelPoints())
+    if (!channel)
     {
         this->clearChannelPointsDisplay();
+        return;
+    }
+
+    if (channel->hasUnlimitedChannelPoints())
+    {
+#if MOLTORINO_ENABLE_CHANNEL_POINT_REWARDS
+        this->channelPointsManualRefreshLoading_ = false;
+        const auto text = QStringLiteral("\u221E");
+        const auto tooltip =
+            QStringLiteral("Channel Points: unlimited in your own channel\n"
+                           "Click to open rewards");
+        if (this->ui_.channelPointsLabel->text() != text)
+        {
+            this->ui_.channelPointsLabel->setText(text);
+            this->updateActionRowCompactness();
+        }
+        if (this->ui_.channelPointsLabel->toolTip() != tooltip)
+        {
+            this->ui_.channelPointsLabel->setToolTip(tooltip);
+        }
+#else
+        this->clearChannelPointsDisplay();
+#endif
         return;
     }
 

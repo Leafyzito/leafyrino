@@ -161,6 +161,15 @@ QString fullPoints(qint64 value)
     return formatChannelPoints(value);
 }
 
+qint64 spendableBalance(const TwitchChannel &channel)
+{
+    if (channel.hasUnlimitedChannelPoints())
+    {
+        return -1;
+    }
+    return channel.channelPointBalance();
+}
+
 bool isBitsReward(const GqlChannelPointReward &reward)
 {
     return reward.pricingType.compare(QStringLiteral("BITS"),
@@ -1161,7 +1170,7 @@ void ChannelPointsDialog::showEvent(QShowEvent *event)
 
 void ChannelPointsDialog::refreshHeader()
 {
-    const auto balance = this->channel_->channelPointBalance();
+    const auto balance = spendableBalance(*this->channel_);
     const auto channelName = this->channel_->getName().isEmpty()
                                  ? QStringLiteral("channel")
                                  : this->channel_->getName();
@@ -1178,8 +1187,9 @@ void ChannelPointsDialog::refreshHeader()
         this->headerTitleLabel_->setText(
             QStringLiteral("%1's Rewards").arg(channelName));
     }
-    this->headerSubtitleLabel_->setText(
-        QStringLiteral("Bal: %1").arg(fullPoints(balance)));
+    this->headerSubtitleLabel_->setText(QStringLiteral("Bal: %1").arg(
+        this->channel_->hasUnlimitedChannelPoints() ? QStringLiteral("\u221E")
+                                                    : fullPoints(balance)));
     this->backButton_->setVisible(this->view_ != View::Rewards);
 }
 
@@ -1755,7 +1765,7 @@ void ChannelPointsDialog::rebuildRewards()
     {
         hasRewardImages = hasRewardImages || !reward.imageUrl.isEmpty();
         auto *card = new RewardCardButton(
-            reward, this->channel_->channelPointBalance(), gridWidget);
+            reward, spendableBalance(*this->channel_), gridWidget);
         card->setObjectName("ChannelPointsRewardCardButton");
         card->setScale(effectiveScale);
         card->setFont(getApp()->getFonts()->getFont(
@@ -1824,7 +1834,7 @@ void ChannelPointsDialog::rebuildRewardDetail()
 
     this->contentLayout_->addStretch(2);
 
-    const auto balance = this->channel_->channelPointBalance();
+    const auto balance = spendableBalance(*this->channel_);
     const bool bitsReward = isBitsReward(this->selectedReward_);
     const bool enoughPoints =
         bitsReward || balance < 0 || balance >= this->selectedReward_.cost;
@@ -2956,7 +2966,7 @@ bool ChannelPointsDialog::canRedeem(const GqlChannelPointReward &reward)
         this->setStatus("That reward is out of stock or on cooldown.", true);
         return false;
     }
-    const auto balance = this->channel_->channelPointBalance();
+    const auto balance = spendableBalance(*this->channel_);
     if (!isBitsReward(reward) && balance >= 0 && reward.cost > balance)
     {
         this->setStatus(QStringLiteral("You need %1 more points.")
