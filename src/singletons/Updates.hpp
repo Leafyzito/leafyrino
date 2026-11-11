@@ -43,6 +43,9 @@ public:
         VerifyFailed,
         WriteFileFailed,
         RunUpdaterFailed,
+        /// `flatpak update` didn't install anything new, e.g. because the
+        /// Flatpak repo doesn't have the build yet
+        FlatpakNotUpdated,
     };
 
     /// How an update gets installed on this system
@@ -51,6 +54,8 @@ public:
         Installer,
         /// Download the portable zip and extract it with the portable updater
         Portable,
+        /// Run `flatpak update` on the host
+        Flatpak,
         /// Open the release page so the user can download the update
         Manual,
     };
@@ -110,6 +115,7 @@ private:
     void handleSearchFailed();
     void downloadAndRun(const Download &download, InstallMethod method);
     void runDownloaded(const QString &filePath, InstallMethod method);
+    void updateFlatpak();
 
     void setStatus_(Status status, bool force = false);
 };

@@ -109,6 +109,13 @@ void UpdateDialog::updateStatusChanged(Updates::Status status)
         }
         break;
 
+        case Updates::FlatpakNotUpdated: {
+            this->ui_.label->setText(
+                "Flatpak didn't find the update. Try again in a few "
+                "minutes.");
+        }
+        break;
+
         default: {
             this->ui_.label->setText("You shouldn't be seeing this dialog.");
         }

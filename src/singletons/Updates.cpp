@@ -73,6 +73,54 @@ std::optional<Updates::Download> parseDownload(const QJsonValue &value)
     return download;
 }
 
+/// The running Flatpak, as described by /.flatpak-info
+struct FlatpakInstance {
+    QString appId;
+    QString branch;
+    QString commit;
+    QString instanceId;
+};
+
+std::optional<FlatpakInstance> readFlatpakInstance()
+{
+    const QSettings info(u"/.flatpak-info"_s, QSettings::IniFormat);
+    FlatpakInstance instance{
+        .appId = info.value(u"Application/name"_s).toString(),
+        .branch = info.value(u"Instance/branch"_s).toString(),
+        .commit = info.value(u"Instance/app-commit"_s).toString(),
+        .instanceId = info.value(u"Instance/instance-id"_s).toString(),
+    };
+    if (instance.appId.isEmpty() || instance.branch.isEmpty() ||
+        instance.commit.isEmpty() || instance.instanceId.isEmpty())
+    {
+        return std::nullopt;
+    }
+    return instance;
+}
+
+// Runs on the host with the app id, branch and running commit. Exits with 3 if
+// the running version is still the installed one, so we don't restart into the
+// same version when the Flatpak repo doesn't have the build yet.
+const QString FLATPAK_UPDATE_SCRIPT = uR"sh(
+flatpak update -y --noninteractive "$1//$2" || exit
+[ "$(flatpak info --show-commit "$1" "$2")" != "$3" ] || exit 3
+)sh"_s;
+
+// Runs on the host with the app id, branch and instance id. Starts the new
+// version once this instance is gone. It runs in the background so
+// flatpak-spawn returns right away, which would otherwise keep this instance
+// alive.
+const QString FLATPAK_RESTART_SCRIPT = uR"sh(
+(
+    i=0
+    while [ "$i" -lt 30 ] && flatpak ps --columns=instance | grep -qxF "$3"; do
+        sleep 1
+        i=$((i + 1))
+    done
+    exec flatpak run --branch="$2" "$1"
+) </dev/null >/dev/null 2>&1 &
+)sh"_s;
+
 #ifdef Q_OS_WIN
 
 // keep in sync with the AppId in .CI/chatterino-installer.iss
@@ -203,8 +251,6 @@ bool Updates::checksEnabled() const
 #ifdef CHATTERINO_DISABLE_UPDATER
     return false;
 #else
-    // Flatpak is included because the bundle on the release has no repository
-    // to update from
     return Version::instance().isSupportedOS() &&
            !this->modes.isExternallyPackaged && this->currentBuild_ > 0;
 #endif
@@ -349,6 +395,11 @@ Updates::InstallMethod Updates::installMethod() const
     }
 #endif
 
+    if (Version::instance().isFlatpak())
+    {
+        return InstallMethod::Flatpak;
+    }
+
     return InstallMethod::Manual;
 }
 
@@ -369,6 +420,10 @@ void Updates::installUpdates()
         case InstallMethod::Portable:
             this->downloadAndRun(*this->online_->portable,
                                  InstallMethod::Portable);
+            break;
+
+        case InstallMethod::Flatpak:
+            this->updateFlatpak();
             break;
 
         case InstallMethod::Manual:
@@ -449,6 +504,76 @@ void Updates::runDownloaded(const QString &filePath, InstallMethod method)
 #endif
 }
 
+void Updates::updateFlatpak()
+{
+    const auto instance = readFlatpakInstance();
+    if (!instance)
+    {
+        qCWarning(chatterinoUpdate) << "Failed to read /.flatpak-info";
+        this->setStatus_(RunUpdaterFailed);
+        return;
+    }
+
+    qCDebug(chatterinoUpdate)
+        << "Updating" << instance->appId << "with flatpak";
+    this->setStatus_(Downloading);
+
+    auto *process = new QProcess;
+    process->setProcessChannelMode(QProcess::MergedChannels);
+
+    QObject::connect(process, &QProcess::errorOccurred, process,
+                     [this, process](QProcess::ProcessError error) {
+                         if (error != QProcess::FailedToStart)
+                         {
+                             return;
+                         }
+                         qCWarning(chatterinoUpdate)
+                             << "Failed to start flatpak-spawn:"
+                             << process->errorString();
+                         this->setStatus_(RunUpdaterFailed);
+                         process->deleteLater();
+                     });
+
+    QObject::connect(
+        process, &QProcess::finished, process,
+        [this, process, instance = *instance](int exitCode,
+                                              QProcess::ExitStatus exitStatus) {
+            process->deleteLater();
+
+            if (exitStatus != QProcess::NormalExit || exitCode != 0)
+            {
+                qCWarning(chatterinoUpdate)
+                    << "flatpak update failed with exit code" << exitCode
+                    << process->readAll();
+                this->setStatus_(exitStatus == QProcess::NormalExit &&
+                                         exitCode == 3
+                                     ? FlatpakNotUpdated
+                                     : RunUpdaterFailed);
+                return;
+            }
+
+            // only quit once the host has the restart, it's quick
+            QProcess restart;
+            restart.start(
+                u"flatpak-spawn"_s,
+                {u"--host"_s, u"sh"_s, u"-c"_s, FLATPAK_RESTART_SCRIPT, u"sh"_s,
+                 instance.appId, instance.branch, instance.instanceId});
+            if (!restart.waitForFinished(10000) || restart.exitCode() != 0)
+            {
+                qCWarning(chatterinoUpdate)
+                    << "Failed to restart after the update"
+                    << restart.errorString();
+            }
+
+            QApplication::exit(0);
+        });
+
+    process->start(
+        u"flatpak-spawn"_s,
+        {u"--host"_s, u"sh"_s, u"-c"_s, FLATPAK_UPDATE_SCRIPT, u"sh"_s,
+         instance->appId, instance->branch, instance->commit});
+}
+
 Updates::Status Updates::getStatus() const
 {
     return this->status_;
@@ -475,6 +600,7 @@ bool Updates::shouldShowUpdateButton() const
         case VerifyFailed:
         case WriteFileFailed:
         case RunUpdaterFailed:
+        case FlatpakNotUpdated:
             return true;
 
         default:
@@ -491,6 +617,7 @@ bool Updates::isError() const
         case VerifyFailed:
         case WriteFileFailed:
         case RunUpdaterFailed:
+        case FlatpakNotUpdated:
             return true;
 
         default:
