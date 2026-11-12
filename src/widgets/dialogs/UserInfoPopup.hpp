@@ -114,8 +114,8 @@ private:
     void resetNameHistory();
     bool applyCachedNameHistory();
     void updateNameHistoryButton();
-    void updateBadgesButton();
-    void openBadgesDialog();
+    void updateVanityButton();
+    void openVanityPage();
     void showNameHistoryMenu();
     void openNameHistoryMenu(const QString &statusText = {});
     void requestNameHistory();
@@ -297,7 +297,7 @@ private:
         LabelButton *whisperLabel = nullptr;
         LabelButton *usercardLabel = nullptr;
         LabelButton *userlogsLabel = nullptr;
-        LabelButton *badgesLabel = nullptr;
+        LabelButton *vanityLabel = nullptr;
         LabelButton *sevenTVUserLabel = nullptr;
         QLabel *seventvPaintPixmapLabel = nullptr;
         QWidget *seventvPaintRow = nullptr;
