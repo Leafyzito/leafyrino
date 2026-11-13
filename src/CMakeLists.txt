@@ -442,6 +442,8 @@ set(SOURCE_FILES
         messages/search/BadgePredicate.hpp
         messages/search/ChannelPredicate.cpp
         messages/search/ChannelPredicate.hpp
+        messages/search/ClientPredicate.cpp
+        messages/search/ClientPredicate.hpp
         messages/search/LinkPredicate.cpp
         messages/search/LinkPredicate.hpp
         messages/search/MessageFlagsPredicate.cpp
