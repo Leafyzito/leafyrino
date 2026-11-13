@@ -6,6 +6,7 @@
 
 #include "singletons/Settings.hpp"
 #include "widgets/BaseWindow.hpp"
+#include "widgets/dialogs/ChatColorCycleDialog.hpp"
 #include "widgets/settingspages/GeneralPageView.hpp"
 #include "widgets/settingspages/SettingWidget.hpp"
 
@@ -290,6 +291,27 @@ void LeafyrinoPage::initLayout(GeneralPageView &layout)
         ->addKeywords({"potat", "custom", "prefix", "command"})
         ->conditionallyEnabledBy(s.includePotatCommands)
         ->addTo(layout);
+
+    layout.addTitle("Chat color");
+    SettingWidget::checkbox("Change my color after every message",
+                            s.cycleChatColor)
+        ->setTooltip("After each message you send, change your Twitch chat "
+                     "color. Your color is shared by every channel, and it "
+                     "changes at most once per second.")
+        ->addKeywords({"color", "colour", "rainbow", "cycle", "random"})
+        ->addTo(layout);
+    SettingWidget::dropdown("Next color", s.chatColorCycleMode)
+        ->setTooltip("In order and Random use the colors you choose below. "
+                     "Rainbow goes around the color wheel and needs Turbo or "
+                     "Prime.")
+        ->addKeywords({"color", "colour", "rainbow", "cycle", "random"})
+        ->conditionallyEnabledBy(s.cycleChatColor)
+        ->addTo(layout);
+    layout.addButton("Choose colors...", [this] {
+        auto *dialog = new ChatColorCycleDialog(this);
+        dialog->setAttribute(Qt::WA_DeleteOnClose);
+        dialog->show();
+    });
 
     layout.addTitle("Miscellaneous");
     SettingWidget::checkbox("Use message colors for tab alerts",

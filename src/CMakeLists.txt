@@ -652,6 +652,8 @@ set(SOURCE_FILES
 
         providers/twitch/ChannelPointReward.cpp
         providers/twitch/ChannelPointReward.hpp
+        providers/twitch/ChatColorCycler.cpp
+        providers/twitch/ChatColorCycler.hpp
         providers/twitch/IrcMessageHandler.cpp
         providers/twitch/IrcMessageHandler.hpp
         providers/twitch/ModerationActionLogs.cpp
@@ -938,6 +940,8 @@ set(SOURCE_FILES
         widgets/dialogs/ChannelPointsChartDialog.hpp
         widgets/dialogs/ChannelPointsChartView.cpp
         widgets/dialogs/ChannelPointsChartView.hpp
+        widgets/dialogs/ChatColorCycleDialog.cpp
+        widgets/dialogs/ChatColorCycleDialog.hpp
         widgets/dialogs/ColorPickerDialog.cpp
         widgets/dialogs/ColorPickerDialog.hpp
         widgets/dialogs/CrossBanDialog.cpp

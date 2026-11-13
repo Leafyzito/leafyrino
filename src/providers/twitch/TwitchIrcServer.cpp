@@ -1050,6 +1050,7 @@ void TwitchIrcServer::onMessageSendRequested(
     }
 
     sent = true;
+    this->chatColorCycler_.onMessageSent(channel);
 }
 
 void TwitchIrcServer::onReplySendRequested(
@@ -1076,6 +1077,7 @@ void TwitchIrcServer::onReplySendRequested(
                                     replyId})));
     }
     sent = true;
+    this->chatColorCycler_.onMessageSent(channel);
 }
 
 const IndirectChannel &TwitchIrcServer::getWatchingChannel() const

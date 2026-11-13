@@ -264,6 +264,8 @@ template SettingWidget *SettingWidget::dropdown<SplitMpsCorner>(
     const QString &label, EnumStringSetting<SplitMpsCorner> &setting);
 template SettingWidget *SettingWidget::dropdown<SplitMpsWindow>(
     const QString &label, EnumStringSetting<SplitMpsWindow> &setting);
+template SettingWidget *SettingWidget::dropdown<ChatColorCycleMode>(
+    const QString &label, EnumStringSetting<ChatColorCycleMode> &setting);
 template SettingWidget *SettingWidget::dropdown<BrowserManifestFormat>(
     const QString &label, EnumStringSetting<BrowserManifestFormat> &setting);
 template SettingWidget *SettingWidget::dropdown<TwitchReadConnectionMode>(

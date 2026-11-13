@@ -8,6 +8,7 @@
 #include "common/Channel.hpp"
 #include "common/Common.hpp"
 #include "providers/irc/IrcConnection2.hpp"
+#include "providers/twitch/ChatColorCycler.hpp"
 #include "providers/twitch/TwitchReadConnectionPool.hpp"
 #include "util/CancellationToken.hpp"
 #include "util/RatelimitBucket.hpp"
@@ -236,6 +237,8 @@ private:
     std::queue<std::chrono::steady_clock::time_point> lastMessageMod_;
     std::chrono::steady_clock::time_point lastErrorTimeSpeed_;
     std::chrono::steady_clock::time_point lastErrorTimeAmount_;
+
+    ChatColorCycler chatColorCycler_;
 
     QSet</* login */ QString> moderatedChannels;
     ScopedCancellationToken moderatedChannelFetchToken;
