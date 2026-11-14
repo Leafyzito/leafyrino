@@ -625,6 +625,8 @@ void YouTubeChannel::applyDeletions(const YouTubeLiveChatPage &page,
                            MessageFlag::DoNotTriggerNotification);
         builder->timeoutUser = channelId;
         builder->timestamp = now;
+        builder->platform = MessagePlatform::YouTube;
+        builder->channelName = this->getName();
         builder.emplaceSystemTextAndUpdate(name, text)
             ->setLink({Link::UserInfo, name});
         builder.emplaceSystemTextAndUpdate(u"was timed out or banned."_s, text);
