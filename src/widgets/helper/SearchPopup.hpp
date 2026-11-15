@@ -7,10 +7,17 @@
 #include "ForwardDecl.hpp"
 #include "widgets/BasePopup.hpp"
 
+#include <QStringList>
+
 #include <memory>
 
 class QLabel;
 class QLineEdit;
+class QPushButton;
+class QScrollArea;
+class QCheckBox;
+class QToolButton;
+class QVBoxLayout;
 
 namespace chatterino {
 
@@ -42,6 +49,18 @@ private:
     void addShortcuts() override;
     std::vector<MessagePtr> buildSnapshot();
 
+    QScrollArea *createFilterPanel();
+    void setFilterPanelOpen(bool open);
+    void updateChannelFilters();
+    void syncFilterPanel();
+    QStringList activeFilterValues(const QString &name) const;
+    void setFilterValue(const QString &name, const QString &value,
+                        bool enabled);
+    void setFilterValues(const QString &name, const QStringList &values);
+    bool hasFilters() const;
+    void clearFilters();
+    void setSearchText(const QString &text);
+
     static ChannelPtr filter(const QString &text, const QString &channelName,
                              const std::vector<MessagePtr> &snapshot);
 
@@ -51,6 +70,25 @@ private:
     std::vector<MessagePtr> snapshot_;
     QLineEdit *searchInput_{};
     QLabel *resultCountLabel_{};
+    QPushButton *filterButton_{};
+
+    struct FilterCheckBox {
+        QCheckBox *checkBox;
+        QString name;
+        QString value;
+    };
+    struct FilterSection {
+        QToolButton *header;
+        QWidget *body;
+    };
+    QScrollArea *filterPanel_{};
+    std::vector<FilterCheckBox> filterCheckBoxes_;
+    std::vector<FilterSection> filterSections_;
+    QPushButton *clearFiltersButton_{};
+    std::vector<FilterSection> filterMoreGroups_;
+    QLineEdit *fromUsersInput_{};
+    QWidget *channelSection_{};
+    QVBoxLayout *channelFiltersLayout_{};
     ChannelView *channelView_{};
     QString channelName_{};
     Split *split_ = nullptr;

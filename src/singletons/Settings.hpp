@@ -877,6 +877,8 @@ public:
     QStringSetting mobileNewColor = {"/misc/mobileNewColor", "#3F25D300"};
     BoolSetting clientDetectionIcon = {"/misc/clientDetectionIcon", false};
     BoolSetting fakeWebChat = {"/misc/fakeWebChat", false};
+    BoolSetting searchFiltersPanelOpen = {"/misc/searchFiltersPanelOpen",
+                                          false};
 #ifdef Q_OS_LINUX
     BoolSetting useKeyring = {"/misc/useKeyring", true};
 #endif
