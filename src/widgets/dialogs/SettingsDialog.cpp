@@ -15,6 +15,7 @@
 #include "widgets/helper/SettingsDialogTab.hpp"
 #include "widgets/settingspages/AboutPage.hpp"
 #include "widgets/settingspages/AccountsPage.hpp"
+#include "widgets/settingspages/BackupsPage.hpp"
 #include "widgets/settingspages/CommandPage.hpp"
 #include "widgets/settingspages/ExternalToolsPage.hpp"
 #include "widgets/settingspages/FiltersPage.hpp"
@@ -273,6 +274,7 @@ void SettingsDialog::addTabs()
     this->addTab([]{return new PluginsPage;},          "Plugins",        ":/settings/plugins.svg");
 #endif
     this->ui_.tabContainer->addStretch(1);
+    this->addTab([]{return new BackupsPage;},          "Backups",        ":/settings/backups.svg", SettingsTabId::None, Qt::AlignBottom);
     this->addTab([]{return new AboutPage;},            "About",          ":/settings/about.svg", SettingsTabId::About, Qt::AlignBottom);
     // clang-format on
 }

@@ -13,6 +13,7 @@
 #include "singletons/Paths.hpp"
 #include "util/CombinePath.hpp"
 #include "util/PostToThread.hpp"
+#include "util/Restart.hpp"
 
 #include <QApplication>
 #include <QCryptographicHash>
@@ -73,65 +74,12 @@ std::optional<Updates::Download> parseDownload(const QJsonValue &value)
     return download;
 }
 
-/// The running Flatpak, as described by /.flatpak-info
-struct FlatpakInstance {
-    QString appId;
-    QString branch;
-    QString commit;
-    QString instanceId;
-};
-
-std::optional<FlatpakInstance> readFlatpakInstance()
-{
-    const QSettings info(u"/.flatpak-info"_s, QSettings::IniFormat);
-    FlatpakInstance instance{
-        .appId = info.value(u"Application/name"_s).toString(),
-        .branch = info.value(u"Instance/branch"_s).toString(),
-        .commit = info.value(u"Instance/app-commit"_s).toString(),
-        .instanceId = info.value(u"Instance/instance-id"_s).toString(),
-    };
-    if (instance.appId.isEmpty() || instance.branch.isEmpty() ||
-        instance.commit.isEmpty() || instance.instanceId.isEmpty())
-    {
-        return std::nullopt;
-    }
-    return instance;
-}
-
 // Runs on the host with the app id, branch and running commit. Exits with 3 if
 // the running version is still the installed one, so we don't restart into the
 // same version when the Flatpak repo doesn't have the build yet.
 const QString FLATPAK_UPDATE_SCRIPT = uR"sh(
 flatpak update -y --noninteractive "$1//$2" || exit
 [ "$(flatpak info --show-commit "$1" "$2")" != "$3" ] || exit 3
-)sh"_s;
-
-// Runs on the host with the app id, branch and instance id. Starts the new
-// version once this instance is gone. It runs in the background so
-// flatpak-spawn returns right away, which would otherwise keep this instance
-// alive.
-// Host commands don't get the graphical session's environment, so it's taken
-// from systemd. Without it the new instance has no display and aborts.
-const QString FLATPAK_RESTART_SCRIPT = uR"sh(
-(
-    vars=$(systemctl --user show-environment 2>/dev/null |
-        grep -E '^(DISPLAY|WAYLAND_DISPLAY|XAUTHORITY|XDG_SESSION_TYPE|XDG_CURRENT_DESKTOP)=')
-    set -f
-    IFS='
-'
-    for var in $vars; do
-        export "$var"
-    done
-    unset IFS
-    set +f
-
-    i=0
-    while [ "$i" -lt 30 ] && flatpak ps --columns=instance | grep -qxF "$3"; do
-        sleep 1
-        i=$((i + 1))
-    done
-    exec flatpak run --branch="$2" "$1"
-) </dev/null >/dev/null 2>&1 &
 )sh"_s;
 
 #ifdef Q_OS_WIN
@@ -565,29 +513,10 @@ void Updates::updateFlatpak()
                 return;
             }
 
-            QStringList args{u"--host"_s};
-            // for systems where systemd doesn't have the session's environment.
-            // Flatpak keeps the Wayland socket's name, so these match the host.
-            for (const auto *name : {"WAYLAND_DISPLAY", "XDG_SESSION_TYPE"})
-            {
-                const auto value = qEnvironmentVariable(name);
-                if (!value.isEmpty())
-                {
-                    args.append(u"--env="_s % QLatin1StringView(name) % u'=' %
-                                value);
-                }
-            }
-            args.append({u"sh"_s, u"-c"_s, FLATPAK_RESTART_SCRIPT, u"sh"_s,
-                         instance.appId, instance.branch, instance.instanceId});
-
-            // only quit once the host has the restart, it's quick
-            QProcess restart;
-            restart.start(u"flatpak-spawn"_s, args);
-            if (!restart.waitForFinished(10000) || restart.exitCode() != 0)
+            if (!startFlatpakRestart(instance))
             {
                 qCWarning(chatterinoUpdate)
-                    << "Failed to restart after the update"
-                    << restart.errorString();
+                    << "Failed to restart after the update";
             }
 
             QApplication::exit(0);
