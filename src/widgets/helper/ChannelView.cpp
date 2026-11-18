@@ -2032,7 +2032,13 @@ std::pair<Channel *, MessageElementFlags> ChannelView::getMultiChannelInfo()
 {
     Channel *selectedChannel = this->underlyingChannel_.get();
     MessageElementFlags flags{};
-    if (auto *mc = dynamic_cast<MultiChannel *>(selectedChannel))
+    auto *mc = dynamic_cast<MultiChannel *>(selectedChannel);
+    if (!mc)
+    {
+        // Views like the search popup show copies of a multi-channel's messages
+        mc = dynamic_cast<MultiChannel *>(this->sourceChannel_.get());
+    }
+    if (mc)
     {
         const auto *active = mc->activeChannel();
         if (active)
