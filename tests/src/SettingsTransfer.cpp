@@ -163,7 +163,18 @@ TEST(SettingsTransfer, Categories)
         {"/leafyrino/includeSupibotCommands", "features"},
         {"/misc/fakeWebChat", "features"},
         {"/links/linkInfoTooltip", "chat"},
-        {"/notifications/enableToast", "other"},
+        {"/misc/twitch/messageHistoryLimit", "chat"},
+        {"/twitch/gifs/favorites", "appearance"},
+        {"/notifications/enableToast", "notifications"},
+        {"/notifications/twitch", "notifications"},
+        {"/streamerMode/enabled", "streamer-mode"},
+        {"/streamerMode/hideModActions", "streamer-mode"},
+        {"/misc/chatSendProtocol", "advanced"},
+        {"/misc/twitch/recentMessagesApi", "advanced"},
+        {"/misc/x-7tv/twitchReadConnectionMode", "advanced"},
+        {"/eventsub/enableExperimental", "advanced"},
+        {"/sound/backend", "advanced"},
+        {"/external/streamlink/quality", "other"},
     };
     const auto ids = allCategories();
     for (const auto &[path, category] : cases)

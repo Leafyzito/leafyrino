@@ -51,8 +51,11 @@ const QString CATEGORY_HIGHLIGHTS = u"highlights"_s;
 const QString CATEGORY_COMMANDS = u"commands"_s;
 const QString CATEGORY_LISTS = u"lists"_s;
 const QString CATEGORY_MODERATION = u"moderation"_s;
+const QString CATEGORY_NOTIFICATIONS = u"notifications"_s;
+const QString CATEGORY_STREAMER_MODE = u"streamer-mode"_s;
 const QString CATEGORY_FEATURES = u"features"_s;
 const QString CATEGORY_PERSONAL = u"personal"_s;
+const QString CATEGORY_ADVANCED = u"advanced"_s;
 const QString CATEGORY_OTHER = u"other"_s;
 
 /// Categories that can be applied without restarting
@@ -790,12 +793,19 @@ const std::vector<Category> &categories()
          u"Filters, ignores, nicknames, and muted channels"_s},
         {CATEGORY_MODERATION, u"Moderation"_s,
          u"Moderation tools, timeouts, logs, pins, polls, and predictions"_s},
+        {CATEGORY_NOTIFICATIONS, u"Live notifications"_s,
+         u"Which channels notify you when they go live, and how"_s},
+        {CATEGORY_STREAMER_MODE, u"Streamer mode"_s,
+         u"When streamer mode turns on and what it hides"_s},
         {CATEGORY_FEATURES, u"Extra features"_s,
          u"User cards and Leafyrino, Moltorino, and Technorino features"_s},
         {CATEGORY_PERSONAL, u"User notes and colors"_s,
          u"Notes and colors you gave to users"_s},
+        {CATEGORY_ADVANCED, u"Advanced"_s,
+         u"Connection and protocol options, experiments, and the sound "
+         u"backend"_s},
         {CATEGORY_OTHER, u"Everything else"_s,
-         u"Notifications, streamer mode, and other preferences"_s},
+         u"Settings that don't fit in the other categories"_s},
     };
     return values;
 }
@@ -812,16 +822,31 @@ QString categoryForSettingPath(const QString &path)
         return containsAny(lower, parts);
     };
 
+    if (under({u"/notifications"}))
+    {
+        return CATEGORY_NOTIFICATIONS;
+    }
+    if (under({u"/streamermode"}))
+    {
+        return CATEGORY_STREAMER_MODE;
+    }
+    if (under({u"/misc/chatsendprotocol", u"/misc/twitch/recentmessagesapi",
+               u"/misc/x-7tv", u"/misc/extension", u"/x-chatterino7",
+               u"/eventsub", u"/experiments", u"/sound"}))
+    {
+        return CATEGORY_ADVANCED;
+    }
+
     // settings that don't fit where their path would put them
     if (under({u"/misc/displayseventvpaints",
                u"/misc/displayseventvpaintshadows",
                u"/misc/largeseventvpaintshadows",
                u"/misc/displayseventvanimatedprofile",
-               u"/misc/emotestooltippreview"}))
+               u"/misc/emotestooltippreview", u"/twitch/gifs"}))
     {
         return CATEGORY_APPEARANCE;
     }
-    if (under({u"/misc/twitch", u"/misc/scrollback", u"/misc/chatsendprotocol",
+    if (under({u"/misc/twitch", u"/misc/scrollback",
                u"/misc/openlinksincognito", u"/misc/askonimageupload",
                u"/misc/showpronouns", u"/misc/hideemojibutton",
                u"/misc/markdownparsing", u"/misc/searchfilterspanelopen"}))
