@@ -148,7 +148,8 @@ QJsonValue withoutPrivateKeys(const QJsonValue &value)
     if (value.isArray())
     {
         QJsonArray result;
-        for (const auto &item : value.toArray())
+        const auto array = value.toArray();
+        for (const auto &item : array)
         {
             result.append(withoutPrivateKeys(item));
         }
@@ -330,7 +331,8 @@ QJsonValue mergedValue(const QJsonValue &current, const QJsonValue &incoming,
         {
             positions.insert(mergeIdentity(merged.at(i)), i);
         }
-        for (const auto &value : incoming.toArray())
+        const auto incomingArray = incoming.toArray();
+        for (const auto &value : incomingArray)
         {
             const auto identity = mergeIdentity(value);
             const auto existing = positions.constFind(identity);
@@ -525,7 +527,8 @@ ExpectedStr<void> writeStagedFiles(const QString &settingsDirectory,
         QString rescuePath;
     };
     std::vector<Pending> pending;
-    for (const auto &value : manifest->toObject().value(u"files"_s).toArray())
+    const auto files = manifest->toObject().value(u"files"_s).toArray();
+    for (const auto &value : files)
     {
         const auto spec = value.toObject();
         const auto stagedName = spec.value(u"staged"_s).toString();
@@ -634,7 +637,8 @@ qsizetype countValues(const QJsonValue &value)
         return 1;
     }
     qsizetype count = 0;
-    for (const auto &child : value.toObject())
+    const auto object = value.toObject();
+    for (const auto &child : object)
     {
         count += countValues(child);
     }
@@ -649,7 +653,8 @@ qsizetype countSplits(const QJsonValue &node)
         return 1;
     }
     qsizetype count = 0;
-    for (const auto &child : object.value(u"items"_s).toArray())
+    const auto items = object.value(u"items"_s).toArray();
+    for (const auto &child : items)
     {
         count += countSplits(child);
     }
