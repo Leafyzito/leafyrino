@@ -20,6 +20,8 @@
 #include "util/AttachToConsole.hpp"
 #include "util/CombinePath.hpp"
 #include "util/IpcQueue.hpp"
+#include "util/Restart.hpp"
+#include "util/SettingsTransfer.hpp"
 
 #ifdef Q_OS_MACOS
 #    include "util/MacOsHelpers.h"
@@ -257,6 +259,24 @@ int main(int argc, char **argv)
                               << QSslSocket::supportedProtocols();
 #endif
 
+        // before anything reads the settings files
+        if (!args.isFramelessEmbed)
+        {
+            auto restored =
+                settingstransfer::applyPendingRestore(paths->settingsDirectory);
+            if (!restored)
+            {
+                qCWarning(chatterinoSettings)
+                    << "Failed to apply the pending settings restore:"
+                    << restored.error();
+                QMessageBox::warning(
+                    nullptr, QStringLiteral("Leafyrino - Restore failed"),
+                    QStringLiteral("Leafyrino couldn't restore your settings."
+                                   "\n\n%1")
+                        .arg(restored.error()));
+            }
+        }
+
         Settings settings(modes, args, paths->settingsDirectory);
 #ifndef Q_OS_MACOS
         if (!args.remoteRestart && !args.isFramelessEmbed &&
@@ -275,6 +295,8 @@ int main(int argc, char **argv)
         Helix::initialize();
 
         runGui(a, modes, *paths, settings, args, updates);
+
+        startPendingRestart();
     }
     return 0;
 }

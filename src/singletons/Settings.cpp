@@ -21,9 +21,12 @@
 #include "debug/Benchmark.hpp"
 #include "pajlada/settings/signalargs.hpp"
 #include "util/Backup.hpp"
+#include "util/RapidjsonHelpers.hpp"
 #include "util/WindowsHelper.hpp"
 
 #include <pajlada/signals/scoped-connection.hpp>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QStringList>
 #include <rapidjson/pointer.h>
 
@@ -1681,6 +1684,44 @@ void Settings::restoreSnapshot()
 
         setting->marshalJSON(snapshot[path], std::move(args));
     }
+}
+
+QJsonObject Settings::registeredValues() const
+{
+    rapidjson::Document document(rapidjson::kObjectType);
+    auto &allocator = document.GetAllocator();
+
+    for (const auto &weakSetting : _settings)
+    {
+        auto setting = weakSetting.lock();
+        if (!setting)
+        {
+            continue;
+        }
+
+        const auto *current = setting->unmarshalJSON();
+        if (current == nullptr)
+        {
+            continue;
+        }
+
+        rapidjson::Value value;
+        value.CopyFrom(*current, allocator);
+
+        // a path can be registered more than once
+        const auto &path = setting->getPath();
+        auto existing = document.FindMember(path.c_str());
+        if (existing != document.MemberEnd())
+        {
+            existing->value = value.Move();
+            continue;
+        }
+
+        rapidjson::Value key(path.c_str(), allocator);
+        document.AddMember(key.Move(), value.Move(), allocator);
+    }
+
+    return QJsonDocument::fromJson(rj::stringify(document).toUtf8()).object();
 }
 
 void Settings::disableSave()
