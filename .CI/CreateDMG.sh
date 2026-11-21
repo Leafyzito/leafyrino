@@ -20,8 +20,7 @@ if [ -z "$SKIP_VENV" ]; then
     echo "Entering python3 virtual environment"
     . venv/bin/activate
     echo "Installing dmgbuild"
-    # 2.0 dropped the UDBZ format dmg-settings.py uses, unpin once upstream picks a new one
-    python3 -m pip install "dmgbuild<2"
+    python3 -m pip install dmgbuild
 fi
 
 if [ -n "$MACOS_CODESIGN_CERTIFICATE" ]; then
