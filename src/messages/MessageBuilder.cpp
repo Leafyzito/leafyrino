@@ -133,9 +133,9 @@ Message::ClientDetectionStatus performClientDetection(const QString &nonce)
         return Status::Abnormal;
     }
 
-    if (nonce.size() >= 8 && nonce.size() <= 12)
+    if (nonce.size() >= 8 && nonce.size() <= 13)
     {
-        // matches /[a-z0-9]{8,12}/
+        // matches /[a-z0-9]{8,13}/
         const bool mobile =
             std::all_of(nonce.cbegin(), nonce.cend(), [](QChar c) {
                 return isDigit(c) || isLowerLetter(c);
