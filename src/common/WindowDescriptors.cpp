@@ -313,6 +313,61 @@ IndirectChannel SplitDescriptor::decodeChannel() const
     return Channel::getEmpty();
 }
 
+void SplitDescriptor::setChannel(const IndirectChannel &chan)
+{
+    this->type_ = qmagicenum::SerializedName::enumNameString(chan.getType());
+    switch (chan.getType())
+    {
+        case Channel::Type::Twitch:
+        case Channel::Type::Misc:
+        case Channel::Type::YouTube:
+            this->channelName_ = chan.get()->getName();
+            break;
+
+        case Channel::Type::Kick: {
+            this->channelName_ = chan.get()->getName();
+            auto *kc = dynamic_cast<KickChannel *>(chan.get().get());
+            if (kc)
+            {
+                this->kickChannelID = kc->channelID();
+                this->kickRoomID = kc->roomID();
+                this->kickUserID = kc->userID();
+            }
+        }
+        break;
+
+        case Channel::Type::Multi: {
+            this->channelName_ = chan.get()->getName();
+            auto *mc = dynamic_cast<MultiChannel *>(chan.get().get());
+            if (mc)
+            {
+                for (const auto &child : mc->channels())
+                {
+                    this->children.emplace_back(child.descriptor());
+                }
+                this->mcIndicator = mc->indicatorMode();
+                this->mcIndex = mc->activeChannelIndex();
+                this->mcTintByPlatform = mc->tintByPlatform();
+                this->mcShowTwitchOverlays = mc->showTwitchOverlays();
+                this->mcCombinedViewerCount = mc->combinedViewerCount();
+            }
+        }
+        break;
+
+        case Channel::Type::TwitchWhispers:
+        case Channel::Type::TwitchWatching:
+        case Channel::Type::TwitchMentions:
+        case Channel::Type::TwitchLive:
+        case Channel::Type::TwitchAutomod:
+
+        // FIXME: Remove these (#5703)
+        case Channel::Type::None:
+        case Channel::Type::Direct:
+        case Channel::Type::TwitchEnd:
+            break;
+    }
+}
+
 SplitNodeDescriptor::SplitNodeDescriptor(SplitDescriptor descriptor)
     : SplitDescriptor(std::move(descriptor))
 {

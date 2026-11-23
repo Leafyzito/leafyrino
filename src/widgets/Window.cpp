@@ -10,7 +10,6 @@
 #include "controllers/hotkeys/HotkeyController.hpp"
 #include "providers/twitch/TwitchAccount.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
-#include "singletons/Resources.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/StreamerMode.hpp"
 #include "singletons/Theme.hpp"
@@ -22,6 +21,7 @@
 #include "widgets/buttons/LabelButton.hpp"
 #include "widgets/buttons/PixmapButton.hpp"
 #include "widgets/buttons/SvgButton.hpp"
+#include "widgets/buttons/TitlebarButton.hpp"
 #include "widgets/dialogs/SettingsDialog.hpp"
 #include "widgets/dialogs/switcher/QuickSwitcherPopup.hpp"
 #include "widgets/dialogs/UpdateDialog.hpp"
@@ -263,10 +263,15 @@ void Window::addCustomTitlebarButtons()
     });
     this->userLabel_->setMinimumWidth(20 * this->scale());
 
-    this->streamerModeTitlebarIcon_ =
-        this->addTitleBarButton<PixmapButton>([this] {
+    // streamer mode
+    this->streamerModeTitlebarIcon_ = this->addTitleBarButton<SvgButton>(
+        [this] {
             getApp()->getWindows()->showSettingsDialog(
                 this, SettingsDialogPreference::StreamerMode);
+        },
+        SvgButton::Src{
+            .dark = ":/buttons/streamerModeEnabledDark.svg",
+            .light = ":/buttons/streamerModeEnabledLight.svg",
         });
     QObject::connect(getApp()->getStreamerMode(), &IStreamerMode::changed, this,
                      &Window::updateStreamerModeIcon);
@@ -282,16 +287,6 @@ void Window::updateStreamerModeIcon()
     }
 #ifdef Q_OS_WIN
     assert(this->getType() == WindowType::Main);
-    if (getTheme()->isLightTheme())
-    {
-        this->streamerModeTitlebarIcon_->setPixmap(
-            getResources().buttons.streamerModeEnabledLight);
-    }
-    else
-    {
-        this->streamerModeTitlebarIcon_->setPixmap(
-            getResources().buttons.streamerModeEnabledDark);
-    }
     this->streamerModeTitlebarIcon_->setVisible(
         getApp()->getStreamerMode()->isEnabled());
 #else

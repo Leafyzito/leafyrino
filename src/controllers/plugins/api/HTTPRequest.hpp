@@ -6,7 +6,6 @@
 #ifdef CHATTERINO_HAVE_PLUGINS
 #    include "common/network/NetworkRequest.hpp"
 #    include "controllers/plugins/LuaUtilities.hpp"
-#    include "util/DebugCount.hpp"
 
 #    include <sol/forward.hpp>
 #    include <sol/types.hpp>

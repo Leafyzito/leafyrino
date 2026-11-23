@@ -27,7 +27,6 @@
 #include "util/CustomPlayer.hpp"
 #include "util/IncognitoBrowser.hpp"
 #include "util/MultiChannel.hpp"
-#include "util/QMagicEnumTagged.hpp"
 #include "util/StreamLink.hpp"
 #include "widgets/ChatterListWidget.hpp"
 #include "widgets/dialogs/RewardQueueDialog.hpp"
@@ -2872,58 +2871,7 @@ SplitDescriptor Split::buildDescriptor() const
     descriptor.spellCheckOverride = this->checkSpellingOverride();
 
     auto chan = this->getIndirectChannel();
-    descriptor.type_ =
-        qmagicenum::SerializedName::enumNameString(chan.getType());
-    switch (chan.getType())
-    {
-        case Channel::Type::Twitch:
-        case Channel::Type::Misc:
-        case Channel::Type::YouTube:
-            descriptor.channelName_ = chan.get()->getName();
-            break;
-
-        case Channel::Type::Kick: {
-            descriptor.channelName_ = chan.get()->getName();
-            auto *kc = dynamic_cast<KickChannel *>(chan.get().get());
-            if (kc)
-            {
-                descriptor.kickChannelID = kc->channelID();
-                descriptor.kickRoomID = kc->roomID();
-                descriptor.kickUserID = kc->userID();
-            }
-        }
-        break;
-
-        case Channel::Type::Multi: {
-            descriptor.channelName_ = chan.get()->getName();
-            auto *mc = dynamic_cast<MultiChannel *>(chan.get().get());
-            if (mc)
-            {
-                for (const auto &child : mc->channels())
-                {
-                    descriptor.children.emplace_back(child.descriptor());
-                }
-                descriptor.mcIndicator = mc->indicatorMode();
-                descriptor.mcIndex = mc->activeChannelIndex();
-                descriptor.mcTintByPlatform = mc->tintByPlatform();
-                descriptor.mcShowTwitchOverlays = mc->showTwitchOverlays();
-                descriptor.mcCombinedViewerCount = mc->combinedViewerCount();
-            }
-        }
-        break;
-
-        case Channel::Type::TwitchWhispers:
-        case Channel::Type::TwitchWatching:
-        case Channel::Type::TwitchMentions:
-        case Channel::Type::TwitchLive:
-        case Channel::Type::TwitchAutomod:
-
-        // FIXME: Remove these (#5703)
-        case Channel::Type::None:
-        case Channel::Type::Direct:
-        case Channel::Type::TwitchEnd:
-            break;
-    }
+    descriptor.setChannel(chan);
 
     if (auto *twitchChannel = dynamic_cast<TwitchChannel *>(chan.get().get()))
     {
